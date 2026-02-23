@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' https://images.unsplash.com data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://www.strava.com;">
+    
+    <title>Scora - POC</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="layout">
+        <aside class="sidebar">
+            <h1 class="brand-logo">SCORA.</h1>
+            <h2>Tus Entrenamientos</h2>
+            <div id="activity-list" class="feed">
+                </div>
+        </aside>
+
+        <main class="preview-area">
+            <div class="canvas-wrapper">
+                <canvas id="storyCanvas" width="1080" height="1920"></canvas>
+            </div>
+            <div class="controls">
+                <button id="btn-download" class="btn-primary">Descargar Sticker (PNG)</button>
+            </div>
+        </main>
+    </div>
+
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>
