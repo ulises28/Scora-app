@@ -2,28 +2,75 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' https://images.unsplash.com data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://www.strava.com;">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Scora</title>
     
-    <title>Scora - POC</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob: https://images.unsplash.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://www.strava.com;">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <div class="layout">
-        <aside class="sidebar">
-            <h1 class="brand-logo">SCORA.</h1>
-            <h2>Tus Entrenamientos</h2>
-            <div id="activity-list" class="feed">
-                </div>
-        </aside>
+    <div id="loader-overlay">
+        <picture>
+            <source media="(min-width: 900px)" srcset="assets/img/track_desktop.jpeg">
+            <img src="assets/img/track_0.jpeg" alt="Scora Welcome" class="loader-image">
+        </picture>
+        <p class="loader-text">Tu esfuerzo debe ser mostrado</p>  <!-- Insertar frase motivadora -->
+    </div>
 
-        <main class="preview-area">
-            <div class="canvas-wrapper">
-                <canvas id="storyCanvas" width="1080" height="1920"></canvas>
+    <div class="app-container">
+        <header class="main-header">
+            <div class="brand-logo" id="go-home">
+                <div class="logo-dot"></div>
+                SCORA<span>.</span>
             </div>
-            <div class="controls">
-                <button id="btn-download" class="btn-primary">Descargar Sticker (PNG)</button>
+        </header>
+
+        <main id="screen-feed" class="screen active">
+            <section id="auth-section" class="hidden">
+                <div class="intro-section">
+                    <h1>Tus rutas,<br>hechas arte.</h1>
+                    <p>Conecta con Strava para importar tus últimos entrenamientos.</p>
+                </div>
+                <button id="btn-login" class="btn-strava">Conectar con Strava</button>
+            </section>
+            
+            <section id="activity-section" class="hidden">
+                <div class="intro-section">
+                    <h1>Entrenamientos</h1>
+                    <p>Selecciona una actividad para crear tu sticker.</p>
+                </div>
+                <div id="activity-list" class="activity-feed">
+                    </div>
+            </section>
+        </main>
+
+        <main id="screen-editor" class="screen">
+            <nav class="editor-nav">
+                <button id="btn-back" class="btn-text">← Volver</button>
+                <span id="selected-activity-name">Actividad seleccionada</span>
+            </nav>
+
+            <div class="editor-layout">
+                <div class="preview-container">
+                    <div class="canvas-wrapper">
+                        <canvas id="storyCanvas"></canvas>
+                    </div>
+                </div>
+
+                <aside class="template-selector">
+                    <h3>Templates</h3>
+                    <div class="template-grid">
+                        <div class="template-item active">Minimal</div>
+                        <div class="template-item">Route</div>
+                        <div class="template-item">Data</div>
+                    </div>
+                    
+                    <button id="btn-download" class="btn-download">Descargar sticker</button>
+                </aside>
             </div>
         </main>
     </div>

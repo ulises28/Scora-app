@@ -1,167 +1,290 @@
-/* ====== VARIABLES & RESET ====== */
+/* ====== SISTEMA DE DISEÑO SCORA (Premium Technical) ====== */
 :root {
-    --bg-app: #0a0a0a;
-    --bg-panel: #141414;
-    --bg-card: #1e1e1e;
-    --bg-card-hover: #252525;
-    --accent: #ff5722; /* Naranja Scora */
-    --text-main: #ffffff;
-    --text-muted: #888888;
-    --border-color: #2a2a2a;
+    --bg: #000000;
+    --panel: #0a0a0a;
+    --card: #111111;
+    --accent: #80cbc4; /* Turquesa/Menta Scora */
+    --strava: #FC6124; /* Naranja Strava */
+    --text: #ffffff;
+    --text-dim: #909090;
+    --border: #1a1a1a;
+    --font-main: 'Plus Jakarta Sans', sans-serif;
+    --radius: 16px;
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
+* { 
+    box-sizing: border-box; 
+    margin: 0; 
+    padding: 0; 
+    -webkit-tap-highlight-color: transparent; 
+}
 
 body {
-    background-color: var(--bg-app);
-    color: var(--text-main);
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    height: 100vh;
-    /* En móvil permitimos scroll si hace falta */
-    overflow-x: hidden;
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: var(--font-main);
+    height: 100dvh;
+    overflow: hidden; 
 }
 
-/* ====== LAYOUT RESPONSIVE (Mobile First) ====== */
-.layout {
+.hidden { display: none !important; }
+
+/* ====== LOADER (Pista Full Screen) ====== */
+#loader-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: #000;
     display: flex;
-    flex-direction: column; /* En móvil, uno encima del otro */
-    height: 100%;
-    min-height: 100vh;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    transition: opacity 0.8s ease, visibility 0.8s;
 }
 
-/* ====== SIDEBAR (Panel de Actividades) ====== */
-.sidebar {
+#loader-overlay.hidden {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.loader-image {
     width: 100%;
-    background-color: var(--bg-panel);
-    padding: 25px;
-    display: flex;
-    flex-direction: column;
-    border-bottom: 1px solid var(--border-color);
-    flex-shrink: 0; /* Evita que se aplaste */
+    height: 100%;
+    object-fit: cover; 
+    opacity: 0.7;
+}
+
+.loader-text {
+    position: absolute;
+    bottom: 15%;
+    font-weight: 300;
+    letter-spacing: 2px;
+    color: #fff;
+    text-transform: lowercase; 
+}
+
+/* ====== ESTRUCTURA GLOBAL ====== */
+.main-header {
+    padding: 24px 24px 10px;
+    background: var(--bg);
 }
 
 .brand-logo {
-    font-size: 24px;
-    font-weight: 800;
-    letter-spacing: 2px;
-    margin-bottom: 25px;
-    color: var(--text-main);
-}
-.brand-logo span { color: var(--accent); }
-
-h2 {
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    font-weight: 600;
-    color: var(--text-muted);
-    margin-bottom: 15px;
-}
-
-.feed {
     display: flex;
-    flex-direction: column;
-    gap: 10px;
-    overflow-y: auto;
-    /* Altura máxima en móvil para que no ocupe toda la pantalla */
-    max-height: 300px; 
-}
-
-/* ====== TARJETAS DE ACTIVIDAD ====== */
-.activity-btn {
-    background-color: var(--bg-card);
-    border: 1px solid transparent;
-    border-radius: 12px;
-    padding: 16px;
-    text-align: left;
-    color: var(--text-main);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    width: 100%;
-}
-
-.activity-btn:hover {
-    background-color: var(--bg-card-hover);
-    border-color: var(--border-color);
-    transform: translateY(-2px);
-}
-
-.activity-title { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
-.activity-metric { font-size: 13px; color: var(--text-muted); }
-
-/* ====== ÁREA DE PREVISUALIZACIÓN ====== */
-.preview-area {
-    flex: 1; /* Ocupa el espacio restante */
-    display: flex;
-    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    padding: 30px 20px;
-    background-color: var(--bg-app);
+    gap: 10px;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.logo-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--accent);
+    border-radius: 50%;
+    box-shadow: 0 0 10px var(--accent);
+}
+
+/* ====== SISTEMA DE PANTALLAS (SPA) ====== */
+.screen {
+    display: none; 
+    padding: 10px 24px 24px;
+    height: calc(100dvh - 80px);
+    flex-direction: column;
+}
+
+.screen.active {
+    display: flex; 
+    animation: slideUp 0.4s ease forwards;
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ====== PANTALLA A: FEED ====== */
+.intro-section h1 { font-weight: 300; font-size: 32px; margin-bottom: 8px; }
+.intro-section p { color: var(--text-dim); font-size: 14px; margin-bottom: 30px; }
+
+.activity-feed {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow-y: auto;
+}
+
+.activity-card {
+    background: var(--card);
+    padding: 20px;
+    border-radius: var(--radius);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid var(--border);
+    transition: 0.3s;
+    cursor: pointer;
+}
+
+.activity-card:active { transform: scale(0.98); }
+.card-title { font-size: 15px; font-weight: 500; margin-bottom: 4px; display: block; }
+.card-meta { font-size: 12px; color: var(--text-dim); }
+.card-arrow { color: var(--accent); font-weight: bold; font-size: 18px; }
+
+/* ====== PANTALLA B: EDITOR ====== */
+.editor-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.btn-text { 
+    background: none; 
+    border: none; 
+    color: var(--accent); 
+    cursor: pointer; 
+    font-weight: 500; 
+    font-size: 14px;
+}
+
+.editor-layout {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    justify-content: space-between;
 }
 
 .canvas-wrapper {
-    /* El truco para el aspect ratio de historias */
     width: 100%;
-    max-width: 400px; /* Que no se haga gigante en PC */
+    max-width: 320px;
+    margin: 0 auto;
     aspect-ratio: 9 / 16;
-    border-radius: 16px;
+    background: #080808;
+    border-radius: 24px;
     overflow: hidden;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-    border: 1px solid var(--border-color);
+    border: 1px solid var(--border);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.6);
 }
 
-canvas {
-    width: 100%;
-    height: 100%;
-    /* Placeholder mientras carga */
-    background: linear-gradient(45deg, #1a1a1a, #2a2a2a);
+canvas { width: 100%; height: 100%; display: block; }
+
+/* ====== TEMPLATES Y BOTONES ====== */
+.template-selector h3 {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+    font-weight: 500;
 }
 
-.controls { margin-top: 25px; width: 100%; max-width: 400px; }
+.template-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 24px;
+}
 
-.btn-primary {
-    background-color: var(--text-main);
-    color: var(--bg-app);
-    border: none;
-    padding: 18px;
-    border-radius: 30px;
-    font-size: 16px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: opacity 0.2s, transform 0.2s;
-    width: 100%;
+.template-item {
+    background: var(--card);
+    padding: 12px;
+    border-radius: 12px;
+    font-size: 11px;
     text-align: center;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    transition: 0.3s;
+    cursor: pointer;
 }
 
-.btn-primary:hover { opacity: 0.9; transform: scale(1.02); }
+.template-item.active { 
+    border-color: var(--accent); 
+    color: var(--text); 
+    background: rgba(128, 203, 196, 0.05); 
+}
 
-/* ====== MEDIA QUERIES (Para Desktop) ====== */
-/* Cuando la pantalla sea más ancha que 768px (Tablets y PC) */
-@media (min-width: 768px) {
-    body { overflow: hidden; } /* En PC no queremos scroll en el body */
+/* --- BOTONES PRINCIPALES --- */
 
-    .layout {
-        flex-direction: row; /* Ponemos los paneles lado a lado */
+/* Botón de Strava (Pantalla Login) */
+.btn-strava { 
+    background: var(--strava); 
+    color: #fff; 
+    border: none;
+    padding: 20px;
+    border-radius: 50px;
+    font-weight: 700;
+    width: 100%;
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: var(--font-main);
+}
+.btn-strava:hover { 
+    filter: brightness(1.1);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(252, 97, 36, 0.3);
+}
+
+/* Botón de Descarga: El más importante (Turquesa con letras negras) */
+.btn-download { 
+    background: var(--accent); 
+    color: #000; 
+    border: none;
+    padding: 20px; /* Un poco más de cuerpo */
+    border-radius: 50px;
+    font-weight: 800; /* Extra bold */
+    width: 100%;
+    font-size: 16px; /* Ligeramente más grande */
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: var(--font-main);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.btn-download:hover { 
+    filter: brightness(1.05);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(128, 203, 196, 0.4);
+}
+
+/* ====== RESPONSIVO PARA ESCRITORIO (900px+) ====== */
+@media (min-width: 900px) {
+    .loader-image { opacity: 0.4; }
+
+    .app-container {
+        max-width: 1200px;
+        margin: 0 auto;
     }
 
-    .sidebar {
-        width: 380px; /* Ancho fijo para el menú */
-        height: 100vh;
-        border-right: 1px solid var(--border-color);
-        border-bottom: none;
+    .activity-feed {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+        padding-bottom: 50px;
     }
 
-    .feed {
-        max-height: none; /* El feed puede ocupar toda la altura disponible */
+    .intro-section h1 {
+        font-size: 48px;
+        margin-top: 20px;
     }
 
-    .preview-area {
-        padding: 40px;
+    .editor-layout {
+        flex-direction: row; 
+        gap: 60px; 
+        align-items: flex-start; 
+        padding-top: 20px;
     }
 
-    .canvas-wrapper {
-        height: 80vh; /* Altura relativa a la pantalla */
-        width: auto; /* El ancho se ajusta automáticamente por el aspect-ratio */
+    .template-selector { 
+        width: 380px; 
+        position: sticky; 
+        top: 20px; 
+    }
+
+    .canvas-wrapper { 
+        height: 75vh; 
+        width: auto; 
+        max-height: none; 
     }
 }
