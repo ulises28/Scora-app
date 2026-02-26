@@ -1,6 +1,35 @@
-# Ignorar archivos de sistema
+# Dependency directories
+node_modules/
+
+# OS-specific files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
-# Ignorar mis secretos
+# IDEs and Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Project specific secrets and data files
+# ⚠️ NEVER COMMIT THESE!
 js/config.js
+stravadata.txt
+*.sqlite
+*.sqlite3
+
+# Log files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

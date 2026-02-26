@@ -31,12 +31,36 @@ export async function exchangeToken(code) {
 
 // 3. Obtener los entrenamientos usando el Token final
 export async function fetchStravaActivities(token) {
+    // Intentar leer de localStorage primero
+    const cachedData = localStorage.getItem('stravaActivities');
+    if (cachedData) {
+        try {
+            const parsedData = JSON.parse(cachedData);
+            if (Array.isArray(parsedData) && parsedData.length > 0) {
+                console.log("Cargando actividades desde localStorage");
+                return parsedData;
+            }
+        } catch (e) {
+            console.warn("Error leyendo localStorage, buscando nuevos datos", e);
+        }
+    }
+
     const url = 'https://www.strava.com/api/v3/athlete/activities?per_page=5';
     const response = await fetch(url, {
         method: 'GET',
         headers: { 'Authorization': `Bearer ${token}` }
     });
-    return await response.json();
+
+    const data = await response.json();
+
+    // Guardar en localStorage para la próxima vez
+    if (Array.isArray(data)) {
+        console.log("=== STRAVA RAW PAYLOAD ===");
+        console.log(JSON.stringify(data[0], null, 2)); // Mostramos solo el primer Run completo para no trabar la consola
+        localStorage.setItem('stravaActivities', JSON.stringify(data));
+    }
+
+    return data;
 }
 
 // 4. Tu formateador de datos que ya funciona perfecto
@@ -53,15 +77,45 @@ export function formatActivityStats(activity) {
 
     if (activity.type === "Run") {
         const paceSecs = Math.floor(1000 / activity.average_speed);
-        stats.mainValue = (activity.distance / 1000).toFixed(2) + " km";
+        const distVal = (activity.distance / 1000).toFixed(2);
+        stats.mainValue = distVal + " km";
+        stats.distanceVal = distVal; // Raw value for stats template
+
         stats.mainLabel = "DISTANCE";
         stats.subValue = `${Math.floor(paceSecs / 60)}:${(paceSecs % 60).toString().padStart(2, '0')} /km`;
+
+        stats.maxPace = calculateMaxPace(activity.max_speed);
+
         stats.subLabel = "PACE";
     } else {
         stats.mainValue = stats.timeStr;
+        stats.distanceVal = "0.00"; // Fallback for non-runs
+        stats.maxPace = "0:00"; // Fallback for non-runs
+
         stats.mainLabel = "DURATION";
         stats.subValue = activity.average_heartrate ? `${activity.average_heartrate} bpm` : "Done";
         stats.subLabel = "EFFORT";
     }
     return stats;
+}
+
+/**
+ * Calcula el Ritmo Máximo (Pace) asumiendo que Strava 
+ * entrega la velocidad máxima en MPH (Millas por hora).
+ */
+export function calculateMaxPace(maxSpeedMph) {
+    if (!maxSpeedMph || maxSpeedMph <= 0) return "0:00";
+
+    // 1. Convertir Millas/h a Km/h (Factor: 1.60934)
+    const speedKmH = maxSpeedMph * 1.60934;
+
+    // 2. Calcular minutos por kilómetro (Pace decimal)
+    const paceDecimal = 60 / speedKmH;
+
+    // 3. Desglosar en minutos y segundos
+    const mins = Math.floor(paceDecimal);
+    const secs = Math.round((paceDecimal - mins) * 60);
+
+    // Retorna formato "M:SS" (Ej: "2:39")
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
 }

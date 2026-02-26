@@ -1,24 +1,28 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Scora</title>
-    
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob: https://images.unsplash.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://www.strava.com;">
+
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; img-src 'self' data: blob: https://images.unsplash.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://www.strava.com;">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;500;700&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="css/styles.css">
 </head>
+
 <body>
     <div id="loader-overlay">
         <picture>
             <source media="(min-width: 900px)" srcset="assets/img/track_desktop.jpeg">
-            <img src="assets/img/track_0.jpeg" alt="Scora Welcome" class="loader-image">
+            <img src="assets/img/track_mobile.jpeg" alt="Scora Welcome" class="loader-image">
         </picture>
-        <p class="loader-text">Tu esfuerzo debe ser mostrado</p>  <!-- Insertar frase motivadora -->
+        <p class="loader-text">No solo entrenes. Deja huella.</p> <!-- Insertar frase motivadora -->
     </div>
 
     <div class="app-container">
@@ -37,14 +41,23 @@
                 </div>
                 <button id="btn-login" class="btn-strava">Conectar con Strava</button>
             </section>
-            
+
             <section id="activity-section" class="hidden">
                 <div class="intro-section">
-                    <h1>Entrenamientos</h1>
+                    <div class="intro-header">
+                        <h1>Entrenamientos</h1>
+                        <button id="btn-sync" class="btn-icon" aria-label="Sincronizar nuevas actividades">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path
+                                    d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 10 0 1 18.8-4.3M22 12.5a10 10 10 0 1-18.8 4.3" />
+                            </svg>
+                        </button>
+                    </div>
                     <p>Selecciona una actividad para crear tu sticker.</p>
                 </div>
                 <div id="activity-list" class="activity-feed">
-                    </div>
+                </div>
             </section>
         </main>
 
@@ -67,8 +80,10 @@
                         <div class="template-item active">Minimal</div>
                         <div class="template-item">Route</div>
                         <div class="template-item">Data</div>
+                        <div class="template-item">DM</div>
+                        <div class="template-item">Stats</div>
                     </div>
-                    
+
                     <button id="btn-download" class="btn-download">Descargar sticker</button>
                 </aside>
             </div>
@@ -77,4 +92,5 @@
 
     <script type="module" src="js/app.js"></script>
 </body>
+
 </html>
