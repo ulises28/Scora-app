@@ -65,7 +65,7 @@ export async function fetchStravaActivities(token) {
 
 // 4. Tu formateador de datos que ya funciona perfecto
 export function formatActivityStats(activity) {
-    const stats = {
+    const stats: Record<string, any> = {
         title: activity.name,
         type: activity.type,
         hasMap: !!activity.map?.summary_polyline,
@@ -93,8 +93,8 @@ export function formatActivityStats(activity) {
         stats.maxPace = "0:00"; // Fallback for non-runs
 
         stats.mainLabel = "DURATION";
-        stats.subValue = activity.average_heartrate ? `${activity.average_heartrate} bpm` : "Done";
-        stats.subLabel = "EFFORT";
+        stats.subValue = activity.max_heartrate ? `${activity.max_heartrate} bpm` : "Done";
+        stats.subLabel = "MAX HEARTRATE";
     }
     return stats;
 }

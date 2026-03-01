@@ -33,3 +33,14 @@ stravadata.txt
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Vite and Build
+dist/
+dist-ssr/
+*.local
+
+# Typescript
+*.tsbuildinfo
+
+# Scora specific
+src/config.js

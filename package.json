@@ -1,0 +1,31 @@
+{
+  "name": "scora-app",
+  "version": "1.0.0",
+  "description": "Scora es una aplicación web diseñada para transformar tus actividades de Strava en stickers e imágenes estéticas listas para ser compartidas en redes sociales como Instagram Stories, TikTok y más.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "vitest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://ulises28: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@github.com/ulises28/Scora-app.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/ulises28/Scora-app/issues"
+  },
+  "homepage": "https://github.com/ulises28/Scora-app#readme",
+  "devDependencies": {
+    "@types/node": "^25.3.3",
+    "@vitejs/plugin-vue": "^6.0.4",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1",
+    "vitest": "^4.0.18"
+  }
+}

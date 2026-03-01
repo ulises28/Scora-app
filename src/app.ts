@@ -16,6 +16,7 @@ const btnSync = document.getElementById('btn-sync');
 
 let currentStats = null;
 let currentTemplate = 'minimal';
+let currentTextColor = 'white';
 
 /**
  * Función para ocultar la imagen de bienvenida (Loader)
@@ -124,14 +125,14 @@ function openEditor(stats) {
     currentStats = stats;
     // Seleccionar visualmente el template actual
     document.querySelectorAll('.template-item').forEach(item => {
-        if (item.innerText.trim().toLowerCase() === currentTemplate) {
+        if ((item as HTMLElement).innerText.trim().toLowerCase() === currentTemplate) {
             item.classList.add('active');
         } else {
             item.classList.remove('active');
         }
     });
 
-    drawTemplate('storyCanvas', currentStats, currentTemplate);
+    drawTemplate('storyCanvas', currentStats, currentTemplate, currentTextColor);
 }
 
 // --- EVENT LISTENERS GLOBALES ---
@@ -156,14 +157,25 @@ if (btnSync) {
 document.querySelectorAll('.template-item').forEach(item => {
     item.addEventListener('click', (e) => {
         document.querySelector('.template-item.active')?.classList.remove('active');
-        e.target.classList.add('active');
+        (e.target as HTMLElement).classList.add('active');
 
-        currentTemplate = e.target.innerText.trim().toLowerCase();
+        currentTemplate = (e.target as HTMLElement).innerText.trim().toLowerCase();
         if (currentStats) {
-            drawTemplate('storyCanvas', currentStats, currentTemplate);
+            drawTemplate('storyCanvas', currentStats, currentTemplate, currentTextColor);
         }
     });
 });
+
+// Manejo de color de texto
+const textColorSelect = document.getElementById('text-color-select');
+if (textColorSelect) {
+    textColorSelect.addEventListener('change', (e) => {
+        currentTextColor = (e.target as HTMLSelectElement).value;
+        if (currentStats) {
+            drawTemplate('storyCanvas', currentStats, currentTemplate, currentTextColor);
+        }
+    });
+}
 
 // Arrancar Scora
 document.addEventListener('DOMContentLoaded', initApp);
