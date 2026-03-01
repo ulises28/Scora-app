@@ -10,8 +10,8 @@ export function decodePolyline(str) {
     return coordinates;
 }
 
-export function drawTemplate(canvasId, stats, templateType = 'minimal') {
-    const canvas = document.getElementById(canvasId);
+export function drawTemplate(canvasId, stats, templateType = 'minimal', textColor = 'white') {
+    const canvas = document.getElementById(canvasId) as HTMLCanvasElement;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
 
@@ -35,13 +35,13 @@ export function drawTemplate(canvasId, stats, templateType = 'minimal') {
 
     // 4. Lógica de dibujo según el tipo de actividad
     if (stats.hasMap) {
-        drawRunningTemplate(ctx, stats, templateType);
+        drawRunningTemplate(ctx, stats, templateType, textColor);
     } else {
-        drawGymTemplate(ctx, stats, templateType);
+        drawGymTemplate(ctx, stats, templateType, textColor);
     }
 }
 
-function drawRunningTemplate(ctx, stats, templateType) {
+function drawRunningTemplate(ctx, stats, templateType, textColor = 'white') {
     if (templateType === 'minimal') {
         drawRunningMinimal(ctx, stats);
     } else if (templateType === 'route') {
@@ -49,21 +49,21 @@ function drawRunningTemplate(ctx, stats, templateType) {
     } else if (templateType === 'dm') {
         drawDMBubble(ctx, stats);
     } else if (templateType === 'stats') {
-        drawStatsTemplate(ctx, stats);
+        drawStatsTemplate(ctx, stats, textColor);
     } else {
         drawRunningData(ctx, stats);
     }
 }
 
-function drawGymTemplate(ctx, stats, templateType) {
+function drawGymTemplate(ctx, stats, templateType, textColor = 'white') {
     if (templateType === 'minimal' || templateType === 'route') {
         drawGymMinimal(ctx, stats);
     } else if (templateType === 'dm') {
         drawDMBubble(ctx, stats);
     } else if (templateType === 'stats') {
-        drawStatsTemplate(ctx, stats);
+        drawStatsTemplate(ctx, stats, textColor);
     } else {
-        drawGymData(ctx, stats);
+        drawGymData(ctx, stats, textColor);
     }
 }
 
@@ -165,31 +165,92 @@ function drawGymMinimal(ctx, stats) {
     ctx.fillText(stats.mainLabel || "tiempo total", 540, 1120);
 }
 
-function drawGymData(ctx, stats) {
-    drawGymMinimal(ctx, stats);
-    ctx.font = "600 100px 'Plus Jakarta Sans'";
-    ctx.fillStyle = "white";
-    ctx.fillText(stats.subValue || "", 540, 1350);
+function drawGymData(ctx, stats, textColor = 'white') {
+    const alphaValue = 0.45;
+    const baseColor = textColor === 'black' ? '0, 0, 0' : '255, 255, 255';
+    const solidColor = `rgb(${baseColor})`;
+    const transColor = `rgba(${baseColor}, ${alphaValue})`;
+    const labelColor = textColor === 'black' ? `rgba(0,0,0,0.8)` : 'white';
 
-    ctx.font = "400 35px 'Plus Jakarta Sans'";
-    ctx.fillStyle = "#666";
-    ctx.fillText(stats.subLabel || "", 540, 1410);
+    ctx.textAlign = "center";
+    ctx.font = "600 50px 'Plus Jakarta Sans'";
+    ctx.fillStyle = textColor === 'black' ? "rgba(0,0,0,0.6)" : "#80cbc4";
+    ctx.fillText(stats.title || "entrenamiento", 540, 600);
+
+    // --- 1. DURATION ---
+    const durY = 950;
+
+    let durVal = stats.mainValue || "0m";
+    let durUnit = "";
+    const durMatch = durVal.match(/([\d\s]+[h]*[\s]*\d*)([a-zA-Z]*)/);
+    if (durMatch) {
+        durVal = durMatch[1].trim();
+        durUnit = durMatch[2];
+    }
+
+    ctx.textBaseline = "alphabetic";
+    ctx.font = "800 240px 'Plus Jakarta Sans'";
+    const durWidth = ctx.measureText(durVal).width;
+
+    ctx.font = "700 120px 'Plus Jakarta Sans'";
+    const durUnitWidth = ctx.measureText(durUnit).width;
+
+    const gap = 15;
+    const durTotalWidth = durWidth + gap + durUnitWidth;
+    let startX = 540 - (durTotalWidth / 2);
+
+    ctx.textAlign = "left";
+    ctx.font = "800 240px 'Plus Jakarta Sans'";
+    ctx.fillStyle = transColor;
+    ctx.fillText(durVal, startX, durY);
+
+    ctx.font = "700 120px 'Plus Jakarta Sans'";
+    ctx.fillStyle = solidColor;
+    ctx.fillText(durUnit, startX + durWidth + gap, durY);
+
+    ctx.textAlign = "center";
+    ctx.font = "600 45px 'Plus Jakarta Sans'";
+    ctx.fillStyle = labelColor;
+    ctx.fillText(stats.mainLabel || "DURATION", 540, durY + 70);
+
+    // --- 2. EFFORT ---
+    const effY = 1350;
+
+    let effStr = stats.subValue || "";
+    let effVal = effStr;
+    let effUnit = "";
+    if (effStr.includes(" bpm")) {
+        effVal = effStr.replace(" bpm", "");
+        effUnit = "bpm";
+    }
+
+    ctx.font = "800 180px 'Plus Jakarta Sans'";
+    const effWidth = ctx.measureText(effVal).width;
+
+    ctx.font = "700 80px 'Plus Jakarta Sans'";
+    const effUnitWidth = ctx.measureText(effUnit).width;
+
+    const effTotalWidth = effWidth + (effUnit ? gap + effUnitWidth : 0);
+    let effStartX = 540 - (effTotalWidth / 2);
+
+    ctx.textAlign = "left";
+    ctx.font = "800 180px 'Plus Jakarta Sans'";
+    ctx.fillStyle = transColor;
+    ctx.fillText(effVal, effStartX, effY);
+
+    if (effUnit) {
+        ctx.font = "700 80px 'Plus Jakarta Sans'";
+        ctx.fillStyle = solidColor;
+        ctx.fillText(effUnit, effStartX + effWidth + gap, effY);
+    }
+
+    ctx.textAlign = "center";
+    ctx.font = "600 45px 'Plus Jakarta Sans'";
+    ctx.fillStyle = labelColor;
+    ctx.fillText(stats.subLabel || "MAX HEARTRATE", 540, effY + 70);
 }
 
-// Helper para dibujar un rectángulo con bordes redondeados
-function roundRect(ctx, x, y, width, height, radius) {
-    ctx.beginPath();
-    ctx.moveTo(x + radius, y);
-    ctx.lineTo(x + width - radius, y);
-    ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
-    ctx.lineTo(x + width, y + height - radius);
-    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-    ctx.lineTo(x + radius, y + height);
-    ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
-    ctx.lineTo(x, y + radius);
-    ctx.quadraticCurveTo(x, y, x + radius, y);
-    ctx.closePath();
-}
+
 
 // Helper para dibujar la burbuja iOS perfectamente (geométricamente solida)
 function drawIOSBubble(ctx, x, y, width, height) {
@@ -248,7 +309,6 @@ function drawDMBubble(ctx, stats) {
 
     // Dimensiones de la burbuja (Ajustadas según las proporciones reales de iMessage)
     const paddingX = 45;  // Padding horizontal
-    const paddingY = 32;  // Padding vertical
     const bubbleWidth = textWidth + (paddingX * 2);
     const bubbleHeight = 135; // Altura total
 
@@ -274,7 +334,13 @@ function drawDMBubble(ctx, stats) {
     ctx.fillText(captionText, bubbleX + bubbleWidth - 5, centerY + (bubbleHeight / 2) + 40);
 }
 
-function drawStatsTemplate(ctx, stats) {
+function drawStatsTemplate(ctx, stats, textColor = 'white') {
+    const alphaValue = 0.45;
+    const baseColor = textColor === 'black' ? '0, 0, 0' : '255, 255, 255';
+    const solidColor = `rgb(${baseColor})`;
+    const transColor = `rgba(${baseColor}, ${alphaValue})`;
+    const labelColor = textColor === 'black' ? `rgba(0, 0, 0, 0.8)` : 'white';
+
     // --- 1. Distancia (Mitad superior) ---
     const distanceY = 700;
 
@@ -306,18 +372,18 @@ function drawStatsTemplate(ctx, stats) {
     ctx.textAlign = "left";
 
     ctx.font = fontDist;
-    ctx.fillStyle = "rgba(255, 255, 255, 0.45)"; // Blanco con más transparencia
+    ctx.fillStyle = transColor;
     ctx.fillText(distText, startX, distanceY);
 
     // Dibujamos "km" justo al lado
     ctx.font = fontUnit;
-    ctx.fillStyle = "white"; // Sólido
+    ctx.fillStyle = solidColor;
     ctx.fillText(unitText, startX + distWidth + gap, distanceY);
 
     // Etiqueta "Distance" debajo y centrada
     ctx.textAlign = "center";
     ctx.font = fontLabel;
-    ctx.fillStyle = "white"; // Sólido
+    ctx.fillStyle = labelColor;
     ctx.fillText(labelText, 540, distanceY + 70);
 
     // --- 2. Pace Máximo (Centro) ---
@@ -344,24 +410,23 @@ function drawStatsTemplate(ctx, stats) {
     // Dibujamos el valor de max pace
     ctx.textAlign = "left";
     ctx.font = fontPace;
-    ctx.fillStyle = "rgba(255, 255, 255, 0.8)"; // 20% transparencia (Blanco está bien aquí para contraste)
+    ctx.fillStyle = textColor === 'black' ? "rgba(0, 0, 0, 0.7)" : "rgba(255, 255, 255, 0.8)";
     ctx.fillText(paceText, startPaceX, paceY);
 
     // Dibujamos "km/min" en el mismo bloque horizontal
     ctx.font = fontPaceUnit;
-    ctx.fillStyle = "white"; // Sólido
+    ctx.fillStyle = solidColor;
     ctx.fillText(paceUnit, startPaceX + paceWidth + paceGap, paceY);
 
     // Dibujar la etiqueta "MAX PACE" abajo, alineada al centro
     ctx.textAlign = "center";
     ctx.font = fontPaceLabel;
-    ctx.fillStyle = "white";
-    // Lo ubicamos debajo de los números
+    ctx.fillStyle = labelColor;
     ctx.fillText(paceLabel, 540, paceY + 60);
 }
 
 export function exportCanvas(canvasId) {
-    const canvas = document.getElementById(canvasId);
+    const canvas = document.getElementById(canvasId) as HTMLCanvasElement;
     const link = document.createElement('a');
     link.download = `scora_${Date.now()}.png`;
     link.href = canvas.toDataURL("image/png");

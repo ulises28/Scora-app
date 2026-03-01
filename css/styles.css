@@ -116,6 +116,10 @@ body {
 }
 
 /* ====== PANTALLA A: FEED ====== */
+.intro-section {
+    margin-bottom: 32px;
+}
+
 .intro-section h1 {
     font-weight: 300;
     font-size: 32px;
