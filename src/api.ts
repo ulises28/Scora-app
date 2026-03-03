@@ -1,6 +1,7 @@
 // IMPORTAMOS LOS SECRETOS DEL ARCHIVO DE CONFIGURACIÓN
 // (Este archivo config.js no se subirá a GitHub)
 import { STRAVA_CONFIG } from './config.js';
+import { calculateMaxPace } from './utils/mathUtils';
 
 // Usamos las variables importadas
 const CLIENT_ID = STRAVA_CONFIG.CLIENT_ID;
@@ -9,7 +10,8 @@ const REDIRECT_URI = STRAVA_CONFIG.REDIRECT_URI;
 
 // 1. Construye el link al que enviaremos al usuario
 export function getStravaLoginUrl() {
-    return `https://www.strava.com/oauth/authorize?client_id=${CLIENT_ID}&response_type=code&redirect_uri=${REDIRECT_URI}&approval_prompt=force&scope=activity:read_all`;
+    // Changed approval_prompt=force to auto so it doesn't ask for permission every time
+    return `https://www.strava.com/oauth/authorize?client_id=${CLIENT_ID}&response_type=code&redirect_uri=${REDIRECT_URI}&approval_prompt=auto&scope=activity:read_all`;
 }
 
 // 2. Intercambia el "code" de la URL por el Token de acceso (Lo que hacías en Postman)
@@ -26,7 +28,24 @@ export async function exchangeToken(code) {
         })
     });
     const data = await response.json();
-    return data.access_token; // Este es el token final que necesitamos
+    return data; // Return the full object (access_token, refresh_token, expires_at)
+}
+
+// 2.5 Actualiza el token usando el refresh_token cuando el access_token expire
+export async function refreshStravaToken(refreshToken) {
+    const url = 'https://www.strava.com/oauth/token';
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            client_id: CLIENT_ID,
+            client_secret: CLIENT_SECRET,
+            grant_type: 'refresh_token',
+            refresh_token: refreshToken
+        })
+    });
+    const data = await response.json();
+    return data; // Return the new token payload
 }
 
 // 3. Obtener los entrenamientos usando el Token final
@@ -97,25 +116,5 @@ export function formatActivityStats(activity) {
         stats.subLabel = "MAX HEARTRATE";
     }
     return stats;
-}
-
-/**
- * Calcula el Ritmo Máximo (Pace) asumiendo que Strava 
- * entrega la velocidad máxima en MPH (Millas por hora).
- */
-export function calculateMaxPace(maxSpeedMph) {
-    if (!maxSpeedMph || maxSpeedMph <= 0) return "0:00";
-
-    // 1. Convertir Millas/h a Km/h (Factor: 1.60934)
-    const speedKmH = maxSpeedMph * 1.60934;
-
-    // 2. Calcular minutos por kilómetro (Pace decimal)
-    const paceDecimal = 60 / speedKmH;
-
-    // 3. Desglosar en minutos y segundos
-    const mins = Math.floor(paceDecimal);
-    const secs = Math.round((paceDecimal - mins) * 60);
-
-    // Retorna formato "M:SS" (Ej: "2:39")
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    return stats;
 }
