@@ -1,4 +1,4 @@
-import { getStravaLoginUrl, exchangeToken, fetchStravaActivities, formatActivityStats } from './api.js';
+import { getStravaLoginUrl, exchangeToken, refreshStravaToken, fetchStravaActivities, formatActivityStats } from './api.js';
 import { drawTemplate, exportCanvas } from './canvas.js';
 
 // --- ELEMENTOS DE LA INTERFAZ ---
@@ -30,19 +30,34 @@ function removeLoader() {
 }
 
 /**
+ * Helper para guardar/actualizar los tokens en localStorage
+ */
+function saveStravaAuth(tokenData) {
+    // tokenData expected to have: access_token, refresh_token, expires_at
+    if (tokenData && tokenData.access_token) {
+        localStorage.setItem('stravaAuth', JSON.stringify({
+            access_token: tokenData.access_token,
+            refresh_token: tokenData.refresh_token,
+            expires_at: tokenData.expires_at
+        }));
+    }
+}
+
+/**
  * Inicialización de la aplicación
  */
 async function initApp() {
-    // 1. Quitamos la pista de bienvenida tras un breve delay para que se aprecie
     setTimeout(removeLoader, 2000);
 
     const urlParams = new URLSearchParams(window.location.search);
     const authCode = urlParams.get('code');
 
-    const cachedData = localStorage.getItem('stravaActivities');
+    const authDataStr = localStorage.getItem('stravaAuth');
+    let authData = authDataStr ? JSON.parse(authDataStr) : null;
+    const cachedActivities = localStorage.getItem('stravaActivities');
 
-    // 2. ESCENARIO A: El usuario no está conectado y no hay caché
-    if (!authCode && !cachedData) {
+    // Mismo proceso: si no hay código nuevo, ni tokens guardados, ni datos en caché, mostrar Login
+    if (!authCode && !authData && !cachedActivities) {
         showScreen('screen-feed');
         authSection.classList.remove('hidden');
         activitySection.classList.add('hidden');
@@ -53,7 +68,7 @@ async function initApp() {
         return;
     }
 
-    // 3. ESCENARIO B: Hay caché o el usuario regresó de Strava con éxito
+    // Hay código, tokens o caché. Mostrar la pantalla principal.
     showScreen('screen-feed');
     authSection.classList.add('hidden');
     activitySection.classList.remove('hidden');
@@ -61,13 +76,37 @@ async function initApp() {
 
     try {
         let activitiesData;
+        let accessToken = null;
+
         if (authCode) {
-            const accessToken = await exchangeToken(authCode);
-            activitiesData = await fetchStravaActivities(accessToken);
+            // El usuario acaba de ser redirigido desde Strava
+            const tokenResponse = await exchangeToken(authCode);
+            saveStravaAuth(tokenResponse);
+            accessToken = tokenResponse.access_token;
+
+            // Limpiar la URL
             window.history.replaceState({}, document.title, window.location.pathname);
+        } else if (authData) {
+            // Ya teníamos tokens. Verificamos si expiraron
+            const nowSeconds = Math.floor(Date.now() / 1000);
+            if (authData.expires_at && nowSeconds > authData.expires_at) {
+                console.log("Token expirado. Refrescando...");
+                if (authData.refresh_token) {
+                    const newTokenResponse = await refreshStravaToken(authData.refresh_token);
+                    saveStravaAuth(newTokenResponse);
+                    accessToken = newTokenResponse.access_token;
+                }
+            } else {
+                console.log("Token aún válido.");
+                accessToken = authData.access_token;
+            }
+        }
+
+        if (accessToken) {
+            activitiesData = await fetchStravaActivities(accessToken);
         } else {
-            // Ya comprobamos que hay cachedData arriba
-            activitiesData = JSON.parse(cachedData);
+            // Fallback a caché si fallaron los tokens pero tenemos actividades
+            activitiesData = cachedActivities ? JSON.parse(cachedActivities) : [];
         }
 
         renderActivityFeed(activitiesData);
