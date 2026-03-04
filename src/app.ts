@@ -44,6 +44,27 @@ function saveStravaAuth(tokenData) {
 }
 
 /**
+ * Abre el flujo de OAuth de Strava en un Popup para evitar ensuciar el historial
+ */
+function openStravaAuth() {
+    const width = 600;
+    const height = 700;
+    const left = window.innerWidth / 2 - width / 2;
+    const top = window.innerHeight / 2 - height / 2;
+
+    const popup = window.open(
+        getStravaLoginUrl(),
+        'StravaAuth',
+        `width=${width},height=${height},top=${top},left=${left},toolbar=no,menubar=no,scrollbars=yes`
+    );
+
+    // Si los popups están bloqueados, usamos location.replace (no ensucia tanto el historial como href)
+    if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+        window.location.replace(getStravaLoginUrl());
+    }
+}
+
+/**
  * Inicialización de la aplicación
  */
 async function initApp() {
@@ -51,6 +72,13 @@ async function initApp() {
 
     const urlParams = new URLSearchParams(window.location.search);
     const authCode = urlParams.get('code');
+
+    // 1. Si estamos dentro del popup, mandamos el código al padre y cerramos
+    if (authCode && window.opener) {
+        window.opener.postMessage({ type: 'strava_auth_success', code: authCode }, window.location.origin);
+        window.close();
+        return; // Detener ejecución en el popup
+    }
 
     const authDataStr = localStorage.getItem('stravaAuth');
     let authData = authDataStr ? JSON.parse(authDataStr) : null;
@@ -63,12 +91,13 @@ async function initApp() {
         activitySection.classList.add('hidden');
 
         btnLogin.addEventListener('click', () => {
-            window.location.href = getStravaLoginUrl();
+            openStravaAuth();
         });
         return;
     }
 
     // Hay código, tokens o caché. Mostrar la pantalla principal.
+    window.history.replaceState({ screen: 'screen-feed' }, document.title, window.location.pathname);
     showScreen('screen-feed');
     authSection.classList.add('hidden');
     activitySection.classList.remove('hidden');
@@ -84,8 +113,8 @@ async function initApp() {
             saveStravaAuth(tokenResponse);
             accessToken = tokenResponse.access_token;
 
-            // Limpiar la URL
-            window.history.replaceState({}, document.title, window.location.pathname);
+            // Limpiar la URL y asegurar el estado
+            window.history.replaceState({ screen: 'screen-feed' }, document.title, window.location.pathname);
         } else if (authData) {
             // Ya teníamos tokens. Verificamos si expiraron
             const nowSeconds = Math.floor(Date.now() / 1000);
@@ -112,8 +141,18 @@ async function initApp() {
         renderActivityFeed(activitiesData);
 
     } catch (error) {
-        activityListEl.innerHTML = `<p class='error-msg'>No pudimos conectar con la pista. Intenta de nuevo.</p>`;
         console.error("Error en Scora:", error);
+
+        if (error instanceof Error && error.message === 'Unauthorized') {
+            localStorage.removeItem('stravaAuth');
+            localStorage.removeItem('stravaActivities');
+            showScreen('screen-feed');
+            authSection.classList.remove('hidden');
+            activitySection.classList.add('hidden');
+            activityListEl.innerHTML = "";
+        } else {
+            activityListEl.innerHTML = `<p class='error-msg'>No pudimos conectar con la pista. Intenta de nuevo.</p>`;
+        }
     }
 }
 
@@ -158,6 +197,7 @@ function showScreen(screenId) {
  * Abre el editor con la actividad seleccionada (Pantalla B)
  */
 function openEditor(stats) {
+    window.history.pushState({ screen: 'screen-editor', stats }, '', '#editor');
     showScreen('screen-editor');
     document.getElementById('selected-activity-name').innerText = stats.title;
 
@@ -176,7 +216,7 @@ function openEditor(stats) {
 
 // --- EVENT LISTENERS GLOBALES ---
 
-btnBack.addEventListener('click', () => showScreen('screen-feed'));
+btnBack.addEventListener('click', () => window.history.back());
 btnDownload.addEventListener('click', () => exportCanvas('storyCanvas'));
 
 if (btnSync) {
@@ -187,8 +227,8 @@ if (btnSync) {
         // Mostrar estado de carga visualmente
         activityListEl.innerHTML = "<p class='status-msg'>Conectando con Strava...</p>";
 
-        // Redirigir a Strava para un nuevo token
-        window.location.href = getStravaLoginUrl();
+        // Abrir popup de Strava
+        openStravaAuth();
     });
 }
 
@@ -215,6 +255,54 @@ if (textColorSelect) {
         }
     });
 }
+
+// Manejar navegación hacia atrás (botón del navegador o gesto de Android)
+window.addEventListener('popstate', (event) => {
+    if (event.state && event.state.screen) {
+        showScreen(event.state.screen);
+
+        if (event.state.screen === 'screen-editor' && event.state.stats) {
+            currentStats = event.state.stats;
+            const nameEl = document.getElementById('selected-activity-name');
+            if (nameEl) nameEl.innerText = currentStats.title;
+            drawTemplate('storyCanvas', currentStats, currentTemplate, currentTextColor);
+        }
+    } else {
+        // Fallback
+        showScreen('screen-feed');
+    }
+});
+
+// Escuchar mensajes del popup de autenticación
+window.addEventListener('message', async (event) => {
+    // Seguridad: verificar el origen
+    if (event.origin !== window.location.origin) return;
+
+    if (event.data && event.data.type === 'strava_auth_success') {
+        const newCode = event.data.code;
+
+        // Proceder con la sincronización igual que en initApp
+        showScreen('screen-feed');
+        authSection.classList.add('hidden');
+        activitySection.classList.remove('hidden');
+        activityListEl.innerHTML = "<p class='status-msg'>Sincronizando tus rutas...</p>";
+
+        try {
+            const tokenResponse = await exchangeToken(newCode);
+            saveStravaAuth(tokenResponse);
+            const accessToken = tokenResponse.access_token;
+
+            const activitiesData = await fetchStravaActivities(accessToken);
+            renderActivityFeed(activitiesData);
+
+            // Asegurar que estamos en el feed en el historial
+            window.history.replaceState({ screen: 'screen-feed' }, document.title, window.location.pathname);
+        } catch (error) {
+            activityListEl.innerHTML = `<p class='error-msg'>No pudimos conectar con la pista. Intenta de nuevo.</p>`;
+            console.error("Error en Scora Auth:", error);
+        }
+    }
+});
 
 // Arrancar Scora
 document.addEventListener('DOMContentLoaded', initApp);

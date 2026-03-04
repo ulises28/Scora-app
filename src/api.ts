@@ -70,12 +70,21 @@ export async function fetchStravaActivities(token) {
         headers: { 'Authorization': `Bearer ${token}` }
     });
 
+    if (!response.ok) {
+        if (response.status === 401) {
+            throw new Error('Unauthorized');
+        }
+        throw new Error(`Strava API error: ${response.status}`);
+    }
+
     const data = await response.json();
 
     // Guardar en localStorage para la próxima vez
     if (Array.isArray(data)) {
         console.log("=== STRAVA RAW PAYLOAD ===");
-        console.log(JSON.stringify(data[0], null, 2)); // Mostramos solo el primer Run completo para no trabar la consola
+        if (data.length > 0) {
+            console.log(JSON.stringify(data[0], null, 2)); // Mostramos solo el primer Run completo para no trabar la consola
+        }
         localStorage.setItem('stravaActivities', JSON.stringify(data));
     }
 
