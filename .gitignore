@@ -44,6 +44,7 @@ dist-ssr/
 
 # Scora specific
 src/config.js
+src/config.ts
 
 # Playwright
 /test-results/

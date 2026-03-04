@@ -5,10 +5,11 @@
 
 export const STRAVA_CONFIG = {
     // Obtén estos datos en: https://www.strava.com/settings/api
-    CLIENT_ID: 'TU_CLIENT_ID_AQUI',
-    CLIENT_SECRET: 'TU_CLIENT_SECRET_AQUI',
+    // Vite usará las variables de entorno si existen (ej. en GitHub Actions), si no, usa el texto por defecto.
+    CLIENT_ID: import.meta.env.VITE_STRAVA_CLIENT_ID || 'TU_CLIENT_ID_AQUI',
+    CLIENT_SECRET: import.meta.env.VITE_STRAVA_CLIENT_SECRET || 'TU_CLIENT_SECRET_AQUI',
 
-    // Esta URL debe coincidir con la URL de recarga donde corre tu app local
-    // (Por ejemplo, http://127.0.0.1:5500 si usas Live Server en VS Code)
-    REDIRECT_URI: 'http://127.0.0.1:5500'
+    // Esta URL se generará dinámicamente según dónde estés ejecutando la app
+    // (Ej. http://localhost:5500, http://192.168.51.12:5500, o https://tu-app.vercel.app)
+    REDIRECT_URI: typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5500'
 };
