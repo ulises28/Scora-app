@@ -1,7 +1,7 @@
 // IMPORTAMOS LOS SECRETOS DEL ARCHIVO DE CONFIGURACIÓN
 // (Este archivo config.js no se subirá a GitHub)
-import { STRAVA_CONFIG } from './config.js';
-import { calculateMaxPace } from './utils/mathUtils';
+import { STRAVA_CONFIG } from '../config.js';
+import { calculateMaxPace } from '../utils/mathUtils';
 
 // Usamos las variables importadas
 const CLIENT_ID = STRAVA_CONFIG.CLIENT_ID;
