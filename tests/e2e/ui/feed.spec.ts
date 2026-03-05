@@ -1,40 +1,32 @@
-import { test, expect } from '@playwright/test';
-import { mockActivities } from '../../fixtures/stravaData';
+import { test } from '@playwright/test';
+import { FeedPage } from '../pages/FeedPage';
+import { MockStravaClient } from '../utils/MockStravaClient';
 
-test.describe('Scora App: UI - Activity Feed', () => {
+test.describe('Scora App UI: Feed (POM)', () => {
 
     test.beforeEach(async ({ page }) => {
-        await page.goto('http://localhost:5500');
-        await page.evaluate((activities) => {
-            localStorage.setItem('stravaActivities', JSON.stringify(activities));
-        }, mockActivities);
-        await page.reload();
+        const feedPage = new FeedPage(page);
+        const api = new MockStravaClient(page);
 
-        await page.evaluate(() => {
-            const overlay = document.getElementById('loader-overlay');
-            if (overlay) {
-                overlay.style.pointerEvents = 'none';
-                overlay.style.opacity = '0';
-            }
-        });
+        // 1. Inject fake Auth tokens into browser data
+        await feedPage.injectMockAuth();
+
+        // 2. Mock network route to intercept Strava API calls and inject fixture data
+        await api.mockSuccessfulActivities();
+
+        // 3. Load the page and hide the spinner
+        await feedPage.goto();
+        await feedPage.waitForLoaderToHide();
     });
 
     test('Test 1: Feed successfully renders mocked incoming data', async ({ page }) => {
-        // Verify we passed the login screen
-        await expect(page.locator('#auth-section')).toHaveClass(/hidden/);
+        const feedPage = new FeedPage(page);
 
-        // Verify the feed is active
-        const feedScreen = page.locator('#screen-feed');
-        await expect(feedScreen).toHaveClass(/active/);
+        // Verify our mock run "Carrera por la mañana" was rendered correctly (11.30 km)
+        await feedPage.verifyActivityRendered('Carrera por la mañana', '11.30 km');
 
-        // Verify our mock run "Carrera por la mañana" was rendered correctly
-        const runCard = page.locator('.activity-card', { hasText: 'Carrera por la mañana' });
-        await expect(runCard).toBeVisible();
-        await expect(runCard.locator('.card-meta')).toContainText('11.30 km');
-
-        // Verify our mock workout "Morning HIIT Session" was rendered correctly
-        const workoutCard = page.locator('.activity-card', { hasText: 'Morning HIIT Session' });
-        await expect(workoutCard).toBeVisible();
-        await expect(workoutCard.locator('.card-meta')).toContainText('45m');
+        // Verify our mock workout "Morning HIIT Session" was rendered correctly (45m)
+        await feedPage.verifyActivityRendered('Morning HIIT Session', '45m');
     });
+
 });
