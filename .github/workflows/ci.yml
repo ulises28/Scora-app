@@ -7,8 +7,8 @@ on:
     branches: [ "main" ]
 
 jobs:
-  test:
-    name: Run Unit and E2E Tests
+  unit-tests:
+    name: Core Logic Tests (Vitest)
     runs-on: ubuntu-latest
     
     steps:
@@ -27,13 +27,34 @@ jobs:
       - name: Set up configuration file
         run: cp src/config.example.ts src/config.ts
 
-      - name: Run Unit Tests (Vitest)
+      - name: Run Unit Tests
         run: npm test -- run
+
+  e2e-tests:
+    name: Browser Tests (Playwright)
+    needs: unit-tests # CRITICAL: Only run if unit tests pass
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
         
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          
+      - name: Install Dependencies
+        run: npm ci
+        
+      - name: Set up configuration file
+        run: cp src/config.example.ts src/config.ts
+
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
         
-      - name: Run E2E Tests (Playwright)
+      - name: Run E2E Tests
         run: npm run test:e2e
         env:
           VITE_STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}

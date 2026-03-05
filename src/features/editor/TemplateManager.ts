@@ -11,7 +11,7 @@ export function initTemplateManager(onChange: OnChangeCallback) {
             const target = e.target as HTMLElement;
             target.classList.add('active');
 
-            currentTemplate = target.innerText.trim().toLowerCase();
+            currentTemplate = (target.textContent || '').trim().toLowerCase();
             onChange(currentTemplate, currentTextColor);
         });
     });
@@ -31,7 +31,7 @@ export function initTemplateManager(onChange: OnChangeCallback) {
         setTemplate(template: string) {
             currentTemplate = template;
             document.querySelectorAll('.template-item').forEach(item => {
-                if ((item as HTMLElement).innerText.trim().toLowerCase() === currentTemplate) {
+                if (((item as HTMLElement).textContent || '').trim().toLowerCase() === currentTemplate) {
                     item.classList.add('active');
                 } else {
                     item.classList.remove('active');
