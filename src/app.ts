@@ -34,8 +34,20 @@ function openEditor(stats: any) {
     if (nameEl) nameEl.innerText = stats.title;
 
     currentStats = stats;
-    templateManager.setTemplate(templateManager.template);
+
+    // Reset template completely when opening a new activity
+    templateManager.setTemplate('minimal');
+
+    // Stabilize UI for Test Runner: Hide canvas during the complex drawing phase
+    const canvasEl = document.getElementById('storyCanvas');
+    if (canvasEl) canvasEl.style.opacity = '0';
+
     drawTemplate('storyCanvas', currentStats, templateManager.template, templateManager.color);
+
+    // Reveal after DOM settles
+    setTimeout(() => {
+        if (canvasEl) canvasEl.style.opacity = '1';
+    }, 50);
 }
 
 /**

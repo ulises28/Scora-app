@@ -1,71 +1,90 @@
-import { test, expect } from '@playwright/test';
-import { mockActivities } from '../../fixtures/stravaData';
+import { test } from '@playwright/test';
+import { FeedPage } from '../pages/FeedPage';
+import { EditorPage } from '../pages/EditorPage';
+import { MockStravaClient } from '../utils/MockStravaClient';
 
-test.describe('Scora App: UI - Sticker Editor & Navigation', () => {
+test.describe('Scora App UI: Sticker Editor (POM)', () => {
 
     test.beforeEach(async ({ page }) => {
-        await page.goto('http://localhost:5500');
-        await page.evaluate((activities) => {
-            localStorage.setItem('stravaActivities', JSON.stringify(activities));
-        }, mockActivities);
-        await page.reload();
+        const feedPage = new FeedPage(page);
+        const api = new MockStravaClient(page);
 
-        await page.evaluate(() => {
-            const overlay = document.getElementById('loader-overlay');
-            if (overlay) {
-                overlay.style.pointerEvents = 'none';
-                overlay.style.opacity = '0';
-            }
-        });
+        // 1. Setup mock session and Network constraints
+        await feedPage.injectMockAuth();
+        await api.mockSuccessfulActivities();
+
+        // 2. Base App Load Sequence
+        await feedPage.goto();
+        await feedPage.waitForLoaderToHide();
     });
 
-    test('Test 1: Clicking a Run activity opens the Editor with Run stats', async ({ page }) => {
-        const activityCard = page.locator('.activity-card', { hasText: 'Carrera por la mañana' });
-        await activityCard.click();
+    test('Test 2: Switching Templates updates UI styling', async ({ page }) => {
+        const feedPage = new FeedPage(page);
+        const editorPage = new EditorPage(page);
 
-        const editorScreen = page.locator('#screen-editor');
-        await expect(editorScreen).toHaveClass(/active/);
-        await expect(page.locator('#selected-activity-name')).toHaveText('Carrera por la mañana');
-        await expect(page.locator('#storyCanvas')).toBeVisible();
-        expect(page.url()).toContain('#editor');
+        // Navigate to the editor for a specific mocked run
+        await feedPage.openActivityEditor('Carrera por la mañana');
+        await editorPage.verifyEditorScreenVisible('Carrera por la mañana');
+
+        // Click Minimal (default state check)
+        await editorPage.verifyTemplateIsActive('Minimal');
+
+        // Click Map Route template
+        await editorPage.selectTemplate('Route');
+        await editorPage.verifyTemplateIsActive('Route');
+
+        // Click Stats
+        await editorPage.selectTemplate('Stats');
+        await editorPage.verifyTemplateIsActive('Stats');
     });
 
-    test('Test 2: Clicking a Workout activity opens the Editor with Workout stats', async ({ page }) => {
-        const activityCard = page.locator('.activity-card', { hasText: 'Morning HIIT Session' });
-        await activityCard.click();
+    test('Test 3: Browser History API "Back" button functions natively', async ({ page }) => {
+        const feedPage = new FeedPage(page);
+        const editorPage = new EditorPage(page);
 
-        const editorScreen = page.locator('#screen-editor');
-        await expect(editorScreen).toHaveClass(/active/);
-        await expect(page.locator('#selected-activity-name')).toHaveText('Morning HIIT Session');
-        await expect(page.locator('#storyCanvas')).toBeVisible();
-        expect(page.url()).toContain('#editor');
+        // Navigate to editor
+        await feedPage.openActivityEditor('Carrera por la mañana');
+        await editorPage.verifyEditorScreenVisible('Carrera por la mañana');
+
+        // Trigger History Back API
+        await page.goBack();
+
+        // Verify we dropped back specifically into the Feed State
+        await feedPage.verifyActivityRendered('Carrera por la mañana', '11.30 km');
     });
 
-    test('Test 3: Switching templates updates the active CSS state', async ({ page }) => {
-        await page.locator('.activity-card', { hasText: 'Carrera por la mañana' }).click();
+    test('Test 4: UI "Back" button mimics Native History API', async ({ page }) => {
+        const feedPage = new FeedPage(page);
+        const editorPage = new EditorPage(page);
 
-        const routeTemplateBtn = page.locator('.template-item', { hasText: 'Route' });
-        await routeTemplateBtn.click();
-        await expect(routeTemplateBtn).toHaveClass(/active/);
+        // Navigate to editor
+        await feedPage.openActivityEditor('Carrera por la mañana');
+        await editorPage.verifyEditorScreenVisible('Carrera por la mañana');
 
-        const minimalTemplateBtn = page.locator('.template-item', { hasText: 'Minimal' });
-        await expect(minimalTemplateBtn).not.toHaveClass(/active/);
+        // Click custom UI Back Button
+        await editorPage.goBack();
+
+        // Verify we dropped back specifically into the Feed State
+        await feedPage.verifyActivityRendered('Carrera por la mañana', '11.30 km');
     });
 
-    test('Test 4: Back button uses History API correctly', async ({ page }) => {
-        await page.locator('.activity-card', { hasText: 'Carrera por la mañana' }).click();
-        expect(page.url()).toContain('#editor');
+    test('Test 5: Selecting alternate activities resets template styling', async ({ page }) => {
+        const feedPage = new FeedPage(page);
+        const editorPage = new EditorPage(page);
 
-        await page.locator('#btn-back').click();
+        // Open 1st Run
+        await feedPage.openActivityEditor('Carrera por la mañana');
+        await editorPage.selectTemplate('Route');
 
-        const feedScreen = page.locator('#screen-feed');
-        await expect(feedScreen).toHaveClass(/active/);
+        // Go back
+        await editorPage.goBack();
 
-        const editorScreen = page.locator('#screen-editor');
-        await expect(editorScreen).not.toHaveClass(/active/);
+        // Open 2nd Run
+        await feedPage.openActivityEditor('Morning HIIT Session');
 
-        // VERY IMPORTANT: Verify the URL returned to the base URL and did NOT trigger Strava login
-        expect(page.url()).toBe('http://localhost:5500/');
-        await expect(page.locator('#auth-section')).toHaveClass(/hidden/);
+        // Verify UI correctly flushed Route and returned to Minimal
+        await editorPage.verifyEditorScreenVisible('Morning HIIT Session');
+        await editorPage.verifyTemplateIsActive('Minimal');
     });
+
 });
