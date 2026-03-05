@@ -14,19 +14,19 @@ export function getStravaLoginUrl() {
     return `https://www.strava.com/oauth/authorize?client_id=${CLIENT_ID}&response_type=code&redirect_uri=${REDIRECT_URI}&approval_prompt=auto&scope=activity:read_all`;
 }
 
-// 2. Intercambia el "code" de la URL por el Token de acceso (Lo que hacías en Postman)
+// 2. Intercambia el "code" de la URL por el Token de acceso usando el backend de Vercel
 export async function exchangeToken(code) {
-    const url = 'https://www.strava.com/oauth/token';
+    const url = '/api/strava-token'; // Llama a nuestra Serverless Function
     const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            client_id: CLIENT_ID,
-            client_secret: CLIENT_SECRET,
-            code: code,
-            grant_type: 'authorization_code'
-        })
+        body: JSON.stringify({ code }) // Solo enviamos el código! El secreto está protegido en el backend
     });
+
+    if (!response.ok) {
+        throw new Error(`Token exchange failed: ${response.status}`);
+    }
+
     const data = await response.json();
     return data; // Return the full object (access_token, refresh_token, expires_at)
 }
