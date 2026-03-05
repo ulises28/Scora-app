@@ -1,29 +1,67 @@
-# Scora - Tus Rutas, Hechas Arte
-
-Scora es una aplicación web diseñada para transformar tus actividades de Strava en stickers e imágenes estéticas listas para ser compartidas en redes sociales como Instagram Stories, TikTok y más. 
-
-Conecta tu cuenta de Strava, selecciona una actividad reciente y elige entre múltiples plantillas para mostrar tu distancia, ritmo máximo, ruta en el mapa y otros datos clave con un diseño premium y moderno.
+<div align="center">
+  <h1>Scora - Your Routes, Crafted into Art</h1>
+  <p>Transform your Strava activities into aesthetic stickers and premium images ready to be shared on Instagram Stories, TikTok, and more.</p>
+</div>
 
 ---
 
-## 🚀 Características Principales
+## 🚀 Overview
 
-- **Integración con Strava**: Importa automáticamente tus últimas sesiones de entrenamiento.
-- **Renderizado Dinámico**: Crea tarjetas y stickers basados en estilos visuales predefinidos.
-- **Diseños Premium**: Plantillas Minimal, Route, Data, Direct Message (DM) y Stats.
-- **Responsivo**: Interfaz ajustada tanto para dispositivos móviles como para visualización en escritorio.
-- **Exportación en Alta Calidad**: Descarga tu diseño directamente a tu dispositivo.
+**Scora** is a high-performance web application designed to help athletes and creators effortlessly convert their Strava activities into highly customizable visual content. By integrating directly with the Strava API, Scora fetches your latest activities and visually renders them using the HTML Canvas API—providing premium, responsive templates that highlight your distance, max pace, and map routes.
 
-## 🛠 Tecnologías Utilizadas
+## 🌟 Key Features
 
-- **Frontend Core**: HTML5, Vanilla CSS, JavaScript (ES6 Modules)
-- **Gráficos y Renderizado**: HTML Canvas API
-- **Mapas estáticos y Polilíneas**: Algoritmos personalizados para decodificar polilíneas de Strava
+- **Automated Strava Integration**: Instantly imports your latest workouts and activities through the Strava API.
+- **Dynamic & Customizable Rendering**: Generates high-quality cards and stickers using predefined visual templates (Minimal, Route, Data, Direct Message (DM), and Stats).
+- **Responsive & Premium Design**: Mobile-first UI optimized for seamless usage across devices, delivering a smooth user experience.
+- **High-Fidelity Exports**: One-click downloads directly to your device, maintaining crisp resolution.
 
-## ⚙️ Requisitos Previos
+## 🛠 Tech Stack
 
-Dado que esta aplicación consume la [API de Strava](https://developers.strava.com/), necesitas crear una API Application en tu perfil de Strava para obtener las credenciales necesarias.
+- **Frontend Core**: Vite, TypeScript, Vanilla CSS, HTML5.
+- **Graphics Engine**: HTML Canvas API.
+- **Geospatial Processing**: Custom Polio algorithms for accurate Strava map polyline decoding.
+- **Static Typing**: Full TypeScript coverage for a robust and maintainable codebase.
 
-## 📝 Licencia
+## 🧪 Enterprise-Level Test Architecture
 
-Este proyecto está bajo la Licencia MIT - mira el archivo [LICENSE](LICENSE) para más detalles.
+Quality and reliability are at the core of Scora. The project features a professional, domain-driven testing architecture designed for scalability and modern CI/CD integration, acting as a strong showcase of engineering best practices.
+
+### End-to-End (E2E) Testing with Playwright
+- **Domain-Driven Design**: The test suite employs a robust 3-layered architecture:
+  - **Page Object Model (POM)**: Ensures test maintainability and separates UI structure from testing logic.
+  - **API Client & Interceptors**: Dedicated API interception modules to mock and control Strava API responses seamlessly without hitting rate limits.
+  - **Fixtures & Utilities**: Reusable fixtures to speed up assertions, maintain isolated test states, and reduce code duplication.
+- **Parallel Execution**: Configured for fully parallel execution, minimizing feedback loops locally and in CI workflows.
+- **CI/CD Ready**: Automated GitHub Actions workflows (`playwright.yml`, `ci.yml`) run formatting, linting, and full E2E suites on every pull request.
+
+### Unit Testing with Vitest
+- **Fast & Reliable**: Leverages Vitest for lightning-fast unit and integration verification.
+- **Code Coverage**: Integrated coverage reporting powered by `@vitest/coverage-v8` to track project health and test completeness.
+
+## ⚙️ Getting Started
+
+### Prerequisites
+Since this app relies on the [Strava API](https://developers.strava.com/), you will need to create an API Application in your Strava profile to obtain the necessary credentials.
+
+### Installation
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/ulises28/Scora-app.git
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Run the development server:
+   ```bash
+   npm run dev
+   ```
+
+### Running Tests
+- **E2E Tests**: Run `npm run test:e2e` to trigger the Playwright suite.
+- **Unit Tests**: Run `npm run test` to execute Vitest.
+
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
