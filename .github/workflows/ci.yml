@@ -10,6 +10,7 @@ jobs:
   unit-tests:
     name: Core Logic Tests (Vitest)
     runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip-tests') }}
     
     steps:
       - name: Checkout Code
@@ -33,6 +34,10 @@ jobs:
   e2e-tests:
     name: Browser Tests (Playwright)
     needs: unit-tests # CRITICAL: Only run if unit tests pass
+    if: |
+      always() && 
+      (needs.unit-tests.result == 'success' || needs.unit-tests.result == 'skipped') &&
+      !contains(github.event.pull_request.labels.*.name, 'skip-tests')
     runs-on: ubuntu-latest
     
     steps:
