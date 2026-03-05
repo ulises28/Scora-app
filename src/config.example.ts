@@ -11,5 +11,5 @@ export const STRAVA_CONFIG = {
 
     // Esta URL se generará dinámicamente según dónde estés ejecutando la app
     // (Ej. http://localhost:5500, http://192.168.51.12:5500, o https://tu-app.vercel.app)
-    REDIRECT_URI: typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5500'
+    REDIRECT_URI: typeof window !== 'undefined' ? window.location.origin + window.location.pathname.replace(/\/$/, '') : 'http://localhost:5500'
 };
