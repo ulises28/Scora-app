@@ -8,8 +8,8 @@ export default async function handler(req, res) {
 
         // El cliente (tu frontend) solo necesita enviar el código de autorización
         // Nosotros empujamos el ID y Secret de forma segura desde el backend de Vercel
-        const CLIENT_ID = process.env.VITE_STRAVA_CLIENT_ID || process.env.STRAVA_CLIENT_ID;
-        const CLIENT_SECRET = process.env.VITE_STRAVA_CLIENT_SECRET || process.env.STRAVA_CLIENT_SECRET;
+        const CLIENT_ID = process.env.Client_ID || process.env.VITE_STRAVA_CLIENT_ID || process.env.STRAVA_CLIENT_ID;
+        const CLIENT_SECRET = process.env.Client_Secret || process.env.VITE_STRAVA_CLIENT_SECRET || process.env.STRAVA_CLIENT_SECRET;
 
         const stravaResponse = await fetch('https://www.strava.com/oauth/token', {
             method: 'POST',
