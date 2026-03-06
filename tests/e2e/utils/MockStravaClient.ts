@@ -10,13 +10,19 @@ export class MockStravaClient {
 
     constructor(page: Page) {
         this.page = page;
+
+        // Universally mock the new deauthorization endpoint so tests never throw 404s
+        // when the auto-logout mechanism triggers in the background.
+        this.page.route('**/api/strava-deauth', async route => {
+            await route.fulfill({ status: 200, body: JSON.stringify({ success: true }) });
+        });
     }
 
     /**
      * Mocks a successful token exchange matching the callback code.
      */
     async mockTokenExchange(expectedCode: string) {
-        await this.page.route('https://www.strava.com/oauth/token', async route => {
+        await this.page.route('**/api/strava-token', async route => {
             const postData = route.request().postDataJSON();
             if (postData && postData.code === expectedCode) {
                 await route.fulfill({
