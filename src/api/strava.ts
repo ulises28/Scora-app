@@ -33,18 +33,18 @@ export async function exchangeToken(code) {
 
 // 2.5 Actualiza el token usando el refresh_token cuando el access_token expire
 export async function refreshStravaToken(refreshToken) {
-    const url = 'https://www.strava.com/oauth/token';
+    const url = '/api/strava-refresh';
     const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            client_id: CLIENT_ID,
-            client_secret: CLIENT_SECRET,
-            grant_type: 'refresh_token',
             refresh_token: refreshToken
         })
     });
     const data = await response.json();
+    if (!response.ok) {
+        throw new Error(`Token refresh failed: ${data.message || response.statusText}`);
+    }
     return data; // Return the new token payload
 }
 
