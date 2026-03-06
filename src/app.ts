@@ -144,16 +144,32 @@ function updateQueueUI(data: { position: number; estimatedWait: number } | null)
  * goes straight to OAuth (slot free) or shows the waiting room.
  */
 async function handleLoginClick() {
-    const { position, sessionId, estimatedWait } = await joinQueue();
+    // Show loading state immediately so the click feels instant
+    if (btnLogin) {
+        btnLogin.textContent = 'Conectando...';
+        (btnLogin as HTMLButtonElement).disabled = true;
+        btnLogin.style.cursor = 'wait';
+    }
 
-    if (position === 0) {
-        // Slot is free — proceed directly to OAuth
-        openStravaAuth(sessionId);
-    } else {
-        // Show waiting room and start polling
-        showScreen('screen-queue');
-        updateQueueUI({ position, estimatedWait });
-        startQueuePolling(sessionId);
+    try {
+        const { position, sessionId, estimatedWait } = await joinQueue();
+
+        if (position === 0) {
+            // Slot is free — proceed directly to OAuth
+            openStravaAuth(sessionId);
+        } else {
+            // Show waiting room and start polling
+            showScreen('screen-queue');
+            updateQueueUI({ position, estimatedWait });
+            startQueuePolling(sessionId);
+        }
+    } finally {
+        // Reset button state (in case OAuth popup was blocked or user returns)
+        if (btnLogin) {
+            btnLogin.textContent = 'Conectar con Strava';
+            (btnLogin as HTMLButtonElement).disabled = false;
+            btnLogin.style.cursor = '';
+        }
     }
 }
 

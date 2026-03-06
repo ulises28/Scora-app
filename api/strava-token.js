@@ -1,8 +1,7 @@
 import { Redis } from '@upstash/redis';
 
-const redis = Redis.fromEnv();
-
 const LOCK_KEY = 'strava:slot:lock';
+const REDIS_CONFIGURED = !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -13,9 +12,12 @@ export default async function handler(req, res) {
         const { code, sessionId } = req.body;
 
         // ✅ Queue gate: only the session holding the lock may exchange a token.
-        // Graceful fallback: if sessionId is 'fallback' (Redis was down at join time), skip the check.
-        if (sessionId && sessionId !== 'fallback') {
+        if (REDIS_CONFIGURED && sessionId && sessionId !== 'fallback') {
             try {
+                const redis = new Redis({
+                    url: process.env.UPSTASH_REDIS_REST_URL,
+                    token: process.env.UPSTASH_REDIS_REST_TOKEN
+                });
                 const lockHolder = await redis.get(LOCK_KEY);
                 if (lockHolder !== sessionId) {
                     return res.status(503).json({
@@ -24,7 +26,6 @@ export default async function handler(req, res) {
                     });
                 }
             } catch (kvError) {
-                // Redis unavailable — allow through to prevent hard block
                 console.warn('[Queue] Redis check failed, allowing through:', kvError.message);
             }
         }

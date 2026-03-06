@@ -1,9 +1,9 @@
 import { Redis } from '@upstash/redis';
 
-const redis = Redis.fromEnv();
-
 const LOCK_KEY = 'strava:slot:lock';
 const QUEUE_KEY = 'strava:slot:queue';
+
+const REDIS_CONFIGURED = !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
 
 export default async function handler(req, res) {
     if (req.method !== 'GET') {
@@ -15,6 +15,16 @@ export default async function handler(req, res) {
     if (!sessionId) {
         return res.status(400).json({ error: 'sessionId is required' });
     }
+
+    // ⚡ Fast path: if Redis not configured, always say "go ahead"
+    if (!REDIS_CONFIGURED) {
+        return res.status(200).json({ sessionId, position: 0, estimatedWait: 0 });
+    }
+
+    const redis = new Redis({
+        url: process.env.UPSTASH_REDIS_REST_URL,
+        token: process.env.UPSTASH_REDIS_REST_TOKEN
+    });
 
     try {
         // Check if the lock holder's slot is now free AND this session is next
