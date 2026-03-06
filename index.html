@@ -100,6 +100,27 @@
                 </aside>
             </div>
         </main>
+
+        <main id="screen-queue" class="screen">
+            <section class="queue-container">
+                <div class="queue-spinner">
+                    <svg viewBox="0 0 50 50" class="queue-ring">
+                        <circle cx="25" cy="25" r="20" fill="none" stroke-width="4"/>
+                    </svg>
+                </div>
+                <div class="queue-icon">🏃</div>
+                <h2 class="queue-title">La pista está ocupada</h2>
+                <p class="queue-subtitle">Otro atleta está conectando ahora mismo.<br>Espera tu turno, ¡ya casi!</p>
+                <div class="queue-badge">
+                    <span class="queue-label">Tu posición en cola</span>
+                    <span id="queue-position-text" class="queue-position">#–</span>
+                </div>
+                <p id="queue-wait-text" class="queue-wait">Calculando tiempo de espera...</p>
+                <div class="queue-dots">
+                    <span></span><span></span><span></span>
+                </div>
+            </section>
+        </main>
     </div>
 
     <script type="module" src="/src/app.ts"></script>

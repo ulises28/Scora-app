@@ -15,12 +15,12 @@ export function getStravaLoginUrl() {
 }
 
 // 2. Intercambia el "code" de la URL por el Token de acceso usando el backend de Vercel
-export async function exchangeToken(code) {
+export async function exchangeToken(code: string, sessionId: string = 'fallback') {
     const url = '/api/strava-token'; // Llama a nuestra Serverless Function
     const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code }) // Solo enviamos el código! El secreto está protegido en el backend
+        body: JSON.stringify({ code, sessionId }) // sessionId used by queue gate
     });
 
     if (!response.ok) {
@@ -87,21 +87,19 @@ export async function fetchStravaActivities(token) {
         }
         localStorage.setItem('stravaActivities', JSON.stringify(data));
 
-        // 🚨 AUTO-LOGOUT FIX:
-        // Strava only allows 1 user at a time for free tier API.
-        // Now that we securely have the JSON cached, we IMMEDIATELY tell Strava to close our session!
+        // 🚨 AUTO-LOGOUT: Strava free tier allows only 1 connected athlete at a time.
+        // Now that data is cached, immediately revoke our token to free the slot for others.
         try {
-            console.log("Revoking Strava Token to free up API quota limit...");
+            console.log("Revoking Strava Token to free up the API quota slot...");
             await fetch('/api/strava-deauth', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ access_token: token })
             });
-            // Wipe tokens from browser so it doesn't try to reuse a revoked token
-            localStorage.removeItem('strava_access_token');
-            localStorage.removeItem('strava_refresh_token');
-            localStorage.removeItem('strava_expires_at');
-            console.log("Token revoked! Guest limits bypassed.");
+            // ✅ FIX: Wipe the ACTUAL session key so the revoked token is fully cleared.
+            // The old code was removing wrong keys ('strava_access_token' etc.) which don't exist.
+            localStorage.removeItem('stravaAuth');
+            console.log("Token revoked and session cleared. Slot freed for next user.");
         } catch (e) {
             console.error("Failed to revoke token, but stats are cached:", e);
         }
@@ -143,6 +141,5 @@ export function formatActivityStats(activity) {
         stats.subValue = activity.max_heartrate ? `${activity.max_heartrate} bpm` : "Done";
         stats.subLabel = "MAX HEARTRATE";
     }
-    return stats;
     return stats;
 }

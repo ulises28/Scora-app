@@ -1,13 +1,34 @@
+import { Redis } from '@upstash/redis';
+
+const redis = Redis.fromEnv();
+
+const LOCK_KEY = 'strava:slot:lock';
+
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method Not Allowed' });
     }
 
     try {
-        const { code } = req.body;
+        const { code, sessionId } = req.body;
 
-        // El cliente (tu frontend) solo necesita enviar el código de autorización
-        // Nosotros empujamos el ID y Secret de forma segura desde el backend de Vercel
+        // ✅ Queue gate: only the session holding the lock may exchange a token.
+        // Graceful fallback: if sessionId is 'fallback' (Redis was down at join time), skip the check.
+        if (sessionId && sessionId !== 'fallback') {
+            try {
+                const lockHolder = await redis.get(LOCK_KEY);
+                if (lockHolder !== sessionId) {
+                    return res.status(503).json({
+                        error: 'SlotBusy',
+                        message: 'Another athlete is currently connecting. Please wait in the queue.'
+                    });
+                }
+            } catch (kvError) {
+                // Redis unavailable — allow through to prevent hard block
+                console.warn('[Queue] Redis check failed, allowing through:', kvError.message);
+            }
+        }
+
         const CLIENT_ID = process.env.Client_ID || process.env.VITE_STRAVA_CLIENT_ID || process.env.STRAVA_CLIENT_ID;
         const CLIENT_SECRET = process.env.Client_Secret || process.env.VITE_STRAVA_CLIENT_SECRET || process.env.STRAVA_CLIENT_SECRET;
 

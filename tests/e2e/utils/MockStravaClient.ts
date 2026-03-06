@@ -78,4 +78,17 @@ export class MockStravaClient {
             });
         });
     }
+
+    /**
+     * Mocks a busy queue (slot taken). Returns the given position response from queue-join.
+     */
+    async mockQueueBusy(payload: { position: number; sessionId: string; estimatedWait: number }) {
+        await this.page.route('**/api/queue-join', async route => {
+            await route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify(payload)
+            });
+        });
+    }
 }

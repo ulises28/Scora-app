@@ -14,8 +14,11 @@ const btnLogin = document.getElementById('btn-login');
 const btnDownload = document.getElementById('btn-download');
 const btnBack = document.getElementById('btn-back');
 const btnSync = document.getElementById('btn-sync');
+const queuePositionEl = document.getElementById('queue-position-text');
+const queueWaitEl = document.getElementById('queue-wait-text');
 
 let currentStats: any = null;
+let queuePollingInterval: ReturnType<typeof setInterval> | null = null;
 
 // Inicializa el Template Manager que reacciona a los clicks de usuario
 const templateManager = initTemplateManager((template, color) => {
@@ -69,9 +72,95 @@ function renderActivityFeed(activities: any[]) {
     });
 }
 
+// ============================================================
+// 🚦 QUEUE SYSTEM — keeps Strava's single-slot limit in order
+// ============================================================
+
 /**
- * Inicialización de la aplicación
+ * Joins the queue. Returns { position, sessionId, estimatedWait }.
+ * position === 0 means "go now", position > 0 means "wait".
  */
+async function joinQueue(): Promise<{ position: number; sessionId: string; estimatedWait: number }> {
+    try {
+        const res = await fetch('/api/queue-join', { method: 'POST' });
+        if (!res.ok) throw new Error(`Queue join failed: ${res.status}`);
+        return await res.json();
+    } catch (e) {
+        console.warn('[Queue] Could not join queue, allowing through:', e);
+        return { position: 0, sessionId: 'fallback', estimatedWait: 0 };
+    }
+}
+
+/**
+ * Polls queue status until it's our turn (position === 0),
+ * then opens the Strava OAuth popup.
+ */
+function startQueuePolling(sessionId: string) {
+    // Note: initial position is already set by handleLoginClick before calling this.
+    // Poll every 3s to check our queue status.
+    queuePollingInterval = setInterval(async () => {
+        try {
+            const res = await fetch(`/api/queue-status?sessionId=${encodeURIComponent(sessionId)}`);
+            const data = await res.json();
+
+            if (data.position === 0) {
+                stopQueuePolling();
+                // Our turn! Proceed to Strava login
+                openStravaAuth(sessionId);
+            } else if (data.position === -1) {
+                // Session expired or already processed
+                stopQueuePolling();
+                showScreen('screen-feed');
+                if (authSection) authSection.classList.remove('hidden');
+            } else {
+                updateQueueUI(data);
+            }
+        } catch (e) {
+            console.error('[Queue] Polling error:', e);
+        }
+    }, 3000);
+}
+
+function stopQueuePolling() {
+    if (queuePollingInterval !== null) {
+        clearInterval(queuePollingInterval);
+        queuePollingInterval = null;
+    }
+}
+
+function updateQueueUI(data: { position: number; estimatedWait: number } | null) {
+    if (queuePositionEl) {
+        queuePositionEl.textContent = data ? `#${data.position}` : '#–';
+    }
+    if (queueWaitEl) {
+        queueWaitEl.textContent = data
+            ? `~${data.estimatedWait}s de espera estimada`
+            : 'Calculando tiempo de espera...';
+    }
+}
+
+/**
+ * Handles login button click — joins queue first, then either
+ * goes straight to OAuth (slot free) or shows the waiting room.
+ */
+async function handleLoginClick() {
+    const { position, sessionId, estimatedWait } = await joinQueue();
+
+    if (position === 0) {
+        // Slot is free — proceed directly to OAuth
+        openStravaAuth(sessionId);
+    } else {
+        // Show waiting room and start polling
+        showScreen('screen-queue');
+        updateQueueUI({ position, estimatedWait });
+        startQueuePolling(sessionId);
+    }
+}
+
+// ============================================================
+// INICIALIZACIÓN DE LA APLICACIÓN
+// ============================================================
+
 async function initApp() {
     setTimeout(removeLoader, 2000);
 
@@ -95,7 +184,7 @@ async function initApp() {
         if (authSection) authSection.classList.remove('hidden');
         if (activitySection) activitySection.classList.add('hidden');
         if (btnLogin) {
-            btnLogin.addEventListener('click', openStravaAuth);
+            btnLogin.addEventListener('click', handleLoginClick);
         }
         return;
     }
@@ -161,12 +250,13 @@ if (btnSync) {
     btnSync.addEventListener('click', () => {
         localStorage.removeItem('stravaActivities');
         if (activityListEl) activityListEl.innerHTML = "<p class='status-msg'>Conectando con Strava...</p>";
-        openStravaAuth();
+        handleLoginClick();
     });
 }
 
 // History Navigation Manager
 window.addEventListener('popstate', (event) => {
+    stopQueuePolling();
     if (event.state && event.state.screen) {
         showScreen(event.state.screen);
         if (event.state.screen === 'screen-editor' && event.state.stats) {
@@ -186,14 +276,16 @@ window.addEventListener('message', async (event) => {
 
     if (event.data && event.data.type === 'strava_auth_success') {
         const newCode = event.data.code;
+        const sessionId = event.data.sessionId;
 
+        stopQueuePolling();
         showScreen('screen-feed');
         if (authSection) authSection.classList.add('hidden');
         if (activitySection) activitySection.classList.remove('hidden');
         if (activityListEl) activityListEl.innerHTML = "<p class='status-msg'>Sincronizando tus rutas...</p>";
 
         try {
-            const tokenResponse = await exchangeToken(newCode);
+            const tokenResponse = await exchangeToken(newCode, sessionId);
             saveStravaAuth(tokenResponse);
             const accessToken = tokenResponse.access_token;
 

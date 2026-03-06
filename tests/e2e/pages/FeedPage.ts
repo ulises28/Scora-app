@@ -16,6 +16,24 @@ export class FeedPage extends BasePage {
         await expect(activityList).toContainText('No hay entrenamientos recientes.');
     }
 
+    @step('Click Login Button')
+    async clickLoginButton() {
+        const btn = this.page.locator('#btn-login');
+        await btn.click();
+    }
+
+    @step('Verify Queue Waiting Room is Visible')
+    async verifyQueueScreenVisible() {
+        const queueScreen = this.page.locator('#screen-queue');
+        await expect(queueScreen).toHaveClass(/active/, { timeout: 5000 });
+    }
+
+    @step('Verify Queue Position Text')
+    async verifyQueuePosition(expectedText: string) {
+        const positionEl = this.page.locator('#queue-position-text');
+        await expect(positionEl).toHaveText(expectedText, { timeout: 5000 });
+    }
+
     @step('Verify Activity Card is Visible')
     async verifyActivityRendered(activityName: string, expectedStatsText: string) {
         const card = this.page.locator('.activity-card', { hasText: activityName });

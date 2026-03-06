@@ -392,3 +392,118 @@ canvas {
         max-height: none;
     }
 }
+
+/* ====== PANTALLA: QUEUE (Sala de espera) ====== */
+.queue-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    gap: 16px;
+    text-align: center;
+    padding: 24px;
+}
+
+.queue-spinner {
+    position: relative;
+    width: 72px;
+    height: 72px;
+    margin-bottom: 8px;
+}
+
+.queue-ring {
+    width: 72px;
+    height: 72px;
+    animation: queue-rotate 1.4s linear infinite;
+}
+
+.queue-ring circle {
+    stroke: var(--accent);
+    stroke-linecap: round;
+    stroke-dasharray: 80, 126;
+    animation: queue-dash 1.4s ease-in-out infinite;
+}
+
+@keyframes queue-rotate {
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes queue-dash {
+    0%   { stroke-dasharray: 1, 126; stroke-dashoffset: 0; }
+    50%  { stroke-dasharray: 100, 126; stroke-dashoffset: -35; }
+    100% { stroke-dasharray: 100, 126; stroke-dashoffset: -126; }
+}
+
+.queue-icon {
+    font-size: 32px;
+    margin-top: -8px;
+}
+
+.queue-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.queue-subtitle {
+    font-size: 14px;
+    color: var(--text-dim);
+    line-height: 1.6;
+    max-width: 280px;
+}
+
+.queue-badge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 32px;
+    margin-top: 8px;
+}
+
+.queue-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.queue-position {
+    font-size: 40px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: -1px;
+}
+
+.queue-wait {
+    font-size: 13px;
+    color: var(--text-dim);
+}
+
+.queue-dots {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.queue-dots span {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    opacity: 0.3;
+    animation: queue-pulse 1.4s ease-in-out infinite;
+}
+
+.queue-dots span:nth-child(2) { animation-delay: 0.2s; }
+.queue-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes queue-pulse {
+    0%, 100% { opacity: 0.3; transform: scale(1); }
+    50%       { opacity: 1;   transform: scale(1.3); }
+}

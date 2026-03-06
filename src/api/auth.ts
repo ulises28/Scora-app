@@ -10,11 +10,18 @@ export function saveStravaAuth(tokenData: any) {
     }
 }
 
-export function openStravaAuth() {
+/**
+ * Opens the Strava OAuth popup.
+ * @param sessionId - queue session ID to thread through to token exchange
+ */
+export function openStravaAuth(sessionId: string = 'fallback') {
     const width = 600;
     const height = 700;
     const left = window.innerWidth / 2 - width / 2;
     const top = window.innerHeight / 2 - height / 2;
+
+    // Pass sessionId via postMessage after auth completes (stored in module scope)
+    (window as any).__queueSessionId = sessionId;
 
     const popup = window.open(
         getStravaLoginUrl(),
