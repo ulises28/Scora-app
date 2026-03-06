@@ -1,0 +1,37 @@
+name: 24/7 Production Health Monitor
+
+on:
+  schedule:
+    # Runs every 5 minutes.
+    # Note: GitHub Actions cron scheduling is best-effort and may sometimes take longer.
+    - cron: '*/5 * * * *'
+  
+  # Also allow manual triggering from the GitHub Actions tab
+  workflow_dispatch:
+
+jobs:
+  uptime-check:
+    name: Uptime Monitor
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Hit /api/health and verify HTTP 200
+        id: health_check
+        run: |
+          HTTP_STATUS=$(curl -s -o /tmp/health_response.json -w "%{http_code}" https://scora-app.vercel.app/api/health)
+          echo "Health check response:"
+          cat /tmp/health_response.json
+          echo ""
+          echo "HTTP Status: $HTTP_STATUS"
+          if [ "$HTTP_STATUS" != "200" ]; then
+            echo "❌ CRITICAL: Health check FAILED! App is degraded or down."
+            exit 1
+          fi
+          echo "✅ Health check PASSED! App is healthy."
+
+      - name: Send Slack Alert on Failure
+        if: failure() && steps.health_check.outcome == 'failure'
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+          --data '{"text":"🚨 *PRODUCTION INCIDENT:* The Scora `/api/health` check just failed. MTTR clock has started! The app might be down.\n\n<https://github.com/ulises28/Scora-app/actions/runs/${{ github.run_id }}|View GitHub Actions Logs>"}' \
+          ${{ secrets.SLACK_WEBHOOK_URL }}
