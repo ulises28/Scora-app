@@ -86,6 +86,25 @@ export async function fetchStravaActivities(token) {
             console.log(JSON.stringify(data[0], null, 2)); // Mostramos solo el primer Run completo para no trabar la consola
         }
         localStorage.setItem('stravaActivities', JSON.stringify(data));
+
+        // 🚨 AUTO-LOGOUT FIX:
+        // Strava only allows 1 user at a time for free tier API.
+        // Now that we securely have the JSON cached, we IMMEDIATELY tell Strava to close our session!
+        try {
+            console.log("Revoking Strava Token to free up API quota limit...");
+            await fetch('/api/strava-deauth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ access_token: token })
+            });
+            // Wipe tokens from browser so it doesn't try to reuse a revoked token
+            localStorage.removeItem('strava_access_token');
+            localStorage.removeItem('strava_refresh_token');
+            localStorage.removeItem('strava_expires_at');
+            console.log("Token revoked! Guest limits bypassed.");
+        } catch (e) {
+            console.error("Failed to revoke token, but stats are cached:", e);
+        }
     }
 
     return data;
