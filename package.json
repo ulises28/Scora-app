@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "cp src/config.example.ts src/config.ts || true && tsc && vite build",
     "preview": "vite preview",
     "test": "vitest",
     "test:e2e": "playwright test"
