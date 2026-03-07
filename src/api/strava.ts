@@ -108,38 +108,73 @@ export async function fetchStravaActivities(token) {
     return data;
 }
 
-// 4. Tu formateador de datos que ya funciona perfecto
+// Activities that have meaningful distance to display
+const DISTANCE_SPORTS = new Set([
+    'Run', 'VirtualRun',
+    'Ride', 'VirtualRide', 'EBikeRide', 'GravelRide', 'MountainBikeRide',
+    'Walk', 'Hike',
+    'Swim', 'OpenWaterSwim',
+]);
+
+// 4. Activity stats formatter
 export function formatActivityStats(activity) {
     const stats: Record<string, any> = {
         title: activity.name,
+        // Nav header version: truncated to 15 chars so it never overflows
+        shortTitle: activity.name.length > 22 ? activity.name.slice(0, 22) + '…' : activity.name,
         type: activity.type,
         hasMap: !!activity.map?.summary_polyline,
-        polyline: activity.map?.summary_polyline || ""
+        polyline: activity.map?.summary_polyline || '',
+        avgHeartrate: activity.average_heartrate ? Math.round(activity.average_heartrate) : null,
+        maxHeartrate: activity.max_heartrate ? Math.round(activity.max_heartrate) : null,
     };
+
     const h = Math.floor(activity.moving_time / 3600);
     const m = Math.floor((activity.moving_time % 3600) / 60);
     stats.timeStr = h > 0 ? `${h}h ${m}m` : `${m}m`;
 
-    if (activity.type === "Run") {
-        const paceSecs = Math.floor(1000 / activity.average_speed);
+    const hasDistance = DISTANCE_SPORTS.has(activity.type) && activity.distance > 0;
+
+    if (hasDistance) {
         const distVal = (activity.distance / 1000).toFixed(2);
-        stats.mainValue = distVal + " km";
-        stats.distanceVal = distVal; // Raw value for stats template
+        stats.mainValue = distVal + ' km';
+        stats.distanceVal = distVal;
+        stats.mainLabel = 'Distance';
 
-        stats.mainLabel = "DISTANCE";
-        stats.subValue = `${Math.floor(paceSecs / 60)}:${(paceSecs % 60).toString().padStart(2, '0')} /km`;
-
-        stats.maxPace = calculateMaxPace(activity.max_speed);
-
-        stats.subLabel = "PACE";
+        if (activity.type === 'Run' || activity.type === 'VirtualRun' ||
+            activity.type === 'Walk' || activity.type === 'Hike') {
+            // Pace sports: show min/km
+            const paceSecs = Math.floor(1000 / activity.average_speed);
+            stats.subValue = `${Math.floor(paceSecs / 60)}:${(paceSecs % 60).toString().padStart(2, '0')} /km`;
+            stats.subLabel = 'Pace';
+            stats.maxPace = calculateMaxPace(activity.max_speed);
+            stats.maxPaceLabel = 'Max Pace';
+            stats.maxPaceUnit = 'min/km';
+        } else if (activity.type === 'Swim' || activity.type === 'OpenWaterSwim') {
+            // Swim pace: min/100m
+            const paceSecs = Math.floor(100 / activity.average_speed);
+            stats.subValue = `${Math.floor(paceSecs / 60)}:${(paceSecs % 60).toString().padStart(2, '0')} /100m`;
+            stats.subLabel = 'Pace';
+            stats.maxPace = '0:00'; // No max pace concept for swim
+        } else {
+            // Cycling & variants: show km/h average speed
+            const speedKmh = (activity.average_speed * 3.6).toFixed(1);
+            stats.subValue = `${speedKmh} km/h`;
+            stats.subLabel = 'Avg Speed';
+            // Max speed for cycling: m/s × 3.6 = km/h
+            stats.maxPace = activity.max_speed ? (activity.max_speed * 3.6).toFixed(1) : '0.0';
+            stats.maxPaceLabel = 'Max Speed';
+            stats.maxPaceUnit = 'km/h';
+        }
     } else {
+        // No distance (gym, yoga, weight training, etc.)
         stats.mainValue = stats.timeStr;
-        stats.distanceVal = "0.00"; // Fallback for non-runs
-        stats.maxPace = "0:00"; // Fallback for non-runs
-
-        stats.mainLabel = "DURATION";
-        stats.subValue = activity.max_heartrate ? `${activity.max_heartrate} bpm` : "Done";
-        stats.subLabel = "MAX HEARTRATE";
+        stats.distanceVal = '0.00';
+        stats.maxPace = '0:00';
+        stats.mainLabel = 'Duration';
+        stats.subValue = activity.max_heartrate ? `${activity.max_heartrate} bpm` : 'Done';
+        stats.subLabel = 'Max Heartrate';
     }
+
     return stats;
 }

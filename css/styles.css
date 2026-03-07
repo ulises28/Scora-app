@@ -233,18 +233,93 @@ body {
     gap: 20px;
 }
 
+/* Preview container — needs relative positioning for arrow overlays */
+.preview-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Prev / Next arrows — hidden on touch screens, fade in on desktop hover */
+.template-arrow {
+    position: absolute;
+    top: 42%;
+    transform: translateY(-50%);
+    z-index: 10;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: white;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s ease, background 0.2s ease;
+}
+
+@media (pointer: coarse) {
+    .template-arrow {
+        display: none;
+    }
+}
+
+.preview-container:hover .template-arrow {
+    opacity: 1;
+}
+
+.template-arrow:hover {
+    background: rgba(128, 203, 196, 0.3);
+    border-color: var(--accent);
+}
+
+.template-arrow:disabled {
+    opacity: 0.15 !important;
+    cursor: default;
+}
+
+.template-arrow-prev {
+    left: -20px;
+}
+
+.template-arrow-next {
+    right: -20px;
+}
+
 .canvas-wrapper {
     width: 100%;
     max-width: 320px;
     margin: 0 auto;
     aspect-ratio: 9 / 16;
     max-height: 55vh;
-    /* Keep it constrained on mobile so buttons are visible */
-    background: #080808;
+    /*
+     * Checkerboard — industry standard for transparent content preview.
+     * Mid-tone squares: white text readable on dark checks, black text on light checks.
+     */
+    background-color: #9e9e9e;
+    background-image:
+        linear-gradient(45deg, #888 25%, transparent 25%),
+        linear-gradient(-45deg, #888 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #888 75%),
+        linear-gradient(-45deg, transparent 75%, #888 75%);
+    background-size: 20px 20px;
+    background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
     border-radius: 24px;
     overflow: hidden;
     border: 1px solid var(--border);
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+    /* Swipe cursor hint */
+    cursor: grab;
+    touch-action: pan-y;
+}
+
+.canvas-wrapper:active {
+    cursor: grabbing;
 }
 
 canvas {
@@ -253,37 +328,160 @@ canvas {
     display: block;
 }
 
-/* ====== TEMPLATES Y BOTONES ====== */
-.template-selector h3 {
-    font-size: 12px;
-    color: var(--text-dim);
-    margin-bottom: 12px;
-    font-weight: 500;
+/* ====== EDITOR CONTROLS ====== */
+.editor-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
 }
 
-.template-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    margin-bottom: 24px;
-}
-
-.template-item {
-    background: var(--card);
-    padding: 12px;
-    border-radius: 12px;
+.controls-label {
     font-size: 11px;
-    text-align: center;
+    color: var(--text-dim);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 2px;
+}
+
+/* Template horizontal carousel */
+.template-carousel {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+    /* Hide scrollbar but keep scrolling */
+    scrollbar-width: none;
+}
+
+.template-carousel::-webkit-scrollbar {
+    display: none;
+}
+
+.template-pill {
+    flex-shrink: 0;
+    scroll-snap-align: start;
+    background: var(--card);
     border: 1px solid var(--border);
     color: var(--text-dim);
-    transition: 0.3s;
+    padding: 10px 20px;
+    border-radius: 50px;
+    font-size: 13px;
+    font-family: var(--font-main);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.template-pill:hover {
+    border-color: rgba(128, 203, 196, 0.4);
+    color: var(--text);
+}
+
+.template-pill.active {
+    border-color: var(--accent);
+    color: var(--text);
+    background: rgba(128, 203, 196, 0.08);
+}
+
+/* Controls row — two toggles side by side */
+.controls-row {
+    display: flex;
+    flex-direction: row;
+    gap: 16px;
+}
+
+.toggle-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+}
+
+/* Two-option pill toggle */
+.toggle-pill {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 50px;
+    padding: 3px;
+    cursor: pointer;
+    user-select: none;
+    gap: 0;
+}
+
+.toggle-opt {
+    position: relative;
+    z-index: 1;
+    flex: 1;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-dim);
+    padding: 7px 10px;
+    border-radius: 50px;
+    transition: color 0.2s ease;
+    white-space: nowrap;
+}
+
+.toggle-opt.active {
+    color: #000;
+}
+
+/* Sliding background pill */
+.toggle-thumb {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: calc(50% - 3px);
+    height: calc(100% - 6px);
+    background: var(--accent);
+    border-radius: 50px;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 0;
+}
+
+/* When second option is active, slide the thumb to the right */
+.toggle-pill.right .toggle-thumb {
+    transform: translateX(calc(100% + 3px));
+}
+
+.toggle-pill.right .toggle-opt:first-of-type {
+    color: var(--text-dim);
+}
+
+.toggle-pill.right .toggle-opt:last-of-type {
+    color: #000;
+}
+
+/* Template dot indicators (below swipeable canvas) */
+.template-dots {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 7px;
+    margin-top: 14px;
+}
+
+.template-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    transition: all 0.25s ease;
     cursor: pointer;
 }
 
-.template-item.active {
-    border-color: var(--accent);
-    color: var(--text);
-    background: rgba(128, 203, 196, 0.05);
+.template-dot.active {
+    background: var(--accent);
+    width: 20px;
+    border-radius: 3px;
 }
 
 /* --- BOTONES PRINCIPALES --- */
@@ -380,7 +578,8 @@ canvas {
         /* Center horizontally on wide screens */
     }
 
-    .template-selector {
+    .template-selector,
+    .editor-controls {
         width: 380px;
         position: sticky;
         top: 20px;
@@ -426,13 +625,26 @@ canvas {
 }
 
 @keyframes queue-rotate {
-    100% { transform: rotate(360deg); }
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 @keyframes queue-dash {
-    0%   { stroke-dasharray: 1, 126; stroke-dashoffset: 0; }
-    50%  { stroke-dasharray: 100, 126; stroke-dashoffset: -35; }
-    100% { stroke-dasharray: 100, 126; stroke-dashoffset: -126; }
+    0% {
+        stroke-dasharray: 1, 126;
+        stroke-dashoffset: 0;
+    }
+
+    50% {
+        stroke-dasharray: 100, 126;
+        stroke-dashoffset: -35;
+    }
+
+    100% {
+        stroke-dasharray: 100, 126;
+        stroke-dashoffset: -126;
+    }
 }
 
 .queue-icon {
@@ -500,10 +712,24 @@ canvas {
     animation: queue-pulse 1.4s ease-in-out infinite;
 }
 
-.queue-dots span:nth-child(2) { animation-delay: 0.2s; }
-.queue-dots span:nth-child(3) { animation-delay: 0.4s; }
+.queue-dots span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.queue-dots span:nth-child(3) {
+    animation-delay: 0.4s;
+}
 
 @keyframes queue-pulse {
-    0%, 100% { opacity: 0.3; transform: scale(1); }
-    50%       { opacity: 1;   transform: scale(1.3); }
+
+    0%,
+    100% {
+        opacity: 0.3;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.3);
+    }
 }

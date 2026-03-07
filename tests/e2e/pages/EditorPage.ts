@@ -2,6 +2,8 @@ import { expect } from '@playwright/test';
 import { BasePage } from './BasePage';
 import { step } from '../utils/logger';
 
+const TEMPLATE_ORDER = ['minimal', 'route', 'data', 'dm', 'stats'];
+
 export class EditorPage extends BasePage {
 
     @step('Verify Editor Screen is Visible')
@@ -13,22 +15,51 @@ export class EditorPage extends BasePage {
         await expect(titleLabel).toHaveText(expectedTitle);
     }
 
-    @step('Select Timeline Template')
+    /**
+     * Navigate to a template using the prev/next arrow buttons.
+     * Works consistently on both desktop (arrows) and mobile (swipe not reliable in Playwright).
+     */
+    @step('Select Template via Arrow Navigation')
     async selectTemplate(templateName: string) {
-        const templateBtn = this.page.locator('.template-item', { hasText: templateName });
-        await templateBtn.click({ force: true });
+        const targetSlug = templateName.toLowerCase();
+        const targetIdx = TEMPLATE_ORDER.indexOf(targetSlug);
+        if (targetIdx === -1) throw new Error(`Unknown template: "${templateName}"`);
+
+        // Click the target dot directly — most reliable in Playwright
+        const dot = this.page.locator(`.template-dot[data-template="${targetSlug}"]`);
+        await dot.click();
     }
 
-    @step('Verify Template is Active')
+    @step('Verify Template Dot is Active')
     async verifyTemplateIsActive(templateName: string) {
-        const templateBtn = this.page.locator('.template-item', { hasText: templateName });
-        await expect(templateBtn).toHaveClass(/active/);
+        const slug = templateName.toLowerCase();
+        const dot = this.page.locator(`.template-dot[data-template="${slug}"]`);
+        await expect(dot).toHaveClass(/active/);
     }
 
-    @step('Select Text Color')
-    async selectTextColor(colorValue: string) {
-        const colorSelect = this.page.locator('#text-color-select');
-        await colorSelect.selectOption(colorValue);
+    @step('Navigate to Next Template via Arrow')
+    async clickNextTemplate() {
+        await this.page.locator('#btn-template-next').click();
+    }
+
+    @step('Navigate to Previous Template via Arrow')
+    async clickPrevTemplate() {
+        await this.page.locator('#btn-template-prev').click();
+    }
+
+    @step('Toggle Text Color')
+    async toggleTextColor() {
+        await this.page.locator('#color-toggle').click();
+    }
+
+    @step('Toggle Logo Visibility')
+    async toggleLogo() {
+        await this.page.locator('#logo-toggle').click();
+    }
+
+    @step('Click Download')
+    async clickDownload() {
+        await this.page.locator('#btn-download').click();
     }
 
     @step('Click Go Back')

@@ -8,7 +8,9 @@
     "build": "cp src/config.example.ts src/config.ts || true && tsc && vite build",
     "preview": "vite preview",
     "test": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "docker:build": "docker build -f Dockerfile.playwright -t scora-e2e .",
+    "docker:test": "docker compose -f docker-compose.playwright.yml up --build --exit-code-from playwright"
   },
   "repository": {
     "type": "git",

@@ -69,34 +69,51 @@
 
             <div class="editor-layout">
                 <div class="preview-container">
-                    <div class="canvas-wrapper">
+                    <!-- Arrows — desktop only, hidden on touch screens -->
+                    <button class="template-arrow template-arrow-prev" id="btn-template-prev"
+                        aria-label="Previous template">&#8249;</button>
+                    <div class="canvas-wrapper" id="canvas-wrapper">
                         <canvas id="storyCanvas"></canvas>
+                    </div>
+                    <button class="template-arrow template-arrow-next" id="btn-template-next"
+                        aria-label="Next template">&#8250;</button>
+                    <!-- Dot indicators — swipe canvas left/right to change template -->
+                    <div class="template-dots" id="template-dots">
+                        <span class="template-dot active" data-template="minimal"></span>
+                        <span class="template-dot" data-template="route"></span>
+                        <span class="template-dot" data-template="data"></span>
+                        <span class="template-dot" data-template="dm"></span>
+                        <span class="template-dot" data-template="stats"></span>
                     </div>
                 </div>
 
-                <aside class="template-selector">
-                    <h3>Templates</h3>
-                    <div class="template-grid">
-                        <div class="template-item active">Minimal</div>
-                        <div class="template-item">Route</div>
-                        <div class="template-item">Data</div>
-                        <div class="template-item">DM</div>
-                        <div class="template-item">Stats</div>
+                <aside class="editor-controls">
+                    <!-- Compact toggle row -->
+                    <div class="controls-row">
+                        <!-- B/W toggle -->
+                        <div class="toggle-group">
+                            <span class="controls-label">Text</span>
+                            <div class="toggle-pill" id="color-toggle" role="switch" aria-checked="false"
+                                title="Toggle text colour">
+                                <span class="toggle-opt active" data-value="white">White</span>
+                                <span class="toggle-opt" data-value="black">Black</span>
+                                <span class="toggle-thumb"></span>
+                            </div>
+                        </div>
+
+                        <!-- Logo toggle -->
+                        <div class="toggle-group">
+                            <span class="controls-label">Logo</span>
+                            <div class="toggle-pill" id="logo-toggle" role="switch" aria-checked="true"
+                                title="Toggle Scora logo">
+                                <span class="toggle-opt active" data-value="on">On</span>
+                                <span class="toggle-opt" data-value="off">Off</span>
+                                <span class="toggle-thumb"></span>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="color-selector"
-                        style="margin-bottom: 20px; display: flex; flex-direction: column; gap: 8px;">
-                        <label for="text-color-select"
-                            style="color: rgba(255,255,255,0.7); font-size: 0.85rem; font-weight: 500;">Color del
-                            texto</label>
-                        <select id="text-color-select"
-                            style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); color: white; padding: 10px; border-radius: 8px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1rem; outline: none;">
-                            <option value="white" style="color: black;">Blanco</option>
-                            <option value="black" style="color: black;">Negro</option>
-                        </select>
-                    </div>
-
-                    <button id="btn-download" class="btn-download">Descargar sticker</button>
+                    <button id="btn-download" class="btn-download">Download sticker</button>
                 </aside>
             </div>
         </main>
@@ -105,7 +122,7 @@
             <section class="queue-container">
                 <div class="queue-spinner">
                     <svg viewBox="0 0 50 50" class="queue-ring">
-                        <circle cx="25" cy="25" r="20" fill="none" stroke-width="4"/>
+                        <circle cx="25" cy="25" r="20" fill="none" stroke-width="4" />
                     </svg>
                 </div>
                 <div class="queue-icon">🏃</div>

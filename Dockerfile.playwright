@@ -1,0 +1,39 @@
+# ============================================================
+# Dockerfile.playwright
+# Purpose: Run Playwright E2E tests in an isolated container.
+# All browsers (Chromium, Firefox, WebKit) are pre-installed.
+#
+# Build:  docker build -f Dockerfile.playwright -t scora-e2e .
+# Run:    docker run --rm scora-e2e
+# ============================================================
+
+# Official Playwright image — includes Node 20 + all browser binaries
+FROM mcr.microsoft.com/playwright:v1.50.0-noble
+
+# Set working directory inside the container
+WORKDIR /app
+
+# Copy dependency manifests first (layer caching — only re-runs npm ci if these change)
+COPY package.json package-lock.json ./
+
+# Install all dependencies (including devDependencies like Playwright)
+RUN npm ci
+
+# Copy the rest of the project source
+COPY . .
+
+# Set up the config file required for the build/test pipeline
+RUN cp src/config.example.ts src/config.ts
+
+# Expose the Vite dev server port (used by Playwright's webServer)
+EXPOSE 5500
+
+# Tell Playwright it's running in a CI-like environment:
+# - Retries enabled (2x)
+# - Workers set to 1
+# - forbidOnly enforced
+ENV CI=true
+
+# Default command: run all E2E tests
+# Playwright will automatically start the Vite dev server (via webServer config)
+CMD ["npx", "playwright", "test"]

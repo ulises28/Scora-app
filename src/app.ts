@@ -21,9 +21,9 @@ let currentStats: any = null;
 let queuePollingInterval: ReturnType<typeof setInterval> | null = null;
 
 // Inicializa el Template Manager que reacciona a los clicks de usuario
-const templateManager = initTemplateManager((template, color) => {
+const templateManager = initTemplateManager((template, color, showLogo) => {
     if (currentStats) {
-        drawTemplate('storyCanvas', currentStats, template, color);
+        drawTemplate('storyCanvas', currentStats, template, color, showLogo);
     }
 });
 
@@ -34,7 +34,7 @@ function openEditor(stats: any) {
     window.history.pushState({ screen: 'screen-editor', stats }, '', '#editor');
     showScreen('screen-editor');
     const nameEl = document.getElementById('selected-activity-name');
-    if (nameEl) nameEl.innerText = stats.title;
+    if (nameEl) nameEl.innerText = stats.shortTitle ?? stats.title;
 
     currentStats = stats;
 
@@ -45,7 +45,7 @@ function openEditor(stats: any) {
     const canvasEl = document.getElementById('storyCanvas');
     if (canvasEl) canvasEl.style.opacity = '0';
 
-    drawTemplate('storyCanvas', currentStats, templateManager.template, templateManager.color);
+    drawTemplate('storyCanvas', currentStats, templateManager.template, templateManager.color, templateManager.showLogo);
 
     // Reveal after DOM settles
     setTimeout(() => {
@@ -278,8 +278,8 @@ window.addEventListener('popstate', (event) => {
         if (event.state.screen === 'screen-editor' && event.state.stats) {
             currentStats = event.state.stats;
             const nameEl = document.getElementById('selected-activity-name');
-            if (nameEl) nameEl.innerText = currentStats.title;
-            drawTemplate('storyCanvas', currentStats, templateManager.template, templateManager.color);
+            if (nameEl) nameEl.innerText = currentStats.shortTitle ?? currentStats.title;
+            drawTemplate('storyCanvas', currentStats, templateManager.template, templateManager.color, templateManager.showLogo);
         }
     } else {
         showScreen('screen-feed');

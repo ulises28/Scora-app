@@ -3,18 +3,35 @@ import { initTemplateManager } from '../../../src/features/editor/TemplateManage
 
 describe('TemplateManager', () => {
 
-    // Reset JSDOM before every test to ensure a clean slate
+    // JSDOM mirrors the new swipe-carousel DOM structure:
+    // dots under canvas-wrapper, two toggle pills
     beforeEach(() => {
         document.body.innerHTML = `
-            <div class="template-item active">Minimal</div>
-            <div class="template-item">Route</div>
-            <div class="template-item">Stats</div>
-            
-            <select id="text-color-select">
-                <option value="white" selected>White</option>
-                <option value="black">Black</option>
-                <option value="scora-orange">Orange</option>
-            </select>
+            <!-- Swipeable canvas wrapper -->
+            <div id="canvas-wrapper"></div>
+
+            <!-- Dot indicators -->
+            <div id="template-dots">
+                <span class="template-dot active" data-template="minimal"></span>
+                <span class="template-dot" data-template="route"></span>
+                <span class="template-dot" data-template="data"></span>
+                <span class="template-dot" data-template="dm"></span>
+                <span class="template-dot" data-template="stats"></span>
+            </div>
+
+            <!-- B/W toggle pill -->
+            <div id="color-toggle">
+                <span class="toggle-opt active" data-value="white">White</span>
+                <span class="toggle-opt" data-value="black">Black</span>
+                <span class="toggle-thumb"></span>
+            </div>
+
+            <!-- Logo toggle pill -->
+            <div id="logo-toggle">
+                <span class="toggle-opt active" data-value="on">On</span>
+                <span class="toggle-opt" data-value="off">Off</span>
+                <span class="toggle-thumb"></span>
+            </div>
         `;
     });
 
@@ -24,27 +41,28 @@ describe('TemplateManager', () => {
 
         expect(manager.template).toBe('minimal');
         expect(manager.color).toBe('white');
+        expect(manager.showLogo).toBe(true);
         expect(mockOnChange).not.toHaveBeenCalled();
     });
 
-    it('should update template and trigger callback when a UI template button is clicked', () => {
+    it('should update template and trigger callback when a dot is clicked', () => {
         const mockOnChange = vi.fn();
         const manager = initTemplateManager(mockOnChange);
 
-        // Simulate click on "Route" template
-        const routeBtn = document.querySelectorAll('.template-item')[1] as HTMLElement;
-        routeBtn.click();
+        // Click the "route" dot (index 1)
+        const routeDot = document.querySelectorAll('.template-dot')[1] as HTMLElement;
+        routeDot.click();
 
         expect(manager.template).toBe('route');
         expect(mockOnChange).toHaveBeenCalledTimes(1);
-        expect(mockOnChange).toHaveBeenCalledWith('route', 'white');
+        expect(mockOnChange).toHaveBeenCalledWith('route', 'white', true);
 
-        // Ensure DOM classes updated
-        expect(document.querySelectorAll('.template-item')[0].classList.contains('active')).toBe(false);
-        expect(routeBtn.classList.contains('active')).toBe(true);
+        // Active dot moved from minimal to route
+        expect(document.querySelectorAll('.template-dot')[0].classList.contains('active')).toBe(false);
+        expect(routeDot.classList.contains('active')).toBe(true);
     });
 
-    it('should programmatically update template using setTemplate and alter the DOM', () => {
+    it('should programmatically set template with setTemplate and update dots', () => {
         const mockOnChange = vi.fn();
         const manager = initTemplateManager(mockOnChange);
 
@@ -52,23 +70,32 @@ describe('TemplateManager', () => {
 
         expect(manager.template).toBe('stats');
 
-        // Assert programmatic setter also fixes the DOM (from our Phase 3 bug fix!)
-        const statsBtn = document.querySelectorAll('.template-item')[2];
-        expect(statsBtn.classList.contains('active')).toBe(true);
+        const statsDot = document.querySelectorAll('.template-dot')[4];
+        expect(statsDot.classList.contains('active')).toBe(true);
+        expect(document.querySelectorAll('.template-dot')[0].classList.contains('active')).toBe(false);
     });
 
-    it('should update color and trigger callback on UI select change', () => {
+    it('should toggle text color to black and trigger callback', () => {
         const mockOnChange = vi.fn();
         const manager = initTemplateManager(mockOnChange);
 
-        const colorSelect = document.getElementById('text-color-select') as HTMLSelectElement;
+        const colorToggle = document.getElementById('color-toggle') as HTMLElement;
+        colorToggle.click(); // White → Black
 
-        // Simulate picking orange
-        colorSelect.value = 'scora-orange';
-        colorSelect.dispatchEvent(new Event('change'));
-
-        expect(manager.color).toBe('scora-orange');
+        expect(manager.color).toBe('black');
         expect(mockOnChange).toHaveBeenCalledTimes(1);
-        expect(mockOnChange).toHaveBeenCalledWith('minimal', 'scora-orange');
+        expect(mockOnChange).toHaveBeenCalledWith('minimal', 'black', true);
+    });
+
+    it('should toggle logo off and trigger callback', () => {
+        const mockOnChange = vi.fn();
+        const manager = initTemplateManager(mockOnChange);
+
+        const logoToggle = document.getElementById('logo-toggle') as HTMLElement;
+        logoToggle.click(); // On → Off
+
+        expect(manager.showLogo).toBe(false);
+        expect(mockOnChange).toHaveBeenCalledTimes(1);
+        expect(mockOnChange).toHaveBeenCalledWith('minimal', 'white', false);
     });
 });

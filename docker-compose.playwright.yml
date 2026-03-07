@@ -1,0 +1,31 @@
+# ============================================================
+# docker-compose.playwright.yml
+# Purpose: Orchestrate the Playwright E2E test runner.
+#
+# Usage:
+#   docker compose -f docker-compose.playwright.yml up --build
+#
+# Reports will be saved to ./playwright-report on your machine.
+# ============================================================
+
+services:
+  playwright:
+    build:
+      context: .
+      dockerfile: Dockerfile.playwright
+    
+    # Mount the report directory so you can open the HTML report
+    # on your host machine after tests finish
+    volumes:
+      - ./playwright-report:/app/playwright-report
+      - ./test-results:/app/test-results
+
+    # Pass Strava credentials from your local .env file or shell
+    environment:
+      - CI=true
+      - VITE_STRAVA_CLIENT_ID=${VITE_STRAVA_CLIENT_ID}
+      - VITE_STRAVA_CLIENT_SECRET=${VITE_STRAVA_CLIENT_SECRET}
+
+    # Container exits automatically when tests finish
+    # Exit code mirrors test pass/fail (0 = pass, 1 = fail)
+    restart: "no"

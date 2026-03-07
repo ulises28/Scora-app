@@ -1,0 +1,38 @@
+# ==============================================
+# .dockerignore — keeps the Docker image lean
+# ==============================================
+
+# Node modules will be installed fresh inside the container
+node_modules/
+
+# Git internals
+.git/
+.gitignore
+
+# Playwright outputs (mounted as volumes at runtime)
+playwright-report/
+test-results/
+
+# Build output
+dist/
+
+# Coverage reports
+coverage/
+
+# Vercel deployment artifacts
+.vercel/
+
+# Local environment files (secrets are passed via env vars)
+.env
+.env.local
+.env.*.local
+
+# macOS metadata
+.DS_Store
+
+# IDE config
+.vscode/
+.idea/
+
+# GitHub Actions (not needed inside the container)
+.github/
