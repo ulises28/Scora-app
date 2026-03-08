@@ -63,6 +63,12 @@ export function drawTemplate(
         ctx.fillText('SCORA.', 110, 115);
     }
 
+    // ── 8M special templates (override for any activity type) ────────────────
+    if (templateType === '8m' || templateType === '8m2') {
+        draw8MTemplate(ctx, stats, templateType, showLogo);
+        return;
+    }
+
     // ── Route to correct template renderer ──────────────────────────────────
     if (stats.hasMap) {
         drawRunningTemplate(ctx, stats, templateType, textColor);
@@ -70,6 +76,7 @@ export function drawTemplate(
         drawGymTemplate(ctx, stats, templateType, textColor);
     }
 }
+
 
 // ─── Template routers ─────────────────────────────────────────────────────────
 
@@ -81,10 +88,181 @@ function drawRunningTemplate(ctx, stats, templateType, textColor) {
     else drawRunningData(ctx, stats, textColor);
 }
 
+// ─── 8M Special Templates ─────────────────────────────────────────────────────
+// Feminist running stickers for International Women's Day (8M)
+// Colors: purple (justice/dignity), green (hope/progress), white (solidarity)
+
+function draw8MTemplate(ctx, stats, templateType, showLogo) {
+
+    // ── Background: deep purple radial gradient ───────────────────────────────
+    const grad = ctx.createRadialGradient(540, 700, 60, 540, 960, 1100);
+    grad.addColorStop(0, '#3B0764');   // rich purple centre
+    grad.addColorStop(0.5, '#1E0338'); // deep mid
+    grad.addColorStop(1, '#0A0014');   // near-black edge
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 1080, 1920);
+
+    // ── ♀ 8M — massive hero, very transparent purple ──────────────────────────
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
+    ctx.font = "900 380px 'Plus Jakarta Sans'";
+    ctx.fillStyle = 'rgba(168, 85, 247, 0.18)'; // ultra-transparent purple
+    ctx.fillText('♀ 8M', 540, 640);
+
+    // ── Activity title ────────────────────────────────────────────────────────
+    ctx.font = "500 44px 'Plus Jakarta Sans'";
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.fillText(stats.title || 'Run', 540, 720);
+
+    // ── Stats ─────────────────────────────────────────────────────────────────
+    const hasDistance = stats.distanceVal && parseFloat(stats.distanceVal) > 0;
+
+    if (hasDistance) {
+        // Distance (big transparent white number + white unit)
+        const distNum = stats.distanceVal || '0.00';
+        const distUnit = 'km';
+
+        ctx.font = "800 220px 'Plus Jakarta Sans'";
+        const dW = ctx.measureText(distNum).width;
+
+        ctx.font = "700 110px 'Plus Jakarta Sans'";
+        const duW = ctx.measureText(distUnit).width;
+
+        const gap = 10;
+        const dTotal = dW + gap + duW;
+        const dStart = 540 - dTotal / 2;
+
+        ctx.textAlign = 'left';
+        ctx.font = "800 220px 'Plus Jakarta Sans'";
+        ctx.fillStyle = 'rgba(255,255,255,0.20)';
+        ctx.fillText(distNum, dStart, 1020);
+
+        ctx.font = "700 110px 'Plus Jakarta Sans'";
+        ctx.fillStyle = 'rgba(255,255,255,0.85)';
+        ctx.fillText(distUnit, dStart + dW + gap, 1020);
+
+        ctx.textAlign = 'center';
+        ctx.font = "500 36px 'Plus Jakarta Sans'";
+        ctx.fillStyle = '#86EFAC'; // green — movement colour
+        ctx.fillText('Distance', 540, 1080);
+
+        // Pace (medium transparent white)
+        const paceStr = stats.subValue || stats.maxPace || '0:00';
+        const paceClean = paceStr.replace(' /km', '').replace(' km/h', '');
+        const paceUnit = (stats.maxPaceUnit === 'km/h') ? 'km/h' : '/km';
+
+        ctx.font = "700 120px 'Plus Jakarta Sans'";
+        const pW = ctx.measureText(paceClean).width;
+
+        ctx.font = "600 60px 'Plus Jakarta Sans'";
+        const puW = ctx.measureText(paceUnit).width;
+
+        const pTotal = pW + gap + puW;
+        const pStart = 540 - pTotal / 2;
+
+        ctx.textAlign = 'left';
+        ctx.font = "700 120px 'Plus Jakarta Sans'";
+        ctx.fillStyle = 'rgba(255,255,255,0.20)';
+        ctx.fillText(paceClean, pStart, 1270);
+
+        ctx.font = "600 60px 'Plus Jakarta Sans'";
+        ctx.fillStyle = 'rgba(255,255,255,0.85)';
+        ctx.fillText(paceUnit, pStart + pW + gap, 1270);
+
+        ctx.textAlign = 'center';
+        ctx.font = "500 36px 'Plus Jakarta Sans'";
+        ctx.fillStyle = '#86EFAC';
+        ctx.fillText(stats.subLabel || 'Pace', 540, 1325);
+
+        // Route — drawn in purple if available
+        if (stats.polyline) {
+            const coords = decodePolyline(stats.polyline);
+            draw8MRoute(ctx, coords, { x: 90, y: 1380, w: 900, h: 420 });
+        }
+
+    } else {
+        // Gym fallback: Duration + HR
+        ctx.font = "800 190px 'Plus Jakarta Sans'";
+        ctx.fillStyle = 'rgba(255,255,255,0.20)';
+        ctx.textAlign = 'center';
+        ctx.fillText(stats.timeStr || '0m', 540, 1050);
+
+        ctx.font = "500 40px 'Plus Jakarta Sans'";
+        ctx.fillStyle = '#86EFAC';
+        ctx.fillText('Duration', 540, 1120);
+
+        if (stats.maxHeartrate) {
+            ctx.font = "700 110px 'Plus Jakarta Sans'";
+            ctx.fillStyle = 'rgba(255,255,255,0.18)';
+            ctx.fillText(String(stats.maxHeartrate), 540, 1370);
+
+            ctx.font = "500 55px 'Plus Jakarta Sans'";
+            ctx.fillStyle = 'rgba(255,255,255,0.85)';
+            ctx.fillText('bpm', 540, 1435);
+
+            ctx.font = "400 36px 'Plus Jakarta Sans'";
+            ctx.fillStyle = '#86EFAC';
+            ctx.fillText('Max Heartrate', 540, 1490);
+        }
+    }
+
+    // ── Tagline ───────────────────────────────────────────────────────────────
+    const tagline = templateType === '8m2' ? 'Corremos Juntas ✊' : 'Run Like a Girl';
+
+    ctx.textAlign = 'center';
+    ctx.font = "600 italic 58px 'Plus Jakarta Sans'";
+    ctx.fillStyle = 'rgba(168, 85, 247, 0.70)'; // translucent purple
+
+    const tagY = hasDistance && stats.polyline ? 1870 : 1650;
+    ctx.fillText(tagline, 540, tagY);
+
+    // ── #8M marker ───────────────────────────────────────────────────────────
+    ctx.font = "500 32px 'Plus Jakarta Sans'";
+    ctx.fillStyle = 'rgba(255,255,255,0.30)';
+    ctx.fillText('#8M · 8 de Marzo', 540, tagY + 48);
+
+    // Redraw logo in teal at top (overridden inside drawTemplate already if showLogo=false)
+    // logo is already drawn by the outer drawTemplate call — nothing to do here
+}
+
+// Purple route line for 8M templates
+function draw8MRoute(ctx, coords, mapBox) {
+    if (!coords || coords.length === 0) return;
+
+    let minLat = coords[0][0], maxLat = minLat;
+    let minLng = coords[0][1], maxLng = minLng;
+    coords.forEach(p => {
+        if (p[0] < minLat) minLat = p[0];
+        if (p[0] > maxLat) maxLat = p[0];
+        if (p[1] < minLng) minLng = p[1];
+        if (p[1] > maxLng) maxLng = p[1];
+    });
+
+    const latRange = maxLat - minLat || 0.001;
+    const lngRange = maxLng - minLng || 0.001;
+    const scale = Math.min(mapBox.w / lngRange, mapBox.h / latRange) * 0.85;
+    const offX = mapBox.x + mapBox.w / 2 - ((minLng + maxLng) / 2 - minLng) * scale - (lngRange * scale) / 2;
+    const offY = mapBox.y + mapBox.h / 2 + ((minLat + maxLat) / 2 - minLat) * scale - (latRange * scale) / 2;
+
+    ctx.beginPath();
+    ctx.strokeStyle = 'rgba(168, 85, 247, 0.85)'; // purple route
+    ctx.lineWidth = 6;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    coords.forEach((p, i) => {
+        const x = offX + (p[1] - minLng) * scale;
+        const y = offY - (p[0] - minLat) * scale;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+}
+
 
 
 
 // ─── Running templates ────────────────────────────────────────────────────────
+
 
 function drawRunningMinimal(ctx, stats, textColor = 'white') {
     const c = buildColors(textColor);

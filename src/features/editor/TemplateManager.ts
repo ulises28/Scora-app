@@ -1,6 +1,6 @@
 type OnChangeCallback = (template: string, color: string, showLogo: boolean) => void;
 
-const TEMPLATES = ['minimal', 'route', 'data', 'dm', 'stats'];
+const TEMPLATES = ['minimal', 'route', 'data', 'dm', 'stats', '8m', '8m2'];
 
 export function initTemplateManager(onChange: OnChangeCallback) {
     let currentTemplate = 'minimal';
