@@ -1,8 +1,7 @@
 import { expect } from '@playwright/test';
 import { BasePage } from './BasePage';
 import { step } from '../utils/logger';
-
-const TEMPLATE_ORDER = ['minimal', 'route', 'data', 'dm', 'stats'];
+import { TEMPLATES as TEMPLATE_ORDER } from '../../../src/features/editor/TemplateManager';
 
 export class EditorPage extends BasePage {
 

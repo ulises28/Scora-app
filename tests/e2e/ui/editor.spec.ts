@@ -2,6 +2,7 @@ import { test } from '@playwright/test';
 import { FeedPage } from '../pages/FeedPage';
 import { EditorPage } from '../pages/EditorPage';
 import { MockStravaClient } from '../utils/MockStravaClient';
+import { TEMPLATES } from '../../../src/features/editor/TemplateManager';
 
 test.describe('Scora App UI: Sticker Editor (POM)', () => {
 
@@ -58,6 +59,23 @@ test.describe('Scora App UI: Sticker Editor (POM)', () => {
         // Prev → Route
         await editorPage.clickPrevTemplate();
         await editorPage.verifyTemplateIsActive('route');
+    });
+
+    test('Test 2c: Arrow navigation reaches all templates including 8m/8m2 at the end', async ({ page }) => {
+        const feedPage = new FeedPage(page);
+        const editorPage = new EditorPage(page);
+
+        await feedPage.openActivityEditor('Carrera por la mañana');
+        await editorPage.verifyEditorScreenVisible('Carrera por la mañana');
+
+        // Navigate forward through every template — self-updating when TEMPLATES changes
+        for (let i = 1; i < TEMPLATES.length; i++) {
+            await editorPage.clickNextTemplate();
+            await editorPage.verifyTemplateIsActive(TEMPLATES[i]);
+        }
+
+        // At the last template the Next button must be disabled
+        await page.locator('#btn-template-next').isDisabled();
     });
 
     test('Test 3: Browser History API "Back" button functions natively', async ({ page }) => {

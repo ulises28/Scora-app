@@ -1,6 +1,30 @@
-type OnChangeCallback = (template: string, color: string, showLogo: boolean) => void;
+// ─── Template Registry — single source of truth ──────────────────────────────
+// To add a template: add an entry here and implement its renderer in CanvasPainter.ts
+// To disable temporarily: set `seasonal: true` (excluded from TEMPLATES by default)
+// To re-enable a seasonal template: remove the `seasonal` flag or set it to false
+interface TemplateConfig {
+    id: string;
+    seasonal?: boolean; // seasonal templates are inactive outside their event window
+    note?: string;      // human-readable context (why it exists, when to re-enable)
+}
 
-const TEMPLATES = ['minimal', 'route', 'data', 'dm', 'stats', '8m', '8m2'];
+export const TEMPLATE_REGISTRY: readonly TemplateConfig[] = [
+    { id: 'minimal' },
+    { id: 'route' },
+    { id: 'data' },
+    { id: 'dm' },
+    { id: 'stats' },
+    { id: '8m', seasonal: true, note: "International Women's Day — 8M (March 8)" },
+    { id: '8m2', seasonal: true, note: "International Women's Day — 8M (March 8)" },
+];
+
+// Active template list — the only thing all consumers (UI, unit tests, e2e) should use.
+// Adding/removing templates: edit TEMPLATE_REGISTRY above. Do not touch this line.
+export const TEMPLATES = TEMPLATE_REGISTRY
+    .filter(t => !t.seasonal)
+    .map(t => t.id);
+
+type OnChangeCallback = (template: string, color: string, showLogo: boolean) => void;
 
 export function initTemplateManager(onChange: OnChangeCallback) {
     let currentTemplate = 'minimal';
@@ -31,13 +55,19 @@ export function initTemplateManager(onChange: OnChangeCallback) {
         });
     }
 
-    // ── Dot click navigation ──────────────────────────────────────────────────
-    document.querySelectorAll('.template-dot').forEach(dot => {
-        dot.addEventListener('click', () => {
-            const t = (dot as HTMLElement).dataset.template;
-            if (t) applyTemplate(t);
+    // ── Dynamic dot generation ────────────────────────────────────────────────
+    // Dots are built from TEMPLATES so adding/removing a template here is enough.
+    const dotsContainer = document.getElementById('template-dots');
+    if (dotsContainer) {
+        dotsContainer.innerHTML = '';
+        TEMPLATES.forEach((t, i) => {
+            const span = document.createElement('span');
+            span.className = 'template-dot' + (i === 0 ? ' active' : '');
+            span.dataset.template = t;
+            span.addEventListener('click', () => applyTemplate(t));
+            dotsContainer.appendChild(span);
         });
-    });
+    }
 
     // ── Swipe gesture on canvas wrapper ──────────────────────────────────────
     const canvasWrapper = document.getElementById('canvas-wrapper');
@@ -77,6 +107,7 @@ export function initTemplateManager(onChange: OnChangeCallback) {
 
     btnPrev?.addEventListener('click', () => goToIndex(currentIndex() - 1));
     btnNext?.addEventListener('click', () => goToIndex(currentIndex() + 1));
+    updateArrows(); // set correct initial disabled state
 
     // ── Helper: wire up a two-option pill toggle ──────────────────────────────
     function initToggle(id: string, onToggle: (isRight: boolean) => void) {

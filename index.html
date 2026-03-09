@@ -22,7 +22,7 @@
             <source media="(min-width: 900px)" srcset="assets/img/track_desktop.jpeg">
             <img src="assets/img/track_mobile.jpeg" alt="Scora Welcome" class="loader-image">
         </picture>
-        <p class="loader-text">No solo entrenes. Deja huella.</p> <!-- Insertar frase motivadora -->
+        <p class="loader-text">Designed to be seen.</p> <!-- Insertar frase motivadora -->
     </div>
 
     <div class="app-container">
@@ -77,14 +77,8 @@
                     </div>
                     <button class="template-arrow template-arrow-next" id="btn-template-next"
                         aria-label="Next template">&#8250;</button>
-                    <!-- Dot indicators — swipe canvas left/right to change template -->
-                    <div class="template-dots" id="template-dots">
-                        <span class="template-dot active" data-template="minimal"></span>
-                        <span class="template-dot" data-template="route"></span>
-                        <span class="template-dot" data-template="data"></span>
-                        <span class="template-dot" data-template="dm"></span>
-                        <span class="template-dot" data-template="stats"></span>
-                    </div>
+                    <!-- Dot indicators — generated dynamically by TemplateManager from TEMPLATES array -->
+                    <div class="template-dots" id="template-dots"></div>
                 </div>
 
                 <aside class="editor-controls">
