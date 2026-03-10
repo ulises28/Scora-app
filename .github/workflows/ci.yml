@@ -106,7 +106,9 @@ jobs:
 
       - name: Send Slack Alert on Failure
         if: failure() && steps.health_check.outcome == 'failure'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
           curl -X POST -H 'Content-type: application/json' \
           --data '{"text":"⚠️ *CRITICAL ALERT:* The Scora `/api/health` check just failed in production. The app might be down!"}' \
-          ${{ secrets.SLACK_WEBHOOK_URL }}
+          "$SLACK_WEBHOOK_URL"

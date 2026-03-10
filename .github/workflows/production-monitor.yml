@@ -31,7 +31,9 @@ jobs:
 
       - name: Send Slack Alert on Failure
         if: failure() && steps.health_check.outcome == 'failure'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
           curl -X POST -H 'Content-type: application/json' \
           --data '{"text":"🚨 *PRODUCTION INCIDENT:* The Scora `/api/health` check just failed. MTTR clock has started! The app might be down.\n\n<https://github.com/ulises28/Scora-app/actions/runs/${{ github.run_id }}|View GitHub Actions Logs>"}' \
-          ${{ secrets.SLACK_WEBHOOK_URL }}
+          "$SLACK_WEBHOOK_URL"
