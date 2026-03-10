@@ -13,6 +13,7 @@ describe('formatActivityStats', () => {
             average_speed: 3.33,     // ~5:00 /km
             distance: 5000,          // 5 km
             max_speed: 4.5,
+            start_date_local: "2026-03-06T09:31:09Z", // 9:31 AM
             map: { summary_polyline: 'abc' }
         };
 
@@ -30,6 +31,7 @@ describe('formatActivityStats', () => {
         expect(result.mainLabel).toBe('Distance');
         expect(result.subLabel).toBe('Pace');
         expect(result.subValue).toBe('5:00 /km');
+        expect(result.startTime).toBe('9:31 AM');
     });
 
     // ─── Cycling ─────────────────────────────────────────────────────────────
@@ -45,6 +47,7 @@ describe('formatActivityStats', () => {
             has_heartrate: true,
             average_heartrate: 127.7,
             max_heartrate: 145.0,
+            start_date_local: "2026-03-06T15:05:00Z", // 3:05 PM
             map: { summary_polyline: '{aruBt}e|Qi@aA' }
         };
 
@@ -64,6 +67,8 @@ describe('formatActivityStats', () => {
         expect(result.maxPace).toBe('27.7');
         expect(result.maxPaceLabel).toBe('Max Speed');
         expect(result.maxPaceUnit).toBe('km/h');
+
+        expect(result.startTime).toBe('3:05 PM');
     });
 
     it('should NOT show 0.00 km for a Ride with valid distance', () => {

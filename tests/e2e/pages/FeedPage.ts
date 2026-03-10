@@ -44,7 +44,9 @@ export class FeedPage extends BasePage {
     }
 
     getActivityCard(activityName: string): Locator {
-        return this.page.locator('.activity-card', { hasText: activityName });
+        return this.page.locator('.activity-card').filter({
+            has: this.page.locator(`text="${activityName}"`)
+        });
     }
 
     @step('Verify Activity Card is Visible')

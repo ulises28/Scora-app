@@ -28,7 +28,36 @@ export class EditorPage extends BasePage {
     @step('Verify Editor Screen is Visible')
     async verifyEditorScreenVisible(expectedTitle: string) {
         await expect(this.editorScreen).toHaveClass(/active/);
-        await expect(this.titleLabel).toHaveText(expectedTitle);
+        // The UI truncates long titles with ellipses, so we match the beginning of the string
+        // extracting a safe slice
+        const safeSub = expectedTitle.slice(0, 15);
+        await expect(this.titleLabel).toContainText(safeSub);
+    }
+
+    @step('Inject Canvas Text Interceptor')
+    async injectCanvasInterceptor() {
+        await this.page.evaluate(() => {
+            (window as any)._scoraCanvasTextLog = [];
+            const originalFillText = CanvasRenderingContext2D.prototype.fillText;
+            CanvasRenderingContext2D.prototype.fillText = function (text, x, y, maxWidth) {
+                if (typeof text === 'string') {
+                    (window as any)._scoraCanvasTextLog.push(text);
+                }
+                return originalFillText.call(this, text, x, y, maxWidth);
+            };
+        });
+    }
+
+    @step('Get Intercepted Canvas Text')
+    async getCanvasTextLog(): Promise<string[]> {
+        return await this.page.evaluate(() => (window as any)._scoraCanvasTextLog || []);
+    }
+
+    @step('Clear Canvas Text Interceptor Log')
+    async clearCanvasTextLog() {
+        await this.page.evaluate(() => {
+            (window as any)._scoraCanvasTextLog = [];
+        });
     }
 
     getTemplateDot(templateName: string): Locator {

@@ -80,6 +80,19 @@ export class MockStravaClient {
     }
 
     /**
+     * Mocks a valid user with exactly one activity.
+     */
+    async mockSingleActivity() {
+        await this.page.route('https://www.strava.com/api/v3/athlete/activities*', async route => {
+            await route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify([mockActivities[0]])
+            });
+        });
+    }
+
+    /**
      * Mocks a busy queue (slot taken). Returns the given position response from queue-join.
      */
     async mockQueueBusy(payload: { position: number; sessionId: string; estimatedWait: number }) {
