@@ -22,11 +22,11 @@ test.describe('Scora App UI: Feed (POM)', () => {
     test('Test 1: Feed successfully renders mocked incoming data', async ({ page }) => {
         const feedPage = new FeedPage(page);
 
-        // Verify our mock run "Carrera por la mañana" was rendered correctly (11.30 km)
-        await feedPage.verifyActivityRendered('Carrera por la mañana', '11.30 km');
+        // Verify our mock run "Carrera por la mañana" was rendered correctly (9.64 km)
+        await feedPage.verifyActivityRendered('Carrera por la mañana', '9.64 km');
 
-        // Verify our mock workout "Morning HIIT Session" was rendered correctly (45m)
-        await feedPage.verifyActivityRendered('Morning HIIT Session', '45m');
+        // Verify our mock workout "Entrenamiento con pesas" was rendered correctly (1h 11m)
+        await feedPage.verifyActivityRendered('Entrenamiento con pesas matutino', '1h 11m');
     });
 
 });

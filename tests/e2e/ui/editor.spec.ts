@@ -87,7 +87,7 @@ test.describe('Scora App UI: Sticker Editor (POM)', () => {
 
         await page.goBack();
 
-        await feedPage.verifyActivityRendered('Carrera por la mañana', '11.30 km');
+        await feedPage.verifyActivityRendered('Carrera por la mañana', '9.64 km');
     });
 
     test('Test 4: UI "Back" button mimics Native History API', async ({ page }) => {
@@ -99,7 +99,7 @@ test.describe('Scora App UI: Sticker Editor (POM)', () => {
 
         await editorPage.goBack();
 
-        await feedPage.verifyActivityRendered('Carrera por la mañana', '11.30 km');
+        await feedPage.verifyActivityRendered('Carrera por la mañana', '9.64 km');
     });
 
     test('Test 5: Selecting alternate activities resets template to minimal', async ({ page }) => {
@@ -111,14 +111,12 @@ test.describe('Scora App UI: Sticker Editor (POM)', () => {
         await editorPage.selectTemplate('Route');
         await editorPage.verifyTemplateIsActive('route');
 
-        // Go back
+        // Go back to feed and open 2nd workout
         await editorPage.goBack();
+        await feedPage.openActivityEditor('Entrenamiento con pesas matutino');
 
-        // Open 2nd activity
-        await feedPage.openActivityEditor('Morning HIIT Session');
-
-        // Template should have reset to minimal
-        await editorPage.verifyEditorScreenVisible('Morning HIIT Session');
+        // Editor should load the new activity but cleanly reset to minimal style
+        await editorPage.verifyEditorScreenVisible('Entrenamiento con pesas matutino');
         await editorPage.verifyTemplateIsActive('minimal');
     });
 
