@@ -1,11 +1,13 @@
-import { Page, expect } from '@playwright/test';
+import { type Locator, type Page, expect } from '@playwright/test';
 import { step } from '../utils/logger';
 
 export class BasePage {
     protected page: Page;
+    readonly loaderOverlay: Locator;
 
     constructor(page: Page) {
         this.page = page;
+        this.loaderOverlay = page.locator('#loader-overlay');
     }
 
     @step('Navigate to App Root')
@@ -15,16 +17,7 @@ export class BasePage {
 
     @step('Ensure Loader Overlay is Hidden')
     async waitForLoaderToHide() {
-        const loader = this.page.locator('#loader-overlay');
-        await expect(loader).toBeVisible();
-        await this.page.evaluate(() => {
-            const el = document.getElementById('loader-overlay');
-            if (el) {
-                el.style.pointerEvents = 'none';
-                el.style.opacity = '0';
-            }
-        });
-        await this.page.waitForTimeout(500); // Wait for transition
+        await expect(this.loaderOverlay).toBeHidden({ timeout: 10000 });
     }
 
     @step('Inject Mock Tokens into LocalStorage')

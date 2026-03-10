@@ -29,11 +29,17 @@ Quality and reliability are at the core of Scora. The project features a profess
 
 ### End-to-End (E2E) Testing with Playwright
 - **Domain-Driven Design**: The test suite employs a robust 3-layered architecture:
-  - **Page Object Model (POM)**: Ensures test maintainability and separates UI structure from testing logic.
+  - **Page Object Model (POM)**: Ensures test maintainability and separates UI structure from testing logic. We enforce strict standards (e.g., no XPath/CSS indices, centralized constructor locators, and user-centric `getByRole` selectors).
   - **API Client & Interceptors**: Dedicated API interception modules to mock and control Strava API responses seamlessly without hitting rate limits.
   - **Fixtures & Utilities**: Reusable fixtures to speed up assertions, maintain isolated test states, and reduce code duplication.
-- **Parallel Execution**: Configured for fully parallel execution, minimizing feedback loops locally and in CI workflows.
-- **CI/CD Ready**: Automated GitHub Actions workflows (`playwright.yml`, `ci.yml`) run formatting, linting, and full E2E suites on every pull request.
+- **Continuous Integration (CI)**: Automated GitHub Actions workflows (`playwright.yml`, `ci.yml`) run formatting, linting, and full E2E suites on every pull request.
+
+## ☁️ Deployment Architecture
+
+Scora is securely deployed on **Vercel**, leveraging enterprise-grade edge architecture:
+- **Serverless Functions**: Strava's OAuth client secrets are securely handled server-side via `/api/strava-token` and `/api/strava-refresh`, entirely abstracting credentials from the frontend.
+- **Queue System**: Built-in Vercel edge rate-limit handling and a UI queue to protect against Strava API limits.
+- **CI/CD Integrations**: Vercel automatically creates preview branches for PRs and deploys production builds securely upon merging to `main`.
 
 ### Unit Testing with Vitest
 - **Fast & Reliable**: Leverages Vitest for lightning-fast unit and integration verification.
