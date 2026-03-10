@@ -85,6 +85,20 @@ function drawRunningTemplate(ctx, stats, templateType, textColor) {
     else if (templateType === 'route') drawRunningRoute(ctx, stats, textColor);
     else if (templateType === 'dm') drawDMBubble(ctx, stats);
     else if (templateType === 'stats') drawStatsTemplate(ctx, stats, textColor);
+    else if (templateType === 'modern-pill') drawModernPill(ctx, stats, textColor);
+    else if (templateType === 'scora-stealth') drawScoraStealth(ctx, stats, textColor);
+    else if (templateType === 'info-glass') drawInfoGlass(ctx, stats, textColor);
+    else if (templateType === 'split-badge') drawSplitBadge(ctx, stats, textColor);
+    else if (templateType === 'minimal-vertical') drawMinimalVertical(ctx, stats, textColor);
+    else if (templateType === 'workout-receipt') drawWorkoutReceipt(ctx, stats, textColor);
+    else if (templateType === 'neon-capsule') drawNeonCapsule(ctx, stats, textColor);
+    else if (templateType === 'brutalist-bold') drawBrutalistBold(ctx, stats, textColor);
+    else if (templateType === 'tech-hud') drawTechHUD(ctx, stats, textColor);
+    else if (templateType === 'data-modular') drawDataModular(ctx, stats, textColor);
+    else if (templateType === 'glass-slice') drawGlassSlice(ctx, stats, textColor);
+    else if (templateType === 'vhs-retro') drawVHSRetro(ctx, stats, textColor);
+    else if (templateType === 'award-badge') drawAwardBadge(ctx, stats, textColor);
+    else if (templateType === 'stealth-bar') drawStealthBar(ctx, stats, textColor);
     else drawRunningData(ctx, stats, textColor);
 }
 
@@ -441,6 +455,20 @@ function drawGymTemplate(ctx, stats, templateType, textColor) {
     else if (templateType === 'route') drawGymEffort(ctx, stats, textColor);   // Max HR focus
     else if (templateType === 'dm') drawDMBubble(ctx, stats);
     else if (templateType === 'stats') drawGymStats(ctx, stats, textColor);    // Avg + Max HR
+    else if (templateType === 'modern-pill') drawModernPill(ctx, stats, textColor);
+    else if (templateType === 'scora-stealth') drawScoraStealth(ctx, stats, textColor);
+    else if (templateType === 'info-glass') drawInfoGlass(ctx, stats, textColor);
+    else if (templateType === 'split-badge') drawSplitBadge(ctx, stats, textColor);
+    else if (templateType === 'minimal-vertical') drawMinimalVertical(ctx, stats, textColor);
+    else if (templateType === 'workout-receipt') drawWorkoutReceipt(ctx, stats, textColor);
+    else if (templateType === 'neon-capsule') drawNeonCapsule(ctx, stats, textColor);
+    else if (templateType === 'brutalist-bold') drawBrutalistBold(ctx, stats, textColor);
+    else if (templateType === 'tech-hud') drawTechHUD(ctx, stats, textColor);
+    else if (templateType === 'data-modular') drawDataModular(ctx, stats, textColor);
+    else if (templateType === 'glass-slice') drawGlassSlice(ctx, stats, textColor);
+    else if (templateType === 'vhs-retro') drawVHSRetro(ctx, stats, textColor);
+    else if (templateType === 'award-badge') drawAwardBadge(ctx, stats, textColor);
+    else if (templateType === 'stealth-bar') drawStealthBar(ctx, stats, textColor);
     else drawGymData(ctx, stats, textColor);     // Duration + Heartrate
 }
 
@@ -866,6 +894,893 @@ function drawDMBubble(ctx, stats) {
     ctx.font = `500 35px ${sysFont}`;
     ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
     ctx.fillText(captionText, bubX + bubW - 5, centerY + bubH / 2 + 40);
+}
+
+// ─── New Overlay Templates ────────────────────────────────────────────────────
+
+function drawModernPill(ctx, stats, textColor) {
+    const c = buildColors(textColor);
+    ctx.textBaseline = 'alphabetic';
+
+    // Dist/Calorie Fallback -> Dist/Time Fallback
+    const leftLabel = stats.hasMap ? "TOTAL DISTANCE" : "DURATION";
+    const distText = stats.hasMap ? (stats.distanceVal || '0.00') : (stats.timeStr || '0:00');
+    const distUnit = stats.hasMap ? 'km' : '';
+
+    // Pace/HR Fallback
+    const rightLabel = stats.hasMap ? "AVG PACE" : "HEART RATE";
+    const paceParts = stats.hasMap ? (stats.subValue || '').trim().split(' ') : [];
+    const paceText = paceParts[0] || (stats.avgHeartrate ? String(stats.avgHeartrate) : '0');
+    let paceUnit = paceParts[1] || (stats.hasMap ? '/km' : 'bpm');
+    if (paceUnit === 'min/km') paceUnit = '/km';
+
+    const sysFont = "'Plus Jakarta Sans', sans-serif";
+    const h = 130;
+    const centerY = 1300;
+
+    // Measure right side (Pace)
+    ctx.font = `800 24px ${sysFont}`;
+    const head2W = ctx.measureText("Avg Pace").width;
+    ctx.font = `900 65px ${sysFont}`;
+    const paceNumW = ctx.measureText(paceText).width;
+    ctx.font = `600 65px ${sysFont}`;
+    const paceUnitW = ctx.measureText(paceUnit).width;
+    const rightSideW = Math.max(head2W, paceNumW + paceUnitW);
+
+    // Measure left side (Distance/Calories)
+    ctx.font = `800 24px ${sysFont}`;
+    const head1W = ctx.measureText(leftLabel).width;
+    ctx.font = `900 65px ${sysFont}`;
+    const distNumW = ctx.measureText(distText).width;
+    ctx.font = `600 65px ${sysFont}`;
+    const distUnitW = ctx.measureText(` ${distUnit}`).width;
+    const leftSideW = Math.max(head1W, distNumW + distUnitW);
+
+    const gap = 60;
+    const w = leftSideW + gap + rightSideW + 100;
+    const startX = 540 - w / 2;
+
+    // Draw Pill Background
+    ctx.beginPath();
+    ctx.roundRect(startX, centerY - h / 2, w, h, h / 2);
+    ctx.fillStyle = textColor === 'black' ? 'rgba(255, 255, 255, 0.85)' : '#0ea5e9'; // standard cyan-ish blue from prototype
+
+    ctx.shadowColor = 'rgba(0,0,0,0.3)';
+    ctx.shadowBlur = 40;
+    ctx.shadowOffsetY = 20;
+    ctx.fill();
+
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+    ctx.strokeStyle = textColor === 'black' ? 'rgba(0,0,0,0.1)' : 'rgba(255, 255, 255, 0.2)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
+    let currentX = startX + 50;
+
+    // LEFT BLOCK (Distance/Calories)
+    ctx.textAlign = 'left';
+    ctx.font = `800 22px ${sysFont}`;
+    ctx.globalAlpha = 0.7;
+    ctx.fillText(leftLabel, currentX, centerY - 15);
+    ctx.globalAlpha = 1.0;
+
+    ctx.font = `900 60px ${sysFont}`;
+    ctx.fillText(distText, currentX, centerY + 35);
+    ctx.font = `600 60px ${sysFont}`;
+    ctx.fillText(` ${distUnit}`, currentX + distNumW, centerY + 35);
+
+    currentX += leftSideW + gap / 2;
+
+    // SEPARATOR
+    ctx.beginPath();
+    ctx.moveTo(currentX, centerY - 25);
+    ctx.lineTo(currentX, centerY + 25);
+    ctx.strokeStyle = textColor === 'black' ? 'rgba(0,0,0,0.2)' : 'rgba(255, 255, 255, 0.2)';
+    ctx.stroke();
+
+    currentX += gap / 2;
+
+    // RIGHT BLOCK (Pace/HR)
+    ctx.font = `800 22px ${sysFont}`;
+    ctx.globalAlpha = 0.7;
+    ctx.fillText(rightLabel, currentX, centerY - 15);
+    ctx.globalAlpha = 1.0;
+
+    ctx.font = `900 60px ${sysFont}`;
+    ctx.fillText(paceText, currentX, centerY + 35);
+    ctx.font = `600 60px ${sysFont}`;
+    ctx.fillText(paceUnit, currentX + paceNumW, centerY + 35);
+
+    // BOTTOM CAPTION (Started at)
+    ctx.textAlign = 'center';
+    ctx.font = `700 30px ${sysFont}`;
+    ctx.fillStyle = textColor === 'black' ? 'rgba(0, 0, 0, 0.9)' : 'rgba(255, 255, 255, 0.9)';
+    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowBlur = 10;
+    ctx.fillText(`STARTED ${stats.startTime || 'TODAY'}`, 540, centerY + h / 2 + 50);
+    ctx.shadowBlur = 0;
+}
+
+function drawScoraStealth(ctx, stats, textColor) {
+    const c = buildColors(textColor);
+    ctx.textBaseline = 'alphabetic';
+    const sysFont = "'Plus Jakarta Sans', sans-serif";
+
+    // Handle Gym/Running fallbacks
+    const distText = stats.hasMap ? (stats.distanceVal || '0.00') : (stats.timeStr || '0:00');
+    const distUnit = stats.hasMap ? 'km' : '';
+
+    // Fallback to average heartrate or duration for right column
+    const paceParts = stats.hasMap ? (stats.subValue || '').trim().split(' ') : [];
+    let paceText = paceParts[0] || (stats.avgHeartrate ? String(stats.avgHeartrate) : '0');
+    let paceUnit = paceParts[1] || (stats.hasMap ? '/km' : 'bpm');
+    if (paceUnit === 'min/km') paceUnit = '/km';
+
+    const rightLabel = stats.hasMap ? "AVERAGE PACE" : "HEART RATE";
+
+    const bottomY = 1750;
+    const leftX = 80;
+    const rightX = 1000;
+
+    // SCORA.LIVE Logo
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#34d399';
+    ctx.beginPath();
+    ctx.arc(leftX + 10, bottomY - 140, 8, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.font = `900 24px ${sysFont}`;
+    ctx.letterSpacing = "4px";
+    ctx.fillText("SCORA.LIVE", leftX + 35, bottomY - 132);
+    ctx.letterSpacing = "0px";
+
+    // LEFT BUNDLE (Distance / Calories)
+    ctx.font = `italic 900 130px ${sysFont}`;
+    ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
+    ctx.fillText(distText, leftX, bottomY);
+    const dW = ctx.measureText(distText).width;
+
+    ctx.font = `normal 600 40px ${sysFont}`;
+    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.7)';
+    ctx.fillText(` ${distUnit}`.toUpperCase(), leftX + dW, bottomY);
+
+    // RIGHT BUNDLE (Pace / HR)
+    ctx.textAlign = 'right';
+    ctx.font = `800 28px ${sysFont}`;
+    ctx.letterSpacing = "2px";
+    ctx.fillText(rightLabel, rightX, bottomY - 110);
+    ctx.letterSpacing = "0px";
+
+    ctx.font = `500 40px ${sysFont}`;
+    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.7)';
+    const pUnitW = ctx.measureText(` ${paceUnit}`).width;
+    ctx.fillText(` ${paceUnit}`, rightX, bottomY);
+
+    ctx.font = `800 80px ${sysFont}`;
+    ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
+    ctx.fillText(paceText, rightX - pUnitW, bottomY);
+}
+
+function drawInfoGlass(ctx, stats, textColor) {
+    const c = buildColors(textColor);
+    ctx.textBaseline = 'middle';
+    const sysFont = "'Plus Jakarta Sans', sans-serif";
+
+    // Fallbacks
+    const distLabel = stats.hasMap ? "DIST" : "TIME";
+    const distText = stats.hasMap ? (stats.distanceVal || '0.00') : (stats.timeStr || '0:00');
+
+    const paceLabel = stats.hasMap ? "PACE" : "AVG HR";
+    const paceParts = stats.hasMap ? (stats.subValue || '').trim().split(' ') : [];
+    const paceText = paceParts[0] || (stats.avgHeartrate ? String(stats.avgHeartrate) : '0');
+
+    const timeLabel = stats.hasMap ? "TIME" : "MAX HR";
+    const timeText = stats.hasMap ? (stats.timeStr || '0:00') : (stats.maxHeartrate ? String(stats.maxHeartrate) : '0');
+
+    const w = 920;
+    const h = 200;
+    const startX = (1080 - w) / 2;
+    const centerY = 300;
+
+    ctx.beginPath();
+    ctx.roundRect(startX, centerY - h / 2, w, h, 40);
+    ctx.fillStyle = textColor === 'black' ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.15)';
+    ctx.fill();
+    ctx.strokeStyle = textColor === 'black' ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.2)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    const col1 = startX + w / 6;
+    const col2 = startX + w / 2;
+    const col3 = startX + 5 * w / 6;
+
+    ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
+    ctx.textAlign = 'center';
+
+    ctx.font = `800 22px ${sysFont}`;
+    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.6)';
+    ctx.fillText(distLabel, col1, centerY - 25);
+    ctx.font = `900 60px ${sysFont}`;
+    ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
+    ctx.fillText(distText, col1, centerY + 30);
+
+    ctx.beginPath();
+    ctx.moveTo(startX + w / 3, centerY - 60);
+    ctx.lineTo(startX + w / 3, centerY + 60);
+    ctx.moveTo(startX + 2 * w / 3, centerY - 60);
+    ctx.lineTo(startX + 2 * w / 3, centerY + 60);
+    ctx.strokeStyle = textColor === 'black' ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.15)';
+    ctx.stroke();
+
+    ctx.font = `800 22px ${sysFont}`;
+    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.6)';
+    ctx.fillText(paceLabel, col2, centerY - 25);
+    ctx.font = `900 60px ${sysFont}`;
+    ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
+    ctx.fillText(paceText, col2, centerY + 30);
+
+    ctx.font = `800 22px ${sysFont}`;
+    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.6)';
+    ctx.fillText(timeLabel, col3, centerY - 25);
+    ctx.font = `900 60px ${sysFont}`;
+    ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
+    ctx.fillText(timeText, col3, centerY + 30);
+}
+
+function drawSplitBadge(ctx, stats, textColor) {
+    const sysFont = "'Plus Jakarta Sans', sans-serif";
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'center';
+
+    const distLabel = stats.hasMap ? "DISTANCE" : "DURATION";
+    const distText = stats.hasMap ? (stats.distanceVal || '0.00') : (stats.timeStr || '0:00');
+    const distUnit = stats.hasMap ? "KILOMETERS" : "";
+
+    const paceLabel = stats.hasMap ? "AVERAGE" : "HEART RATE";
+    const paceParts = stats.hasMap ? (stats.subValue || '').trim().split(' ') : [];
+    const paceText = paceParts[0] || (stats.avgHeartrate ? String(stats.avgHeartrate) : '0');
+    let paceUnit = paceParts[1] ? paceParts[1].toUpperCase() : (stats.hasMap ? 'MIN / KM' : 'BPM');
+    if (paceUnit === '/KM') paceUnit = 'MIN / KM';
+
+    const centerY = 960;
+    const centerX = 540;
+
+    ctx.save();
+    ctx.translate(centerX, centerY);
+    ctx.rotate(-2 * Math.PI / 180);
+
+    const w = 350;
+    const h = 260;
+
+    ctx.shadowColor = 'rgba(0,0,0,0.3)';
+    ctx.shadowBlur = 40;
+    ctx.shadowOffsetY = 20;
+
+    ctx.beginPath();
+    ctx.roundRect(-w, -h / 2, w, h, [40, 0, 0, 40]);
+    ctx.fillStyle = '#f97316';
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.roundRect(0, -h / 2, w, h, [0, 40, 40, 0]);
+    ctx.fillStyle = 'white';
+    ctx.fill();
+
+    ctx.restore();
+
+    ctx.save();
+    ctx.translate(centerX, centerY);
+    ctx.rotate(-2 * Math.PI / 180);
+
+    ctx.fillStyle = 'black';
+    ctx.font = `900 30px ${sysFont}`;
+    ctx.fillText(distLabel, -w / 2, -60);
+    ctx.font = `900 100px ${sysFont}`;
+    ctx.fillText(distText, -w / 2, 10);
+    ctx.font = `800 25px ${sysFont}`;
+    ctx.fillText(distUnit, -w / 2, 80);
+
+    ctx.fillStyle = '#ea580c';
+    ctx.font = `900 30px ${sysFont}`;
+    ctx.fillText(paceLabel, w / 2, -60);
+    ctx.font = `900 100px ${sysFont}`;
+    ctx.fillText(paceText, w / 2, 10);
+    ctx.font = `800 25px ${sysFont}`;
+    ctx.fillText(paceUnit, w / 2, 80);
+
+    ctx.restore();
+}
+
+function drawMinimalVertical(ctx, stats, textColor) {
+    const c = buildColors(textColor);
+    ctx.textBaseline = 'alphabetic';
+    const sysFont = "'Plus Jakarta Sans', sans-serif";
+    const distText = stats.hasMap ? (stats.distanceVal || '0.00') : (stats.timeStr || '0:00');
+    const distUnit = stats.hasMap ? 'km' : '';
+    const paceParts = stats.hasMap ? (stats.subValue || '').trim().split(' ') : [];
+    const paceText = paceParts[0] || (stats.avgHeartrate ? String(stats.avgHeartrate) : '0');
+    let paceUnit = paceParts[1] || (stats.hasMap ? '/km' : 'bpm');
+    if (paceUnit === 'min/km') paceUnit = '/km';
+
+    // Set origin
+    const startX = 100;
+    const startY = 1750;
+
+    // Cyan left border
+    ctx.fillStyle = '#22d3ee';
+    ctx.beginPath();
+    ctx.roundRect(startX, startY - 140, 10, 160, 5);
+    ctx.fill();
+
+    ctx.textAlign = 'left';
+    ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
+    ctx.font = `italic 900 120px ${sysFont}`;
+    ctx.fillText(distText, startX + 40, startY - 30);
+    const wD = ctx.measureText(distText).width;
+
+    if (distUnit) {
+        ctx.font = `600 40px ${sysFont}`;
+        ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)';
+        ctx.fillText(distUnit.toUpperCase(), startX + 50 + wD, startY - 30);
+    }
+
+    ctx.font = `800 24px ${sysFont}`;
+    ctx.letterSpacing = "4px";
+    ctx.fillStyle = '#22d3ee'; // cyan-400
+    const botText = `${paceText} ${paceUnit}`.toUpperCase();
+    ctx.fillText(`${botText}   •   ${stats.timeStr}`, startX + 40, startY + 10);
+    ctx.letterSpacing = "0px";
+}
+
+function drawWorkoutReceipt(ctx, stats, textColor) {
+    ctx.textBaseline = 'alphabetic';
+    const sysFont = "'Space Mono', monospace";
+
+    const distLabel = stats.hasMap ? "DISTANCE" : "DURATION";
+    const distText = stats.hasMap ? (stats.distanceVal || '0') + ' KM' : (stats.timeStr || '0:00');
+
+    const paceLabel = stats.hasMap ? "AVG PACE" : "AVG HR";
+    const paceParts = stats.hasMap ? (stats.subValue || '').trim().split(' ') : [];
+    const paceText = paceParts[0] || (stats.avgHeartrate ? String(stats.avgHeartrate) : '0');
+    let paceUnit = paceParts[1] || (stats.hasMap ? '/KM' : 'BPM');
+    if (paceUnit.toLowerCase() === 'min/km') paceUnit = '/KM';
+
+    const w = 600;
+    const h = 400;
+    const cx = 540;
+    const cy = 1650;
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(-2 * Math.PI / 180);
+
+    ctx.fillStyle = '#facc15'; // yellow-400
+    ctx.shadowColor = 'rgba(0,0,0,0.3)';
+    ctx.shadowBlur = 30;
+    ctx.shadowOffsetY = 15;
+    ctx.fillRect(-w / 2, -h / 2, w, h);
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+
+    ctx.fillStyle = 'rgba(0,0,0,0.1)';
+    ctx.font = `900 80px ${sysFont}`;
+    ctx.textAlign = 'right';
+    ctx.fillText("#", w / 2 - 20, -h / 2 + 80);
+
+    ctx.fillStyle = 'black';
+    ctx.textAlign = 'left';
+    ctx.font = `900 22px ${sysFont}`;
+    ctx.letterSpacing = "2px";
+    ctx.fillText("SCORA VERIFIED RUN", -w / 2 + 40, -h / 2 + 60);
+    ctx.letterSpacing = "0px";
+
+    ctx.beginPath();
+    ctx.moveTo(-w / 2 + 40, -h / 2 + 80);
+    ctx.lineTo(w / 2 - 40, -h / 2 + 80);
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(0,0,0,0.1)';
+    ctx.stroke();
+
+    ctx.font = `700 32px ${sysFont}`;
+    ctx.fillText(distLabel, -w / 2 + 40, 0);
+    ctx.textAlign = 'right';
+    ctx.fillText(distText, w / 2 - 40, 0);
+
+    ctx.textAlign = 'left';
+    ctx.fillText(paceLabel, -w / 2 + 40, 80);
+    ctx.textAlign = 'right';
+    ctx.fillText(`${paceText} ${paceUnit}`.trim(), w / 2 - 40, 80);
+
+    ctx.textAlign = 'left';
+    ctx.fillText("DURATION", -w / 2 + 40, 160);
+    ctx.textAlign = 'right';
+    ctx.fillText(stats.timeStr || '0:00', w / 2 - 40, 160);
+
+    ctx.restore();
+}
+
+function drawNeonCapsule(ctx, stats, textColor) {
+    const sysFont = "'Plus Jakarta Sans', sans-serif";
+    ctx.textBaseline = 'middle';
+
+    const distText = stats.hasMap ? (stats.distanceVal || '0.00') : (stats.timeStr || '0:00');
+    const distUnit = stats.hasMap ? 'KM' : '';
+
+    const paceParts = stats.hasMap ? (stats.subValue || '').trim().split(' ') : [];
+    const paceText = paceParts[0] || (stats.avgHeartrate ? String(stats.avgHeartrate) : '0');
+    let paceUnit = paceParts[1] || (stats.hasMap ? '/KM' : 'BPM');
+    if (paceUnit.toLowerCase() === 'min/km') paceUnit = '/KM';
+
+    const cx = 540;
+    const cy = 1750;
+    const w = 600;
+    const h = 140;
+
+    // Glass Pill
+    ctx.beginPath();
+    ctx.roundRect(cx - w / 2, cy - h / 2, w, h, h / 2);
+    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)';
+    ctx.shadowColor = 'rgba(0,0,0,0.2)';
+    ctx.shadowBlur = 40;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = textColor === 'black' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)';
+    ctx.stroke();
+
+    // Cyan dot
+    ctx.beginPath();
+    ctx.arc(cx - w / 2 + 70, cy, 40, 0, Math.PI * 2);
+    ctx.fillStyle = '#22d3ee';
+    ctx.shadowColor = 'rgba(34,211,238,0.5)';
+    ctx.shadowBlur = 20;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Zap inside dot (simple triangle path to fake it)
+    ctx.fillStyle = 'black';
+    ctx.beginPath();
+    ctx.moveTo(cx - w / 2 + 75, cy - 15);
+    ctx.lineTo(cx - w / 2 + 60, cy + 5);
+    ctx.lineTo(cx - w / 2 + 75, cy + 5);
+    ctx.lineTo(cx - w / 2 + 65, cy + 18);
+    ctx.lineTo(cx - w / 2 + 82, cy - 2);
+    ctx.lineTo(cx - w / 2 + 67, cy - 2);
+    ctx.fill();
+
+    ctx.textAlign = 'left';
+    ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
+    ctx.font = `italic 900 50px ${sysFont}`;
+    ctx.fillText(`${distText} ${distUnit}`.trim(), cx - w / 2 + 150, cy - 15);
+
+    ctx.font = `700 22px ${sysFont}`;
+    ctx.letterSpacing = "2px";
+    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)';
+    const botLabel = stats.hasMap ? "AVG PACE" : "AVG HR";
+    ctx.fillText(`${paceText} ${paceUnit} ${botLabel}`.toUpperCase(), cx - w / 2 + 150, cy + 30);
+    ctx.letterSpacing = "0px";
+}
+
+function drawBrutalistBold(ctx, stats, textColor) {
+    const sysFont = "'Plus Jakarta Sans', sans-serif";
+    ctx.textBaseline = 'alphabetic';
+
+    const distText = stats.hasMap ? (stats.distanceVal || '0.00') : (stats.timeStr || '0:00');
+
+    const paceParts = stats.hasMap ? (stats.subValue || '').trim().split(' ') : [];
+    const paceText = paceParts[0] || (stats.avgHeartrate ? String(stats.avgHeartrate) : '0');
+    let paceUnit = paceParts[1] || (stats.hasMap ? '/KM' : 'BPM');
+    if (paceUnit.toLowerCase() === 'min/km') paceUnit = '/KM';
+
+    const startX = 100;
+    const startY = 1600;
+    const w = 880;
+    const h = 260;
+
+    // White box shadow offset
+    ctx.fillStyle = '#22d3ee';
+    ctx.fillRect(startX + 15, startY + 15, w, h);
+
+    ctx.fillStyle = 'white';
+    ctx.fillRect(startX, startY, w, h);
+
+    ctx.fillStyle = 'black';
+    ctx.textAlign = 'left';
+    ctx.font = `900 20px ${sysFont}`;
+    ctx.letterSpacing = "1px";
+    ctx.fillText("SESSION SUMMARY", startX + 50, startY + 50);
+    ctx.letterSpacing = "0px";
+
+    ctx.font = `italic 900 130px ${sysFont}`;
+    ctx.fillText(distText, startX + 45, startY + 170);
+
+    ctx.font = `900 24px ${sysFont}`;
+    ctx.letterSpacing = "[-1px]";
+    ctx.fillText(`${paceText} ${paceUnit}`.toUpperCase(), startX + 50, startY + 220);
+
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.fillText(" / ", startX + 50 + ctx.measureText(`${paceText} ${paceUnit}`.toUpperCase()).width, startY + 220);
+
+    ctx.fillStyle = 'black';
+    const offset = startX + 50 + ctx.measureText(`${paceText} ${paceUnit} / `.toUpperCase()).width;
+    ctx.fillText(stats.timeStr || '0:00', offset, startY + 220);
+}
+
+function drawTechHUD(ctx, stats, textColor) {
+    const sysFont = "'Plus Jakarta Sans', sans-serif";
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'center';
+
+    const cx = 540;
+    const cy = 1600;
+    const r = 180;
+
+    const distLabel = stats.hasMap ? "DISTANCE" : "DURATION";
+    const distText = stats.hasMap ? (stats.distanceVal || '0.00') : (stats.timeStr || '0:00');
+    const hrText = stats.avgHeartrate ? `${stats.avgHeartrate} BPM` : (stats.hasMap ? (stats.timeStr || '0:00') : '0 BPM');
+
+    // Outer ring
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.strokeStyle = textColor === 'black' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Inner dashed ring (simulated with gaps)
+    ctx.beginPath();
+    ctx.arc(cx, cy, r - 15, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(34,211,238,0.2)'; // cyan
+    ctx.setLineDash([10, 15]);
+    ctx.lineWidth = 4;
+    ctx.stroke();
+    ctx.setLineDash([]); // reset
+
+    ctx.fillStyle = '#22d3ee'; // cyan
+    ctx.font = `900 20px ${sysFont}`;
+    ctx.letterSpacing = "6px";
+    ctx.fillText(distLabel, cx + 3, cy - 40); // manual kerning fix
+    ctx.letterSpacing = "0px";
+
+    ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
+    ctx.font = `italic 900 70px ${sysFont}`;
+    ctx.fillText(distText, cx, cy + 15);
+
+    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)';
+    ctx.font = `700 20px ${sysFont}`;
+    ctx.letterSpacing = "3px";
+    ctx.fillText(hrText, cx + 1.5, cy + 70);
+    ctx.letterSpacing = "0px";
+}
+
+function drawDataModular(ctx, stats, textColor) {
+    const sysFont = "'Plus Jakarta Sans', sans-serif";
+    ctx.textBaseline = 'alphabetic';
+
+    const distLabel = stats.hasMap ? "DISTANCE" : "DURATION";
+    const distText = stats.hasMap ? (stats.distanceVal || '0.00') : (stats.timeStr || '0:00');
+
+    const paceLabel = stats.hasMap ? "PACE" : "HEART RATE";
+    const paceParts = stats.hasMap ? (stats.subValue || '').trim().split(' ') : [];
+    const paceText = paceParts[0] || (stats.avgHeartrate ? String(stats.avgHeartrate) : '0');
+    let paceUnit = paceParts[1] || (stats.hasMap ? '/KM' : 'BPM');
+    if (paceUnit.toLowerCase() === 'min/km') paceUnit = '/KM';
+
+    const cx = 540;
+    const cy = 1600;
+    const w = 900;
+    const h = 240;
+    const r = 32;
+
+    ctx.save();
+
+    // Main boundary path for clipping and border
+    ctx.beginPath();
+    ctx.roundRect(cx - w / 2, cy - h / 2, w, h, r);
+    ctx.clip();
+
+    // Grid lines background (gap-px)
+    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.15)';
+    ctx.fillRect(cx - w / 2, cy - h / 2, w, h);
+
+    const botH = 50; // bottom panel height
+    const topH = h - botH - 1; // leaving exactly 1px for horizontal gap
+
+    const startX = cx - w / 2;
+    const startY = cy - h / 2;
+
+    // Inner panel styles (Swiss Grid uses dark boxes inside a colored border/gap frame)
+    const panelBg = textColor === 'black' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.5)';
+    const bottomBg = textColor === 'black' ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.05)';
+
+    // Top Left Panel (Sharp rects! Clipping handles the outer curve)
+    ctx.fillStyle = panelBg;
+    ctx.fillRect(startX, startY, w / 2 - 0.5, topH);
+
+    // Top Right Panel
+    ctx.fillRect(startX + w / 2 + 0.5, startY, w / 2 - 0.5, topH);
+
+    // Bottom Panel
+    ctx.fillStyle = bottomBg;
+    ctx.fillRect(startX, startY + topH + 1, w, botH);
+
+    // Text for Top Left
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#22d3ee';
+    ctx.font = `900 18px ${sysFont}`;
+    ctx.letterSpacing = "2px";
+    ctx.fillText(distLabel, startX + 50, startY + 50);
+
+    ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
+    ctx.font = `italic 900 70px ${sysFont}`;
+    ctx.letterSpacing = "0px";
+    ctx.fillText(distText, startX + 50, startY + 130);
+
+    // Text for Top Right
+    ctx.fillStyle = '#22d3ee';
+    ctx.font = `900 18px ${sysFont}`;
+    ctx.letterSpacing = "2px";
+    ctx.fillText(paceLabel, startX + w / 2 + 50, startY + 50);
+
+    ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
+    ctx.font = `italic 900 70px ${sysFont}`;
+    ctx.letterSpacing = "0px";
+    ctx.fillText(`${paceText} ${paceUnit}`.toUpperCase(), startX + w / 2 + 50, startY + 130);
+
+    // Text for Bottom
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)';
+    ctx.font = `900 14px ${sysFont}`;
+    ctx.letterSpacing = "6px";
+    ctx.fillText("SCORA PERFORMANCE LOG", cx + 3, startY + topH + 1 + botH / 2);
+
+    ctx.restore();
+
+    // Draw the outer border over everything
+    ctx.beginPath();
+    ctx.roundRect(cx - w / 2, cy - h / 2, w, h, r);
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = textColor === 'black' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)';
+    ctx.stroke();
+}
+
+function drawGlassSlice(ctx, stats, textColor) {
+    const sysFont = "'Plus Jakarta Sans', sans-serif";
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'center';
+
+    const distText = stats.hasMap ? (stats.distanceVal || '0.00') : (stats.timeStr || '0:00');
+    const distUnit = stats.hasMap ? 'KM' : 'TIME';
+
+    const paceParts = stats.hasMap ? (stats.subValue || '').trim().split(' ') : [];
+    const paceText = paceParts[0] || (stats.avgHeartrate ? String(stats.avgHeartrate) : '0');
+    let paceUnit = paceParts[1] || (stats.hasMap ? '/KM' : 'BPM');
+    if (paceUnit.toLowerCase() === 'min/km') paceUnit = '/KM';
+
+    const cx = 540;
+    const cy = 1650;
+
+    ctx.save();
+
+    // Skew transform
+    ctx.translate(cx, cy);
+    ctx.transform(1, 0, -0.176, 1, 0, 0); // approx skewX(-10deg)
+
+    const w = 700;
+    const h = 180;
+
+    // Glass backdrop
+    const grad = ctx.createLinearGradient(-w / 2, -h / 2, w / 2, h / 2);
+    grad.addColorStop(0, textColor === 'black' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.2)');
+    grad.addColorStop(1, 'transparent');
+
+    ctx.beginPath();
+    ctx.roundRect(-w / 2, -h / 2, w, h, 40);
+    ctx.fillStyle = grad;
+    ctx.shadowColor = 'rgba(0,0,0,0.2)';
+    ctx.shadowBlur = 50;
+    ctx.shadowOffsetY = 20;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = textColor === 'black' ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.2)';
+    ctx.stroke();
+
+    // Reset skew for text rendering cleanly inside it?
+    // Prototype skews text too, so we keep transform!
+
+    // Left Unit
+    ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
+    ctx.font = `italic 900 70px ${sysFont}`;
+    ctx.fillText(distText, -w / 4, -10);
+    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)';
+    ctx.font = `900 16px ${sysFont}`;
+    ctx.fillText(distUnit, -w / 4, 40);
+
+    // Divider
+    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.2)';
+    ctx.fillRect(0, -40, 2, 80);
+
+    // Right Unit
+    ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
+    ctx.font = `italic 900 40px ${sysFont}`;
+    ctx.fillText(paceText, w / 4, -10);
+    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)';
+    ctx.font = `900 16px ${sysFont}`;
+    ctx.fillText((stats.hasMap ? "PACE" : "HEART RATE"), w / 4, 40);
+
+    ctx.restore();
+}
+
+function drawVHSRetro(ctx, stats, textColor) {
+    const sysFont = "'Space Mono', monospace";
+    ctx.textBaseline = 'alphabetic';
+
+    const distLabel = stats.hasMap ? "DIST" : "TIME";
+    const distText = stats.hasMap ? `${stats.distanceVal || '0.00'}KM` : (stats.timeStr || '0:00');
+
+    const paceLabel = stats.hasMap ? "PACE" : "HR";
+    const paceParts = stats.hasMap ? (stats.subValue || '').trim().split(' ') : [];
+    const paceText = paceParts[0] || (stats.avgHeartrate ? String(stats.avgHeartrate) : '0');
+
+    const startX = 80;
+    const startY = 1600;
+    const w = 480;
+    const h = 220;
+
+    // Dark backdrop with red border
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(startX, startY, w, h);
+    ctx.fillStyle = '#ef4444'; // red-500
+    ctx.fillRect(startX, startY, 10, h);
+
+    // REC dot
+    ctx.fillStyle = '#dc2626'; // red-600
+    ctx.beginPath();
+    ctx.arc(startX + 40, startY + 50, 6, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.textAlign = 'left';
+    ctx.fillStyle = 'white'; // Always white for VHS
+    ctx.globalAlpha = 0.6;
+    ctx.font = `700 20px ${sysFont}`;
+    ctx.fillText("REC LIVE", startX + 60, startY + 56);
+    ctx.globalAlpha = 1.0;
+
+    ctx.font = `700 80px ${sysFont}`;
+    ctx.letterSpacing = "-2px";
+    ctx.fillText(stats.timeStr || '0:00', startX + 40, startY + 140);
+    ctx.letterSpacing = "0px";
+
+    ctx.globalAlpha = 0.8;
+    ctx.font = `700 20px ${sysFont}`;
+    ctx.fillText(`${distLabel} ${distText}`, startX + 40, startY + 190);
+
+    ctx.textAlign = 'right';
+    ctx.fillText(`${paceLabel} ${paceText}`, startX + w - 30, startY + 190);
+    ctx.globalAlpha = 1.0;
+}
+
+function drawAwardBadge(ctx, stats, textColor) {
+    const sysFont = "'Plus Jakarta Sans', sans-serif";
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'center';
+
+    const distText = stats.hasMap ? (stats.distanceVal || '0.00') : (stats.timeStr || '0:00');
+    const distUnit = stats.hasMap ? 'Kilometers Run' : 'Workout Duration';
+
+    const cx = 540;
+    const cy = 1650;
+    const r = 160;
+
+    // Outer Circle
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)';
+    ctx.fill();
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = textColor === 'black' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)';
+    ctx.stroke();
+
+    // Top pill (ATHLETE)
+    const pillW = 160;
+    const pillH = 40;
+    ctx.beginPath();
+    ctx.roundRect(cx - pillW / 2, cy - r - pillH / 2, pillW, pillH, 20);
+    ctx.fillStyle = '#22d3ee';
+    ctx.fill();
+
+    ctx.fillStyle = 'black';
+    ctx.font = `italic 900 16px ${sysFont}`;
+    ctx.letterSpacing = "4px";
+    ctx.fillText("ATHLETE", cx + 2, cy - r); // +2 kerning fix
+    ctx.letterSpacing = "0px";
+
+    ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
+    ctx.font = `italic 900 80px ${sysFont}`;
+    ctx.fillText(distText, cx, cy - 10);
+
+    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)';
+    ctx.font = `900 16px ${sysFont}`;
+    ctx.letterSpacing = "2px";
+    ctx.fillText(distUnit.toUpperCase(), cx, cy + 55);
+    ctx.letterSpacing = "0px";
+}
+
+function drawStealthBar(ctx, stats, textColor) {
+    const sysFont = "'Plus Jakarta Sans', sans-serif";
+    ctx.textBaseline = 'middle';
+
+    const distLabel = stats.hasMap ? "DISTANCE" : "DURATION";
+    const distText = stats.hasMap ? `${stats.distanceVal || '0.00'}KM` : (stats.timeStr || '0:00');
+
+    const paceLabel = stats.hasMap ? "AVG PACE" : "HEART RATE";
+    const paceParts = stats.hasMap ? (stats.subValue || '').trim().split(' ') : [];
+    const paceText = paceParts[0] || (stats.avgHeartrate ? String(stats.avgHeartrate) : '0');
+    let paceUnit = paceParts[1] || (stats.hasMap ? '/KM' : 'BPM');
+    if (paceUnit.toLowerCase() === 'min/km') paceUnit = '/KM';
+
+    const cx = 540;
+    const cy = 1750;
+    const w = 980;
+    const h = 120;
+
+    // Black/Dark wide pill
+    ctx.beginPath();
+    ctx.roundRect(cx - w / 2, cy - h / 2, w, h, h / 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.8)'; // Always bold stealth
+    ctx.shadowColor = 'rgba(0,0,0,0.3)';
+    ctx.shadowBlur = 40;
+    ctx.shadowOffsetY = 15;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+    ctx.stroke();
+
+    // Left Cyan badge
+    const badgeW = 200;
+    ctx.beginPath();
+    ctx.roundRect(cx - w / 2 + 10, cy - h / 2 + 10, badgeW, h - 20, (h - 20) / 2);
+    ctx.fillStyle = '#22d3ee';
+    ctx.fill();
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'black';
+    ctx.font = `italic 900 24px ${sysFont}`;
+    ctx.fillText("SCORA", cx - w / 2 + 10 + badgeW / 2, cy);
+
+    // Data Columns Setup
+    ctx.fillStyle = 'white';
+    const colStarts = [cx - w / 2 + 300, cx - w / 2 + 550, cx - w / 2 + 800];
+    const labels = [distLabel, paceLabel, "TIME"];
+    const values = [distText, `${paceText}${paceUnit}`, stats.timeStr || '0:00'];
+
+    ctx.textAlign = 'left';
+    for (let i = 0; i < 3; i++) {
+        // Fallback for Time (3rd col) on Gym workouts is Max HR
+        if (i === 2 && !stats.hasMap) {
+            labels[i] = "MAX HR";
+            values[i] = stats.maxHeartrate ? `${stats.maxHeartrate} BPM` : "0 BPM";
+        }
+
+        ctx.globalAlpha = 0.4;
+        ctx.font = `900 14px ${sysFont}`;
+        ctx.letterSpacing = "2px";
+        ctx.fillText(labels[i], colStarts[i], cy - 18);
+
+        ctx.globalAlpha = 1.0;
+        ctx.font = `italic 900 36px ${sysFont}`;
+        ctx.letterSpacing = "0px";
+        ctx.fillText(values[i], colStarts[i], cy + 20);
+    }
 }
 
 // ─── Export ───────────────────────────────────────────────────────────────────

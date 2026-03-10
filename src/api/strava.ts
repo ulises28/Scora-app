@@ -127,6 +127,24 @@ export function formatActivityStats(activity) {
         polyline: activity.map?.summary_polyline || '',
         avgHeartrate: activity.average_heartrate ? Math.round(activity.average_heartrate) : null,
         maxHeartrate: activity.max_heartrate ? Math.round(activity.max_heartrate) : null,
+        startTime: (() => {
+            const rawDate = activity.start_date_local || activity.start_date;
+            if (!rawDate) return '';
+            // Strava 'start_date_local' literally contains the wall-clock time, but might append 'Z'.
+            // "2026-03-06T09:31:09Z" means the athlete read 09:31 AM on their watch.
+            // Using new Date() applies the browser's timezone to it, shifting it incorrectly.
+            // Split it manually to extract the exact hour/minute intended.
+            try {
+                const timePart = rawDate.split('T')[1].replace('Z', ''); // '09:31:09'
+                const [hours, minutes] = timePart.split(':');
+                let h = parseInt(hours, 10);
+                const ampm = h >= 12 ? 'PM' : 'AM';
+                h = h % 12 || 12;
+                return `${h}:${minutes} ${ampm}`;
+            } catch (e) {
+                return '';
+            }
+        })(),
     };
 
     const h = Math.floor(activity.moving_time / 3600);
