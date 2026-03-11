@@ -1,5 +1,5 @@
 <div align="center">
-  <h1>Scora - Your Routes, Crafted into Art</h1>
+  <h1>Scora - Designed to be seen.</h1>
   <p>Transform your Strava activities into aesthetic stickers and premium images ready to be shared on Instagram Stories, TikTok, and more.</p>
 </div>
 
