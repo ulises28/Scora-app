@@ -38,6 +38,9 @@ export default async function handler(req, res) {
                     url: process.env.UPSTASH_REDIS_REST_URL,
                     token: process.env.UPSTASH_REDIS_REST_TOKEN
                 });
+                
+                await redis.del('strava:active_token');
+
                 const nextInQueue = await redis.lindex(QUEUE_KEY, 0);
                 if (nextInQueue) {
                     await redis.lpop(QUEUE_KEY);

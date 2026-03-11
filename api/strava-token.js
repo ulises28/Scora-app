@@ -52,6 +52,21 @@ export default async function handler(req, res) {
         }
 
         // Éxito: Le devolvemos el payload al frontend (que contiene el access_token)
+        
+        // Save the active token for dead man's switch
+        if (REDIS_CONFIGURED) {
+            try {
+                const redis = new Redis({
+                    url: process.env.UPSTASH_REDIS_REST_URL,
+                    token: process.env.UPSTASH_REDIS_REST_TOKEN
+                });
+                await redis.set('strava:active_token', data.access_token);
+                console.log('[Queue] Saved active token to Redis for dead-man switch');
+            } catch (kvError) {
+                console.warn('[Queue] Failed to save active token:', kvError.message);
+            }
+        }
+
         return res.status(200).json(data);
 
     } catch (error) {

@@ -80,4 +80,38 @@ test.describe('Scora App: API Network Intercepts (POM)', () => {
         await feedPage.verifyQueuePosition('#2');
     });
 
+    // ─── Test 10: Queue Join recovers gracefully from orphaned token ─────────
+    test('Test 10: Queue Join lets user through gracefully if an orphaned token was cleared', async ({ page }) => {
+        const api = new MockStravaClient(page);
+        const feedPage = new FeedPage(page);
+
+        // 1. Mock the queue-join endpoint to simulate what the backend returns
+        // when it successfully acquires the lock and cleans up an orphaned token (position 0).
+        await api.mockQueueJoinWithOrphanCleanup();
+
+        // 2. Navigate to the app with NO session (forces login screen)
+        await feedPage.goto();
+        await feedPage.waitForLoaderToHide();
+
+        // 3. Spy on window.open to see if the app tries to launch the OAuth popup
+        let openedUrl = '';
+        await page.exposeFunction('mockWindowOpen', (url: string) => {
+            openedUrl = url;
+            return {}; // Mock window object
+        });
+        await page.evaluate(() => {
+            window.open = (window as any).mockWindowOpen;
+        });
+
+        await feedPage.clickLoginButton();
+
+        // 4. ✅ Core assertion: If position was 0 (even after cleanup), 
+        // the app immediately opens the Strava OAuth popup without showing the queue UI.
+        
+        // Wait a short moment for the async queue join to resolve
+        await page.waitForTimeout(100);
+        
+        expect(openedUrl).toContain('strava.com/oauth/authorize');
+    });
+
 });

@@ -36,6 +36,24 @@ export default async function handler(req, res) {
         if (acquired) {
             // We got the lock — caller can proceed directly to OAuth
             console.log(`[Queue] Session ${sessionId} acquired the lock immediately.`);
+
+            // Check if there's a left-over token from an abandoned session
+            try {
+                const orphanedToken = await redis.get('strava:active_token');
+                if (orphanedToken) {
+                    console.log('[Queue] Found orphaned token. Deauthorizing to clear 403 issue...');
+                    await fetch('https://www.strava.com/oauth/deauthorize', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ access_token: orphanedToken })
+                    });
+                    await redis.del('strava:active_token');
+                    console.log('[Queue] Orphaned token successfully cleared.');
+                }
+            } catch (cleanupErr) {
+                console.error('[Queue] Error resolving orphaned token:', cleanupErr);
+            }
+
             return res.status(200).json({
                 sessionId,
                 position: 0,

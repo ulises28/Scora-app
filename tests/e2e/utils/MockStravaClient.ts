@@ -104,4 +104,30 @@ export class MockStravaClient {
             });
         });
     }
+
+    /**
+     * Mocks a successful queue-join that encountered an orphaned token,
+     * to simulate the backend dead-man switch activating.
+     */
+    async mockQueueJoinWithOrphanCleanup() {
+        let deauthCalled = false;
+        
+        // Listen for the backend-side deauth call happening "behind the scenes"
+        // In Playwright, we can't easily mock fetch calls made by our BE to Strava's BE,
+        // unless they are made by the browser. 
+        // 🚨 Note: The orphaned token cleanup is a pure Backend-to-Backend call. 
+        // We will mock the queue-join response and verify the frontend behavior.
+        
+        await this.page.route('**/api/queue-join', async route => {
+            await route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify({
+                    sessionId: 'session-orphan-cleared-abc',
+                    position: 0,
+                    estimatedWait: 0
+                })
+            });
+        });
+    }
 }
