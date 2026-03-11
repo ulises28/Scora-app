@@ -45,7 +45,7 @@ export class FeedPage extends BasePage {
 
     getActivityCard(activityName: string): Locator {
         return this.page.locator('.activity-card').filter({
-            has: this.page.locator(`text="${activityName}"`)
+            has: this.page.getByText(activityName, { exact: true })
         });
     }
 

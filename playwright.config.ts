@@ -1,79 +1,69 @@
 import { defineConfig, devices } from '@playwright/test';
+import path from 'path';
 
 /**
- * Read environment variables from file.
- * https://github.com/motdotla/dotenv
+ * ARCHITECT NOTE: Centralizing environment variables.
+ * This allows you to switch between 'staging' and 'local' easily.
  */
 // import dotenv from 'dotenv';
-// import path from 'path';
 // dotenv.config({ path: path.resolve(__dirname, '.env') });
 
-/**
- * See https://playwright.dev/docs/test-configuration.
- */
 export default defineConfig({
   testDir: './tests/e2e',
-  /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
-  /* Retry on CI only */
+  
+  /* LEAD STRATEGY: Higher retries on CI, but fail fast locally. */
   retries: process.env.CI ? 2 : 0,
-  /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 2 : undefined,
-  /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: 'html',
-  /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
-  use: {
-    /* Base URL to use in actions like `await page.goto('')`. */
-    baseURL: 'http://localhost:5500',
+  
+  /* SCALE: Dynamic worker allocation based on machine CPU. */
+  workers: process.env.CI ? 4 : undefined,
 
-    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
-    trace: 'on-first-retry',
+  /* OBSERVABILITY: Use 'blob' for CI merging and 'html' for local reviews. */
+  reporter: process.env.CI ? [['github'], ['blob']] : [['html'], ['list']],
+
+  /* TIMEOUTS: Explicit control to prevent "Hung" tests. */
+  timeout: 60 * 1000, // 1 minute per test
+  expect: {
+    timeout: 10 * 1000, // 10 seconds for assertions (Better for SPAs like Scora)
   },
 
-  /* Configure projects for major browsers */
+  use: {
+    baseURL: process.env.BASE_URL || 'http://localhost:5500',
+
+    /* DEBUGGING: 'retain-on-failure' is better than 'on-first-retry'. 
+       It gives you a trace for EVERY failure, which is vital for RCA. */
+    trace: 'retain-on-failure',
+    
+    /* PRO-LEVEL EVIDENCE: Automatic video and screenshots for failed tests. */
+    screenshot: 'only-on-failure',
+    video: 'retain-on-failure',
+
+    /* HEADLESS: Default to true, but allow override for local debugging. */
+    headless: true,
+  },
+
   projects: [
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
-
+    /* Since you mentioned Capacitor for Scora, we MUST enable mobile. */
     {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
+      name: 'Mobile Safari',
+      use: { ...devices['iPhone 13'] },
     },
-
     {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
+      name: 'Mobile Chrome',
+      use: { ...devices['Pixel 5'] },
     },
-
-    /* Test against mobile viewports. */
-    // {
-    //   name: 'Mobile Chrome',
-    //   use: { ...devices['Pixel 5'] },
-    // },
-    // {
-    //   name: 'Mobile Safari',
-    //   use: { ...devices['iPhone 12'] },
-    // },
-
-    /* Test against branded browsers. */
-    // {
-    //   name: 'Microsoft Edge',
-    //   use: { ...devices['Desktop Edge'], channel: 'msedge' },
-    // },
-    // {
-    //   name: 'Google Chrome',
-    //   use: { ...devices['Desktop Chrome'], channel: 'chrome' },
-    // },
   ],
 
-  /* Run your local dev server before starting the tests */
   webServer: {
     command: 'npm run dev',
     url: 'http://localhost:5500',
     reuseExistingServer: !process.env.CI,
+    timeout: 120 * 1000, // Give the build time to finish
   },
 });

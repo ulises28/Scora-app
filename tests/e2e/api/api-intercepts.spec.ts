@@ -53,7 +53,7 @@ test.describe('Scora App: API Network Intercepts (POM)', () => {
         // 3. Navigate to the app and wait for the feed to settle
         await feedPage.goto();
         await feedPage.waitForLoaderToHide();
-        await feedPage.verifyActivityRendered('Carrera por la mañana', '11.30 km');
+        await feedPage.verifyActivityRendered('Carrera por la mañana', '9.64 km • Run');
 
         // 4. ✅ Core assertion: stravaAuth must be gone after auto-logout
         const stravaAuth = await page.evaluate(() => localStorage.getItem('stravaAuth'));

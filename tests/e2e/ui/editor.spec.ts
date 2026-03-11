@@ -1,4 +1,4 @@
-import { test } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import { FeedPage } from '../pages/FeedPage';
 import { EditorPage } from '../pages/EditorPage';
 import { MockStravaClient } from '../utils/MockStravaClient';
@@ -38,7 +38,7 @@ test.describe('Scora App UI: Sticker Editor (POM)', () => {
         await editorPage.verifyTemplateIsActive('stats');
     });
 
-    test('Test 2b: Desktop arrow buttons navigate between templates', async ({ page }) => {
+    test('Test 2b: Arrow/Swipe navigation between templates', async ({ page, isMobile }) => {
         const feedPage = new FeedPage(page);
         const editorPage = new EditorPage(page);
 
@@ -48,20 +48,34 @@ test.describe('Scora App UI: Sticker Editor (POM)', () => {
         // Start at minimal (first) — prev should be disabled
         await editorPage.verifyTemplateIsActive('minimal');
 
-        // Next → Route
-        await editorPage.clickNextTemplate();
-        await editorPage.verifyTemplateIsActive('route');
+        if (isMobile) {
+            // Next → Route
+            await editorPage.swipeLeft();
+            await editorPage.verifyTemplateIsActive('route');
 
-        // Next → Data
-        await editorPage.clickNextTemplate();
-        await editorPage.verifyTemplateIsActive('data');
+            // Next → Data
+            await editorPage.swipeLeft();
+            await editorPage.verifyTemplateIsActive('data');
 
-        // Prev → Route
-        await editorPage.clickPrevTemplate();
-        await editorPage.verifyTemplateIsActive('route');
+            // Prev → Route
+            await editorPage.swipeRight();
+            await editorPage.verifyTemplateIsActive('route');
+        } else {
+            // Next → Route
+            await editorPage.clickNextTemplate();
+            await editorPage.verifyTemplateIsActive('route');
+
+            // Next → Data
+            await editorPage.clickNextTemplate();
+            await editorPage.verifyTemplateIsActive('data');
+
+            // Prev → Route
+            await editorPage.clickPrevTemplate();
+            await editorPage.verifyTemplateIsActive('route');
+        }
     });
 
-    test('Test 2c: Arrow navigation reaches all templates including 8m/8m2 at the end', async ({ page }) => {
+    test('Test 2c: Navigation reaches all templates including 8m/8m2 at the end', async ({ page, isMobile }) => {
         const feedPage = new FeedPage(page);
         const editorPage = new EditorPage(page);
 
@@ -70,12 +84,18 @@ test.describe('Scora App UI: Sticker Editor (POM)', () => {
 
         // Navigate forward through every template — self-updating when TEMPLATES changes
         for (let i = 1; i < TEMPLATES.length; i++) {
-            await editorPage.clickNextTemplate();
+            if (isMobile) {
+                await editorPage.swipeLeft();
+            } else {
+                await editorPage.clickNextTemplate();
+            }
             await editorPage.verifyTemplateIsActive(TEMPLATES[i]);
         }
 
-        // At the last template the Next button must be disabled
-        await page.locator('#btn-template-next').isDisabled();
+        if (!isMobile) {
+            // At the last template the Next button must be disabled (Desktop only check)
+            await expect(page.locator('#btn-template-next')).toBeDisabled();
+        }
     });
 
     test('Test 3: Browser History API "Back" button functions natively', async ({ page }) => {
