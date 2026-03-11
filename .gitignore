@@ -53,3 +53,9 @@ src/config.ts
 /playwright/.cache/
 /playwright/.auth/
 .vercel
+
+# AI Agent Specific
+.agent/
+.agents/
+_agent/
+_agents/
