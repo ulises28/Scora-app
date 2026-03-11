@@ -56,7 +56,7 @@ jobs:
             -e CI=true \
             -e VITE_STRAVA_CLIENT_ID=${{ secrets.STRAVA_CLIENT_ID }} \
             -e VITE_STRAVA_CLIENT_SECRET=${{ secrets.STRAVA_CLIENT_SECRET }} \
-            -v ${{ github.workspace }}/playwright-report:/app/playwright-report \
+            -v ${{ github.workspace }}/blob-report:/app/blob-report \
             -v ${{ github.workspace }}/test-results:/app/test-results \
             scora-e2e
 
@@ -64,8 +64,8 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always() # Upload report even if tests fail
         with:
-          name: playwright-report
-          path: playwright-report/
+          name: blob-report
+          path: blob-report/
           retention-days: 14
 
       - name: Upload Test Results
