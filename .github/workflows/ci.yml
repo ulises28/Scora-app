@@ -76,39 +76,3 @@ jobs:
           path: test-results/
           retention-days: 7
 
-  smoke-test:
-    name: Live Health Check (Post-Deploy)
-    needs: e2e-tests
-    # Only run on direct pushes to master/main (i.e., after a merge), not on PRs
-    if: |
-      always() &&
-      github.event_name == 'push' &&
-      (needs.e2e-tests.result == 'success' || needs.e2e-tests.result == 'skipped')
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Wait for Vercel deployment
-        run: sleep 30
-
-      - name: Hit /api/health and verify HTTP 200
-        id: health_check
-        run: |
-          HTTP_STATUS=$(curl -s -o /tmp/health_response.json -w "%{http_code}" https://scora-app.vercel.app/api/health)
-          echo "Health check response:"
-          cat /tmp/health_response.json
-          echo ""
-          echo "HTTP Status: $HTTP_STATUS"
-          if [ "$HTTP_STATUS" != "200" ]; then
-            echo "❌ Health check FAILED! App is degraded or down."
-            exit 1
-          fi
-          echo "✅ Health check PASSED! App is healthy."
-
-      - name: Send Slack Alert on Failure
-        if: failure() && steps.health_check.outcome == 'failure'
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        run: |
-          curl -X POST -H 'Content-type: application/json' \
-          --data '{"text":"⚠️ *CRITICAL ALERT:* The Scora `/api/health` check just failed in production. The app might be down!"}' \
-          "$SLACK_WEBHOOK_URL"

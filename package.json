@@ -9,6 +9,9 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:e2e": "playwright test",
+    "test:mobileChrome": "playwright test --project=\"Mobile Chrome\"",
+    "test:mobileSafari": "playwright test --project=\"Mobile Safari\"",
+    "test:chromium": "playwright test --project=chromium",
     "docker:build": "docker build -f Dockerfile.playwright -t scora-e2e .",
     "docker:test": "docker compose -f docker-compose.playwright.yml up --build --exit-code-from playwright"
   },
