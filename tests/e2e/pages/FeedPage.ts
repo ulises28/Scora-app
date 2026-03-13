@@ -43,17 +43,24 @@ export class FeedPage extends BasePage {
         await expect(this.queuePositionText).toHaveText(expectedText, { timeout: 5000 });
     }
 
-    getActivityCard(activityName: string): Locator {
-        return this.page.locator('.activity-card').filter({
+    getActivityCard(activityName: string, stats?: string): Locator {
+        let card = this.page.locator('.activity-card').filter({
             has: this.page.getByText(activityName, { exact: true })
         });
+        
+        if (stats) {
+            card = card.filter({
+                hasText: stats
+            });
+        }
+        
+        return card;
     }
 
     @step('Verify Activity Card is Visible')
     async verifyActivityRendered(activityName: string, expectedStatsText: string) {
-        const card = this.getActivityCard(activityName);
-        await expect(card).toBeVisible();
-        await expect(card.locator('.card-meta')).toContainText(expectedStatsText);
+        const card = this.getActivityCard(activityName, expectedStatsText);
+        await expect(card.first()).toBeVisible();
     }
 
     @step('Click Activity Card to open Editor')

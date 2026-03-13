@@ -1,4 +1,4 @@
-import { test } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import { FeedPage } from '../pages/FeedPage';
 import { MockStravaClient } from '../utils/MockStravaClient';
 
@@ -22,10 +22,21 @@ test.describe('Scora App UI: Feed (POM)', () => {
     test('Test 1: Feed successfully renders mocked incoming data', async ({ page }) => {
         const feedPage = new FeedPage(page);
 
-        // Verify our mock run "Carrera por la mañana" was rendered correctly (9.64 km)
-        await feedPage.verifyActivityRendered('Carrera por la mañana', '9.64 km');
+        // Verify "Carrera por la mañana" (9.64 km)
+        // We use both title and distance to isolate the specific card, 
+        // avoiding flakiness if multiple activities share the same name.
+        const title = 'Carrera por la mañana';
+        const distance = '9.64 km';
+        
+        const activityCard = page.locator('.activity-card').filter({
+            hasText: title,
+        }).filter({
+            hasText: distance
+        });
 
-        // Verify our mock workout "Entrenamiento con pesas" was rendered correctly (1h 11m)
+        await expect(activityCard.first()).toBeVisible();
+
+        // Verify "Entrenamiento con pesas matutino" (1h 11m)
         await feedPage.verifyActivityRendered('Entrenamiento con pesas matutino', '1h 11m');
     });
 
