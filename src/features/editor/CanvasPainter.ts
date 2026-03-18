@@ -70,7 +70,7 @@ export function drawTemplate(
     }
 
     // ── Route to correct template renderer ──────────────────────────────────
-    if (stats.hasMap) {
+    if (stats.hasDistance) {
         drawRunningTemplate(ctx, stats, templateType, textColor);
     } else {
         drawGymTemplate(ctx, stats, templateType, textColor);
@@ -823,7 +823,7 @@ function drawStatsTemplate(ctx, stats, textColor = 'white') {
 function drawIOSBubble(ctx, x: number, y: number, width: number, height: number) {
     const r = Math.min(height * 0.42, 42);
     const tipX = x + width + 16;   // How far right the tail tip extends
-    const reentryX = x + width - 20;  // Where the tail re-enters the bubble bottom
+    const reentryX = x + width - 20;
 
     ctx.beginPath();
     ctx.moveTo(x + r, y);
@@ -862,7 +862,7 @@ function drawIOSBubble(ctx, x: number, y: number, width: number, height: number)
 function drawDMBubble(ctx, stats) {
     let subStr = stats.subValue ? stats.subValue.replace(' /', '/') : '';
     const msgText = `${stats.mainValue}, ${subStr}`;
-    const captionText = 'Started 7:08 AM';
+    const captionText = `Started ${stats.startTime || '7:08 AM'}`;
 
     const sysFont = "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
 
@@ -908,19 +908,19 @@ function drawModernPill(ctx, stats, textColor) {
     const distUnit = stats.hasMap ? 'km' : '';
 
     // Pace/HR Fallback
-    const rightLabel = stats.hasMap ? "AVG PACE" : "HEART RATE";
-    const paceParts = stats.hasMap ? (stats.subValue || '').trim().split(' ') : [];
+    const rightLabel = stats.subLabel || (stats.hasMap ? "AVG PACE" : "HEART RATE");
+    const paceParts = (stats.subValue || '').trim().split(' ');
     const paceText = paceParts[0] || (stats.avgHeartrate ? String(stats.avgHeartrate) : '0');
-    let paceUnit = paceParts[1] || (stats.hasMap ? '/km' : 'bpm');
+    let paceUnit = paceParts[1] || (stats.hasMap ? (stats.type === 'Ride' ? 'km/h' : '/km') : 'bpm');
     if (paceUnit === 'min/km') paceUnit = '/km';
 
     const sysFont = "'Plus Jakarta Sans', sans-serif";
     const h = 130;
     const centerY = 1300;
 
-    // Measure right side (Pace)
+    // Measure right side (Label)
     ctx.font = `800 24px ${sysFont}`;
-    const head2W = ctx.measureText("Avg Pace").width;
+    const head2W = ctx.measureText(rightLabel).width;
     ctx.font = `900 65px ${sysFont}`;
     const paceNumW = ctx.measureText(paceText).width;
     ctx.font = `600 65px ${sysFont}`;
@@ -1013,12 +1013,12 @@ function drawScoraStealth(ctx, stats, textColor) {
     const distUnit = stats.hasMap ? 'km' : '';
 
     // Fallback to average heartrate or duration for right column
-    const paceParts = stats.hasMap ? (stats.subValue || '').trim().split(' ') : [];
+    const paceParts = (stats.subValue || '').trim().split(' ');
     let paceText = paceParts[0] || (stats.avgHeartrate ? String(stats.avgHeartrate) : '0');
     let paceUnit = paceParts[1] || (stats.hasMap ? '/km' : 'bpm');
     if (paceUnit === 'min/km') paceUnit = '/km';
 
-    const rightLabel = stats.hasMap ? "AVERAGE PACE" : "HEART RATE";
+    const rightLabel = stats.subLabel || (stats.hasMap ? "AVERAGE PACE" : "HEART RATE");
 
     const bottomY = 1750;
     const leftX = 80;
@@ -1072,11 +1072,11 @@ function drawInfoGlass(ctx, stats, textColor) {
     const distLabel = stats.hasMap ? "DIST" : "TIME";
     const distText = stats.hasMap ? (stats.distanceVal || '0.00') : (stats.timeStr || '0:00');
 
-    const paceLabel = stats.hasMap ? "PACE" : "AVG HR";
-    const paceParts = stats.hasMap ? (stats.subValue || '').trim().split(' ') : [];
+    const paceLabel = stats.subLabel || (stats.hasMap ? "PACE" : "AVG HR");
+    const paceParts = (stats.subValue || '').trim().split(' ');
     const paceText = paceParts[0] || (stats.avgHeartrate ? String(stats.avgHeartrate) : '0');
 
-    const timeLabel = stats.hasMap ? "TIME" : "MAX HR";
+    const timeLabel = stats.maxPaceLabel || (stats.hasMap ? "TIME" : "MAX HR");
     const timeText = stats.hasMap ? (stats.timeStr || '0:00') : (stats.maxHeartrate ? String(stats.maxHeartrate) : '0');
 
     const w = 920;
@@ -1139,7 +1139,7 @@ function drawSplitBadge(ctx, stats, textColor) {
     const distUnit = stats.hasMap ? "KILOMETERS" : "";
 
     const paceLabel = stats.hasMap ? "AVERAGE" : "HEART RATE";
-    const paceParts = stats.hasMap ? (stats.subValue || '').trim().split(' ') : [];
+    const paceParts = (stats.subValue || '').trim().split(' ');
     const paceText = paceParts[0] || (stats.avgHeartrate ? String(stats.avgHeartrate) : '0');
     let paceUnit = paceParts[1] ? paceParts[1].toUpperCase() : (stats.hasMap ? 'MIN / KM' : 'BPM');
     if (paceUnit === '/KM') paceUnit = 'MIN / KM';
@@ -1199,7 +1199,7 @@ function drawMinimalVertical(ctx, stats, textColor) {
     const sysFont = "'Plus Jakarta Sans', sans-serif";
     const distText = stats.hasMap ? (stats.distanceVal || '0.00') : (stats.timeStr || '0:00');
     const distUnit = stats.hasMap ? 'km' : '';
-    const paceParts = stats.hasMap ? (stats.subValue || '').trim().split(' ') : [];
+    const paceParts = (stats.subValue || '').trim().split(' ');
     const paceText = paceParts[0] || (stats.avgHeartrate ? String(stats.avgHeartrate) : '0');
     let paceUnit = paceParts[1] || (stats.hasMap ? '/km' : 'bpm');
     if (paceUnit === 'min/km') paceUnit = '/km';
@@ -1241,8 +1241,8 @@ function drawWorkoutReceipt(ctx, stats, textColor) {
     const distLabel = stats.hasMap ? "DISTANCE" : "DURATION";
     const distText = stats.hasMap ? (stats.distanceVal || '0') + ' KM' : (stats.timeStr || '0:00');
 
-    const paceLabel = stats.hasMap ? "AVG PACE" : "AVG HR";
-    const paceParts = stats.hasMap ? (stats.subValue || '').trim().split(' ') : [];
+    const paceLabel = stats.subLabel || (stats.hasMap ? "AVG PACE" : "AVG HR");
+    const paceParts = (stats.subValue || '').trim().split(' ');
     const paceText = paceParts[0] || (stats.avgHeartrate ? String(stats.avgHeartrate) : '0');
     let paceUnit = paceParts[1] || (stats.hasMap ? '/KM' : 'BPM');
     if (paceUnit.toLowerCase() === 'min/km') paceUnit = '/KM';
@@ -1308,7 +1308,7 @@ function drawNeonCapsule(ctx, stats, textColor) {
     const distText = stats.hasMap ? (stats.distanceVal || '0.00') : (stats.timeStr || '0:00');
     const distUnit = stats.hasMap ? 'KM' : '';
 
-    const paceParts = stats.hasMap ? (stats.subValue || '').trim().split(' ') : [];
+    const paceParts = (stats.subValue || '').trim().split(' ');
     const paceText = paceParts[0] || (stats.avgHeartrate ? String(stats.avgHeartrate) : '0');
     let paceUnit = paceParts[1] || (stats.hasMap ? '/KM' : 'BPM');
     if (paceUnit.toLowerCase() === 'min/km') paceUnit = '/KM';
@@ -1359,7 +1359,7 @@ function drawNeonCapsule(ctx, stats, textColor) {
     ctx.font = `700 22px ${sysFont}`;
     ctx.letterSpacing = "2px";
     ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)';
-    const botLabel = stats.hasMap ? "AVG PACE" : "AVG HR";
+    const botLabel = stats.subLabel || (stats.hasMap ? "AVG PACE" : "AVG HR");
     ctx.fillText(`${paceText} ${paceUnit} ${botLabel}`.toUpperCase(), cx - w / 2 + 150, cy + 30);
     ctx.letterSpacing = "0px";
 }
@@ -1370,7 +1370,7 @@ function drawBrutalistBold(ctx, stats, textColor) {
 
     const distText = stats.hasMap ? (stats.distanceVal || '0.00') : (stats.timeStr || '0:00');
 
-    const paceParts = stats.hasMap ? (stats.subValue || '').trim().split(' ') : [];
+    const paceParts = (stats.subValue || '').trim().split(' ');
     const paceText = paceParts[0] || (stats.avgHeartrate ? String(stats.avgHeartrate) : '0');
     let paceUnit = paceParts[1] || (stats.hasMap ? '/KM' : 'BPM');
     if (paceUnit.toLowerCase() === 'min/km') paceUnit = '/KM';
@@ -1462,10 +1462,10 @@ function drawDataModular(ctx, stats, textColor) {
     const distLabel = stats.hasMap ? "DISTANCE" : "DURATION";
     const distText = stats.hasMap ? (stats.distanceVal || '0.00') : (stats.timeStr || '0:00');
 
-    const paceLabel = stats.hasMap ? "PACE" : "HEART RATE";
-    const paceParts = stats.hasMap ? (stats.subValue || '').trim().split(' ') : [];
+    const paceLabel = stats.subLabel || (stats.hasMap ? "PACE" : "HEART RATE");
+    const paceParts = (stats.subValue || '').trim().split(' ');
     const paceText = paceParts[0] || (stats.avgHeartrate ? String(stats.avgHeartrate) : '0');
-    let paceUnit = paceParts[1] || (stats.hasMap ? '/KM' : 'BPM');
+    let paceUnit = paceParts[1] || (stats.hasMap ? (stats.type === 'Ride' ? 'KM/H' : '/KM') : 'BPM');
     if (paceUnit.toLowerCase() === 'min/km') paceUnit = '/KM';
 
     const cx = 540;
@@ -1555,7 +1555,7 @@ function drawGlassSlice(ctx, stats, textColor) {
     const distText = stats.hasMap ? (stats.distanceVal || '0.00') : (stats.timeStr || '0:00');
     const distUnit = stats.hasMap ? 'KM' : 'TIME';
 
-    const paceParts = stats.hasMap ? (stats.subValue || '').trim().split(' ') : [];
+    const paceParts = (stats.subValue || '').trim().split(' ');
     const paceText = paceParts[0] || (stats.avgHeartrate ? String(stats.avgHeartrate) : '0');
     let paceUnit = paceParts[1] || (stats.hasMap ? '/KM' : 'BPM');
     if (paceUnit.toLowerCase() === 'min/km') paceUnit = '/KM';
@@ -1612,7 +1612,7 @@ function drawGlassSlice(ctx, stats, textColor) {
     ctx.fillText(paceText, w / 4, -10);
     ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)';
     ctx.font = `900 16px ${sysFont}`;
-    ctx.fillText((stats.hasMap ? "PACE" : "HEART RATE"), w / 4, 40);
+    ctx.fillText((stats.subLabel || (stats.hasMap ? "PACE" : "HEART RATE")), w / 4, 40);
 
     ctx.restore();
 }
@@ -1624,8 +1624,8 @@ function drawVHSRetro(ctx, stats, textColor) {
     const distLabel = stats.hasMap ? "DIST" : "TIME";
     const distText = stats.hasMap ? `${stats.distanceVal || '0.00'}KM` : (stats.timeStr || '0:00');
 
-    const paceLabel = stats.hasMap ? "PACE" : "HR";
-    const paceParts = stats.hasMap ? (stats.subValue || '').trim().split(' ') : [];
+    const paceLabel = stats.subLabel || (stats.hasMap ? "PACE" : "HR");
+    const paceParts = (stats.subValue || '').trim().split(' ');
     const paceText = paceParts[0] || (stats.avgHeartrate ? String(stats.avgHeartrate) : '0');
 
     const startX = 80;
@@ -1719,8 +1719,8 @@ function drawStealthBar(ctx, stats, textColor) {
     const distLabel = stats.hasMap ? "DISTANCE" : "DURATION";
     const distText = stats.hasMap ? `${stats.distanceVal || '0.00'}KM` : (stats.timeStr || '0:00');
 
-    const paceLabel = stats.hasMap ? "AVG PACE" : "HEART RATE";
-    const paceParts = stats.hasMap ? (stats.subValue || '').trim().split(' ') : [];
+    const paceLabel = stats.subLabel || (stats.hasMap ? "AVG PACE" : "HEART RATE");
+    const paceParts = (stats.subValue || '').trim().split(' ');
     const paceText = paceParts[0] || (stats.avgHeartrate ? String(stats.avgHeartrate) : '0');
     let paceUnit = paceParts[1] || (stats.hasMap ? '/KM' : 'BPM');
     if (paceUnit.toLowerCase() === 'min/km') paceUnit = '/KM';

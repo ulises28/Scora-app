@@ -145,6 +145,7 @@ export function formatActivityStats(activity) {
                 return '';
             }
         })(),
+        hasDistance: DISTANCE_SPORTS.has(activity.type) && activity.distance > 0,
     };
 
     const h = Math.floor(activity.moving_time / 3600);

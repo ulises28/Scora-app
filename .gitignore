@@ -59,3 +59,8 @@ src/config.ts
 .agents/
 _agent/
 _agents/
+
+# Debug and Temporary artifacts
+test-debug-*.png
+*.png
+.env*.local

@@ -162,6 +162,8 @@ export function initTemplateManager(onChange: OnChangeCallback) {
         setTemplate(template: string) {
             currentTemplate = template;
             updateDots();
+            updateArrows();
+            onChange(currentTemplate, currentTextColor, currentShowLogo);
         }
     };
 }

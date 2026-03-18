@@ -15,7 +15,6 @@ test.describe('Scora App UI: Canvas Rendering Logic', () => {
         await api.mockSuccessfulActivities();
         await feedPage.goto();
         await feedPage.waitForLoaderToHide();
-        await page.screenshot({ path: 'test-debug-1.png' });
 
         // Target a running activity
         await feedPage.openActivityEditor('Carrera por la mañana');
@@ -109,6 +108,70 @@ test.describe('Scora App UI: Canvas Rendering Logic', () => {
         // We ensure "AM" is written, and it caught 9 something, not 2 or 3 AM.
         expect(logStr).toContain('9:31');
         expect(logStr).toContain('AM');
+    });
+
+    test('Test 4: Private Run (No GPS) displays Distance correctly (No km m bug)', async ({ page }) => {
+        const feedPage = new FeedPage(page);
+        const editorPage = new EditorPage(page);
+        const api = new MockStravaClient(page);
+
+        await feedPage.injectMockAuth();
+        await api.mockSuccessfulActivities();
+        await feedPage.goto();
+        await feedPage.waitForLoaderToHide();
+
+        // Target the private activity (12.02 km)
+        await feedPage.openActivityEditor('Carrera privada (sin mapa)');
+        await editorPage.verifyEditorScreenVisible('Carrera privada (sin mapa)');
+        await editorPage.injectCanvasInterceptor();
+
+        // Select 'minimal' template which had the dual-unit bug
+        await editorPage.selectTemplate('minimal');
+        await page.waitForFunction(() => (window as any)._scoraCanvasTextLog && (window as any)._scoraCanvasTextLog.length > 0, null, { timeout: 8000 });
+
+        const logs = await editorPage.getCanvasTextLog();
+        const logStr = logs.join(' ').toUpperCase();
+
+        // Should contain 12.02 km
+        expect(logStr).toContain('12.02');
+        expect(logStr).toContain('KM');
+        
+        // BUG TRAP: Should NOT contain "M" after "KM" (routing error)
+        // Note: regex in gymMinimal was appending 'm'. 
+        // We check that '12.02 KM M' or similar isn't there.
+        expect(logStr).not.toMatch(/KM\s+M/);
+    });
+
+    test('Test 5: Cycling activity uses Speed labels instead of Pace', async ({ page }) => {
+        const feedPage = new FeedPage(page);
+        const editorPage = new EditorPage(page);
+        const api = new MockStravaClient(page);
+
+        await feedPage.injectMockAuth();
+        await api.mockSuccessfulActivities();
+        await feedPage.goto();
+        await feedPage.waitForLoaderToHide();
+
+        await feedPage.openActivityEditor('Vuelta ciclista por la mañana');
+        await editorPage.injectCanvasInterceptor();
+
+        // Check templates that actually show pace/speed
+        const templatesToCheck = ['modern-pill', 'data-modular', 'stats'];
+        
+        for (const template of templatesToCheck) {
+            await editorPage.selectTemplate(template);
+            await page.waitForFunction(() => (window as any)._scoraCanvasTextLog && (window as any)._scoraCanvasTextLog.length > 0, null, { timeout: 8000 });
+
+            const logs = await editorPage.getCanvasTextLog();
+            const logStr = logs.join(' ').toUpperCase();
+
+            // Should show AVG SPEED or MAX SPEED, not PACE
+            // Note: Data Modular uses "PACE" as a label fallback, so we check that it's replaced.
+            expect(logStr).toContain('SPEED');
+            expect(logStr).not.toContain('PACE');
+
+            await editorPage.clearCanvasTextLog();
+        }
     });
 
 });

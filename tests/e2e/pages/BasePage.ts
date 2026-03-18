@@ -2,14 +2,18 @@ import { type Locator, type Page, expect } from '@playwright/test';
 import { step } from '../utils/logger';
 
 export class BasePage {
+
+    //variable
     protected page: Page;
     readonly loaderOverlay: Locator;
 
+    //constructor   
     constructor(page: Page) {
         this.page = page;
         this.loaderOverlay = page.locator('#loader-overlay');
     }
 
+    //methods
     @step('Navigate to App Root')
     async goto() {
         await this.page.goto('/');
