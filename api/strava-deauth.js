@@ -44,7 +44,7 @@ export default async function handler(req, res) {
                 const nextInQueue = await redis.lindex(QUEUE_KEY, 0);
                 if (nextInQueue) {
                     await redis.lpop(QUEUE_KEY);
-                    await redis.set(LOCK_KEY, nextInQueue, { ex: 45 });
+                    await redis.set(LOCK_KEY, nextInQueue, { ex: 30 });
                     console.log(`[Queue] Lock transferred to next session: ${nextInQueue}`);
                 } else {
                     await redis.del(LOCK_KEY);

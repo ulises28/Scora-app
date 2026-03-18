@@ -37,7 +37,7 @@ export default async function handler(req, res) {
             if (nextInQueue === sessionId) {
                 // This caller is next — give them the lock
                 await redis.lpop(QUEUE_KEY);
-                await redis.set(LOCK_KEY, sessionId, { ex: 45 });
+                await redis.set(LOCK_KEY, sessionId, { ex: 30 });
                 console.log(`[Queue] Session ${sessionId} advanced from queue to lock holder.`);
                 return res.status(200).json({ sessionId, position: 0, estimatedWait: 0 });
             }

@@ -48,6 +48,18 @@ export default async function handler(req, res) {
 
         // Si Strava devuelve un error, lo enviamos al frontend
         if (!stravaResponse.ok) {
+            // 🚨 SPECIAL CASE: If we hit the 1-athlete limit, clear the lock immediately
+            // so the next attempt (or next user) can try to clear it.
+            if (stravaResponse.status === 403 && REDIS_CONFIGURED) {
+                try {
+                    const redis = new Redis({
+                        url: process.env.UPSTASH_REDIS_REST_URL,
+                        token: process.env.UPSTASH_REDIS_REST_TOKEN
+                    });
+                    await redis.del(LOCK_KEY);
+                    console.log('[Queue] 403 Limit Hit: Cleared lock to allow recovery.');
+                } catch (e) {}
+            }
             return res.status(stravaResponse.status).json(data);
         }
 
