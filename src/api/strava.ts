@@ -191,8 +191,9 @@ export function formatActivityStats(activity) {
         stats.distanceVal = '0.00';
         stats.maxPace = '0:00';
         stats.mainLabel = 'Duration';
-        stats.subValue = activity.max_heartrate ? `${activity.max_heartrate} bpm` : 'Done';
-        stats.subLabel = 'Max Heartrate';
+        // User requested Avg Heartrate instead of Max for workouts
+        stats.subValue = activity.average_heartrate ? `${Math.round(activity.average_heartrate)} bpm` : 'Done';
+        stats.subLabel = 'Avg Heartrate';
     }
 
     return stats;

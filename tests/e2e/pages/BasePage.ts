@@ -33,6 +33,8 @@ export class BasePage {
         };
         await this.page.addInitScript((auth) => {
             window.localStorage.setItem('stravaAuth', JSON.stringify(auth));
+            // Important: Clear cached activities so each test gets fresh data from the mock
+            window.localStorage.removeItem('stravaActivities');
         }, mockAuth);
     }
 }
