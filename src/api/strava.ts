@@ -307,7 +307,7 @@ export function formatActivityStats(activity: StravaActivity): StickerStats {
         energy: activity.kilojoules ? { label: 'Energy', value: String(Math.round(activity.kilojoules)), unit: 'kcal' } : null,
         pr_count: activity.pr_count ? { label: 'PRs', value: String(activity.pr_count), unit: '' } : null,
         location: locationStr ? { label: 'Location', value: locationStr, unit: '' } : null,
-        type: { label: 'Type', value: activity.type, unit: '' },
+        type: { label: 'Type', value: (activity.type === 'WeightTraining' || activity.type === 'Workout') ? 'Gym' : activity.type, unit: '' },
         name: { label: 'Name', value: stats.shortTitle || '', unit: '' },
         start_time: { label: 'Time', value: stats.startTime || '', unit: '' },
         date_long: { label: 'Date', value: getFormattedDay(activity.start_date_local || activity.start_date), unit: '' }
@@ -316,10 +316,13 @@ export function formatActivityStats(activity: StravaActivity): StickerStats {
     let p_list: string[] = [];
     if (activity.type === 'Ride') {
         p_list = ['distance', 'avg_speed', 'duration', 'start_time', 'max_speed', 'elev_gain', 'max_hr', 'location', 'type', 'date_long', 'elev_high'];
-    } else if (activity.type === 'Run') {
+    } else if (activity.type === 'Run' || activity.type === 'VirtualRun') {
         p_list = ['distance', 'pace', 'duration', 'start_time', 'max_pace', 'elev_gain', 'cadence', 'max_hr', 'location', 'type', 'max_watts', 'date_long', 'elev_high', 'pr_count'];
+    } else if (activity.type === 'WeightTraining' || activity.type === 'Workout' || activity.type === 'Crossfit' || activity.type === 'Yoga') {
+        // New Gym Priority: duration, max_hr, avg_hr, type, name, location, date_long
+        p_list = ['duration', 'max_hr', 'avg_hr', 'type', 'name', 'location', 'date_long'];
     } else {
-        p_list = ['duration', 'max_hr', 'type', 'name', 'avg_hr', 'location', 'date_long'];
+        p_list = ['duration', 'avg_hr', 'max_hr', 'type', 'name', 'location', 'date_long', 'distance'];
     }
 
     p_list.forEach(key => {

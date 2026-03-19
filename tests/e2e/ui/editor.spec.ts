@@ -26,16 +26,18 @@ test.describe('Scora App UI: Sticker Editor (POM)', () => {
         await feedPage.openActivityEditor('Carrera por la mañana');
         await editorPage.verifyEditorScreenVisible('Carrera por la mañana');
 
-        // Default should be minimal
-        await editorPage.verifyTemplateIsActive('minimal');
+        // Default should be social-float (the new #1)
+        await editorPage.verifyTemplateIsActive('social-float');
 
-        // Click dot to switch to Route
-        await editorPage.selectTemplate('Route');
-        await editorPage.verifyTemplateIsActive('route');
+        // Switch to dm (second dot)
+        await editorPage.switchTemplateViaDot(1);
+        await editorPage.verifyTemplateIsActive('dm');
+        await editorPage.verifyActiveDotIndex(1);
 
-        // Click dot to switch to Stats
-        await editorPage.selectTemplate('Stats');
-        await editorPage.verifyTemplateIsActive('stats');
+        // Switch back to mono-split (third dot)
+        await editorPage.switchTemplateViaDot(2);
+        await editorPage.verifyTemplateIsActive('mono-split');
+        await editorPage.verifyActiveDotIndex(2);
     });
 
     test('Test 2b: Arrow/Swipe navigation between templates', async ({ page, isMobile }) => {
@@ -45,33 +47,33 @@ test.describe('Scora App UI: Sticker Editor (POM)', () => {
         await feedPage.openActivityEditor('Carrera por la mañana');
         await editorPage.verifyEditorScreenVisible('Carrera por la mañana');
 
-        // Start at minimal (first) — prev should be disabled
-        await editorPage.verifyTemplateIsActive('minimal');
+        // Start at social-float (first) — prev should be disabled
+        await editorPage.verifyTemplateIsActive('social-float');
 
         if (isMobile) {
-            // Next → Route
+            // Next → dm
             await editorPage.swipeLeft();
-            await editorPage.verifyTemplateIsActive('route');
+            await editorPage.verifyTemplateIsActive('dm');
 
-            // Next → Data
+            // Next → Mono Split
             await editorPage.swipeLeft();
-            await editorPage.verifyTemplateIsActive('data');
+            await editorPage.verifyTemplateIsActive('mono-split');
 
-            // Prev → Route
+            // Prev → dm
             await editorPage.swipeRight();
-            await editorPage.verifyTemplateIsActive('route');
+            await editorPage.verifyTemplateIsActive('dm');
         } else {
-            // Next → Route
+            // Next → dm
             await editorPage.clickNextTemplate();
-            await editorPage.verifyTemplateIsActive('route');
+            await editorPage.verifyTemplateIsActive('dm');
 
-            // Next → Data
+            // Next → Mono Split
             await editorPage.clickNextTemplate();
-            await editorPage.verifyTemplateIsActive('data');
+            await editorPage.verifyTemplateIsActive('mono-split');
 
-            // Prev → Route
+            // Prev → dm
             await editorPage.clickPrevTemplate();
-            await editorPage.verifyTemplateIsActive('route');
+            await editorPage.verifyTemplateIsActive('dm');
         }
     });
 
@@ -122,22 +124,22 @@ test.describe('Scora App UI: Sticker Editor (POM)', () => {
         await feedPage.verifyActivityRendered('Carrera por la mañana', '9.64 km');
     });
 
-    test('Test 5: Selecting alternate activities resets template to minimal', async ({ page }) => {
+    test('Test 5: Selecting alternate activities resets template to default (#1)', async ({ page }) => {
         const feedPage = new FeedPage(page);
         const editorPage = new EditorPage(page);
 
-        // Open 1st run — switch to Route
+        // Open 1st run — switch to Minimal
         await feedPage.openActivityEditor('Carrera por la mañana');
-        await editorPage.selectTemplate('Route');
-        await editorPage.verifyTemplateIsActive('route');
+        await editorPage.selectTemplate('Minimal');
+        await editorPage.verifyTemplateIsActive('minimal');
 
         // Go back to feed and open 2nd workout
         await editorPage.goBack();
         await feedPage.openActivityEditor('Entrenamiento con pesas matutino');
 
-        // Editor should load the new activity but cleanly reset to minimal style
+        // Editor should load the new activity but cleanly reset to social-float (#1)
         await editorPage.verifyEditorScreenVisible('Entrenamiento con pesas matutino');
-        await editorPage.verifyTemplateIsActive('minimal');
+        await editorPage.verifyTemplateIsActive('social-float');
     });
 
     test('Test 6: Text color and logo toggles are present and clickable', async ({ page }) => {

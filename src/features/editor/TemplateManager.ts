@@ -11,17 +11,15 @@ interface TemplateConfig {
 export const TEMPLATE_REGISTRY: readonly TemplateConfig[] = [
     // ── ACTIVE & REORDERED ──────────────────────────────────────────────────
     { id: 'social-float' },         // #1 spot
-    { id: 'minimal' },
-    { id: 'mono-split' },           // Top 5
-    { id: 'essential-italic' },     // Top 5
-    { id: 'obsidian-bar' },         // Top 5
+    { id: 'dm' },                   // Moved to #2
+    { id: 'mono-split' },           
+    { id: 'essential-italic' },     
+    { id: 'obsidian-bar' },         
     { id: 'data' },
-    { id: 'dm' },
     { id: 'modern-pill' },
-    { id: 'editorial-archive' },    // Top 10
-    { id: 'info-glass' },           // Top 10
+    { id: 'editorial-archive' },    
+    { id: 'info-glass' },           
     { id: 'split-badge' },
-    { id: 'minimal-vertical' },
     { id: 'workout-receipt' },
     { id: 'brutalist-bold' },
     { id: 'data-modular' },
@@ -29,9 +27,10 @@ export const TEMPLATE_REGISTRY: readonly TemplateConfig[] = [
     { id: 'vhs-retro' },
     { id: 'stealth-bar' },
     { id: 'track-record' },
-    { id: 'metric-thin' },          // Needs fixes
-    { id: 'vertical-label' },       // Needs fixes
-    { id: 'stats' },                // Sent to the end
+    { id: 'metric-thin' },          
+    { id: 'vertical-label' },       
+    { id: 'stats' },                
+    { id: 'minimal' },              // Moved to the end
 
     // ── INACTIVE / ARCHIVED ─────────────────────────────────────────────────
     { id: 'route', seasonal: true },

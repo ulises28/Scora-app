@@ -10,6 +10,7 @@
  */
 
 // Strava polyline decoder → [lat, lng] coordinate array
+console.log("[Scora] CanvasPainter engine v1.4 (Precision Matching Applied)");
 export function decodePolyline(str) {
     if (!str) return [];
     let index = 0, lat = 0, lng = 0, coordinates = [], shift = 0, result = 0, byte = null, latitude_change, longitude_change, factor = 1e5;
@@ -89,7 +90,6 @@ function drawRunningTemplate(ctx, stats, templateType, textColor) {
     else if (templateType === 'scora-stealth') drawScoraStealth(ctx, stats, textColor);
     else if (templateType === 'info-glass') drawInfoGlass(ctx, stats, textColor);
     else if (templateType === 'split-badge') drawSplitBadge(ctx, stats, textColor);
-    else if (templateType === 'minimal-vertical') drawMinimalVertical(ctx, stats, textColor);
     else if (templateType === 'workout-receipt') drawWorkoutReceipt(ctx, stats, textColor);
     else if (templateType === 'neon-capsule') drawNeonCapsule(ctx, stats, textColor);
     else if (templateType === 'brutalist-bold') drawBrutalistBold(ctx, stats, textColor);
@@ -469,7 +469,6 @@ function drawGymTemplate(ctx, stats, templateType, textColor) {
     else if (templateType === 'scora-stealth') drawScoraStealth(ctx, stats, textColor);
     else if (templateType === 'info-glass') drawInfoGlass(ctx, stats, textColor);
     else if (templateType === 'split-badge') drawSplitBadge(ctx, stats, textColor);
-    else if (templateType === 'minimal-vertical') drawMinimalVertical(ctx, stats, textColor);
     else if (templateType === 'workout-receipt') drawWorkoutReceipt(ctx, stats, textColor);
     else if (templateType === 'neon-capsule') drawNeonCapsule(ctx, stats, textColor);
     else if (templateType === 'brutalist-bold') drawBrutalistBold(ctx, stats, textColor);
@@ -585,14 +584,26 @@ function drawGymEffort(ctx, stats, textColor = 'white') {
     ctx.fillStyle = c.label;
     ctx.fillText(stats.maxHeartrate ? 'Max Heartrate' : 'Duration', 540, 1100);
 
-    // Sub: duration as context
-    ctx.font = "500 55px 'Plus Jakarta Sans'";
-    ctx.fillStyle = c.trans;
-    ctx.fillText(stats.timeStr, 540, 1250);
+    // Sub: duration as context (only if not already the hero)
+    if (stats.maxHeartrate) {
+        ctx.font = "500 55px 'Plus Jakarta Sans'";
+        ctx.fillStyle = c.trans;
+        ctx.fillText(stats.timeStr, 540, 1250);
 
-    ctx.font = "400 32px 'Plus Jakarta Sans'";
-    ctx.fillStyle = c.label;
-    ctx.fillText('Duration', 540, 1300);
+        ctx.font = "400 32px 'Plus Jakarta Sans'";
+        ctx.fillStyle = c.label;
+        ctx.fillText('Duration', 540, 1300);
+    } else {
+        // Hero is duration, show date or type as sub to avoid duplication
+        const subSub = stats.date || stats.type || 'Gym';
+        ctx.font = "500 55px 'Plus Jakarta Sans'";
+        ctx.fillStyle = c.trans;
+        ctx.fillText(subSub, 540, 1250);
+
+        ctx.font = "400 32px 'Plus Jakarta Sans'";
+        ctx.fillStyle = c.label;
+        ctx.fillText('Activity', 540, 1300);
+    }
 }
 
 // ── Template 3: Data — Duration + side-by-side HR ────────────────────────────
@@ -927,110 +938,36 @@ function drawDMBubble(ctx, stats) {
 
 // ─── New Overlay Templates ────────────────────────────────────────────────────
 
-function drawModernPill(ctx, stats, textColor) {
-    const c = buildColors(textColor);
-    ctx.textBaseline = 'alphabetic';
-
-    // Dist/Calorie Fallback -> Dist/Time Fallback
-    const leftLabel = stats.hasDistance ? "DISTANCE" : "DURATION";
-    const distText = stats.hasDistance ? (stats.distanceVal || '0.00') : (stats.timeStr || '0:00');
-    const distUnit = stats.hasDistance ? 'km' : '';
-
-    // Pace/HR Fallback
-    const rightLabel = stats.subLabel || (stats.hasDistance ? "PACE" : "AVG HR");
-    const paceParts = (stats.subValue || '').trim().split(' ');
-    const paceText = paceParts[0] || (stats.avgHeartrate ? String(stats.avgHeartrate) : '0');
-    let paceUnit = paceParts[1] || (stats.hasDistance ? (stats.type === 'Ride' ? 'km/h' : '/km') : 'bpm');
-    if (paceUnit === 'min/km') paceUnit = '/km';
-
+function drawDM(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
     const sysFont = "'Plus Jakarta Sans', sans-serif";
-    const h = 130;
-    const centerY = 1300;
+    const p = stats.dataPoints || [];
+    const p1 = p[0] || { value: '0.00', label: 'Dist', unit: 'km' };
+    const p2 = p[1] || { value: '0:00', label: 'Pace', unit: '' };
+    
+    const cx = 540;
+    const cy = 1300;
 
-    // Measure right side (Label)
-    ctx.font = `800 24px ${sysFont}`;
-    const head2W = ctx.measureText(rightLabel).width;
-    ctx.font = `900 65px ${sysFont}`;
-    const paceNumW = ctx.measureText(paceText).width;
-    ctx.font = `600 65px ${sysFont}`;
-    const paceUnitW = ctx.measureText(paceUnit).width;
-    const rightSideW = Math.max(head2W, paceNumW + paceUnitW);
+    // Blue bubble background (DM style)
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    const text = `${p1.value}, ${p2.value}${p2.unit || ''}`;
+    ctx.font = `500 70px ${sysFont}`;
+    const textW = ctx.measureText(text).width;
+    const bubW = textW + 80;
+    const bubH = 140;
 
-    // Measure left side (Distance/Calories)
-    ctx.font = `800 24px ${sysFont}`;
-    const head1W = ctx.measureText(leftLabel).width;
-    ctx.font = `900 65px ${sysFont}`;
-    const distNumW = ctx.measureText(distText).width;
-    ctx.font = `600 65px ${sysFont}`;
-    const distUnitW = ctx.measureText(` ${distUnit}`).width;
-    const leftSideW = Math.max(head1W, distNumW + distUnitW);
-
-    const gap = 60;
-    const w = leftSideW + gap + rightSideW + 100;
-    const startX = 540 - w / 2;
-
-    // Draw Pill Background
+    ctx.fillStyle = '#118afa';
     ctx.beginPath();
-    ctx.roundRect(startX, centerY - h / 2, w, h, h / 2);
-    ctx.fillStyle = textColor === 'black' ? 'rgba(255, 255, 255, 0.85)' : '#0ea5e9'; // standard cyan-ish blue from prototype
-
-    ctx.shadowColor = 'rgba(0,0,0,0.3)';
-    ctx.shadowBlur = 40;
-    ctx.shadowOffsetY = 20;
+    ctx.roundRect(cx - bubW/2, cy - bubH/2, bubW, bubH, 70);
     ctx.fill();
 
-    ctx.shadowBlur = 0;
-    ctx.shadowOffsetY = 0;
-    ctx.strokeStyle = textColor === 'black' ? 'rgba(0,0,0,0.1)' : 'rgba(255, 255, 255, 0.2)';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-
-    ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
-    let currentX = startX + 50;
-
-    // LEFT BLOCK (Distance/Calories)
-    ctx.textAlign = 'left';
-    ctx.font = `800 22px ${sysFont}`;
-    ctx.globalAlpha = 0.7;
-    ctx.fillText(leftLabel, currentX, centerY - 15);
-    ctx.globalAlpha = 1.0;
-
-    ctx.font = `900 60px ${sysFont}`;
-    ctx.fillText(distText, currentX, centerY + 35);
-    ctx.font = `600 60px ${sysFont}`;
-    ctx.fillText(` ${distUnit}`, currentX + distNumW, centerY + 35);
-
-    currentX += leftSideW + gap / 2;
-
-    // SEPARATOR
-    ctx.beginPath();
-    ctx.moveTo(currentX, centerY - 25);
-    ctx.lineTo(currentX, centerY + 25);
-    ctx.strokeStyle = textColor === 'black' ? 'rgba(0,0,0,0.2)' : 'rgba(255, 255, 255, 0.2)';
-    ctx.stroke();
-
-    currentX += gap / 2;
-
-    // RIGHT BLOCK (Pace/HR)
-    ctx.font = `800 22px ${sysFont}`;
-    ctx.globalAlpha = 0.7;
-    ctx.fillText(rightLabel.toUpperCase(), currentX, centerY - 15);
-    ctx.globalAlpha = 1.0;
-
-    ctx.font = `900 60px ${sysFont}`;
-    ctx.fillText(paceText, currentX, centerY + 35);
-    ctx.font = `600 60px ${sysFont}`;
-    ctx.fillText(paceUnit, currentX + paceNumW, centerY + 35);
-
-    // BOTTOM CAPTION (Started at)
-    ctx.textAlign = 'center';
-    ctx.font = `700 30px ${sysFont}`;
-    ctx.fillStyle = textColor === 'black' ? 'rgba(0, 0, 0, 0.9)' : 'rgba(255, 255, 255, 0.9)';
-    ctx.shadowColor = 'rgba(0,0,0,0.5)';
-    ctx.shadowBlur = 10;
-    ctx.fillText(`STARTED ${stats.startTime || 'TODAY'}`, 540, centerY + h / 2 + 50);
-    ctx.shadowBlur = 0;
+    ctx.fillStyle = 'white';
+    ctx.fillText(text, cx, cy);
+    ctx.restore();
 }
+
 
 function drawScoraStealth(ctx, stats, textColor) {
     const c = buildColors(textColor);
@@ -1222,222 +1159,56 @@ function drawSplitBadge(ctx, stats, textColor) {
 
     ctx.restore();
 }
-
-function drawMinimalVertical(ctx, stats, textColor) {
-    const c = buildColors(textColor);
-    ctx.textBaseline = 'alphabetic';
+ 
+ 
+ function drawBrutalistBold(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
     const sysFont = "'Plus Jakarta Sans', sans-serif";
-    const distText = stats.hasDistance ? (stats.distanceVal || '0.00') : (stats.timeStr || '0:00');
-    const distUnit = stats.hasDistance ? 'km' : '';
-    const paceParts = (stats.subValue || '').trim().split(' ');
-    const paceText = paceParts[0] || (stats.avgHeartrate ? String(stats.avgHeartrate) : '0');
-    let paceUnit = paceParts[1] || (stats.hasDistance ? '/km' : 'bpm');
-    if (paceUnit === 'min/km') paceUnit = '/km';
+    const p = stats.dataPoints || [];
+    const main = p[0] || { value: '0.00', label: 'Dist', unit: 'km' };
+    const p2 = p[1] || { value: '0:00', label: 'Pace', unit: '' };
 
-    // Set origin
-    const startX = 100;
-    const startY = 1750;
-
-    // Cyan left border
-    ctx.fillStyle = '#22d3ee';
-    ctx.beginPath();
-    ctx.roundRect(startX, startY - 140, 10, 160, 5);
-    ctx.fill();
-
-    ctx.textAlign = 'left';
-    ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
-    ctx.font = `italic 900 120px ${sysFont}`;
-    ctx.fillText(distText, startX + 40, startY - 30);
-    const wD = ctx.measureText(distText).width;
-
-    if (distUnit) {
-        ctx.font = `600 40px ${sysFont}`;
-        ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)';
-        ctx.fillText(distUnit.toUpperCase(), startX + 50 + wD, startY - 30);
-    }
-
-    ctx.font = `800 24px ${sysFont}`;
-    ctx.letterSpacing = "4px";
-    ctx.fillStyle = '#22d3ee'; // cyan-400
-    const botText = `${paceText} ${paceUnit}`.toUpperCase();
-    ctx.fillText(`${botText}   •   ${stats.timeStr}`, startX + 40, startY + 10);
-    ctx.letterSpacing = "0px";
-}
-
-function drawWorkoutReceipt(ctx, stats, textColor) {
-    ctx.textBaseline = 'alphabetic';
-    const sysFont = "'Space Mono', monospace";
-
-    const distLabel = stats.hasDistance ? "DISTANCE" : "DURATION";
-    const distText = stats.hasDistance ? (stats.distanceVal || '0') + ' KM' : (stats.timeStr || '0:00');
-
-    const paceLabel = stats.subLabel || (stats.hasDistance ? "PACE" : "AVG HR");
-    const paceParts = (stats.subValue || '').trim().split(' ');
-    const paceText = paceParts[0] || (stats.avgHeartrate ? String(stats.avgHeartrate) : '0');
-    let paceUnit = paceParts[1] || (stats.hasDistance ? '/KM' : 'BPM');
-    if (paceUnit.toLowerCase() === 'min/km') paceUnit = '/KM';
-
-    const w = 600;
-    const h = 400;
     const cx = 540;
-    const cy = 1650;
+    const cy = 1750;
+    const w = 940;
+    const h = 280;
 
+    // "Rectangle background should have a little transparency"
     ctx.save();
     ctx.translate(cx, cy);
-    ctx.rotate(-2 * Math.PI / 180);
 
-    ctx.fillStyle = '#facc15'; // yellow-400
-    ctx.shadowColor = 'rgba(0,0,0,0.3)';
-    ctx.shadowBlur = 30;
-    ctx.shadowOffsetY = 15;
-    ctx.fillRect(-w / 2, -h / 2, w, h);
-    ctx.shadowBlur = 0;
-    ctx.shadowOffsetY = 0;
+    // Main background with transparency
+    ctx.fillStyle = textColor === 'black' ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.85)';
+    ctx.fillRect(-w/2, -h/2, w, h);
 
-    ctx.fillStyle = 'rgba(0,0,0,0.1)';
-    ctx.font = `900 80px ${sysFont}`;
-    ctx.textAlign = 'right';
-    ctx.fillText("#", w / 2 - 20, -h / 2 + 80);
+    // Accent line (left)
+    ctx.fillStyle = '#ff3b30'; // Red accent
+    ctx.fillRect(-w/2, -h/2, 10, h);
 
-    ctx.fillStyle = 'black';
+    // Data - Left Column
     ctx.textAlign = 'left';
-    ctx.font = `900 22px ${sysFont}`;
-    ctx.letterSpacing = "2px";
-    ctx.fillText("SCORA VERIFIED RUN", -w / 2 + 40, -h / 2 + 60);
-    ctx.letterSpacing = "0px";
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
+    
+    ctx.font = `italic 900 120px ${sysFont}`;
+    const mainVal = main.value;
+    ctx.fillText(mainVal, -w/2 + 50, -20);
+    const mainW = ctx.measureText(mainVal).width;
 
-    ctx.beginPath();
-    ctx.moveTo(-w / 2 + 40, -h / 2 + 80);
-    ctx.lineTo(w / 2 - 40, -h / 2 + 80);
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = 'rgba(0,0,0,0.1)';
-    ctx.stroke();
+    ctx.font = `800 32px ${sysFont}`;
+    ctx.globalAlpha = 1.0; // "without opacity"
+    ctx.fillText((main.unit || main.label).toUpperCase(), -w/2 + 65 + mainW, 10);
 
-    ctx.font = `700 32px ${sysFont}`;
-    ctx.fillText(distLabel, -w / 2 + 40, 0);
+    // Data - Right Column
     ctx.textAlign = 'right';
-    ctx.fillText(distText, w / 2 - 40, 0);
-
-    ctx.textAlign = 'left';
-    ctx.fillText(paceLabel, -w / 2 + 40, 80);
-    ctx.textAlign = 'right';
-    ctx.fillText(`${paceText} ${paceUnit}`.trim(), w / 2 - 40, 80);
-
-    ctx.textAlign = 'left';
-    ctx.fillText("DURATION", -w / 2 + 40, 160);
-    ctx.textAlign = 'right';
-    ctx.fillText(stats.timeStr || '0:00', w / 2 - 40, 160);
+    ctx.font = `900 85px ${sysFont}`;
+    ctx.fillText(p2.value, w/2 - 50, -20);
+    
+    ctx.font = `800 24px ${sysFont}`;
+    ctx.fillText(p2.label.toUpperCase(), w/2 - 50, 45);
 
     ctx.restore();
 }
 
-function drawNeonCapsule(ctx, stats, textColor) {
-    const sysFont = "'Plus Jakarta Sans', sans-serif";
-    ctx.textBaseline = 'middle';
-
-    const distText = stats.hasDistance ? (stats.distanceVal || '0.00') : (stats.timeStr || '0:00');
-    const distUnit = stats.hasDistance ? 'KM' : '';
-
-    const paceParts = (stats.subValue || '').trim().split(' ');
-    const paceText = paceParts[0] || (stats.avgHeartrate ? String(stats.avgHeartrate) : '0');
-    let paceUnit = paceParts[1] || (stats.hasDistance ? '/KM' : 'BPM');
-    if (paceUnit.toLowerCase() === 'min/km') paceUnit = '/KM';
-
-    const cx = 540;
-    const cy = 1750;
-    const w = 600;
-    const h = 140;
-
-    // Glass Pill
-    ctx.beginPath();
-    ctx.roundRect(cx - w / 2, cy - h / 2, w, h, h / 2);
-    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)';
-    ctx.shadowColor = 'rgba(0,0,0,0.2)';
-    ctx.shadowBlur = 40;
-    ctx.fill();
-    ctx.shadowBlur = 0;
-
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = textColor === 'black' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)';
-    ctx.stroke();
-
-    // Cyan dot
-    ctx.beginPath();
-    ctx.arc(cx - w / 2 + 70, cy, 40, 0, Math.PI * 2);
-    ctx.fillStyle = '#22d3ee';
-    ctx.shadowColor = 'rgba(34,211,238,0.5)';
-    ctx.shadowBlur = 20;
-    ctx.fill();
-    ctx.shadowBlur = 0;
-
-    // Zap inside dot (simple triangle path to fake it)
-    ctx.fillStyle = 'black';
-    ctx.beginPath();
-    ctx.moveTo(cx - w / 2 + 75, cy - 15);
-    ctx.lineTo(cx - w / 2 + 60, cy + 5);
-    ctx.lineTo(cx - w / 2 + 75, cy + 5);
-    ctx.lineTo(cx - w / 2 + 65, cy + 18);
-    ctx.lineTo(cx - w / 2 + 82, cy - 2);
-    ctx.lineTo(cx - w / 2 + 67, cy - 2);
-    ctx.fill();
-
-    ctx.textAlign = 'left';
-    ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
-    ctx.font = `italic 900 50px ${sysFont}`;
-    ctx.fillText(`${distText} ${distUnit}`.trim(), cx - w / 2 + 150, cy - 15);
-
-    ctx.font = `700 22px ${sysFont}`;
-    ctx.letterSpacing = "2px";
-    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)';
-    const botLabel = (stats.subLabel || (stats.hasDistance ? "PACE" : "AVG HR")).toUpperCase();
-    ctx.fillText(`${paceText} ${paceUnit} ${botLabel}`.toUpperCase(), cx - w / 2 + 150, cy + 30);
-    ctx.letterSpacing = "0px";
-}
-
-function drawBrutalistBold(ctx, stats, textColor) {
-    const sysFont = "'Plus Jakarta Sans', sans-serif";
-    ctx.textBaseline = 'alphabetic';
-
-    const distText = stats.hasDistance ? (stats.distanceVal || '0.00') : (stats.timeStr || '0:00');
-
-    const paceParts = (stats.subValue || '').trim().split(' ');
-    const paceText = paceParts[0] || (stats.avgHeartrate ? String(stats.avgHeartrate) : '0');
-    let paceUnit = paceParts[1] || (stats.hasDistance ? '/KM' : 'BPM');
-    if (paceUnit.toLowerCase() === 'min/km') paceUnit = '/KM';
-
-    const startX = 100;
-    const startY = 1600;
-    const w = 880;
-    const h = 260;
-
-    // White box shadow offset
-    ctx.fillStyle = '#22d3ee';
-    ctx.fillRect(startX + 15, startY + 15, w, h);
-
-    ctx.fillStyle = 'white';
-    ctx.fillRect(startX, startY, w, h);
-
-    ctx.fillStyle = 'black';
-    ctx.textAlign = 'left';
-    ctx.font = `900 20px ${sysFont}`;
-    ctx.letterSpacing = "1px";
-    ctx.fillText("SESSION SUMMARY", startX + 50, startY + 50);
-    ctx.letterSpacing = "0px";
-
-    ctx.font = `italic 900 130px ${sysFont}`;
-    ctx.fillText(distText, startX + 45, startY + 170);
-
-    ctx.font = `900 24px ${sysFont}`;
-    ctx.letterSpacing = "[-1px]";
-    ctx.fillText(`${paceText} ${paceUnit}`.toUpperCase(), startX + 50, startY + 220);
-
-    ctx.fillStyle = 'rgba(0,0,0,0.3)';
-    ctx.fillText(" / ", startX + 50 + ctx.measureText(`${paceText} ${paceUnit}`.toUpperCase()).width, startY + 220);
-
-    ctx.fillStyle = 'black';
-    const offset = startX + 50 + ctx.measureText(`${paceText} ${paceUnit} / `.toUpperCase()).width;
-    ctx.fillText(stats.timeStr || '0:00', offset, startY + 220);
-}
 
 function drawTechHUD(ctx, stats, textColor) {
     const sysFont = "'Plus Jakarta Sans', sans-serif";
@@ -1522,7 +1293,7 @@ function drawDataModular(ctx, stats, textColor) {
     const startY = cy - h / 2;
 
     // Inner panel styles (Swiss Grid uses dark boxes inside a colored border/gap frame)
-    const panelBg = textColor === 'black' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.5)';
+    const panelBg = textColor === 'black' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.4)'; // Slightly more transparent
     const bottomBg = textColor === 'black' ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.05)';
 
     // Top Left Panel (Sharp rects! Clipping handles the outer curve)
@@ -1647,54 +1418,66 @@ function drawGlassSlice(ctx, stats, textColor) {
     ctx.restore();
 }
 
-function drawVHSRetro(ctx, stats, textColor) {
+function drawVHSRetro(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
     const sysFont = "'Space Mono', monospace";
-    ctx.textBaseline = 'alphabetic';
+    const p = stats.dataPoints || [];
+    const main = p[0] || { value: '0.00', label: 'Dist', unit: 'km' };
+    
+    const cx = 540;
+    const cy = 1100;
+    const w = 800;
+    const h = 500;
 
-    const distLabel = (stats.mainLabel || (stats.hasDistance ? "DISTANCE" : "DURATION")).toUpperCase();
-    const distText = stats.hasDistance ? `${stats.distanceVal || '0.00'}KM` : (stats.timeStr || '0:00');
+    ctx.save();
+    ctx.translate(cx, cy);
 
-    const paceLabel = (stats.subLabel || (stats.hasDistance ? "PACE" : "AVG HR")).toUpperCase();
-    const paceParts = (stats.subValue || '').trim().split(' ');
-    const paceText = paceParts[0] || (stats.avgHeartrate ? String(stats.avgHeartrate) : '0');
-
-    const startX = 80;
-    const startY = 1600;
-    const w = 480;
-    const h = 220;
-
-    // Dark backdrop with red border
-    ctx.fillStyle = 'rgba(0,0,0,0.6)';
-    ctx.fillRect(startX, startY, w, h);
-    ctx.fillStyle = '#ef4444'; // red-500
-    ctx.fillRect(startX, startY, 10, h);
-
-    // REC dot
-    ctx.fillStyle = '#dc2626'; // red-600
+    // 1. RED DOT + REC (Top Left)
     ctx.beginPath();
-    ctx.arc(startX + 40, startY + 50, 6, 0, Math.PI * 2);
+    ctx.arc(-w/2 + 60, -h/2 + 60, 15, 0, Math.PI * 2);
+    ctx.fillStyle = '#ff0000'; // Pure bright red for recording
     ctx.fill();
 
-    ctx.textAlign = 'left';
-    ctx.fillStyle = 'white'; // Always white for VHS
-    ctx.globalAlpha = 0.6;
-    ctx.font = `700 20px ${sysFont}`;
-    ctx.fillText("REC LIVE", startX + 60, startY + 56);
-    ctx.globalAlpha = 1.0;
+    ctx.fillStyle = 'white';
+    ctx.font = `700 48px ${sysFont}`;
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = 'black';
+    ctx.fillText("REC", -w/2 + 100, -h/2 + 78);
+    ctx.shadowBlur = 0;
 
-    ctx.font = `700 80px ${sysFont}`;
-    ctx.letterSpacing = "-2px";
-    ctx.fillText(stats.timeStr || '0:00', startX + 40, startY + 140);
-    ctx.letterSpacing = "0px";
-
-    ctx.globalAlpha = 0.8;
-    ctx.font = `700 20px ${sysFont}`;
-    ctx.fillText(`${distLabel} ${distText}`, startX + 40, startY + 190);
-
+    // 2. SP / PLAY (Top Right)
     ctx.textAlign = 'right';
-    ctx.fillText(`${paceLabel} ${paceText}`, startX + w - 30, startY + 190);
+    ctx.font = `400 32px ${sysFont}`;
+    ctx.fillText("PLAY ►", w/2 - 60, -h/2 + 70);
+    ctx.fillText("SP", w/2 - 60, -h/2 + 110);
+
+    // 3. Main Data (Bottom Left)
+    ctx.textAlign = 'left';
+    ctx.font = `700 120px ${sysFont}`;
+    ctx.fillText(main.value, -w/2 + 60, h/2 - 120);
+    
+    ctx.font = `400 40px ${sysFont}`;
+    ctx.fillText((main.unit || main.label).toUpperCase(), -w/2 + 60, h/2 - 70);
+
+    // 4. Date/Time (Bottom Right)
+    ctx.textAlign = 'right';
+    const dateStr = (p.find(x => x.label === 'Date')?.value || stats.date || 'MAR 08 2024').toUpperCase();
+    ctx.font = `400 32px ${sysFont}`;
+    ctx.fillText(dateStr, w/2 - 60, h/2 - 120);
+    ctx.fillText(stats.startTime || "07:08 AM", w/2 - 60, h/2 - 70);
+
+    // 5. Tracking Lines (Retro vibe)
+    ctx.globalAlpha = 0.2;
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 1;
+    for(let i=0; i<3; i++) {
+        const y = h/2 - 40 - (i*5);
+        ctx.beginPath(); ctx.moveTo(-w/2 + 60, y); ctx.lineTo(-w/2 + 120, y); ctx.stroke();
+    }
     ctx.globalAlpha = 1.0;
+
+    ctx.restore();
 }
+
 
 function drawAwardBadge(ctx, stats, textColor) {
     const sysFont = "'Plus Jakarta Sans', sans-serif";
@@ -1742,75 +1525,112 @@ function drawAwardBadge(ctx, stats, textColor) {
     ctx.letterSpacing = "0px";
 }
 
-function drawStealthBar(ctx, stats, textColor) {
+function drawStealthBar(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
     const sysFont = "'Plus Jakarta Sans', sans-serif";
-    ctx.textBaseline = 'middle';
+    const p = stats.dataPoints || [];
+    const p1 = p[0] || { value: '0.00', label: 'Dist', unit: 'km' };
+    const p2 = p[1] || { value: '0:00', label: 'Pace', unit: '' };
+    const p3 = p[2] || { value: '0m', label: 'Time', unit: '' };
 
-    const distLabel = (stats.mainLabel || (stats.hasDistance ? "DISTANCE" : "DURATION")).toUpperCase();
-    const distText = stats.hasDistance ? `${stats.distanceVal || '0.00'}KM` : (stats.timeStr || '0:00');
+    const cx = 540;
+    const cy = 1750;
+    const w = 980;
+    const h = 140;
 
-    const paceLabel = (stats.subLabel || (stats.hasDistance ? "PACE" : "AVG HR")).toUpperCase();
-    const paceParts = (stats.subValue || '').trim().split(' ');
-    const paceText = paceParts[0] || (stats.avgHeartrate ? String(stats.avgHeartrate) : '0');
-    let paceUnit = paceParts[1] || (stats.hasDistance ? '/KM' : 'BPM');
-    if (paceUnit.toLowerCase() === 'min/km') paceUnit = '/KM';
+    // Dark bar background
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.beginPath();
+    ctx.roundRect(-w/2, -h/2, w, h, h/2);
+    ctx.fillStyle = 'rgba(0,0,0,0.85)';
+    ctx.fill();
+
+    // Data
+    const drawCell = (data: any, x: number) => {
+        ctx.save();
+        ctx.translate(x, 0);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        // Unit (Bigger labels as requested)
+        ctx.font = `800 24px ${sysFont}`;
+        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        if (typeof ctx.letterSpacing !== 'undefined') ctx.letterSpacing = "6px";
+        const labelText = (data.unit || data.label).toUpperCase();
+        ctx.fillText(labelText, 0, -35);
+        ctx.letterSpacing = "0px";
+
+        // Value
+        ctx.font = `800 60px ${sysFont}`;
+        ctx.fillStyle = 'white';
+        ctx.fillText(data.value, 0, 25);
+        ctx.restore();
+    };
+
+    drawCell(p1, -w/2 + 200);
+    drawCell(p2, 0);
+    drawCell(p3, w/2 - 200);
+
+    ctx.restore();
+}
+
+
+function drawNeonCapsule(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const sysFont = "'Space Mono', monospace";
+    const p = stats.dataPoints || [];
+    const main = p[0] || { value: '0.00', label: 'Dist', unit: 'km' };
+    const sub = p[1] || { value: '0:00', label: 'Pace', unit: '/km' };
 
     const cx = 540;
     const cy = 1750;
     const w = 980;
     const h = 120;
+    const radius = 60;
 
-    // Black/Dark wide pill
+    // Outer capsule (glowing effect)
     ctx.beginPath();
-    ctx.roundRect(cx - w / 2, cy - h / 2, w, h, h / 2);
-    ctx.fillStyle = 'rgba(0,0,0,0.8)'; // Always bold stealth
-    ctx.shadowColor = 'rgba(0,0,0,0.3)';
-    ctx.shadowBlur = 40;
-    ctx.shadowOffsetY = 15;
+    ctx.roundRect(cx - w / 2, cy - h / 2, w, h, radius);
+    ctx.fillStyle = 'rgba(0,255,255,0.1)'; // Light cyan glow
+    ctx.shadowColor = 'rgba(0,255,255,0.8)';
+    ctx.shadowBlur = 30;
+    ctx.shadowOffsetY = 0;
     ctx.fill();
     ctx.shadowBlur = 0;
-    ctx.shadowOffsetY = 0;
 
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
-    ctx.stroke();
-
-    // Left Cyan badge
-    const badgeW = 200;
+    // Inner capsule (darker)
     ctx.beginPath();
-    ctx.roundRect(cx - w / 2 + 10, cy - h / 2 + 10, badgeW, h - 20, (h - 20) / 2);
-    ctx.fillStyle = '#22d3ee';
+    ctx.roundRect(cx - w / 2 + 5, cy - h / 2 + 5, w - 10, h - 10, radius - 5);
+    ctx.fillStyle = 'rgba(0,0,0,0.8)';
     ctx.fill();
 
     ctx.textAlign = 'center';
-    ctx.fillStyle = 'black';
-    ctx.font = `italic 900 24px ${sysFont}`;
-    ctx.fillText("SCORA", cx - w / 2 + 10 + badgeW / 2, cy);
+    ctx.textBaseline = 'middle';
 
-    // Data Columns Setup
-    ctx.fillStyle = 'white';
-    const colStarts = [cx - w / 2 + 300, cx - w / 2 + 550, cx - w / 2 + 800];
-    const labels = [distLabel, paceLabel, "TIME"];
-    const values = [distText, `${paceText}${paceUnit}`, stats.timeStr || '0:00'];
+    // Main Value
+    ctx.fillStyle = '#00ffff'; // Neon cyan
+    ctx.font = `700 60px ${sysFont}`;
+    ctx.fillText(main.value, cx - w / 4, cy - 10);
 
-    ctx.textAlign = 'left';
-    for (let i = 0; i < 3; i++) {
-        // Fallback for Time (3rd col) on Gym workouts is Avg HR
-        if (i === 2 && !stats.hasDistance) {
-            labels[i] = (stats.subLabel || "AVG HR").toUpperCase();
-            values[i] = stats.avgHeartrate ? `${stats.avgHeartrate} BPM` : "DONE";
-        }
+    // Main Unit
+    ctx.font = `700 20px ${sysFont}`;
+    ctx.globalAlpha = 0.8;
+    ctx.fillText((main.unit || main.label).toUpperCase(), cx - w / 4, cy + 30);
+    ctx.globalAlpha = 1.0;
 
-        ctx.globalAlpha = 0.4;
-        ctx.font = `900 14px ${sysFont}`;
-        ctx.letterSpacing = "2px";
-        ctx.fillText(labels[i], colStarts[i], cy - 18);
+    // Separator
+    ctx.fillStyle = 'rgba(0,255,255,0.3)';
+    ctx.fillRect(cx - 2, cy - h / 2 + 20, 4, h - 40);
 
-        ctx.globalAlpha = 1.0;
-        ctx.font = `italic 900 36px ${sysFont}`;
-        ctx.letterSpacing = "0px";
-        ctx.fillText(values[i], colStarts[i], cy + 20);
-    }
+    // Sub Value
+    ctx.fillStyle = '#00ffff'; // Neon cyan
+    ctx.font = `700 40px ${sysFont}`;
+    ctx.fillText(sub.value, cx + w / 4, cy - 10);
+
+    // Sub Unit
+    ctx.font = `700 16px ${sysFont}`;
+    ctx.globalAlpha = 0.8;
+    ctx.fillText((sub.unit || sub.label).toUpperCase(), cx + w / 4, cy + 20);
+    ctx.globalAlpha = 1.0;
 }
 
 // ─── Quiet Luxury / Editorial Templates ───────────────────────────────────────
@@ -1824,6 +1644,116 @@ function drawTrackGraphic(ctx, x, y, w, h) {
         ctx.roundRect(x + inset, y + inset, w - inset * 2, h - inset * 2, (w - inset * 2) / 2);
         ctx.stroke();
     }
+}
+
+function drawWorkoutReceipt(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const sysFont = "'Plus Jakarta Sans', sans-serif";
+    const monoFont = "'Space Mono', monospace";
+    const p = stats.dataPoints || [];
+    
+    const cx = 540;
+    const cy = 1100;
+    const w = 640;
+    const h = 750;
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(-1.5 * Math.PI / 180); // -1.5deg rotation
+    
+    // Shadow
+    ctx.shadowBlur = 40;
+    ctx.shadowColor = 'rgba(0,0,0,0.2)';
+    ctx.shadowOffsetY = 20;
+
+    // Thermal Background (Yellow)
+    ctx.fillStyle = '#facc15';
+    ctx.fillRect(-w/2, -h/2, w, h);
+    
+    // Completely clear shadow so inner text has no shadow bleeding
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+    ctx.shadowColor = 'transparent';
+
+    // Header Line
+    ctx.textAlign = 'left';
+    ctx.fillStyle = 'black';
+    
+    // Day and Number Day (Requested)
+    const longDate = p.find(x => x.label === 'Date' && x.value.includes(' ')) || p.find(x => x.label === 'Date') || { value: stats.date || 'FRIDAY 18' };
+    ctx.font = `900 24px ${monoFont}`;
+    if (typeof ctx.letterSpacing !== 'undefined') ctx.letterSpacing = "10px";
+    ctx.fillText(longDate.value.toUpperCase(), -w/2 + 60, -h/2 + 80);
+    ctx.letterSpacing = "0px";
+    
+    // Header divider
+    ctx.globalAlpha = 0.1;
+    ctx.fillRect(-w/2 + 60, -h/2 + 105, w - 120, 4);
+    ctx.globalAlpha = 1.0;
+
+    // Main Row: Distance
+    const main = p[0] || { value: '0.00', unit: 'km' };
+    ctx.save();
+    ctx.font = `700 24px ${monoFont}`;
+    ctx.globalAlpha = 0.4;
+    ctx.fillText("DISTANCE", -w/2 + 60, -h/2 + 200);
+    
+    ctx.textAlign = 'right';
+    ctx.globalAlpha = 1.0;
+    ctx.font = `italic 900 85px ${sysFont}`;
+    ctx.fillText(`${main.value} ${main.unit || ''}`, w/2 - 60, -h/2 + 200);
+    ctx.restore();
+
+    // Sub Row 1: Average
+    const pace = p[1] || { value: '0:00', unit: '/km' };
+    ctx.save();
+    ctx.globalAlpha = 0.1;
+    ctx.fillRect(-w/2 + 60, -h/2 + 260, w - 120, 2);
+    ctx.globalAlpha = 0.4;
+    ctx.font = `700 24px ${monoFont}`;
+    ctx.fillText("AVERAGE", -w/2 + 60, -h/2 + 330);
+    
+    ctx.textAlign = 'right';
+    ctx.globalAlpha = 1.0;
+    ctx.font = `italic 900 50px ${sysFont}`;
+    ctx.fillText(`${pace.value} ${pace.unit || ''}`, w/2 - 60, -h/2 + 330);
+    ctx.restore();
+
+    // Sub Row 2: Duration
+    const duration = p[2] || { value: '0:00' };
+    ctx.save();
+    ctx.globalAlpha = 0.1;
+    ctx.fillRect(-w/2 + 60, -h/2 + 390, w - 120, 2);
+    ctx.globalAlpha = 0.4;
+    ctx.font = `700 24px ${monoFont}`;
+    ctx.fillText("DURATION", -w/2 + 60, -h/2 + 460);
+    
+    ctx.textAlign = 'right';
+    ctx.globalAlpha = 1.0;
+    ctx.font = `italic 900 50px ${sysFont}`;
+    ctx.fillText(duration.value, w/2 - 60, -h/2 + 460);
+    ctx.restore();
+
+    // Footer - Dashed divider
+    ctx.save();
+    ctx.setLineDash([10, 10]);
+    ctx.strokeStyle = 'rgba(0,0,0,0.1)';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(-w/2 + 60, h/2 - 120);
+    ctx.lineTo(w/2 - 60, h/2 - 120);
+    ctx.stroke();
+    
+    ctx.textAlign = 'center';
+    ctx.font = `900 18px ${monoFont}`;
+    ctx.globalAlpha = 0.3;
+    if (typeof ctx.letterSpacing !== 'undefined') ctx.letterSpacing = "15px";
+    
+    // Replace branding with activity name
+    const footerText = (stats.shortTitle || stats.title || 'SCORA RECORD').toUpperCase().substring(0, 22);
+    ctx.fillText(footerText, 0 + 7.5, h/2 - 60);
+    ctx.restore();
+
+    ctx.restore();
 }
 
 function drawEssentialItalic(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
@@ -1878,69 +1808,106 @@ function drawEssentialItalic(ctx: CanvasRenderingContext2D, stats: any, textColo
 function drawObsidianBar(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
     const sysFont = "'Plus Jakarta Sans', sans-serif";
     const p = stats.dataPoints || [];
-    const p1 = p[0] || { value: '-', label: 'Dist', unit: '' };
-    const p2 = p[1] || { value: '-', label: 'Pace', unit: '' };
-    const p3 = p[2] || { value: '-', label: 'Time', unit: '' };
-
-    ctx.textBaseline = 'middle';
-    ctx.textAlign = 'center';
+    const p1 = p[0] || { value: '0.00', label: 'Dist', unit: 'km' };
+    const p2 = p[1] || { value: '0:00', label: 'Pace', unit: '' };
+    const p3 = p[2] || { value: '0m', label: 'Time', unit: '' };
 
     const cx = 540;
-    const cy = 1600;
-    const w = 920;
-    const h = 240;
+    const cy = 1750;
+    const barW = 880;
+    const barH = 160;
 
-    // Background Pill
+    // Background - solid pill (user asked for no opacity)
+    ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
+    const radius = 20;
     ctx.beginPath();
-    ctx.roundRect(cx - w / 2, cy - h / 2, w, h, 120);
-    ctx.fillStyle = 'rgba(0,0,0,0.75)';
-    ctx.shadowColor = 'rgba(0,0,0,0.4)';
-    ctx.shadowBlur = 60;
+    ctx.roundRect(cx - barW / 2, cy - barH / 2, barW, barH, radius);
     ctx.fill();
-    ctx.shadowBlur = 0;
 
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+    const drawCell = (data: any, x: number) => {
+        ctx.save();
+        ctx.translate(x, cy);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        // Main Value
+        ctx.fillStyle = textColor === 'black' ? 'white' : 'black';
+        ctx.font = `600 55px ${sysFont}`;
+        ctx.fillText(data.value, 0, -20);
+        
+        ctx.font = `800 24px ${sysFont}`;
+        if (typeof ctx.letterSpacing !== 'undefined') ctx.letterSpacing = "6px";
+        const labelText = (data.unit || data.label).toUpperCase();
+        ctx.fillText(labelText, 0, 35);
+        ctx.restore();
+    };
+
+    drawCell(p1, cx - 280);
+    drawCell(p2, cx);
+    drawCell(p3, cx + 280);
+}
+
+function drawModernPill(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const sysFont = "'Plus Jakarta Sans', sans-serif";
+    const p = stats.dataPoints || [];
+    const main = p[0] || { value: '0.00', label: 'Dist', unit: 'km' };
+    const sub = p[1] || { value: '0:00', label: 'Pace', unit: '/km' };
+
+    const cx = 540;
+    const cy = 1750;
+    const w = 920;
+    const h = 200;
+    const radius = 100; // Full pill caps
+
+    ctx.save();
+    
+    // 1. Black/Glass Background
+    ctx.beginPath();
+    ctx.roundRect(cx - w / 2, cy - h / 2, w, h, radius);
+    ctx.fillStyle = 'rgba(0,0,0,0.6)'; // Matching React's bg-black/60
+    ctx.fill();
+    
+    // Border
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)'; // white/10%
+    ctx.lineWidth = 2;
     ctx.stroke();
 
-    // Data - 3 Columns
-    const colX = [cx - 280, cx, cx + 280];
-    
-    // Col 1
-    ctx.textAlign = 'center';
+    // 2. Data
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'left';
     ctx.fillStyle = 'white';
-    const isLong1 = p1.value.length > 5;
-    ctx.font = `italic 900 ${isLong1 ? '60px' : '110px'} ${sysFont}`;
-    ctx.fillText(p1.value, colX[0], cy - 10);
-    ctx.font = `500 14px ${sysFont}`;
-    ctx.fillStyle = 'rgba(255,255,255,0.3)';
-    ctx.letterSpacing = "6px";
-    ctx.fillText((p1.unit || p1.label).toUpperCase(), colX[0], cy + 60);
 
-    // Separators
-    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
-    ctx.beginPath(); ctx.moveTo(cx - 140, cy - 40); ctx.lineTo(cx - 140, cy + 40); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(cx + 140, cy - 40); ctx.lineTo(cx + 140, cy + 40); ctx.stroke();
+    // Main Stat (Distance)
+    ctx.font = `italic 900 130px ${sysFont}`; // text-5xl equivalent on canvas
+    const valText = main.value;
+    const valW = ctx.measureText(valText).width;
+    ctx.fillText(valText, cx - w/2 + 80, cy - 10);
 
-    // Col 2
-    ctx.fillStyle = 'white';
-    const isLong2 = p2.value.length > 5;
-    ctx.font = `italic 900 ${isLong2 ? '60px' : '90px'} ${sysFont}`;
-    ctx.fillText(p2.value, colX[1], cy - 10);
-    ctx.font = `500 14px ${sysFont}`;
-    ctx.fillStyle = 'rgba(255,255,255,0.3)';
-    ctx.fillText(p2.label.toUpperCase(), colX[1], cy + 60);
-
-    // Col 3
-    ctx.textAlign = 'center'; // Changed from right to center for Obsidian consistency
-    ctx.fillStyle = 'white';
-    const isLong3 = p3.value.length > 5;
-    ctx.font = `italic 900 ${isLong3 ? '60px' : '80px'} ${sysFont}`;
-    ctx.fillText(p3.value, colX[2], cy - 10);
-    ctx.font = `500 14px ${sysFont}`;
-    ctx.fillStyle = 'rgba(255,255,255,0.3)';
-    ctx.fillText(p3.label.toUpperCase(), colX[2], cy + 60);
+    // Main Unit
+    ctx.font = `900 20px ${sysFont}`; // text-[9px] equivalent
+    ctx.fillStyle = 'rgba(255,255,255,0.2)'; // white/20%
+    if (typeof ctx.letterSpacing !== 'undefined') ctx.letterSpacing = "8px";
+    ctx.fillText((main.unit || main.label).toUpperCase(), cx - w/2 + 80, cy + 60);
     ctx.letterSpacing = "0px";
+
+    // Separator Line
+    ctx.fillStyle = 'rgba(255,255,255,0.1)';
+    ctx.fillRect(cx - w/2 + 80 + valW + 50, cy - 40, 2, 80);
+
+    // Sub Stat (Pace)
+    ctx.fillStyle = 'rgba(255,255,255,0.8)'; // white/80%
+    ctx.font = `italic 900 85px ${sysFont}`; // text-3xl
+    const subX = cx - w/2 + 80 + valW + 110;
+    ctx.fillText(sub.value, subX, cy - 10);
+
+    // Sub Unit (PACE label)
+    ctx.font = `900 20px ${sysFont}`;
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    if (typeof ctx.letterSpacing !== 'undefined') ctx.letterSpacing = "8px";
+    ctx.fillText("PACE", subX, cy + 60);
+    ctx.letterSpacing = "0px";
+
+    ctx.restore();
 }
 
 function drawTrackRecord(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
@@ -1959,18 +1926,19 @@ function drawTrackRecord(ctx: CanvasRenderingContext2D, stats: any, textColor: s
     ctx.textBaseline = 'middle';
     const heroValue = main.value;
     const isLong = heroValue.length > 5;
-    ctx.font = `italic 900 ${isLong ? '100px' : '230px'} ${sysFont}`;
+    ctx.font = `italic 900 ${isLong ? '100px' : '235px'} ${sysFont}`;
     ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
     ctx.fillText(heroValue, cx, cy - 20);
 
-    // Label
-    ctx.font = `900 24px ${sysFont}`;
-    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.3)';
-    ctx.letterSpacing = "12px";
+    // Label (Bigger units, less transparency)
+    ctx.font = `800 32px ${sysFont}`;
+    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.6)';
+    if (typeof ctx.letterSpacing !== 'undefined') ctx.letterSpacing = "15px";
     const label = (main.unit || main.label).toUpperCase();
-    ctx.fillText(label, cx + 6, cy + 100);
+    ctx.fillText(label, cx + 10, cy + 120);
     ctx.letterSpacing = "0px";
 }
+
 
 function drawMonoSplit(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
     const sysFont = "'Plus Jakarta Sans', sans-serif";
@@ -1979,46 +1947,40 @@ function drawMonoSplit(ctx: CanvasRenderingContext2D, stats: any, textColor: str
     const p2 = p[1] || { value: '0:00', label: 'Pace', unit: '/km' };
 
     const cx = 540;
-    const cy = 1600;
-    const w = 400; // base width for half
-    const h = 280;
+    const cy = 1750;
+    const w = 880;
+    const h = 160;
+    const radius = 20;
 
     // Left Half (White)
     ctx.beginPath();
-    ctx.roundRect(cx - w, cy - h / 2, w, h, [60, 0, 0, 60]);
-    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+    ctx.roundRect(cx - w / 2, cy - h / 2, w / 2, h, [radius, 0, 0, radius]);
+    ctx.fillStyle = textColor === 'black' ? 'white' : 'black';
     ctx.fill();
 
     // Right Half (Black/Transparent)
     ctx.beginPath();
-    ctx.roundRect(cx, cy - h / 2, w, h, [0, 60, 60, 0]);
-    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.roundRect(cx, cy - h / 2, w / 2, h, [0, radius, radius, 0]);
+    ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
     ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
-    ctx.stroke();
 
     // Left Data
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = 'black';
-    const isLong1 = p1.value.length > 5;
-    ctx.font = `italic 900 ${isLong1 ? '60px' : '100px'} ${sysFont}`;
-    ctx.fillText(p1.value, cx - w / 2, cy - 15);
-    ctx.font = `900 14px ${sysFont}`;
-    ctx.fillStyle = 'rgba(0,0,0,0.4)';
-    ctx.letterSpacing = "4px";
-    ctx.fillText((p1.unit || p1.label).toUpperCase(), cx - w / 2, cy + 60);
+    ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
+    ctx.font = `600 55px ${sysFont}`;
+    ctx.fillText(p1.value, cx - w / 4, cy - 20);
+    ctx.font = `800 24px ${sysFont}`;
+    if (typeof ctx.letterSpacing !== 'undefined') ctx.letterSpacing = "6px";
+    ctx.fillText((p1.unit || p1.label).toUpperCase(), cx - w / 4, cy + 35);
 
     // Right Data
-    ctx.fillStyle = 'white';
-    const isLong2 = p2.value.length > 5;
-    ctx.font = `italic 900 ${isLong2 ? '60px' : '100px'} ${sysFont}`;
-    ctx.globalAlpha = 0.8;
-    ctx.fillText(p2.value, cx + w / 2, cy - 15);
-    ctx.font = `900 14px ${sysFont}`;
-    ctx.globalAlpha = 0.3;
-    ctx.fillText(p2.label.toUpperCase(), cx + w / 2, cy + 60);
-    ctx.globalAlpha = 1.0;
+    ctx.fillStyle = textColor === 'black' ? 'white' : 'black';
+    ctx.font = `600 55px ${sysFont}`;
+    ctx.fillText(p2.value, cx + w / 4, cy - 20);
+    ctx.font = `800 24px ${sysFont}`;
+    if (typeof ctx.letterSpacing !== 'undefined') ctx.letterSpacing = "6px";
+    ctx.fillText(p2.label.toUpperCase(), cx + w / 4, cy + 35);
     ctx.letterSpacing = "0px";
 }
 
@@ -2026,54 +1988,90 @@ function drawEditorialArchive(ctx: CanvasRenderingContext2D, stats: any, textCol
     const sysFont = "'Plus Jakarta Sans', sans-serif";
     const p = stats.dataPoints || [];
     const p1 = p[0] || { value: '0.00', label: 'Dist', unit: 'km' };
-    const p2 = p[1] || { value: '0:00', label: 'Pace', unit: '/km' };
+    const p2 = p[1] || { value: '0:00', label: 'Pace', unit: '' };
     const p3 = p[2] || { value: '0m', label: 'Time', unit: '' };
+    const datePoint = p.find(x => x.label === 'Date') || { value: stats.date || 'MAR 08' };
 
     const cx = 540;
-    const cy = 1500;
+    const cy = 1100;
     const w = 700;
-    const h = 600;
+    const h = 750;
+    const radius = 8;
 
-    // Paper-like background (very subtle)
+    ctx.save();
+    ctx.translate(cx, cy);
+
+    // 1. Background (White 95%)
     ctx.fillStyle = 'rgba(255,255,255,0.95)';
-    ctx.fillRect(cx - w / 2, cy - h / 2, w, h);
+    ctx.beginPath();
+    ctx.roundRect(-w/2, -h/2, w, h, radius);
+    ctx.fill();
 
-    ctx.textAlign = 'left';
+    // 2. Header
+    ctx.textBaseline = 'top';
     ctx.fillStyle = 'black';
-
-    // Date - Use dataPoints[9] (Date) if available
-    const datePoint = p.find(x => x.label === 'Date') || { value: stats.date || 'MAR 08' };
-    ctx.font = `italic 700 14px ${sysFont}`;
+    
+    // Date (Left)
+    ctx.textAlign = 'left';
     ctx.globalAlpha = 0.4;
-    ctx.letterSpacing = "4px";
-    ctx.fillText(datePoint.value.toUpperCase(), cx - w / 2 + 60, cy - h / 2 + 80);
+    ctx.font = `italic 900 18px ${sysFont}`;
+    if (typeof ctx.letterSpacing !== 'undefined') ctx.letterSpacing = "10px";
+    ctx.fillText(datePoint.value.toUpperCase(), -w/2 + 50, -h/2 + 50);
+    ctx.letterSpacing = "0px";
+
+    // "ARCHIVE" (Right)
+    ctx.textAlign = 'right';
+    ctx.font = `900 18px ${sysFont}`;
+    if (typeof ctx.letterSpacing !== 'undefined') ctx.letterSpacing = "10px";
+    ctx.fillText("ARCHIVE", w/2 - 50, -h/2 + 50);
     ctx.letterSpacing = "0px";
     ctx.globalAlpha = 1.0;
 
-    // Row 1: Primary
-    const isLong1 = p1.value.length > 5;
-    ctx.font = `italic 900 ${isLong1 ? '120px' : '240px'} ${sysFont}`;
-    ctx.fillText(p1.value, cx - w / 2 + 50, cy + 50);
+    // Header divider
+    ctx.globalAlpha = 0.05;
+    ctx.fillRect(-w/2 + 50, -h/2 + 100, w - 100, 2);
+    ctx.globalAlpha = 1.0;
 
-    // Label Divider
-    ctx.strokeStyle = 'rgba(0,0,0,0.1)';
-    ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(cx - w / 2 + 60, cy + 100); ctx.lineTo(cx + w / 2 - 60, cy + 100); ctx.stroke();
-
-    ctx.font = `900 18px ${sysFont}`;
-    ctx.letterSpacing = "4px";
-    const labelMain = (p1.unit || p1.label).toUpperCase();
-    ctx.fillText(`${labelMain} // PERFORMANCE DATA`, cx - w / 2 + 60, cy + 140);
-
-    // Row 2: Secondary stats
-    ctx.beginPath(); ctx.moveTo(cx - w / 2 + 60, cy + 200); ctx.lineTo(cx + w / 2 - 60, cy + 200); ctx.stroke();
+    // 3. Main Body
+    ctx.textAlign = 'left';
+    ctx.font = `italic 900 230px ${sysFont}`;
+    ctx.fillText(p1.value, -w/2 + 40, -h/2 + 120);
     
-    ctx.font = `italic 800 48px ${sysFont}`;
-    ctx.fillText(p2.value, cx - w / 2 + 60, cy + 260);
-
-    ctx.textAlign = 'right';
-    ctx.fillText(p3.value, cx + w / 2 - 60, cy + 260);
+    // Unit Label with Bar
+    ctx.globalAlpha = 1.0;
+    ctx.fillRect(-w/2 + 50, -h/2 + 120 + 240, 100, 4); // Line above unit
+    ctx.font = `900 22px ${sysFont}`;
+    if (typeof ctx.letterSpacing !== 'undefined') ctx.letterSpacing = "5px";
+    ctx.fillText(`DIST // ${p1.unit || 'KM'}`, -w/2 + 50, -h/2 + 120 + 265);
     ctx.letterSpacing = "0px";
+
+    // 4. Footer
+    ctx.globalAlpha = 0.05;
+    ctx.fillRect(-w/2 + 50, h/2 - 160, w - 100, 2);
+    ctx.globalAlpha = 1.0;
+
+    // Columns
+    const footerY = h/2 - 110;
+    
+    // Pace column
+    ctx.textAlign = 'left';
+    ctx.globalAlpha = 0.3;
+    ctx.font = `900 14px ${sysFont}`;
+    ctx.fillText("PACE", -w/2 + 50, footerY - 25);
+    ctx.globalAlpha = 1.0;
+    ctx.font = `italic 900 55px ${sysFont}`;
+    ctx.fillText(p2.value, -w/2 + 50, footerY + 20);
+
+    // Time column
+    ctx.textAlign = 'right';
+    ctx.globalAlpha = 0.3;
+    ctx.font = `900 14px ${sysFont}`;
+    ctx.fillText("TIME", w/2 - 50, footerY - 25);
+    ctx.globalAlpha = 1.0;
+    ctx.font = `italic 900 55px ${sysFont}`;
+    ctx.fillText(p3.value, w/2 - 50, footerY + 20);
+
+    ctx.restore();
 }
 
 function drawSocialFloat(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
@@ -2144,12 +2142,9 @@ function drawMetricThin(ctx: CanvasRenderingContext2D, stats: any, textColor: st
     const sub = p[1] || { value: '0:00', label: 'Pace', unit: '/km' };
 
     const cx = 100;
-    const cy = 1720;
-
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'alphabetic';
-
-    // Massive Thin Number - Aggressive scaling to fit
+    const cy = 1750;
+    
+    // Massive Thin Number
     const heroValue = main.value;
     let fontSize = heroValue.length > 5 ? 240 : 480;
     ctx.font = `100 ${fontSize}px ${sysFont}`;
@@ -2161,20 +2156,24 @@ function drawMetricThin(ctx: CanvasRenderingContext2D, stats: any, textColor: st
     }
     
     ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
+    ctx.textBaseline = 'alphabetic';
+    ctx.textAlign = 'left';
     ctx.fillText(heroValue, cx, cy);
 
     // Bottom row
     const rowY = cy + 110;
     ctx.save();
-    ctx.font = `900 24px ${sysFont}`;
-    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.2)';
+    // Unit (bigger, readable)
+    ctx.font = `800 28px ${sysFont}`;
+    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)';
     if (typeof ctx.letterSpacing !== 'undefined') ctx.letterSpacing = "15px";
     const labelMain = (main.unit || main.label).toUpperCase();
     ctx.fillText(labelMain, cx + 5, rowY);
     ctx.restore();
 
+    // Secondary stat
     ctx.font = `italic 100 110px ${sysFont}`;
-    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)';
+    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.6)';
     ctx.fillText(sub.value, cx + 240, rowY + 15);
 }
 

@@ -81,6 +81,18 @@ export class EditorPage extends BasePage {
         await expect(dot).toHaveClass(/active/);
     }
 
+    @step('Switch Template via Dot Index')
+    async switchTemplateViaDot(index: number) {
+        const dots = this.page.locator('.template-dot');
+        await dots.nth(index).click();
+    }
+
+    @step('Verify Active Dot Index')
+    async verifyActiveDotIndex(index: number) {
+        const dots = this.page.locator('.template-dot');
+        await expect(dots.nth(index)).toHaveClass(/active/);
+    }
+
     @step('Navigate to Next Template via Arrow')
     async clickNextTemplate() {
         await this.nextTemplateButton.click();
