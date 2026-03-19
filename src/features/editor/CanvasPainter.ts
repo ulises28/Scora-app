@@ -99,6 +99,16 @@ function drawRunningTemplate(ctx, stats, templateType, textColor) {
     else if (templateType === 'vhs-retro') drawVHSRetro(ctx, stats, textColor);
     else if (templateType === 'award-badge') drawAwardBadge(ctx, stats, textColor);
     else if (templateType === 'stealth-bar') drawStealthBar(ctx, stats, textColor);
+    else if (templateType === 'essential-italic') drawEssentialItalic(ctx, stats, textColor);
+    else if (templateType === 'obsidian-bar') drawObsidianBar(ctx, stats, textColor);
+    else if (templateType === 'track-record') drawTrackRecord(ctx, stats, textColor);
+    else if (templateType === 'mono-split') drawMonoSplit(ctx, stats, textColor);
+    else if (templateType === 'editorial-archive') drawEditorialArchive(ctx, stats, textColor);
+    else if (templateType === 'social-float') drawSocialFloat(ctx, stats, textColor);
+    else if (templateType === 'metric-thin') drawMetricThin(ctx, stats, textColor);
+    else if (templateType === 'data-matrix') drawDataMatrix(ctx, stats, textColor);
+    else if (templateType === 'vertical-label') drawVerticalLabel(ctx, stats, textColor);
+    else if (templateType === 'frosted-minimal') drawFrostedMinimal(ctx, stats, textColor);
     else drawRunningData(ctx, stats, textColor);
 }
 
@@ -469,6 +479,16 @@ function drawGymTemplate(ctx, stats, templateType, textColor) {
     else if (templateType === 'vhs-retro') drawVHSRetro(ctx, stats, textColor);
     else if (templateType === 'award-badge') drawAwardBadge(ctx, stats, textColor);
     else if (templateType === 'stealth-bar') drawStealthBar(ctx, stats, textColor);
+    else if (templateType === 'essential-italic') drawEssentialItalic(ctx, stats, textColor);
+    else if (templateType === 'obsidian-bar') drawObsidianBar(ctx, stats, textColor);
+    else if (templateType === 'track-record') drawTrackRecord(ctx, stats, textColor);
+    else if (templateType === 'mono-split') drawMonoSplit(ctx, stats, textColor);
+    else if (templateType === 'editorial-archive') drawEditorialArchive(ctx, stats, textColor);
+    else if (templateType === 'social-float') drawSocialFloat(ctx, stats, textColor);
+    else if (templateType === 'metric-thin') drawMetricThin(ctx, stats, textColor);
+    else if (templateType === 'data-matrix') drawDataMatrix(ctx, stats, textColor);
+    else if (templateType === 'vertical-label') drawVerticalLabel(ctx, stats, textColor);
+    else if (templateType === 'frosted-minimal') drawFrostedMinimal(ctx, stats, textColor);
     else drawGymData(ctx, stats, textColor);     // Duration + Heartrate
 }
 
@@ -1791,6 +1811,534 @@ function drawStealthBar(ctx, stats, textColor) {
         ctx.letterSpacing = "0px";
         ctx.fillText(values[i], colStarts[i], cy + 20);
     }
+}
+
+// ─── Quiet Luxury / Editorial Templates ───────────────────────────────────────
+
+function drawTrackGraphic(ctx, x, y, w, h) {
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 4; i++) {
+        const inset = i * 25;
+        ctx.beginPath();
+        ctx.roundRect(x + inset, y + inset, w - inset * 2, h - inset * 2, (w - inset * 2) / 2);
+        ctx.stroke();
+    }
+}
+
+function drawEssentialItalic(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const sysFont = "'Plus Jakarta Sans', sans-serif";
+    const p = stats.dataPoints || [];
+    const main = p[0] || { value: '0.00', label: 'Distance', unit: 'km' };
+    const sub = p[1] || { value: '0:00', label: 'Pace', unit: '/km' };
+    
+    ctx.textBaseline = 'alphabetic';
+    ctx.textAlign = 'left';
+
+    const cx = 100;
+    const cy = 1750;
+
+    // 1. Date (Above distance)
+    const datePoint = p.find(x => x.label === 'Date') || { value: stats.date || 'MAR 08' };
+    ctx.save();
+    ctx.font = `italic 700 28px ${sysFont}`;
+    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.3)';
+    if (typeof ctx.letterSpacing !== 'undefined') ctx.letterSpacing = "10px";
+    // Distance from baseline of main text to date baseline
+    ctx.fillText(datePoint.value.toUpperCase(), cx, cy - 350); 
+    ctx.restore();
+
+    // 2. Main Stat
+    const heroValue = main.value;
+    let fontSize = heroValue.length > 5 ? 180 : 350;
+    ctx.font = `italic 900 ${fontSize}px ${sysFont}`;
+    const textWidth = ctx.measureText(heroValue).width;
+    const maxWidth = 940;
+    if (textWidth > maxWidth) {
+        fontSize *= (maxWidth / textWidth);
+        ctx.font = `italic 900 ${fontSize}px ${sysFont}`;
+    }
+    ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
+    ctx.fillText(heroValue, cx - 10, cy);
+
+    // 3. Footer
+    ctx.save();
+    ctx.font = `300 44px ${sysFont}`;
+    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)';
+    if (typeof ctx.letterSpacing !== 'undefined') ctx.letterSpacing = "2px";
+    
+    const unitPart = (main.unit || main.label).toUpperCase();
+    const subPart = sub.value && sub.value !== '-' ? ` // ${sub.value} ${sub.unit || sub.label}` : '';
+    const footer = `${unitPart}${subPart}`.toLowerCase();
+    
+    ctx.fillText(footer, cx, cy + 90);
+    ctx.restore();
+}
+
+function drawObsidianBar(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const sysFont = "'Plus Jakarta Sans', sans-serif";
+    const p = stats.dataPoints || [];
+    const p1 = p[0] || { value: '-', label: 'Dist', unit: '' };
+    const p2 = p[1] || { value: '-', label: 'Pace', unit: '' };
+    const p3 = p[2] || { value: '-', label: 'Time', unit: '' };
+
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'center';
+
+    const cx = 540;
+    const cy = 1600;
+    const w = 920;
+    const h = 240;
+
+    // Background Pill
+    ctx.beginPath();
+    ctx.roundRect(cx - w / 2, cy - h / 2, w, h, 120);
+    ctx.fillStyle = 'rgba(0,0,0,0.75)';
+    ctx.shadowColor = 'rgba(0,0,0,0.4)';
+    ctx.shadowBlur = 60;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+    ctx.stroke();
+
+    // Data - 3 Columns
+    const colX = [cx - 280, cx, cx + 280];
+    
+    // Col 1
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'white';
+    const isLong1 = p1.value.length > 5;
+    ctx.font = `italic 900 ${isLong1 ? '60px' : '110px'} ${sysFont}`;
+    ctx.fillText(p1.value, colX[0], cy - 10);
+    ctx.font = `500 14px ${sysFont}`;
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.letterSpacing = "6px";
+    ctx.fillText((p1.unit || p1.label).toUpperCase(), colX[0], cy + 60);
+
+    // Separators
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+    ctx.beginPath(); ctx.moveTo(cx - 140, cy - 40); ctx.lineTo(cx - 140, cy + 40); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx + 140, cy - 40); ctx.lineTo(cx + 140, cy + 40); ctx.stroke();
+
+    // Col 2
+    ctx.fillStyle = 'white';
+    const isLong2 = p2.value.length > 5;
+    ctx.font = `italic 900 ${isLong2 ? '60px' : '90px'} ${sysFont}`;
+    ctx.fillText(p2.value, colX[1], cy - 10);
+    ctx.font = `500 14px ${sysFont}`;
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.fillText(p2.label.toUpperCase(), colX[1], cy + 60);
+
+    // Col 3
+    ctx.textAlign = 'center'; // Changed from right to center for Obsidian consistency
+    ctx.fillStyle = 'white';
+    const isLong3 = p3.value.length > 5;
+    ctx.font = `italic 900 ${isLong3 ? '60px' : '80px'} ${sysFont}`;
+    ctx.fillText(p3.value, colX[2], cy - 10);
+    ctx.font = `500 14px ${sysFont}`;
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.fillText(p3.label.toUpperCase(), colX[2], cy + 60);
+    ctx.letterSpacing = "0px";
+}
+
+function drawTrackRecord(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const sysFont = "'Plus Jakarta Sans', sans-serif";
+    const p = stats.dataPoints || [];
+    const main = p[0] || { value: '0.00', label: 'Dist', unit: 'km' };
+    
+    const cx = 540;
+    const cy = 960;
+
+    // Track Background
+    drawTrackGraphic(ctx, cx - 300, cy - 450, 600, 900);
+
+    // Main Stat
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const heroValue = main.value;
+    const isLong = heroValue.length > 5;
+    ctx.font = `italic 900 ${isLong ? '100px' : '230px'} ${sysFont}`;
+    ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
+    ctx.fillText(heroValue, cx, cy - 20);
+
+    // Label
+    ctx.font = `900 24px ${sysFont}`;
+    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.3)';
+    ctx.letterSpacing = "12px";
+    const label = (main.unit || main.label).toUpperCase();
+    ctx.fillText(label, cx + 6, cy + 100);
+    ctx.letterSpacing = "0px";
+}
+
+function drawMonoSplit(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const sysFont = "'Plus Jakarta Sans', sans-serif";
+    const p = stats.dataPoints || [];
+    const p1 = p[0] || { value: '0.00', label: 'Dist', unit: 'km' };
+    const p2 = p[1] || { value: '0:00', label: 'Pace', unit: '/km' };
+
+    const cx = 540;
+    const cy = 1600;
+    const w = 400; // base width for half
+    const h = 280;
+
+    // Left Half (White)
+    ctx.beginPath();
+    ctx.roundRect(cx - w, cy - h / 2, w, h, [60, 0, 0, 60]);
+    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+    ctx.fill();
+
+    // Right Half (Black/Transparent)
+    ctx.beginPath();
+    ctx.roundRect(cx, cy - h / 2, w, h, [0, 60, 60, 0]);
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+    ctx.stroke();
+
+    // Left Data
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'black';
+    const isLong1 = p1.value.length > 5;
+    ctx.font = `italic 900 ${isLong1 ? '60px' : '100px'} ${sysFont}`;
+    ctx.fillText(p1.value, cx - w / 2, cy - 15);
+    ctx.font = `900 14px ${sysFont}`;
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.letterSpacing = "4px";
+    ctx.fillText((p1.unit || p1.label).toUpperCase(), cx - w / 2, cy + 60);
+
+    // Right Data
+    ctx.fillStyle = 'white';
+    const isLong2 = p2.value.length > 5;
+    ctx.font = `italic 900 ${isLong2 ? '60px' : '100px'} ${sysFont}`;
+    ctx.globalAlpha = 0.8;
+    ctx.fillText(p2.value, cx + w / 2, cy - 15);
+    ctx.font = `900 14px ${sysFont}`;
+    ctx.globalAlpha = 0.3;
+    ctx.fillText(p2.label.toUpperCase(), cx + w / 2, cy + 60);
+    ctx.globalAlpha = 1.0;
+    ctx.letterSpacing = "0px";
+}
+
+function drawEditorialArchive(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const sysFont = "'Plus Jakarta Sans', sans-serif";
+    const p = stats.dataPoints || [];
+    const p1 = p[0] || { value: '0.00', label: 'Dist', unit: 'km' };
+    const p2 = p[1] || { value: '0:00', label: 'Pace', unit: '/km' };
+    const p3 = p[2] || { value: '0m', label: 'Time', unit: '' };
+
+    const cx = 540;
+    const cy = 1500;
+    const w = 700;
+    const h = 600;
+
+    // Paper-like background (very subtle)
+    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+    ctx.fillRect(cx - w / 2, cy - h / 2, w, h);
+
+    ctx.textAlign = 'left';
+    ctx.fillStyle = 'black';
+
+    // Date - Use dataPoints[9] (Date) if available
+    const datePoint = p.find(x => x.label === 'Date') || { value: stats.date || 'MAR 08' };
+    ctx.font = `italic 700 14px ${sysFont}`;
+    ctx.globalAlpha = 0.4;
+    ctx.letterSpacing = "4px";
+    ctx.fillText(datePoint.value.toUpperCase(), cx - w / 2 + 60, cy - h / 2 + 80);
+    ctx.letterSpacing = "0px";
+    ctx.globalAlpha = 1.0;
+
+    // Row 1: Primary
+    const isLong1 = p1.value.length > 5;
+    ctx.font = `italic 900 ${isLong1 ? '120px' : '240px'} ${sysFont}`;
+    ctx.fillText(p1.value, cx - w / 2 + 50, cy + 50);
+
+    // Label Divider
+    ctx.strokeStyle = 'rgba(0,0,0,0.1)';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(cx - w / 2 + 60, cy + 100); ctx.lineTo(cx + w / 2 - 60, cy + 100); ctx.stroke();
+
+    ctx.font = `900 18px ${sysFont}`;
+    ctx.letterSpacing = "4px";
+    const labelMain = (p1.unit || p1.label).toUpperCase();
+    ctx.fillText(`${labelMain} // PERFORMANCE DATA`, cx - w / 2 + 60, cy + 140);
+
+    // Row 2: Secondary stats
+    ctx.beginPath(); ctx.moveTo(cx - w / 2 + 60, cy + 200); ctx.lineTo(cx + w / 2 - 60, cy + 200); ctx.stroke();
+    
+    ctx.font = `italic 800 48px ${sysFont}`;
+    ctx.fillText(p2.value, cx - w / 2 + 60, cy + 260);
+
+    ctx.textAlign = 'right';
+    ctx.fillText(p3.value, cx + w / 2 - 60, cy + 260);
+    ctx.letterSpacing = "0px";
+}
+
+function drawSocialFloat(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const sysFont = "'Plus Jakarta Sans', sans-serif";
+    const p = stats.dataPoints || [];
+    const main = p[0] || { value: '0.00', label: 'Dist', unit: 'km' };
+    const p2 = p[1] || { value: '0:00', label: 'Pace', unit: '/km' };
+    const p3 = p[2] || { value: '0m', label: 'Time', unit: '' };
+
+    const cx = 540;
+    const cy = 960;
+
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Start Time (top)
+    ctx.font = `700 32px ${sysFont}`;
+    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.3)';
+    ctx.letterSpacing = "10px";
+    ctx.fillText(stats.startTime || "07:08", cx, cy - 300);
+    ctx.letterSpacing = "0px";
+
+    // Massive Primary Stat (with decimal split effect)
+    const heroValue = main.value;
+    const [whole, frac] = heroValue.includes('.') ? heroValue.split('.') : [heroValue, ""];
+    
+    // integer part (bold italic)
+    const wholeSize = heroValue.length > 5 ? 240 : 440;
+    ctx.font = `italic 900 ${wholeSize}px ${sysFont}`;
+    ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
+    const wholeW = ctx.measureText(whole).width;
+    
+    // fractional part (subtle color)
+    const fracSize = heroValue.length > 5 ? 80 : 140;
+    ctx.font = `italic 900 ${fracSize}px ${sysFont}`;
+    const fracW = frac ? ctx.measureText(`.${frac}`).width : 0;
+    const totalW = wholeW + (frac ? fracW + 10 : 0);
+
+    ctx.textAlign = 'left';
+    ctx.font = `italic 900 ${wholeSize}px ${sysFont}`;
+    ctx.fillText(whole, cx - totalW / 2, cy + 40);
+    
+    if (frac) {
+        ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.15)';
+        ctx.font = `italic 900 ${fracSize}px ${sysFont}`;
+        ctx.fillText(`.${frac}`, cx - totalW / 2 + wholeW + 10, cy + 40);
+    }
+
+    // Divider
+    ctx.strokeStyle = textColor === 'black' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.08)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(cx - 150, cy + 180); ctx.lineTo(cx + 150, cy + 180); ctx.stroke();
+
+    // Bottom Stats
+    ctx.textAlign = 'center';
+    ctx.font = `italic 300 100px ${sysFont}`;
+    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.6)';
+    ctx.letterSpacing = "-2px";
+    // Show P2 and P3 side by side
+    ctx.fillText(`${p2.value}    ${p3.value}`, cx, cy + 320);
+    ctx.letterSpacing = "0px";
+}
+
+function drawMetricThin(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const sysFont = "'Plus Jakarta Sans', sans-serif";
+    const p = stats.dataPoints || [];
+    const main = p[0] || { value: '0.00', label: 'Dist', unit: 'km' };
+    const sub = p[1] || { value: '0:00', label: 'Pace', unit: '/km' };
+
+    const cx = 100;
+    const cy = 1720;
+
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+
+    // Massive Thin Number - Aggressive scaling to fit
+    const heroValue = main.value;
+    let fontSize = heroValue.length > 5 ? 240 : 480;
+    ctx.font = `100 ${fontSize}px ${sysFont}`;
+    const textWidth = ctx.measureText(heroValue).width;
+    const maxWidth = 880;
+    if (textWidth > maxWidth) {
+        fontSize *= (maxWidth / textWidth);
+        ctx.font = `100 ${fontSize}px ${sysFont}`;
+    }
+    
+    ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
+    ctx.fillText(heroValue, cx, cy);
+
+    // Bottom row
+    const rowY = cy + 110;
+    ctx.save();
+    ctx.font = `900 24px ${sysFont}`;
+    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.2)';
+    if (typeof ctx.letterSpacing !== 'undefined') ctx.letterSpacing = "15px";
+    const labelMain = (main.unit || main.label).toUpperCase();
+    ctx.fillText(labelMain, cx + 5, rowY);
+    ctx.restore();
+
+    ctx.font = `italic 100 110px ${sysFont}`;
+    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)';
+    ctx.fillText(sub.value, cx + 240, rowY + 15);
+}
+
+function drawDataMatrix(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const sysFont = "'Plus Jakarta Sans', sans-serif";
+    const p = stats.dataPoints || [];
+    // Matrix 2x2
+    const p0 = p[0] || { value: '-', label: 'Dist', unit: '' };
+    const p1 = p[1] || { value: '-', label: 'Pace', unit: '' };
+    const p2 = p[2] || { value: '-', label: 'Time', unit: '' };
+    const p3 = p[8] || p[3] || { value: '-', label: 'Speed', unit: '' };
+
+    const cx = 180;
+    const cy = 1350;
+    const rowH = 280;
+    const colW = 420;
+
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+
+    const renderCell = (data, x, y, size) => {
+        ctx.save();
+        ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
+        let fontSize = size;
+        ctx.font = `italic 900 ${fontSize}px ${sysFont}`;
+        const w = ctx.measureText(data.value).width;
+        if (w > colW - 20) fontSize *= ((colW - 20) / w);
+        ctx.font = `italic 900 ${fontSize}px ${sysFont}`;
+        ctx.fillText(data.value, x, y);
+        
+        ctx.font = `900 20px ${sysFont}`;
+        ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.2)';
+        if (typeof ctx.letterSpacing !== 'undefined') ctx.letterSpacing = "12px";
+        ctx.fillText((data.unit || data.label).toUpperCase(), x + 5, y + size * 0.7);
+        ctx.restore();
+    };
+
+    renderCell(p0, cx, cy, 180);
+    renderCell(p1, cx + colW, cy, 180);
+    renderCell(p2, cx, cy + rowH, 120);
+    renderCell(p3, cx + colW, cy + rowH, 120);
+}
+
+function drawVerticalLabel(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const sysFont = "'Plus Jakarta Sans', sans-serif";
+    const p = stats.dataPoints || [];
+    const main = p[0] || { value: '0.00', label: 'Dist', unit: 'km' };
+    const p2 = p[1] || { value: '0:00', label: 'Pace', unit: '' };
+    const p3 = p[2] || { value: '0m', label: 'Time', unit: '' };
+
+    const cx = 540;
+    const cy = 950; 
+    const boxW = 440;
+    const boxH_top = 750;
+    const boxH_bot = 620;
+
+    // 1. Top Section (Black)
+    ctx.fillStyle = 'black';
+    ctx.fillRect(cx - boxW / 2, cy - boxH_top, boxW, boxH_top);
+
+    // 2. Vertical Hero
+    ctx.save();
+    ctx.translate(cx, cy - boxH_top * 0.55);
+    ctx.rotate(Math.PI / 2); 
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'white';
+    let fontSize = 210;
+    ctx.font = `italic 900 ${fontSize}px ${sysFont}`;
+    const textW = ctx.measureText(main.value).width;
+    if (textW > boxH_top * 0.8) {
+        fontSize *= (boxH_top * 0.8 / textW);
+        ctx.font = `italic 900 ${fontSize}px ${sysFont}`;
+    }
+    if (typeof ctx.letterSpacing !== 'undefined') ctx.letterSpacing = "-8px";
+    ctx.fillText(main.value, 0, 0);
+    ctx.restore();
+
+    // 3. KM Unit (Small and stylized)
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.font = `900 24px ${sysFont}`;
+    if (typeof ctx.letterSpacing !== 'undefined') ctx.letterSpacing = "16px";
+    const labelMain = (main.unit || main.label).toUpperCase();
+    ctx.fillText(labelMain, cx + 8, cy - 80);
+    ctx.restore();
+
+    // 4. Bottom Section (White)
+    ctx.fillStyle = 'white';
+    ctx.fillRect(cx - boxW / 2, cy, boxW, boxH_bot);
+
+    // 5. Secondary Data Points (Condensed)
+    const renderBotCell = (data, yOffset, size, opacity, weight) => {
+        ctx.save();
+        ctx.translate(cx, cy + yOffset);
+        ctx.textAlign = 'center';
+        ctx.fillStyle = 'black';
+        ctx.font = `italic ${weight} ${size}px ${sysFont}`;
+        ctx.fillText(data.value, 0, 0);
+        
+        ctx.font = `900 18px ${sysFont}`;
+        ctx.fillStyle = `rgba(0,0,0,${opacity})`;
+        if (typeof ctx.letterSpacing !== 'undefined') ctx.letterSpacing = "10px";
+        ctx.fillText(data.label.toUpperCase(), 0, 55);
+        ctx.restore();
+    };
+
+    renderBotCell(p2, 170, 100, 0.2, 900); // Pace
+    renderBotCell(p3, 400, 80, 0.1, 300);  // Time
+}
+
+function drawFrostedMinimal(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const sysFont = "'Plus Jakarta Sans', sans-serif";
+    const p = stats.dataPoints || [];
+    const main = p[0] || { value: '0.00', label: 'Dist', unit: 'km' };
+    const p2 = p[1] || { value: '0m', label: 'Time', unit: '' };
+
+    const cx = 540;
+    const cy = 1750;
+    const w = 800;
+    const h = 200;
+
+    // Glass Pill
+    ctx.beginPath();
+    ctx.roundRect(cx - w / 2, cy - h / 2, w, h, 100);
+    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)';
+    ctx.fill();
+    ctx.strokeStyle = textColor === 'black' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Primary
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
+    const isLong = main.value.length > 5;
+    ctx.font = `italic 900 ${isLong ? '70px' : '140px'} ${sysFont}`;
+    const dW = ctx.measureText(main.value).width;
+    ctx.fillText(main.value, cx - w / 2 + 80, cy);
+    
+    ctx.font = `900 18px ${sysFont}`;
+    ctx.globalAlpha = 0.2;
+    ctx.letterSpacing = "8px";
+    const labelMain = (main.unit || main.label).toUpperCase();
+    ctx.fillText(labelMain, cx - w / 2 + 80 + dW + 20, cy + 10);
+    ctx.letterSpacing = "0px";
+    ctx.globalAlpha = 1.0;
+
+    // Separator
+    ctx.strokeStyle = textColor === 'black' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)';
+    ctx.beginPath(); ctx.moveTo(cx + 20, cy - 40); ctx.lineTo(cx + 20, cy + 40); ctx.stroke();
+
+    // Secondary
+    ctx.textAlign = 'left';
+    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.6)';
+    ctx.font = `300 70px ${sysFont}`;
+    ctx.fillText(p2.value, cx + 80, cy - 10);
+    ctx.font = `900 14px ${sysFont}`;
+    ctx.globalAlpha = 0.1;
+    ctx.letterSpacing = "10px";
+    ctx.fillText(p2.label.toUpperCase(), cx + 80, cy + 40);
+    ctx.letterSpacing = "0px";
+    ctx.globalAlpha = 1.0;
 }
 
 // ─── Export ───────────────────────────────────────────────────────────────────

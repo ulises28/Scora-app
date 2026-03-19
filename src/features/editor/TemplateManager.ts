@@ -9,25 +9,40 @@ interface TemplateConfig {
 }
 
 export const TEMPLATE_REGISTRY: readonly TemplateConfig[] = [
+    // ── ACTIVE & REORDERED ──────────────────────────────────────────────────
+    { id: 'social-float' },         // #1 spot
     { id: 'minimal' },
-    { id: 'route' },
+    { id: 'mono-split' },           // Top 5
+    { id: 'essential-italic' },     // Top 5
+    { id: 'obsidian-bar' },         // Top 5
     { id: 'data' },
     { id: 'dm' },
-    { id: 'stats' },
     { id: 'modern-pill' },
-    { id: 'scora-stealth' },
-    { id: 'info-glass' },
+    { id: 'editorial-archive' },    // Top 10
+    { id: 'info-glass' },           // Top 10
     { id: 'split-badge' },
     { id: 'minimal-vertical' },
     { id: 'workout-receipt' },
-    { id: 'neon-capsule' },
     { id: 'brutalist-bold' },
-    { id: 'tech-hud' },
     { id: 'data-modular' },
     { id: 'glass-slice' },
     { id: 'vhs-retro' },
-    { id: 'award-badge' },
     { id: 'stealth-bar' },
+    { id: 'track-record' },
+    { id: 'metric-thin' },          // Needs fixes
+    { id: 'vertical-label' },       // Needs fixes
+    { id: 'stats' },                // Sent to the end
+
+    // ── INACTIVE / ARCHIVED ─────────────────────────────────────────────────
+    { id: 'route', seasonal: true },
+    { id: 'scora-stealth', seasonal: true },
+    { id: 'neon-capsule', seasonal: true },
+    { id: 'tech-hud', seasonal: true },
+    { id: 'award-badge', seasonal: true },
+    { id: 'data-matrix', seasonal: true },
+    { id: 'frosted-minimal', seasonal: true },
+    
+    // ── SEASONAL ───────────────────────────────────────────────────────────
     { id: '8m', seasonal: true, note: "International Women's Day — 8M (March 8)" },
     { id: '8m2', seasonal: true, note: "International Women's Day — 8M (March 8)" },
 ];
@@ -41,7 +56,7 @@ export const TEMPLATES = TEMPLATE_REGISTRY
 type OnChangeCallback = (template: string, color: string, showLogo: boolean) => void;
 
 export function initTemplateManager(onChange: OnChangeCallback) {
-    let currentTemplate = 'minimal';
+    let currentTemplate = TEMPLATES[0] || 'minimal';
     let currentTextColor = 'white';
     let currentShowLogo = true;
 

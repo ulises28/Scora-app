@@ -4,7 +4,7 @@ import { removeLoader } from './components/Loader.js';
 import { showScreen } from './components/Navigation.js';
 import { createActivityCard } from './components/ActivityCard.js';
 import { drawTemplate, exportCanvas } from './features/editor/CanvasPainter.js';
-import { initTemplateManager } from './features/editor/TemplateManager.js';
+import { initTemplateManager, TEMPLATES } from './features/editor/TemplateManager.js';
 
 // --- ELEMENTOS DE LA INTERFAZ ---
 const authSection = document.getElementById('auth-section');
@@ -38,8 +38,8 @@ function openEditor(stats: any) {
 
     currentStats = stats;
 
-    // Reset template completely when opening a new activity
-    templateManager.setTemplate('minimal');
+    // Reset template completely when opening a new activity to the first one in the list (Social Float)
+    templateManager.setTemplate(TEMPLATES[0]);
 
     // Stabilize UI for Test Runner: Hide canvas during the complex drawing phase
     const canvasEl = document.getElementById('storyCanvas');

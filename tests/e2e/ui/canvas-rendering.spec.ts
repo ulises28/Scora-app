@@ -20,7 +20,13 @@ test.describe('Scora App UI: Canvas Rendering Logic', () => {
         await editorPage.verifyEditorScreenVisible('Carrera por la mañana');
         await editorPage.injectCanvasInterceptor();
 
-        const templatesToCheck = ['minimal', 'dm', 'modern-pill', 'info-glass', 'data-modular'];
+        const templatesToCheck = [
+            'social-float', 'minimal', 'mono-split', 'essential-italic', 
+            'obsidian-bar', 'data', 'dm', 'modern-pill', 'editorial-archive', 
+            'info-glass', 'split-badge', 'minimal-vertical', 'workout-receipt', 
+            'brutalist-bold', 'data-modular', 'glass-slice', 'vhs-retro', 
+            'stealth-bar', 'track-record', 'metric-thin', 'vertical-label', 'stats'
+        ];
         for (const template of templatesToCheck) {
             await editorPage.clearCanvasTextLog();
             await editorPage.selectTemplate(template);
@@ -61,7 +67,11 @@ test.describe('Scora App UI: Canvas Rendering Logic', () => {
         await editorPage.verifyEditorScreenVisible('Entrenamiento con pesas matutino');
         await editorPage.injectCanvasInterceptor();
 
-        const templatesToCheck = ['minimal', 'dm', 'modern-pill', 'info-glass'];
+        const templatesToCheck = [
+            'social-float', 'minimal', 'data', 'modern-pill',
+            'essential-italic', 'obsidian-bar', 'track-record', 'mono-split',
+            'editorial-archive', 'metric-thin', 'vertical-label', 'stats'
+        ];
         for (const template of templatesToCheck) {
             await editorPage.clearCanvasTextLog();
             await editorPage.selectTemplate(template);
@@ -80,14 +90,22 @@ test.describe('Scora App UI: Canvas Rendering Logic', () => {
             expect(logStr).toContain('H');
             expect(logStr).toContain('11');
             expect(logStr).toContain('M');
-            
-            // Should show HEARTRATE value (except for minimal which doesn't display it)
-            if (template !== 'minimal') {
-                expect(logStr).toContain('122');
+
+            // Should show HEARTRATE value (except for minimalist templates)
+            const templatesWithHR = [
+                'data', 'stats', 'modern-pill', 'scora-stealth', 'info-glass',
+                'essential-italic', 'obsidian-bar', 'mono-split', 'editorial-archive',
+                'social-float', 'metric-thin', 'data-matrix', 'vertical-label'
+            ];
+            if (templatesWithHR.includes(template)) {
+                // Should show either Avg HR (122) or Max HR (172) depending on priority
+                const hasHR = logStr.includes('122') || logStr.includes('172');
+                expect(hasHR).toBeTruthy();
             }
 
-            // Optional: Labels like AVG HEART are not present in all templates (like DM)
-            if (template !== 'minimal' && template !== 'dm') {
+            // Optional: Labels like AVG HEART are not present in all templates
+            const templatesWithAvgHR = ['data', 'stats', 'modern-pill', 'scora-stealth'];
+            if (templatesWithAvgHR.includes(template)) {
                 expect(logStr).toContain('AVG');
             }
 

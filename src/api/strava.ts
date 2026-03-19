@@ -19,11 +19,27 @@ export interface StravaActivity {
     max_speed: number;
     average_heartrate?: number;
     max_heartrate?: number;
+    total_elevation_gain?: number;
+    kilojoules?: number;
+    average_cadence?: number;
+    average_temp?: number;
+    average_watts?: number;
+    max_watts?: number;
+    elev_high?: number;
+    location_city?: string | null;
+    location_state?: string | null;
+    pr_count?: number;
     start_date_local: string;
     start_date: string;
     map?: {
         summary_polyline: string;
     };
+}
+
+export interface StickerStatSlot {
+    label: string;
+    value: string;
+    unit: string;
 }
 
 export interface StickerStats {
@@ -35,6 +51,7 @@ export interface StickerStats {
     avgHeartrate: number | null;
     maxHeartrate: number | null;
     startTime: string;
+    date: string;
     hasDistance: boolean;
     timeStr: string;
     mainValue: string;
@@ -45,6 +62,7 @@ export interface StickerStats {
     maxPace: string;
     maxPaceLabel: string;
     maxPaceUnit: string;
+    dataPoints: StickerStatSlot[];
 }
 
 // 1. Construye el link al que enviaremos al usuario
@@ -176,10 +194,6 @@ export function formatActivityStats(activity: StravaActivity): StickerStats {
         startTime: (() => {
             const rawDate = activity.start_date_local || activity.start_date;
             if (!rawDate) return '';
-            // Strava 'start_date_local' literally contains the wall-clock time, but might append 'Z'.
-            // "2026-03-06T09:31:09Z" means the athlete read 09:31 AM on their watch.
-            // Using new Date() applies the browser's timezone to it, shifting it incorrectly.
-            // Split it manually to extract the exact hour/minute intended.
             try {
                 const timePart = rawDate.split('T')[1].replace('Z', ''); // '09:31:09'
                 const [hours, minutes] = timePart.split(':');
@@ -187,18 +201,27 @@ export function formatActivityStats(activity: StravaActivity): StickerStats {
                 const ampm = h >= 12 ? 'PM' : 'AM';
                 h = h % 12 || 12;
                 return `${h}:${minutes} ${ampm}`;
-            } catch (e) {
-                return '';
-            }
+            } catch (e) { return ''; }
+        })(),
+        date: (() => {
+            const rawDate = activity.start_date_local || activity.start_date;
+            if (!rawDate) return '';
+            try {
+                const datePart = rawDate.split('T')[0]; // '2026-03-06'
+                const [year, month, day] = datePart.split('-');
+                const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+                const mIdx = parseInt(month, 10) - 1;
+                return `${months[mIdx]} ${day}`;
+            } catch (e) { return ''; }
         })(),
         hasDistance: DISTANCE_SPORTS.has(activity.type) && activity.distance > 0,
     };
 
-    const h = Math.floor(activity.moving_time / 3600);
-    const m = Math.floor((activity.moving_time % 3600) / 60);
-    stats.timeStr = h > 0 ? `${h}h ${m}m` : `${m}m`;
+    const h_total = Math.floor(activity.moving_time / 3600);
+    const m_total = Math.floor((activity.moving_time % 3600) / 60);
+    stats.timeStr = h_total > 0 ? `${h_total}h ${m_total}m` : `${m_total}m`;
 
-    const hasDistance = DISTANCE_SPORTS.has(activity.type) && activity.distance > 0;
+    const hasDistance = stats.hasDistance;
 
     if (hasDistance) {
         const distVal = (activity.distance / 1000).toFixed(2);
@@ -208,7 +231,6 @@ export function formatActivityStats(activity: StravaActivity): StickerStats {
 
         if (activity.type === 'Run' || activity.type === 'VirtualRun' ||
             activity.type === 'Walk' || activity.type === 'Hike') {
-            // Pace sports: show min/km
             const paceSecs = Math.floor(1000 / activity.average_speed);
             stats.subValue = `${Math.floor(paceSecs / 60)}:${(paceSecs % 60).toString().padStart(2, '0')} /km`;
             stats.subLabel = 'Pace';
@@ -216,31 +238,100 @@ export function formatActivityStats(activity: StravaActivity): StickerStats {
             stats.maxPaceLabel = 'Max Pace';
             stats.maxPaceUnit = 'min/km';
         } else if (activity.type === 'Swim' || activity.type === 'OpenWaterSwim') {
-            // Swim pace: min/100m
             const paceSecs = Math.floor(100 / activity.average_speed);
             stats.subValue = `${Math.floor(paceSecs / 60)}:${(paceSecs % 60).toString().padStart(2, '0')} /100m`;
             stats.subLabel = 'Pace';
-            stats.maxPace = '0:00'; // No max pace concept for swim
+            stats.maxPace = '0:00';
         } else {
-            // Cycling & variants: show km/h average speed
             const speedKmh = (activity.average_speed * 3.6).toFixed(1);
             stats.subValue = `${speedKmh} km/h`;
             stats.subLabel = 'Avg Speed';
-            // Max speed for cycling: m/s × 3.6 = km/h
             stats.maxPace = activity.max_speed ? (activity.max_speed * 3.6).toFixed(1) : '0.0';
             stats.maxPaceLabel = 'Max Speed';
             stats.maxPaceUnit = 'km/h';
         }
     } else {
-        // No distance (gym, yoga, weight training, etc.)
         stats.mainValue = stats.timeStr;
         stats.distanceVal = '0.00';
         stats.maxPace = '0:00';
         stats.mainLabel = 'Duration';
-        // User requested Avg Heartrate instead of Max for workouts
         stats.subValue = activity.average_heartrate ? `${Math.round(activity.average_heartrate)} bpm` : 'Done';
         stats.subLabel = 'Avg Heartrate';
     }
+
+    // 5. Build Dynamic Stat List (User Defined Priority)
+    const points: StickerStatSlot[] = [];
+
+    const getFormattedDay = (raw: string) => {
+        try {
+            const datePart = raw.split('T')[0];
+            const d = new Date(datePart + 'T12:00:00');
+            const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const dayName = dayNames[d.getDay()];
+            const dayNum = String(d.getDate()).padStart(2, '0');
+            return `${dayName} ${dayNum}`;
+        } catch (e) { return ''; }
+    };
+
+    const formatDuration = (secs: number) => {
+        const h_val = Math.floor(secs / 3600);
+        const m_val = Math.floor((secs % 3600) / 60);
+        return h_val > 0 ? `${h_val}h ${m_val}m` : `${m_val}m`;
+    };
+
+    const getPaceStr = (speed: number) => {
+        if (!speed || speed <= 0) return '0:00';
+        const paceSecs = Math.floor(1000 / speed);
+        return `${Math.floor(paceSecs / 60)}:${(paceSecs % 60).toString().padStart(2, '0')}`;
+    };
+
+    const getSpeedKmh = (speed: number) => (speed * 3.6).toFixed(1);
+
+    const locCity = activity.location_city || '';
+    const locState = activity.location_state || '';
+    const locationStr = locCity ? (locState ? `${locCity}, ${locState}` : locCity) : null;
+
+    const dataPool: Record<string, StickerStatSlot | null> = {
+        distance: activity.distance > 0 ? { label: 'Distance', value: (activity.distance / 1000).toFixed(2), unit: 'km' } : null,
+        duration: { label: 'Duration', value: formatDuration(activity.moving_time), unit: '' },
+        avg_speed: { label: 'Avg Speed', value: getSpeedKmh(activity.average_speed), unit: 'km/h' },
+        max_speed: { label: 'Max Speed', value: getSpeedKmh(activity.max_speed), unit: 'km/h' },
+        pace: { label: 'Pace', value: getPaceStr(activity.average_speed), unit: '/km' },
+        max_pace: { label: 'Max Pace', value: getPaceStr(activity.max_speed), unit: '/km' },
+        avg_hr: activity.average_heartrate ? { label: 'Avg HR', value: String(Math.round(activity.average_heartrate)), unit: 'bpm' } : null,
+        max_hr: activity.max_heartrate ? { label: 'Max HR', value: String(Math.round(activity.max_heartrate)), unit: 'bpm' } : null,
+        elev_gain: activity.total_elevation_gain ? { label: 'Elevation', value: String(Math.round(activity.total_elevation_gain)), unit: 'm' } : null,
+        elev_high: activity.elev_high ? { label: 'Elev High', value: String(Math.round(activity.elev_high)), unit: 'm' } : null,
+        cadence: activity.average_cadence ? { label: 'Cadence', value: String(Math.round(activity.average_cadence)), unit: 'spm' } : null,
+        max_watts: activity.max_watts ? { label: 'Max Watts', value: String(Math.round(activity.max_watts)), unit: 'W' } : null,
+        energy: activity.kilojoules ? { label: 'Energy', value: String(Math.round(activity.kilojoules)), unit: 'kcal' } : null,
+        pr_count: activity.pr_count ? { label: 'PRs', value: String(activity.pr_count), unit: '' } : null,
+        location: locationStr ? { label: 'Location', value: locationStr, unit: '' } : null,
+        type: { label: 'Type', value: activity.type, unit: '' },
+        name: { label: 'Name', value: stats.shortTitle || '', unit: '' },
+        start_time: { label: 'Time', value: stats.startTime || '', unit: '' },
+        date_long: { label: 'Date', value: getFormattedDay(activity.start_date_local || activity.start_date), unit: '' }
+    };
+
+    let p_list: string[] = [];
+    if (activity.type === 'Ride') {
+        p_list = ['distance', 'avg_speed', 'duration', 'start_time', 'max_speed', 'elev_gain', 'max_hr', 'location', 'type', 'date_long', 'elev_high'];
+    } else if (activity.type === 'Run') {
+        p_list = ['distance', 'pace', 'duration', 'start_time', 'max_pace', 'elev_gain', 'cadence', 'max_hr', 'location', 'type', 'max_watts', 'date_long', 'elev_high', 'pr_count'];
+    } else {
+        p_list = ['duration', 'max_hr', 'type', 'name', 'avg_hr', 'location', 'date_long'];
+    }
+
+    p_list.forEach(key => {
+        const p_obj = dataPool[key];
+        if (p_obj) points.push(p_obj);
+    });
+
+    while (points.length < 10) {
+        points.push({ label: '', value: '-', unit: '' });
+    }
+
+    stats.dataPoints = points;
 
     return stats as StickerStats;
 }
