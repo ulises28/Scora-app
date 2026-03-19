@@ -320,7 +320,7 @@ export function formatActivityStats(activity: StravaActivity): StickerStats {
         p_list = ['distance', 'pace', 'duration', 'start_time', 'max_pace', 'elev_gain', 'cadence', 'max_hr', 'location', 'type', 'max_watts', 'date_long', 'elev_high', 'pr_count'];
     } else if (activity.type === 'WeightTraining' || activity.type === 'Workout' || activity.type === 'Crossfit' || activity.type === 'Yoga') {
         // New Gym Priority: duration, max_hr, avg_hr, type, name, location, date_long
-        p_list = ['duration', 'max_hr', 'avg_hr', 'type', 'name', 'location', 'date_long'];
+        p_list = ['duration', 'avg_hr', 'max_hr', 'type', 'name', 'location', 'date_long'];
     } else {
         p_list = ['duration', 'avg_hr', 'max_hr', 'type', 'name', 'location', 'date_long', 'distance'];
     }

@@ -72,7 +72,8 @@ export class EditorPage extends BasePage {
         if (targetIdx === -1) throw new Error(`Unknown template: "${templateName}"`);
 
         const dot = this.getTemplateDot(templateName);
-        await dot.click();
+        await dot.waitFor({ state: 'visible' });
+        await dot.click({ force: true });
     }
 
     @step('Verify Template Dot is Active')

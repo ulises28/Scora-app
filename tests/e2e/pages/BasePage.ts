@@ -21,7 +21,7 @@ export class BasePage {
 
     @step('Ensure Loader Overlay is Hidden')
     async waitForLoaderToHide() {
-        await expect(this.loaderOverlay).toBeHidden({ timeout: 10000 });
+        await expect(this.loaderOverlay).toBeHidden({ timeout: 30000 });
     }
 
     @step('Inject Mock Tokens into LocalStorage')

@@ -825,7 +825,7 @@ function drawStatsTemplate(ctx, stats, textColor = 'white') {
     const paceParts = (stats.subValue || '').trim().split(' ');
     const paceText = paceParts[0] || (stats.maxPace || '0:00');
     const paceUnit = paceParts[1] || stats.maxPaceUnit || (stats.type === 'Ride' ? 'km/h' : '/km');
-    const paceLabel = stats.subLabel || stats.maxPaceLabel || 'Pace';
+    const paceLabel = (stats.subLabel || stats.maxPaceLabel || 'Pace').toUpperCase();
 
     ctx.font = "800 120px 'Plus Jakarta Sans'";
     const paceW = ctx.measureText(paceText).width;
@@ -984,7 +984,7 @@ function drawScoraStealth(ctx, stats, textColor) {
     let paceUnit = paceParts[1] || (stats.hasDistance ? (stats.type === 'Ride' ? 'km/h' : '/km') : 'bpm');
     if (paceUnit === 'min/km') paceUnit = '/km';
 
-    const rightLabel = stats.subLabel || (stats.hasDistance ? "PACE" : "AVG HR");
+    const rightLabel = (stats.subLabel || (stats.hasDistance ? (stats.type === 'Ride' ? "Avg Speed" : "Pace") : "Avg HR")).toUpperCase();
 
     const bottomY = 1750;
     const leftX = 80;
@@ -1038,7 +1038,7 @@ function drawInfoGlass(ctx, stats, textColor) {
     const distLabel = stats.hasDistance ? "DISTANCE" : "DURATION";
     const distText = stats.hasDistance ? (stats.distanceVal || '0.00') : (stats.timeStr || '0:00');
 
-    const paceLabel = stats.subLabel || (stats.hasDistance ? "PACE" : "AVG HR");
+    const paceLabel = (stats.subLabel || (stats.hasDistance ? (stats.type === 'Ride' ? "Avg Speed" : "Pace") : "Avg HR")).toUpperCase();
     const paceParts = (stats.subValue || '').trim().split(' ');
     const paceText = paceParts[0] || (stats.avgHeartrate ? String(stats.avgHeartrate) : '0');
 
@@ -1105,7 +1105,7 @@ function drawSplitBadge(ctx, stats, textColor) {
     const distText = stats.hasDistance ? (stats.distanceVal || '0.00') : (stats.timeStr || '0:00');
     const distUnit = stats.hasDistance ? "KILOMETERS" : "";
 
-    const paceLabel = stats.subLabel || (stats.hasDistance ? "PACE" : "AVG HR");
+    const paceLabel = (stats.subLabel || (stats.hasDistance ? (stats.type === 'Ride' ? "Avg Speed" : "Pace") : "Avg HR")).toUpperCase();
     const paceParts = (stats.subValue || '').trim().split(' ');
     const paceText = paceParts[0] || (stats.avgHeartrate ? String(stats.avgHeartrate) : '0');
     let paceUnit = paceParts[1] ? paceParts[1].toUpperCase() : (stats.hasDistance ? 'MIN / KM' : 'BPM');
@@ -1263,7 +1263,7 @@ function drawDataModular(ctx, stats, textColor) {
     const distLabel = (stats.mainLabel || (stats.hasDistance ? "DISTANCE" : "DURATION")).toUpperCase();
     const distText = stats.hasDistance ? (stats.distanceVal || '0.00') : (stats.timeStr || '0:00');
 
-    const paceLabel = (stats.subLabel || (stats.hasDistance ? "PACE" : "AVG HR")).toUpperCase();
+    const paceLabel = (stats.subLabel || (stats.hasDistance ? (stats.type === 'Ride' ? "Avg Speed" : "Pace") : "Avg HR")).toUpperCase();
     const paceParts = (stats.subValue || '').trim().split(' ');
     const paceText = paceParts[0] || (stats.avgHeartrate ? String(stats.avgHeartrate) : '0');
     let paceUnit = paceParts[1] || (stats.hasDistance ? (stats.type === 'Ride' ? 'KM/H' : '/KM') : 'BPM');
@@ -1413,7 +1413,7 @@ function drawGlassSlice(ctx, stats, textColor) {
     ctx.fillText(paceText, w / 4, -10);
     ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)';
     ctx.font = `900 16px ${sysFont}`;
-    ctx.fillText((stats.subLabel || (stats.hasDistance ? "PACE" : "HEART RATE")).toUpperCase(), w / 4, 40);
+    ctx.fillText((stats.subLabel || (stats.hasDistance ? (stats.type === 'Ride' ? "Avg Speed" : "Pace") : "Heart Rate")).toUpperCase(), w / 4, 40);
 
     ctx.restore();
 }
@@ -1904,7 +1904,7 @@ function drawModernPill(ctx: CanvasRenderingContext2D, stats: any, textColor: st
     ctx.font = `900 20px ${sysFont}`;
     ctx.fillStyle = 'rgba(255,255,255,0.2)';
     if (typeof ctx.letterSpacing !== 'undefined') ctx.letterSpacing = "8px";
-    ctx.fillText("PACE", subX, cy + 60);
+    ctx.fillText((sub.label || sub.unit || "PACE").toUpperCase(), subX, cy + 60);
     ctx.letterSpacing = "0px";
 
     ctx.restore();
@@ -1987,9 +1987,9 @@ function drawMonoSplit(ctx: CanvasRenderingContext2D, stats: any, textColor: str
 function drawEditorialArchive(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
     const sysFont = "'Plus Jakarta Sans', sans-serif";
     const p = stats.dataPoints || [];
-    const p1 = p[0] || { value: '0.00', label: 'Dist', unit: 'km' };
-    const p2 = p[1] || { value: '0:00', label: 'Pace', unit: '' };
-    const p3 = p[2] || { value: '0m', label: 'Time', unit: '' };
+    const p1 = p[0] || { value: stats.distanceVal || '0.00', label: stats.mainLabel || 'Dist', unit: 'km' };
+    const p2 = p[1] || { value: (stats.subValue || '').split(' ')[0] || '0:00', label: stats.subLabel || 'Pace', unit: (stats.subValue || '').split(' ')[1] || '/km' };
+    const p3 = p[2] || { value: stats.timeStr || '0:00', label: 'Time', unit: '' };
     const datePoint = p.find(x => x.label === 'Date') || { value: stats.date || 'MAR 08' };
 
     const cx = 540;
@@ -2057,7 +2057,7 @@ function drawEditorialArchive(ctx: CanvasRenderingContext2D, stats: any, textCol
     ctx.textAlign = 'left';
     ctx.globalAlpha = 0.3;
     ctx.font = `900 14px ${sysFont}`;
-    ctx.fillText("PACE", -w/2 + 50, footerY - 25);
+    ctx.fillText((p2.label || "PACE").toUpperCase(), -w/2 + 50, footerY - 25);
     ctx.globalAlpha = 1.0;
     ctx.font = `italic 900 55px ${sysFont}`;
     ctx.fillText(p2.value, -w/2 + 50, footerY + 20);

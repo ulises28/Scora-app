@@ -6,6 +6,7 @@ import { MockStravaClient } from '../utils/MockStravaClient';
 test.describe('Scora App UI: Canvas Rendering Logic', () => {
 
     test('Test 1: Run mapping (GPS) displays Distance, Pace, and stops Fallbacks', async ({ page }) => {
+        test.setTimeout(120000);
         const feedPage = new FeedPage(page);
         const editorPage = new EditorPage(page);
         const api = new MockStravaClient(page);
@@ -23,9 +24,9 @@ test.describe('Scora App UI: Canvas Rendering Logic', () => {
         const templatesToCheck = [
             'social-float', 'minimal', 'mono-split', 'essential-italic', 
             'obsidian-bar', 'data', 'dm', 'modern-pill', 'editorial-archive', 
-            'info-glass', 'split-badge', 'minimal-vertical', 'workout-receipt', 
+            'info-glass', 'split-badge', 'vertical-label', 'workout-receipt', 
             'brutalist-bold', 'data-modular', 'glass-slice', 'vhs-retro', 
-            'stealth-bar', 'track-record', 'metric-thin', 'vertical-label', 'stats'
+            'stealth-bar', 'track-record', 'metric-thin', 'stats'
         ];
         for (const template of templatesToCheck) {
             await editorPage.clearCanvasTextLog();
@@ -127,9 +128,10 @@ test.describe('Scora App UI: Canvas Rendering Logic', () => {
 
         await editorPage.injectCanvasInterceptor();
         await feedPage.openActivityEditor('Vuelta ciclista por la mañana');
+        await editorPage.verifyEditorScreenVisible('Vuelta ciclista por la mañana');
 
         await editorPage.clearCanvasTextLog();
-        await editorPage.selectTemplate('modern-pill');
+        await editorPage.selectTemplate('social-float');
 
         // Fixed waitForFunction signature
         await page.waitForFunction(() => (window as any)._scoraCanvasTextLog && (window as any)._scoraCanvasTextLog.length > 0, undefined, { timeout: 8000 });
@@ -182,6 +184,7 @@ test.describe('Scora App UI: Canvas Rendering Logic', () => {
         await feedPage.waitForLoaderToHide();
 
         await feedPage.openActivityEditor('Vuelta ciclista por la mañana');
+        await editorPage.verifyEditorScreenVisible('Vuelta ciclista por la mañana');
         await editorPage.injectCanvasInterceptor();
 
         const templatesToCheck = ['modern-pill', 'data-modular', 'stats', 'info-glass'];

@@ -178,7 +178,7 @@ async function handleLoginClick() {
 // ============================================================
 
 async function initApp() {
-    setTimeout(removeLoader, 2000);
+    setTimeout(removeLoader, 100);
 
     const urlParams = new URLSearchParams(window.location.search);
     const authCode = urlParams.get('code');
