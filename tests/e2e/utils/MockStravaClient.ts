@@ -44,11 +44,11 @@ export class MockStravaClient {
      * Mocks a successful fetch returning our standard Fixture data.
      */
     async mockSuccessfulActivities() {
-        await this.page.route('https://www.strava.com/api/v3/athlete/activities*', async route => {
+        await this.page.route('**/api/strava-activities', async route => {
             await route.fulfill({
                 status: 200,
                 contentType: 'application/json',
-                body: JSON.stringify(mockActivities)
+                body: JSON.stringify({ activities: mockActivities })
             });
         });
     }
@@ -57,11 +57,11 @@ export class MockStravaClient {
      * Mocks a 401 Unauthorized Response (Expired Token Scenario)
      */
     async mockUnauthorizedError() {
-        await this.page.route('https://www.strava.com/api/v3/athlete/activities*', async route => {
+        await this.page.route('**/api/strava-activities', async route => {
             await route.fulfill({
                 status: 401,
                 contentType: 'application/json',
-                body: JSON.stringify({ message: "Authorization Error" })
+                body: JSON.stringify({ error: 'Unauthorized' })
             });
         });
     }
@@ -70,11 +70,11 @@ export class MockStravaClient {
      * Mocks a valid user with absolutely zero activity history.
      */
     async mockEmptyActivities() {
-        await this.page.route('https://www.strava.com/api/v3/athlete/activities*', async route => {
+        await this.page.route('**/api/strava-activities', async route => {
             await route.fulfill({
                 status: 200,
                 contentType: 'application/json',
-                body: JSON.stringify([])
+                body: JSON.stringify({ activities: [] })
             });
         });
     }
@@ -83,11 +83,11 @@ export class MockStravaClient {
      * Mocks a valid user with exactly one activity.
      */
     async mockSingleActivity() {
-        await this.page.route('https://www.strava.com/api/v3/athlete/activities*', async route => {
+        await this.page.route('**/api/strava-activities', async route => {
             await route.fulfill({
                 status: 200,
                 contentType: 'application/json',
-                body: JSON.stringify([mockActivities[0]])
+                body: JSON.stringify({ activities: [mockActivities[0]] })
             });
         });
     }
