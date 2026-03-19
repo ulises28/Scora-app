@@ -24,7 +24,7 @@ test.describe('Scora App UI: Canvas Rendering Logic', () => {
         for (const template of templatesToCheck) {
             await editorPage.clearCanvasTextLog();
             await editorPage.selectTemplate(template);
-            
+
             await page.waitForFunction((titlePart) => {
                 const logs = (window as any)._scoraCanvasTextLog || [];
                 return logs.some((t: string) => t.toUpperCase().includes(titlePart.toUpperCase()));
@@ -41,6 +41,7 @@ test.describe('Scora App UI: Canvas Rendering Logic', () => {
             // No undefined/0 values
             expect(logStr).not.toContain('UNDEFINED');
             expect(logStr).not.toContain('NAN');
+            expect(logStr).not.toContain('0.00');
         }
     });
 
@@ -63,7 +64,7 @@ test.describe('Scora App UI: Canvas Rendering Logic', () => {
         for (const template of templatesToCheck) {
             await editorPage.clearCanvasTextLog();
             await editorPage.selectTemplate(template);
-            
+
             await page.waitForFunction((titlePart) => {
                 const logs = (window as any)._scoraCanvasTextLog || [];
                 return logs.some((t: string) => t.toUpperCase().includes(titlePart.toUpperCase()));
@@ -75,13 +76,13 @@ test.describe('Scora App UI: Canvas Rendering Logic', () => {
             // Should show Duration (1h 11m for the mock workout)
             expect(logStr).toContain('1 H');
             expect(logStr).toContain('11 M');
-            
+
             // Should show AVG HEARTRATE
             if (template !== 'minimal') {
                 expect(logStr).toContain('AVG');
                 expect(logStr).toContain('HEART');
             }
-            
+
             // Should NOT show DISTANCE or PACE
             expect(logStr).not.toContain('DISTANCE');
             expect(logStr).not.toContain('PACE');
@@ -158,7 +159,7 @@ test.describe('Scora App UI: Canvas Rendering Logic', () => {
         await editorPage.injectCanvasInterceptor();
 
         const templatesToCheck = ['modern-pill', 'data-modular', 'stats', 'info-glass'];
-        
+
         for (const template of templatesToCheck) {
             await editorPage.clearCanvasTextLog();
             await editorPage.selectTemplate(template);
@@ -172,7 +173,7 @@ test.describe('Scora App UI: Canvas Rendering Logic', () => {
 
             expect(logStr).toContain('SPEED');
             expect(logStr).not.toContain('PACE');
-            
+
             if (template === 'info-glass') {
                 expect(logStr).toContain('DISTANCE');
             }

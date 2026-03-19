@@ -8,6 +8,45 @@ const CLIENT_ID = STRAVA_CONFIG.CLIENT_ID;
 const CLIENT_SECRET = STRAVA_CONFIG.CLIENT_SECRET;
 const REDIRECT_URI = STRAVA_CONFIG.REDIRECT_URI;
 
+export interface StravaActivity {
+    id: number;
+    name: string;
+    type: string;
+    distance: number;
+    moving_time: number;
+    elapsed_time: number;
+    average_speed: number;
+    max_speed: number;
+    average_heartrate?: number;
+    max_heartrate?: number;
+    start_date_local: string;
+    start_date: string;
+    map?: {
+        summary_polyline: string;
+    };
+}
+
+export interface StickerStats {
+    title: string;
+    shortTitle: string;
+    type: string;
+    hasMap: boolean;
+    polyline: string;
+    avgHeartrate: number | null;
+    maxHeartrate: number | null;
+    startTime: string;
+    hasDistance: boolean;
+    timeStr: string;
+    mainValue: string;
+    distanceVal: string;
+    mainLabel: string;
+    subValue: string;
+    subLabel: string;
+    maxPace: string;
+    maxPaceLabel: string;
+    maxPaceUnit: string;
+}
+
 // 1. Construye el link al que enviaremos al usuario
 export function getStravaLoginUrl() {
     // Changed approval_prompt=force to auto so it doesn't ask for permission every time
@@ -48,8 +87,21 @@ export async function refreshStravaToken(refreshToken) {
     return data; // Return the new token payload
 }
 
+// Función auxiliar para obtener el sessionId de forma segura
+const getSessionId = (): string => {
+    try {
+        const rawData = localStorage.getItem('stravaAuth');
+        if (!rawData) return 'fallback_' + Math.random().toString(36).substring(7);
+        
+        const parsed = JSON.parse(rawData);
+        return parsed.sessionId || 'fallback';
+    } catch (e) {
+        return 'fallback_error';
+    }
+};
+
 // 3. Obtener los entrenamientos usando el Token final
-export async function fetchStravaActivities(token) {
+export async function fetchStravaActivities(token: string) {
     // Intentar leer de localStorage primero
     const cachedData = localStorage.getItem('stravaActivities');
     if (cachedData) {
@@ -64,10 +116,16 @@ export async function fetchStravaActivities(token) {
         }
     }
 
-    const url = 'https://www.strava.com/api/v3/athlete/activities?per_page=5';
-    const response = await fetch(url, {
-        method: 'GET',
-        headers: { 'Authorization': `Bearer ${token}` }
+    const sessionId = getSessionId();
+    console.log(`[Strava] Fetching activities using session: ${sessionId}`);
+
+    const response = await fetch('/api/strava-activities', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+            access_token: token, 
+            sessionId 
+        })
     });
 
     if (!response.ok) {
@@ -77,32 +135,20 @@ export async function fetchStravaActivities(token) {
         throw new Error(`Strava API error: ${response.status}`);
     }
 
-    const data = await response.json();
+    const { activities: data } = await response.json();
 
     // Guardar en localStorage para la próxima vez
     if (Array.isArray(data)) {
         console.log("=== STRAVA RAW PAYLOAD ===");
         if (data.length > 0) {
-            console.log(JSON.stringify(data[0], null, 2)); // Mostramos solo el primer Run completo para no trabar la consola
+            console.log(JSON.stringify(data[0], null, 2));
         }
         localStorage.setItem('stravaActivities', JSON.stringify(data));
 
-        // 🚨 AUTO-LOGOUT: Strava free tier allows only 1 connected athlete at a time.
-        // Now that data is cached, immediately revoke our token to free the slot for others.
-        try {
-            console.log("Revoking Strava Token to free up the API quota slot...");
-            await fetch('/api/strava-deauth', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ access_token: token })
-            });
-            // ✅ FIX: Wipe the ACTUAL session key so the revoked token is fully cleared.
-            // The old code was removing wrong keys ('strava_access_token' etc.) which don't exist.
-            localStorage.removeItem('stravaAuth');
-            console.log("Token revoked and session cleared. Slot freed for next user.");
-        } catch (e) {
-            console.error("Failed to revoke token, but stats are cached:", e);
-        }
+        // ✅ AUTO-LOGOUT: El token ya fue revocado en el servidor.
+        // Solo limpiamos el estado local.
+        localStorage.removeItem('stravaAuth');
+        console.log("Session cleared locally. Slot was freed on the server.");
     }
 
     return data;
@@ -117,8 +163,8 @@ const DISTANCE_SPORTS = new Set([
 ]);
 
 // 4. Activity stats formatter
-export function formatActivityStats(activity) {
-    const stats: Record<string, any> = {
+export function formatActivityStats(activity: StravaActivity): StickerStats {
+    const stats: Partial<StickerStats> = {
         title: activity.name,
         // Nav header version: truncated to 15 chars so it never overflows
         shortTitle: activity.name.length > 22 ? activity.name.slice(0, 22) + '…' : activity.name,
@@ -196,5 +242,5 @@ export function formatActivityStats(activity) {
         stats.subLabel = 'Avg Heartrate';
     }
 
-    return stats;
+    return stats as StickerStats;
 }

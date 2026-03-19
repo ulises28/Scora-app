@@ -163,7 +163,6 @@ export function initTemplateManager(onChange: OnChangeCallback) {
             currentTemplate = template;
             updateDots();
             updateArrows();
-            onChange(currentTemplate, currentTextColor, currentShowLogo);
         }
     };
 }
