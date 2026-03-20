@@ -17,6 +17,7 @@ services:
     # Mount the report directory so you can open the HTML report
     # on your host machine after tests finish
     volumes:
+      - ./tests:/app/tests
       - ./playwright-report:/app/playwright-report
       - ./test-results:/app/test-results
 
