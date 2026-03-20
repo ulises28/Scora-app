@@ -7,7 +7,7 @@
 # Run:    docker run --rm scora-e2e
 # ============================================================
 
-# Official Playwright image — includes Node 20 + all browser binaries
+# Official Playwright image — includes Node 24 (noble/Ubuntu 24.04) + all browser binaries
 FROM mcr.microsoft.com/playwright:v1.58.2-noble
 
 # Set working directory inside the container
