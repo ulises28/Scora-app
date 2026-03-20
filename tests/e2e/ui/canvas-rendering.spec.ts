@@ -81,7 +81,7 @@ test.describe('Scora App UI: Advanced Canvas Verification', () => {
             // --- Pillar 3: Visual Regression (Overlap/Clipping/SafeBounds) ---
             // This catches "letters over numbers" or "stickers cut on iPhone"
             await expect(editorPage.canvasWrapper).toHaveScreenshot(`run-${id}.png`, {
-                maxDiffPixelRatio: 0.02,
+                maxDiffPixelRatio: 0.1, // Relaxed for Cross-OS (Mac vs Linux Docker)
                 threshold: 0.2
             });
         }
@@ -146,7 +146,7 @@ test.describe('Scora App UI: Advanced Canvas Verification', () => {
 
             // --- Pillar 3: Visual Regression ---
             await expect(editorPage.canvasWrapper).toHaveScreenshot(`workout-${id}.png`, {
-                maxDiffPixelRatio: 0.02,
+                maxDiffPixelRatio: 0.1, // Relaxed for Cross-OS (Mac vs Linux Docker)
                 threshold: 0.2
             });
         }
