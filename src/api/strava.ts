@@ -52,6 +52,7 @@ export interface StickerStats {
     maxHeartrate: number | null;
     startTime: string;
     date: string;
+    dayAndNumber: string;
     hasDistance: boolean;
     timeStr: string;
     mainValue: string;
@@ -212,6 +213,18 @@ export function formatActivityStats(activity: StravaActivity): StickerStats {
                 const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
                 const mIdx = parseInt(month, 10) - 1;
                 return `${months[mIdx]} ${day}`;
+            } catch (e) { return ''; }
+        })(),
+        dayAndNumber: (() => {
+            const rawDate = activity.start_date_local || activity.start_date;
+            if (!rawDate) return '';
+            try {
+                const datePart = rawDate.split('T')[0];
+                const d = new Date(datePart + 'T12:00:00');
+                const dayNames = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+                const dayName = dayNames[d.getDay()];
+                const dayNum = String(d.getDate()).padStart(2, '0');
+                return `${dayName} ${dayNum}`;
             } catch (e) { return ''; }
         })(),
         hasDistance: DISTANCE_SPORTS.has(activity.type) && activity.distance > 0,

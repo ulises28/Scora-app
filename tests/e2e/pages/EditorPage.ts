@@ -12,6 +12,7 @@ export class EditorPage extends BasePage {
     readonly logoToggle: Locator;
     readonly downloadButton: Locator;
     readonly backButton: Locator;
+    readonly canvasWrapper: Locator;
 
     constructor(page: Page) {
         super(page);
@@ -23,6 +24,7 @@ export class EditorPage extends BasePage {
         this.logoToggle = page.locator('#logo-toggle');
         this.downloadButton = page.locator('#btn-download');
         this.backButton = page.locator('#btn-back');
+        this.canvasWrapper = page.locator('#canvas-wrapper');
     }
 
     @step('Verify Editor Screen is Visible')
@@ -58,6 +60,11 @@ export class EditorPage extends BasePage {
         await this.page.evaluate(() => {
             (window as any)._scoraCanvasTextLog = [];
         });
+    }
+
+    @step('Get Canvas Draw Count')
+    async getDrawCount(): Promise<number> {
+        return await this.page.evaluate(() => (window as any)._scoraDrawCount || 0);
     }
 
     getTemplateDot(templateName: string): Locator {

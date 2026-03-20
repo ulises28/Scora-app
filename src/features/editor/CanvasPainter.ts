@@ -67,6 +67,7 @@ export function drawTemplate(
     // ── 8M special templates (override for any activity type) ────────────────
     if (templateType === '8m' || templateType === '8m2') {
         draw8MTemplate(ctx, stats, templateType, showLogo);
+        (window as any)._scoraDrawCount = ((window as any)._scoraDrawCount || 0) + 1;
         return;
     }
 
@@ -76,6 +77,9 @@ export function drawTemplate(
     } else {
         drawGymTemplate(ctx, stats, templateType, textColor);
     }
+
+    // ARCHITECT NOTE: Deterministic synchronization signal for E2E tests
+    (window as any)._scoraDrawCount = ((window as any)._scoraDrawCount || 0) + 1;
 }
 
 
@@ -504,7 +508,7 @@ function drawGymMinimal(ctx, stats, textColor = 'white') {
 
     // Duration value split: "1h 11m" -> "1" (trans), "h " (solid), "11" (trans), "m" (solid)
     const rawDur = stats.mainValue || '0m';
-    
+
     // We'll draw it as a single centered group
     ctx.font = "800 200px 'Plus Jakarta Sans'";
     const parts = [];
@@ -943,7 +947,7 @@ function drawDM(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
     const p = stats.dataPoints || [];
     const p1 = p[0] || { value: '0.00', label: 'Dist', unit: 'km' };
     const p2 = p[1] || { value: '0:00', label: 'Pace', unit: '' };
-    
+
     const cx = 540;
     const cy = 1300;
 
@@ -951,7 +955,7 @@ function drawDM(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
     ctx.save();
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    
+
     const text = `${p1.value}, ${p2.value}${p2.unit || ''}`;
     ctx.font = `500 70px ${sysFont}`;
     const textW = ctx.measureText(text).width;
@@ -960,7 +964,7 @@ function drawDM(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
 
     ctx.fillStyle = '#118afa';
     ctx.beginPath();
-    ctx.roundRect(cx - bubW/2, cy - bubH/2, bubW, bubH, 70);
+    ctx.roundRect(cx - bubW / 2, cy - bubH / 2, bubW, bubH, 70);
     ctx.fill();
 
     ctx.fillStyle = 'white';
@@ -1159,9 +1163,9 @@ function drawSplitBadge(ctx, stats, textColor) {
 
     ctx.restore();
 }
- 
- 
- function drawBrutalistBold(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+
+
+function drawBrutalistBold(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
     const sysFont = "'Plus Jakarta Sans', sans-serif";
     const p = stats.dataPoints || [];
     const main = p[0] || { value: '0.00', label: 'Dist', unit: 'km' };
@@ -1178,33 +1182,33 @@ function drawSplitBadge(ctx, stats, textColor) {
 
     // Main background with transparency
     ctx.fillStyle = textColor === 'black' ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.85)';
-    ctx.fillRect(-w/2, -h/2, w, h);
+    ctx.fillRect(-w / 2, -h / 2, w, h);
 
     // Accent line (left)
     ctx.fillStyle = '#ff3b30'; // Red accent
-    ctx.fillRect(-w/2, -h/2, 10, h);
+    ctx.fillRect(-w / 2, -h / 2, 10, h);
 
     // Data - Left Column
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
-    
+
     ctx.font = `italic 900 120px ${sysFont}`;
     const mainVal = main.value;
-    ctx.fillText(mainVal, -w/2 + 50, -20);
+    ctx.fillText(mainVal, -w / 2 + 50, -20);
     const mainW = ctx.measureText(mainVal).width;
 
     ctx.font = `800 32px ${sysFont}`;
     ctx.globalAlpha = 1.0; // "without opacity"
-    ctx.fillText((main.unit || main.label).toUpperCase(), -w/2 + 65 + mainW, 10);
+    ctx.fillText((main.unit || main.label).toUpperCase(), -w / 2 + 65 + mainW, 10);
 
     // Data - Right Column
     ctx.textAlign = 'right';
     ctx.font = `900 85px ${sysFont}`;
-    ctx.fillText(p2.value, w/2 - 50, -20);
-    
+    ctx.fillText(p2.value, w / 2 - 50, -20);
+
     ctx.font = `800 24px ${sysFont}`;
-    ctx.fillText(p2.label.toUpperCase(), w/2 - 50, 45);
+    ctx.fillText(p2.label.toUpperCase(), w / 2 - 50, 45);
 
     ctx.restore();
 }
@@ -1422,7 +1426,7 @@ function drawVHSRetro(ctx: CanvasRenderingContext2D, stats: any, textColor: stri
     const sysFont = "'Space Mono', monospace";
     const p = stats.dataPoints || [];
     const main = p[0] || { value: '0.00', label: 'Dist', unit: 'km' };
-    
+
     const cx = 540;
     const cy = 1100;
     const w = 800;
@@ -1433,7 +1437,7 @@ function drawVHSRetro(ctx: CanvasRenderingContext2D, stats: any, textColor: stri
 
     // 1. RED DOT + REC (Top Left)
     ctx.beginPath();
-    ctx.arc(-w/2 + 60, -h/2 + 60, 15, 0, Math.PI * 2);
+    ctx.arc(-w / 2 + 60, -h / 2 + 60, 15, 0, Math.PI * 2);
     ctx.fillStyle = '#ff0000'; // Pure bright red for recording
     ctx.fill();
 
@@ -1441,37 +1445,37 @@ function drawVHSRetro(ctx: CanvasRenderingContext2D, stats: any, textColor: stri
     ctx.font = `700 48px ${sysFont}`;
     ctx.shadowBlur = 10;
     ctx.shadowColor = 'black';
-    ctx.fillText("REC", -w/2 + 100, -h/2 + 78);
+    ctx.fillText("REC", -w / 2 + 100, -h / 2 + 78);
     ctx.shadowBlur = 0;
 
     // 2. SP / PLAY (Top Right)
     ctx.textAlign = 'right';
     ctx.font = `400 32px ${sysFont}`;
-    ctx.fillText("PLAY ►", w/2 - 60, -h/2 + 70);
-    ctx.fillText("SP", w/2 - 60, -h/2 + 110);
+    ctx.fillText("PLAY ►", w / 2 - 60, -h / 2 + 70);
+    ctx.fillText("SP", w / 2 - 60, -h / 2 + 110);
 
     // 3. Main Data (Bottom Left)
     ctx.textAlign = 'left';
     ctx.font = `700 120px ${sysFont}`;
-    ctx.fillText(main.value, -w/2 + 60, h/2 - 120);
-    
+    ctx.fillText(main.value, -w / 2 + 60, h / 2 - 120);
+
     ctx.font = `400 40px ${sysFont}`;
-    ctx.fillText((main.unit || main.label).toUpperCase(), -w/2 + 60, h/2 - 70);
+    ctx.fillText((main.unit || main.label).toUpperCase(), -w / 2 + 60, h / 2 - 70);
 
     // 4. Date/Time (Bottom Right)
     ctx.textAlign = 'right';
-    const dateStr = (p.find(x => x.label === 'Date')?.value || stats.date || 'MAR 08 2024').toUpperCase();
+    const dateStr = (stats.dayAndNumber || stats.date || '').toUpperCase();
     ctx.font = `400 32px ${sysFont}`;
-    ctx.fillText(dateStr, w/2 - 60, h/2 - 120);
-    ctx.fillText(stats.startTime || "07:08 AM", w/2 - 60, h/2 - 70);
+    ctx.fillText(dateStr, w / 2 - 60, h / 2 - 120);
+    ctx.fillText(stats.startTime || "07:08 AM", w / 2 - 60, h / 2 - 70);
 
     // 5. Tracking Lines (Retro vibe)
     ctx.globalAlpha = 0.2;
     ctx.strokeStyle = 'white';
     ctx.lineWidth = 1;
-    for(let i=0; i<3; i++) {
-        const y = h/2 - 40 - (i*5);
-        ctx.beginPath(); ctx.moveTo(-w/2 + 60, y); ctx.lineTo(-w/2 + 120, y); ctx.stroke();
+    for (let i = 0; i < 3; i++) {
+        const y = h / 2 - 40 - (i * 5);
+        ctx.beginPath(); ctx.moveTo(-w / 2 + 60, y); ctx.lineTo(-w / 2 + 120, y); ctx.stroke();
     }
     ctx.globalAlpha = 1.0;
 
@@ -1541,7 +1545,7 @@ function drawStealthBar(ctx: CanvasRenderingContext2D, stats: any, textColor: st
     ctx.save();
     ctx.translate(cx, cy);
     ctx.beginPath();
-    ctx.roundRect(-w/2, -h/2, w, h, h/2);
+    ctx.roundRect(-w / 2, -h / 2, w, h, h / 2);
     ctx.fillStyle = 'rgba(0,0,0,0.85)';
     ctx.fill();
 
@@ -1551,7 +1555,7 @@ function drawStealthBar(ctx: CanvasRenderingContext2D, stats: any, textColor: st
         ctx.translate(x, 0);
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        
+
         // Unit (Bigger labels as requested)
         ctx.font = `800 24px ${sysFont}`;
         ctx.fillStyle = 'rgba(255,255,255,0.4)';
@@ -1567,9 +1571,9 @@ function drawStealthBar(ctx: CanvasRenderingContext2D, stats: any, textColor: st
         ctx.restore();
     };
 
-    drawCell(p1, -w/2 + 200);
+    drawCell(p1, -w / 2 + 200);
     drawCell(p2, 0);
-    drawCell(p3, w/2 - 200);
+    drawCell(p3, w / 2 - 200);
 
     ctx.restore();
 }
@@ -1650,7 +1654,7 @@ function drawWorkoutReceipt(ctx: CanvasRenderingContext2D, stats: any, textColor
     const sysFont = "'Plus Jakarta Sans', sans-serif";
     const monoFont = "'Space Mono', monospace";
     const p = stats.dataPoints || [];
-    
+
     const cx = 540;
     const cy = 1100;
     const w = 640;
@@ -1659,7 +1663,7 @@ function drawWorkoutReceipt(ctx: CanvasRenderingContext2D, stats: any, textColor
     ctx.save();
     ctx.translate(cx, cy);
     ctx.rotate(-1.5 * Math.PI / 180); // -1.5deg rotation
-    
+
     // Shadow
     ctx.shadowBlur = 40;
     ctx.shadowColor = 'rgba(0,0,0,0.2)';
@@ -1667,8 +1671,8 @@ function drawWorkoutReceipt(ctx: CanvasRenderingContext2D, stats: any, textColor
 
     // Thermal Background (Yellow)
     ctx.fillStyle = '#facc15';
-    ctx.fillRect(-w/2, -h/2, w, h);
-    
+    ctx.fillRect(-w / 2, -h / 2, w, h);
+
     // Completely clear shadow so inner text has no shadow bleeding
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
@@ -1677,17 +1681,17 @@ function drawWorkoutReceipt(ctx: CanvasRenderingContext2D, stats: any, textColor
     // Header Line
     ctx.textAlign = 'left';
     ctx.fillStyle = 'black';
-    
+
     // Day and Number Day (Requested)
-    const longDate = p.find(x => x.label === 'Date' && x.value.includes(' ')) || p.find(x => x.label === 'Date') || { value: stats.date || 'FRIDAY 18' };
+    const dateStr = (stats.dayAndNumber || stats.date || '').toUpperCase();
     ctx.font = `900 24px ${monoFont}`;
     if (typeof ctx.letterSpacing !== 'undefined') ctx.letterSpacing = "10px";
-    ctx.fillText(longDate.value.toUpperCase(), -w/2 + 60, -h/2 + 80);
+    ctx.fillText(dateStr, -w / 2 + 60, -h / 2 + 80);
     ctx.letterSpacing = "0px";
-    
+
     // Header divider
     ctx.globalAlpha = 0.1;
-    ctx.fillRect(-w/2 + 60, -h/2 + 105, w - 120, 4);
+    ctx.fillRect(-w / 2 + 60, -h / 2 + 105, w - 120, 4);
     ctx.globalAlpha = 1.0;
 
     // Main Row: Distance
@@ -1695,42 +1699,42 @@ function drawWorkoutReceipt(ctx: CanvasRenderingContext2D, stats: any, textColor
     ctx.save();
     ctx.font = `700 24px ${monoFont}`;
     ctx.globalAlpha = 0.4;
-    ctx.fillText("DISTANCE", -w/2 + 60, -h/2 + 200);
-    
+    ctx.fillText("DISTANCE", -w / 2 + 60, -h / 2 + 200);
+
     ctx.textAlign = 'right';
     ctx.globalAlpha = 1.0;
     ctx.font = `italic 900 85px ${sysFont}`;
-    ctx.fillText(`${main.value} ${main.unit || ''}`, w/2 - 60, -h/2 + 200);
+    ctx.fillText(`${main.value} ${main.unit || ''}`, w / 2 - 60, -h / 2 + 200);
     ctx.restore();
 
     // Sub Row 1: Average
     const pace = p[1] || { value: '0:00', unit: '/km' };
     ctx.save();
     ctx.globalAlpha = 0.1;
-    ctx.fillRect(-w/2 + 60, -h/2 + 260, w - 120, 2);
+    ctx.fillRect(-w / 2 + 60, -h / 2 + 260, w - 120, 2);
     ctx.globalAlpha = 0.4;
     ctx.font = `700 24px ${monoFont}`;
-    ctx.fillText("AVERAGE", -w/2 + 60, -h/2 + 330);
-    
+    ctx.fillText("AVERAGE", -w / 2 + 60, -h / 2 + 330);
+
     ctx.textAlign = 'right';
     ctx.globalAlpha = 1.0;
     ctx.font = `italic 900 50px ${sysFont}`;
-    ctx.fillText(`${pace.value} ${pace.unit || ''}`, w/2 - 60, -h/2 + 330);
+    ctx.fillText(`${pace.value} ${pace.unit || ''}`, w / 2 - 60, -h / 2 + 330);
     ctx.restore();
 
     // Sub Row 2: Duration
     const duration = p[2] || { value: '0:00' };
     ctx.save();
     ctx.globalAlpha = 0.1;
-    ctx.fillRect(-w/2 + 60, -h/2 + 390, w - 120, 2);
+    ctx.fillRect(-w / 2 + 60, -h / 2 + 390, w - 120, 2);
     ctx.globalAlpha = 0.4;
     ctx.font = `700 24px ${monoFont}`;
-    ctx.fillText("DURATION", -w/2 + 60, -h/2 + 460);
-    
+    ctx.fillText("DURATION", -w / 2 + 60, -h / 2 + 460);
+
     ctx.textAlign = 'right';
     ctx.globalAlpha = 1.0;
     ctx.font = `italic 900 50px ${sysFont}`;
-    ctx.fillText(duration.value, w/2 - 60, -h/2 + 460);
+    ctx.fillText(duration.value, w / 2 - 60, -h / 2 + 460);
     ctx.restore();
 
     // Footer - Dashed divider
@@ -1739,18 +1743,18 @@ function drawWorkoutReceipt(ctx: CanvasRenderingContext2D, stats: any, textColor
     ctx.strokeStyle = 'rgba(0,0,0,0.1)';
     ctx.lineWidth = 4;
     ctx.beginPath();
-    ctx.moveTo(-w/2 + 60, h/2 - 120);
-    ctx.lineTo(w/2 - 60, h/2 - 120);
+    ctx.moveTo(-w / 2 + 60, h / 2 - 120);
+    ctx.lineTo(w / 2 - 60, h / 2 - 120);
     ctx.stroke();
-    
+
     ctx.textAlign = 'center';
     ctx.font = `900 18px ${monoFont}`;
     ctx.globalAlpha = 0.3;
     if (typeof ctx.letterSpacing !== 'undefined') ctx.letterSpacing = "15px";
-    
+
     // Replace branding with activity name
     const footerText = (stats.shortTitle || stats.title || 'SCORA RECORD').toUpperCase().substring(0, 22);
-    ctx.fillText(footerText, 0 + 7.5, h/2 - 60);
+    ctx.fillText(footerText, 0 + 7.5, h / 2 - 60);
     ctx.restore();
 
     ctx.restore();
@@ -1761,7 +1765,7 @@ function drawEssentialItalic(ctx: CanvasRenderingContext2D, stats: any, textColo
     const p = stats.dataPoints || [];
     const main = p[0] || { value: '0.00', label: 'Distance', unit: 'km' };
     const sub = p[1] || { value: '0:00', label: 'Pace', unit: '/km' };
-    
+
     ctx.textBaseline = 'alphabetic';
     ctx.textAlign = 'left';
 
@@ -1775,7 +1779,7 @@ function drawEssentialItalic(ctx: CanvasRenderingContext2D, stats: any, textColo
     ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.3)';
     if (typeof ctx.letterSpacing !== 'undefined') ctx.letterSpacing = "10px";
     // Distance from baseline of main text to date baseline
-    ctx.fillText(datePoint.value.toUpperCase(), cx, cy - 350); 
+    ctx.fillText(datePoint.value.toUpperCase(), cx, cy - 350);
     ctx.restore();
 
     // 2. Main Stat
@@ -1796,11 +1800,11 @@ function drawEssentialItalic(ctx: CanvasRenderingContext2D, stats: any, textColo
     ctx.font = `300 44px ${sysFont}`;
     ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)';
     if (typeof ctx.letterSpacing !== 'undefined') ctx.letterSpacing = "2px";
-    
+
     const unitPart = (main.unit || main.label).toUpperCase();
     const subPart = sub.value && sub.value !== '-' ? ` // ${sub.value} ${sub.unit || sub.label}` : '';
     const footer = `${unitPart}${subPart}`.toLowerCase();
-    
+
     ctx.fillText(footer, cx, cy + 90);
     ctx.restore();
 }
@@ -1829,12 +1833,12 @@ function drawObsidianBar(ctx: CanvasRenderingContext2D, stats: any, textColor: s
         ctx.translate(x, cy);
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        
+
         // Main Value
         ctx.fillStyle = textColor === 'black' ? 'white' : 'black';
         ctx.font = `600 55px ${sysFont}`;
         ctx.fillText(data.value, 0, -20);
-        
+
         ctx.font = `800 24px ${sysFont}`;
         if (typeof ctx.letterSpacing !== 'undefined') ctx.letterSpacing = "6px";
         const labelText = (data.unit || data.label).toUpperCase();
@@ -1860,13 +1864,13 @@ function drawModernPill(ctx: CanvasRenderingContext2D, stats: any, textColor: st
     const radius = 100; // Full pill caps
 
     ctx.save();
-    
+
     // 1. Black/Glass Background
     ctx.beginPath();
     ctx.roundRect(cx - w / 2, cy - h / 2, w, h, radius);
     ctx.fillStyle = 'rgba(0,0,0,0.6)'; // Matching React's bg-black/60
     ctx.fill();
-    
+
     // Border
     ctx.strokeStyle = 'rgba(255,255,255,0.1)'; // white/10%
     ctx.lineWidth = 2;
@@ -1881,23 +1885,23 @@ function drawModernPill(ctx: CanvasRenderingContext2D, stats: any, textColor: st
     ctx.font = `italic 900 130px ${sysFont}`; // text-5xl equivalent on canvas
     const valText = main.value;
     const valW = ctx.measureText(valText).width;
-    ctx.fillText(valText, cx - w/2 + 80, cy - 10);
+    ctx.fillText(valText, cx - w / 2 + 80, cy - 10);
 
     // Main Unit
     ctx.font = `900 20px ${sysFont}`; // text-[9px] equivalent
     ctx.fillStyle = 'rgba(255,255,255,0.2)'; // white/20%
     if (typeof ctx.letterSpacing !== 'undefined') ctx.letterSpacing = "8px";
-    ctx.fillText((main.unit || main.label).toUpperCase(), cx - w/2 + 80, cy + 60);
+    ctx.fillText((main.unit || main.label).toUpperCase(), cx - w / 2 + 80, cy + 60);
     ctx.letterSpacing = "0px";
 
     // Separator Line
     ctx.fillStyle = 'rgba(255,255,255,0.1)';
-    ctx.fillRect(cx - w/2 + 80 + valW + 50, cy - 40, 2, 80);
+    ctx.fillRect(cx - w / 2 + 80 + valW + 50, cy - 40, 2, 80);
 
     // Sub Stat (Pace)
     ctx.fillStyle = 'rgba(255,255,255,0.8)'; // white/80%
     ctx.font = `italic 900 85px ${sysFont}`; // text-3xl
-    const subX = cx - w/2 + 80 + valW + 110;
+    const subX = cx - w / 2 + 80 + valW + 110;
     ctx.fillText(sub.value, subX, cy - 10);
 
     // Sub Unit (PACE label)
@@ -1914,7 +1918,7 @@ function drawTrackRecord(ctx: CanvasRenderingContext2D, stats: any, textColor: s
     const sysFont = "'Plus Jakarta Sans', sans-serif";
     const p = stats.dataPoints || [];
     const main = p[0] || { value: '0.00', label: 'Dist', unit: 'km' };
-    
+
     const cx = 540;
     const cy = 960;
 
@@ -2004,72 +2008,72 @@ function drawEditorialArchive(ctx: CanvasRenderingContext2D, stats: any, textCol
     // 1. Background (White 95%)
     ctx.fillStyle = 'rgba(255,255,255,0.95)';
     ctx.beginPath();
-    ctx.roundRect(-w/2, -h/2, w, h, radius);
+    ctx.roundRect(-w / 2, -h / 2, w, h, radius);
     ctx.fill();
 
     // 2. Header
     ctx.textBaseline = 'top';
     ctx.fillStyle = 'black';
-    
+
     // Date (Left)
     ctx.textAlign = 'left';
     ctx.globalAlpha = 0.4;
     ctx.font = `italic 900 18px ${sysFont}`;
     if (typeof ctx.letterSpacing !== 'undefined') ctx.letterSpacing = "10px";
-    ctx.fillText(datePoint.value.toUpperCase(), -w/2 + 50, -h/2 + 50);
+    ctx.fillText(datePoint.value.toUpperCase(), -w / 2 + 50, -h / 2 + 50);
     ctx.letterSpacing = "0px";
 
     // "ARCHIVE" (Right)
     ctx.textAlign = 'right';
     ctx.font = `900 18px ${sysFont}`;
     if (typeof ctx.letterSpacing !== 'undefined') ctx.letterSpacing = "10px";
-    ctx.fillText("ARCHIVE", w/2 - 50, -h/2 + 50);
+    ctx.fillText("ARCHIVE", w / 2 - 50, -h / 2 + 50);
     ctx.letterSpacing = "0px";
     ctx.globalAlpha = 1.0;
 
     // Header divider
     ctx.globalAlpha = 0.05;
-    ctx.fillRect(-w/2 + 50, -h/2 + 100, w - 100, 2);
+    ctx.fillRect(-w / 2 + 50, -h / 2 + 100, w - 100, 2);
     ctx.globalAlpha = 1.0;
 
     // 3. Main Body
     ctx.textAlign = 'left';
     ctx.font = `italic 900 230px ${sysFont}`;
-    ctx.fillText(p1.value, -w/2 + 40, -h/2 + 120);
-    
+    ctx.fillText(p1.value, -w / 2 + 40, -h / 2 + 120);
+
     // Unit Label with Bar
     ctx.globalAlpha = 1.0;
-    ctx.fillRect(-w/2 + 50, -h/2 + 120 + 240, 100, 4); // Line above unit
+    ctx.fillRect(-w / 2 + 50, -h / 2 + 120 + 240, 100, 4); // Line above unit
     ctx.font = `900 22px ${sysFont}`;
     if (typeof ctx.letterSpacing !== 'undefined') ctx.letterSpacing = "5px";
-    ctx.fillText(`DIST // ${p1.unit || 'KM'}`, -w/2 + 50, -h/2 + 120 + 265);
+    ctx.fillText(`DIST // ${p1.unit || 'KM'}`, -w / 2 + 50, -h / 2 + 120 + 265);
     ctx.letterSpacing = "0px";
 
     // 4. Footer
     ctx.globalAlpha = 0.05;
-    ctx.fillRect(-w/2 + 50, h/2 - 160, w - 100, 2);
+    ctx.fillRect(-w / 2 + 50, h / 2 - 160, w - 100, 2);
     ctx.globalAlpha = 1.0;
 
     // Columns
-    const footerY = h/2 - 110;
-    
+    const footerY = h / 2 - 110;
+
     // Pace column
     ctx.textAlign = 'left';
     ctx.globalAlpha = 0.3;
     ctx.font = `900 14px ${sysFont}`;
-    ctx.fillText((p2.label || "PACE").toUpperCase(), -w/2 + 50, footerY - 25);
+    ctx.fillText((p2.label || "PACE").toUpperCase(), -w / 2 + 50, footerY - 25);
     ctx.globalAlpha = 1.0;
     ctx.font = `italic 900 55px ${sysFont}`;
-    ctx.fillText(p2.value, -w/2 + 50, footerY + 20);
+    ctx.fillText(p2.value, -w / 2 + 50, footerY + 20);
 
     // Time column
     ctx.textAlign = 'right';
     ctx.globalAlpha = 0.3;
     ctx.font = `900 14px ${sysFont}`;
-    ctx.fillText("TIME", w/2 - 50, footerY - 25);
+    ctx.fillText("TIME", w / 2 - 50, footerY - 25);
     ctx.globalAlpha = 1.0;
     ctx.font = `italic 900 55px ${sysFont}`;
-    ctx.fillText(p3.value, w/2 - 50, footerY + 20);
+    ctx.fillText(p3.value, w / 2 - 50, footerY + 20);
 
     ctx.restore();
 }
@@ -2097,13 +2101,13 @@ function drawSocialFloat(ctx: CanvasRenderingContext2D, stats: any, textColor: s
     // Massive Primary Stat (with decimal split effect)
     const heroValue = main.value;
     const [whole, frac] = heroValue.includes('.') ? heroValue.split('.') : [heroValue, ""];
-    
+
     // integer part (bold italic)
     const wholeSize = heroValue.length > 5 ? 240 : 440;
     ctx.font = `italic 900 ${wholeSize}px ${sysFont}`;
     ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
     const wholeW = ctx.measureText(whole).width;
-    
+
     // fractional part (subtle color)
     const fracSize = heroValue.length > 5 ? 80 : 140;
     ctx.font = `italic 900 ${fracSize}px ${sysFont}`;
@@ -2113,7 +2117,7 @@ function drawSocialFloat(ctx: CanvasRenderingContext2D, stats: any, textColor: s
     ctx.textAlign = 'left';
     ctx.font = `italic 900 ${wholeSize}px ${sysFont}`;
     ctx.fillText(whole, cx - totalW / 2, cy + 40);
-    
+
     if (frac) {
         ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.15)';
         ctx.font = `italic 900 ${fracSize}px ${sysFont}`;
@@ -2143,7 +2147,7 @@ function drawMetricThin(ctx: CanvasRenderingContext2D, stats: any, textColor: st
 
     const cx = 100;
     const cy = 1750;
-    
+
     // Massive Thin Number
     const heroValue = main.value;
     let fontSize = heroValue.length > 5 ? 240 : 480;
@@ -2154,7 +2158,7 @@ function drawMetricThin(ctx: CanvasRenderingContext2D, stats: any, textColor: st
         fontSize *= (maxWidth / textWidth);
         ctx.font = `100 ${fontSize}px ${sysFont}`;
     }
-    
+
     ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
     ctx.textBaseline = 'alphabetic';
     ctx.textAlign = 'left';
@@ -2203,7 +2207,7 @@ function drawDataMatrix(ctx: CanvasRenderingContext2D, stats: any, textColor: st
         if (w > colW - 20) fontSize *= ((colW - 20) / w);
         ctx.font = `italic 900 ${fontSize}px ${sysFont}`;
         ctx.fillText(data.value, x, y);
-        
+
         ctx.font = `900 20px ${sysFont}`;
         ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.2)';
         if (typeof ctx.letterSpacing !== 'undefined') ctx.letterSpacing = "12px";
@@ -2225,7 +2229,7 @@ function drawVerticalLabel(ctx: CanvasRenderingContext2D, stats: any, textColor:
     const p3 = p[2] || { value: '0m', label: 'Time', unit: '' };
 
     const cx = 540;
-    const cy = 950; 
+    const cy = 950;
     const boxW = 440;
     const boxH_top = 750;
     const boxH_bot = 620;
@@ -2237,7 +2241,7 @@ function drawVerticalLabel(ctx: CanvasRenderingContext2D, stats: any, textColor:
     // 2. Vertical Hero
     ctx.save();
     ctx.translate(cx, cy - boxH_top * 0.55);
-    ctx.rotate(Math.PI / 2); 
+    ctx.rotate(Math.PI / 2);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = 'white';
@@ -2274,7 +2278,7 @@ function drawVerticalLabel(ctx: CanvasRenderingContext2D, stats: any, textColor:
         ctx.fillStyle = 'black';
         ctx.font = `italic ${weight} ${size}px ${sysFont}`;
         ctx.fillText(data.value, 0, 0);
-        
+
         ctx.font = `900 18px ${sysFont}`;
         ctx.fillStyle = `rgba(0,0,0,${opacity})`;
         if (typeof ctx.letterSpacing !== 'undefined') ctx.letterSpacing = "10px";
@@ -2314,7 +2318,7 @@ function drawFrostedMinimal(ctx: CanvasRenderingContext2D, stats: any, textColor
     ctx.font = `italic 900 ${isLong ? '70px' : '140px'} ${sysFont}`;
     const dW = ctx.measureText(main.value).width;
     ctx.fillText(main.value, cx - w / 2 + 80, cy);
-    
+
     ctx.font = `900 18px ${sysFont}`;
     ctx.globalAlpha = 0.2;
     ctx.letterSpacing = "8px";

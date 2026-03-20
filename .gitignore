@@ -54,6 +54,11 @@ src/config.ts
 /playwright/.auth/
 .vercel
 
+# Playwright Snapshot Results (Failed Tests)
+*-actual.png
+*-diff.png
+*-expected.png
+
 # AI Agent Specific
 .agent/
 .agents/
@@ -62,9 +67,7 @@ _agents/
 
 # Debug and Temporary artifacts
 test-debug-*.png
-*.png
 .env*.local
 test_output*.txt
-test-results/
-playwright-report/
+test-results-**/
 trace.zip

@@ -2,48 +2,119 @@
 // To add a template: add an entry here and implement its renderer in CanvasPainter.ts
 // To disable temporarily: set `seasonal: true` (excluded from TEMPLATES by default)
 // To re-enable a seasonal template: remove the `seasonal` flag or set it to false
+export interface TemplateFeatures {
+    distance?: boolean;      // e.g. "9.64 km"
+    paceSpeed?: boolean;     // e.g. "5:00 /km" or "16.9 km/h"
+    duration?: boolean;      // e.g. "1h 11m"
+    heartRate?: boolean;     // e.g. "122 bpm"
+    date?: boolean;          // e.g. "FRIDAY 18"
+    startTime?: boolean;     // e.g. "9:31 AM"
+    map?: boolean;           // template renders a map polyline
+}
+
 interface TemplateConfig {
     id: string;
+    features: TemplateFeatures;
     seasonal?: boolean; // seasonal templates are inactive outside their event window
     note?: string;      // human-readable context (why it exists, when to re-enable)
 }
 
 export const TEMPLATE_REGISTRY: readonly TemplateConfig[] = [
     // ── ACTIVE & REORDERED ──────────────────────────────────────────────────
-    { id: 'social-float' },         // #1 spot
-    { id: 'dm' },                   // Moved to #2
-    { id: 'mono-split' },           
-    { id: 'essential-italic' },     
-    { id: 'obsidian-bar' },         
-    { id: 'data' },
-    { id: 'modern-pill' },
-    { id: 'editorial-archive' },    
-    { id: 'info-glass' },           
-    { id: 'split-badge' },
-    { id: 'workout-receipt' },
-    { id: 'brutalist-bold' },
-    { id: 'data-modular' },
-    { id: 'glass-slice' },
-    { id: 'vhs-retro' },
-    { id: 'stealth-bar' },
-    { id: 'track-record' },
-    { id: 'metric-thin' },          
-    { id: 'vertical-label' },       
-    { id: 'stats' },                
-    { id: 'minimal' },              // Moved to the end
+    { 
+        id: 'social-float', 
+        features: { distance: true, paceSpeed: true, duration: true, date: true, startTime: true } 
+    },
+    { 
+        id: 'dm', 
+        features: { distance: true, paceSpeed: true, duration: true, date: true } 
+    },
+    { 
+        id: 'mono-split', 
+        features: { distance: true, paceSpeed: true } 
+    },
+    { 
+        id: 'essential-italic', 
+        features: { distance: true, paceSpeed: true, duration: true } 
+    },
+    { 
+        id: 'obsidian-bar', 
+        features: { distance: true, paceSpeed: true, duration: true } 
+    },
+    { 
+        id: 'data', 
+        features: { distance: true, paceSpeed: true, heartRate: true } 
+    },
+    { 
+        id: 'modern-pill', 
+        features: { distance: true, paceSpeed: true, heartRate: true } 
+    },
+    { 
+        id: 'editorial-archive', 
+        features: { distance: true, paceSpeed: true, duration: true } 
+    },
+    { 
+        id: 'info-glass', 
+        features: { distance: true, paceSpeed: true, duration: true, heartRate: true } 
+    },
+    { 
+        id: 'split-badge', 
+        features: { distance: true, paceSpeed: true, duration: true, heartRate: true } 
+    },
+    { 
+        id: 'workout-receipt', 
+        features: { distance: true, paceSpeed: true, duration: true, date: true } 
+    },
+    { 
+        id: 'brutalist-bold', 
+        features: { distance: true, paceSpeed: true, duration: true } 
+    },
+    { 
+        id: 'data-modular', 
+        features: { distance: true, paceSpeed: true } 
+    },
+    { 
+        id: 'glass-slice', 
+        features: { distance: true, map: true } 
+    },
+    { 
+        id: 'vhs-retro', 
+        features: { distance: true, date: true, startTime: true } 
+    },
+    { 
+        id: 'stealth-bar', 
+        features: { distance: true, paceSpeed: true, duration: true } 
+    },
+    { id: 'track-record', features: { distance: true } },
+    { 
+        id: 'metric-thin', 
+        features: { distance: true, paceSpeed: true } 
+    },
+    { 
+        id: 'vertical-label', 
+        features: { distance: true, paceSpeed: true, duration: true } 
+    },
+    { 
+        id: 'stats', 
+        features: { distance: true, paceSpeed: true, duration: true, heartRate: true } 
+    },
+    { 
+        id: 'minimal', 
+        features: { distance: true, duration: true } 
+    },
 
     // ── INACTIVE / ARCHIVED ─────────────────────────────────────────────────
-    { id: 'route', seasonal: true },
-    { id: 'scora-stealth', seasonal: true },
-    { id: 'neon-capsule', seasonal: true },
-    { id: 'tech-hud', seasonal: true },
-    { id: 'award-badge', seasonal: true },
-    { id: 'data-matrix', seasonal: true },
-    { id: 'frosted-minimal', seasonal: true },
+    { id: 'route', features: { distance: true, map: true }, seasonal: true },
+    { id: 'scora-stealth', features: { distance: true, paceSpeed: true, duration: true, heartRate: true, map: true }, seasonal: true },
+    { id: 'neon-capsule', features: { distance: true, paceSpeed: true }, seasonal: true },
+    { id: 'tech-hud', features: { distance: true, paceSpeed: true, duration: true }, seasonal: true },
+    { id: 'award-badge', features: { distance: true, duration: true }, seasonal: true },
+    { id: 'data-matrix', features: { distance: true, paceSpeed: true, duration: true }, seasonal: true },
+    { id: 'frosted-minimal', features: { duration: true }, seasonal: true },
     
     // ── SEASONAL ───────────────────────────────────────────────────────────
-    { id: '8m', seasonal: true, note: "International Women's Day — 8M (March 8)" },
-    { id: '8m2', seasonal: true, note: "International Women's Day — 8M (March 8)" },
+    { id: '8m', features: { distance: true, paceSpeed: true, duration: true, map: true }, seasonal: true, note: "International Women's Day — 8M (March 8)" },
+    { id: '8m2', features: { distance: true, paceSpeed: true, duration: true, map: true }, seasonal: true, note: "International Women's Day — 8M (March 8)" },
 ];
 
 // Active template list — the only thing all consumers (UI, unit tests, e2e) should use.
