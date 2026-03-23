@@ -1,9 +1,18 @@
 import { mockActivities } from '../../fixtures/stravaData';
+import { 
+    formatTime, 
+    formatDateShort, 
+    formatDayAndNumber, 
+    formatDuration, 
+    formatPace, 
+    formatSwimPace, 
+    formatSpeedKmh 
+} from '../../../src/utils/formatters';
+import { calculateMaxPace } from '../../../src/utils/mathUtils';
 
 /**
  * REPLICATED FORMATTING LOGIC
- * We copy this from src/api/strava.ts to avoid importing production config/fetch
- * which crashes in the Node/Playwright environment due to Vite's import.meta.env.
+ * We use the shared src/utils/formatters.ts to keep production and tests in sync.
  */
 
 export interface StravaActivity {
@@ -70,24 +79,13 @@ function formatActivityStats(activity: StravaActivity): StickerStats {
         polyline: activity.map?.summary_polyline || '',
         avgHeartrate: activity.average_heartrate ? Math.round(activity.average_heartrate) : null,
         maxHeartrate: activity.max_heartrate ? Math.round(activity.max_heartrate) : null,
-        startTime: (() => {
-            const rawDate = activity.start_date_local || activity.start_date;
-            if (!rawDate) return '';
-            try {
-                const timePart = rawDate.split('T')[1].replace('Z', '');
-                const [hours, minutes] = timePart.split(':');
-                let h = parseInt(hours, 10);
-                const ampm = h >= 12 ? 'PM' : 'AM';
-                h = h % 12 || 12;
-                return `${h}:${minutes} ${ampm}`;
-            } catch (e) { return ''; }
-        })(),
+        startTime: formatTime(activity.start_date_local || activity.start_date),
+        date: formatDateShort(activity.start_date_local || activity.start_date),
+        dayAndNumber: formatDayAndNumber(activity.start_date_local || activity.start_date),
         hasDistance: DISTANCE_SPORTS.has(activity.type) && activity.distance > 0,
     };
 
-    const h_total = Math.floor(activity.moving_time / 3600);
-    const m_total = Math.floor((activity.moving_time % 3600) / 60);
-    stats.timeStr = h_total > 0 ? `${h_total}h ${m_total}m` : `${m_total}m`;
+    stats.timeStr = formatDuration(activity.moving_time);
 
     if (stats.hasDistance) {
         const distVal = (activity.distance / 1000).toFixed(2);
@@ -97,12 +95,15 @@ function formatActivityStats(activity: StravaActivity): StickerStats {
 
         if (activity.type === 'Run' || activity.type === 'VirtualRun' ||
             activity.type === 'Walk' || activity.type === 'Hike') {
-            const paceSecs = Math.floor(1000 / activity.average_speed);
-            stats.subValue = `${Math.floor(paceSecs / 60)}:${(paceSecs % 60).toString().padStart(2, '0')} /km`;
+            stats.subValue = formatPace(activity.average_speed);
+            stats.subLabel = 'Pace';
+            // Note: maxPace is not strictly needed for basic feed verification 
+            // but can be added if required.
+        } else if (activity.type === 'Swim' || activity.type === 'OpenWaterSwim') {
+            stats.subValue = formatSwimPace(activity.average_speed);
             stats.subLabel = 'Pace';
         } else {
-            const speedKmh = (activity.average_speed * 3.6).toFixed(1);
-            stats.subValue = `${speedKmh} km/h`;
+            stats.subValue = formatSpeedKmh(activity.average_speed);
             stats.subLabel = 'Avg Speed';
         }
     } else {
@@ -115,6 +116,7 @@ function formatActivityStats(activity: StravaActivity): StickerStats {
 
     return stats as StickerStats;
 }
+
 /**
  * Utility for E2E tests to extract data from the mock JSON 
  * using the same logic as the production app.
@@ -124,21 +126,21 @@ export const TestUtils = {
      * Finds the first activity of a certain type (e.g., 'Run', 'Ride', 'WeightTraining')
      */
     findActivityByType(type: string): StravaActivity | undefined {
-        return mockActivities.find(a => a.type === type);
+        return (mockActivities as any[]).find(a => a.type === type);
     },
 
     /**
      * Finds the first activity that HAS distance
      */
     findFirstActivityWithDistance(): StravaActivity | undefined {
-        return mockActivities.find(a => a.distance > 0);
+        return (mockActivities as any[]).find(a => a.distance > 0);
     },
 
     /**
      * Finds the first activity that DOES NOT have distance
      */
     findFirstActivityWithoutDistance(): StravaActivity | undefined {
-        return mockActivities.find(a => a.distance === 0);
+        return (mockActivities as any[]).find(a => a.distance === 0);
     },
 
     /**
