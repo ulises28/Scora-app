@@ -12,6 +12,7 @@
     "test:mobileChrome": "playwright test --project=\"Mobile Chrome\"",
     "test:mobileSafari": "playwright test --project=\"Mobile Safari\"",
     "test:chromium": "playwright test --project=chromium",
+    "test:clean": "ps aux | grep playwright | grep -v grep | awk '{print $2}' | xargs kill -9 || true",
     "docker:build": "docker build -f Dockerfile.playwright -t scora-e2e .",
     "docker:test": "docker compose -f docker-compose.playwright.yml up --build --exit-code-from playwright"
   },

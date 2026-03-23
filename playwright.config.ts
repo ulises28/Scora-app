@@ -24,6 +24,7 @@ export default defineConfig({
   reporter: process.env.CI ? [['github'], ['blob']] : [['html'], ['list']],
 
   /* TIMEOUTS: Explicit control to prevent "Hung" tests. */
+  globalTimeout: 10 * 60 * 1000, // Kill entire run after 10 minutes
   timeout: 60 * 1000, // 1 minute per test
   expect: {
     timeout: 10 * 1000, // 10 seconds for assertions (Better for SPAs like Scora)
