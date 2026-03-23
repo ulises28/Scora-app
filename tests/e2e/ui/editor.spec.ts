@@ -2,19 +2,24 @@ import { test, expect } from '@playwright/test';
 import { FeedPage } from '../pages/FeedPage';
 import { EditorPage } from '../pages/EditorPage';
 import { MockStravaClient } from '../utils/MockStravaClient';
-import { TEMPLATES } from '../../../src/features/editor/TemplateManager';
+import { TEMPLATE_REGISTRY } from '../../../src/features/editor/TemplateManager';
+import { TestUtils } from '../utils/TestUtils';
 
 test.describe('Scora App UI: Sticker Editor (POM)', () => {
+
+    const ACTIVITY_WITH_DISTANCE = TestUtils.findFirstActivityWithDistance()!;
+    const ACTIVITY_WITHOUT_DISTANCE = TestUtils.findFirstActivityWithoutDistance()!;
+    
+    const ACTIVE_TEMPLATES = TEMPLATE_REGISTRY.filter(t => !t.seasonal);
+    const DEFAULT_ID = ACTIVE_TEMPLATES[0].id;
 
     test.beforeEach(async ({ page }) => {
         const feedPage = new FeedPage(page);
         const api = new MockStravaClient(page);
 
-        // 1. Setup mock session and network constraints
         await feedPage.injectMockAuth();
         await api.mockSuccessfulActivities();
 
-        // 2. Base app load sequence
         await feedPage.goto();
         await feedPage.waitForLoaderToHide();
     });
@@ -23,20 +28,22 @@ test.describe('Scora App UI: Sticker Editor (POM)', () => {
         const feedPage = new FeedPage(page);
         const editorPage = new EditorPage(page);
 
-        await feedPage.openActivityEditor('Carrera por la mañana');
-        await editorPage.verifyEditorScreenVisible('Carrera por la mañana');
+        await feedPage.openActivityEditor(ACTIVITY_WITH_DISTANCE.name);
+        await editorPage.verifyEditorScreenVisible(ACTIVITY_WITH_DISTANCE.name);
 
-        // Default should be social-float (the new #1)
-        await editorPage.verifyTemplateIsActive('social-float');
+        // Default should be the first active template in the registry
+        await editorPage.verifyTemplateIsActive(DEFAULT_ID);
 
-        // Switch to dm (second dot)
+        // Switch to 2nd template in registry
+        const secondId = ACTIVE_TEMPLATES[1].id;
         await editorPage.switchTemplateViaDot(1);
-        await editorPage.verifyTemplateIsActive('dm');
+        await editorPage.verifyTemplateIsActive(secondId);
         await editorPage.verifyActiveDotIndex(1);
 
-        // Switch back to mono-split (third dot)
+        // Switch to 3rd template in registry
+        const thirdId = ACTIVE_TEMPLATES[2].id;
         await editorPage.switchTemplateViaDot(2);
-        await editorPage.verifyTemplateIsActive('mono-split');
+        await editorPage.verifyTemplateIsActive(thirdId);
         await editorPage.verifyActiveDotIndex(2);
     });
 
@@ -44,54 +51,57 @@ test.describe('Scora App UI: Sticker Editor (POM)', () => {
         const feedPage = new FeedPage(page);
         const editorPage = new EditorPage(page);
 
-        await feedPage.openActivityEditor('Carrera por la mañana');
-        await editorPage.verifyEditorScreenVisible('Carrera por la mañana');
+        await feedPage.openActivityEditor(ACTIVITY_WITH_DISTANCE.name);
+        await editorPage.verifyEditorScreenVisible(ACTIVITY_WITH_DISTANCE.name);
 
-        // Start at social-float (first) — prev should be disabled
-        await editorPage.verifyTemplateIsActive('social-float');
+        // Start at default template (first)
+        await editorPage.verifyTemplateIsActive(DEFAULT_ID);
+
+        const nextId = ACTIVE_TEMPLATES[1].id;
+        const thirdId = ACTIVE_TEMPLATES[2].id;
 
         if (isMobile) {
-            // Next → dm
+            // Next → 2nd
             await editorPage.swipeLeft();
-            await editorPage.verifyTemplateIsActive('dm');
+            await editorPage.verifyTemplateIsActive(nextId);
 
-            // Next → Mono Split
+            // Next → 3rd
             await editorPage.swipeLeft();
-            await editorPage.verifyTemplateIsActive('mono-split');
+            await editorPage.verifyTemplateIsActive(thirdId);
 
-            // Prev → dm
+            // Prev → 2nd
             await editorPage.swipeRight();
-            await editorPage.verifyTemplateIsActive('dm');
+            await editorPage.verifyTemplateIsActive(nextId);
         } else {
-            // Next → dm
+            // Next → 2nd
             await editorPage.clickNextTemplate();
-            await editorPage.verifyTemplateIsActive('dm');
+            await editorPage.verifyTemplateIsActive(nextId);
 
-            // Next → Mono Split
+            // Next → 3rd
             await editorPage.clickNextTemplate();
-            await editorPage.verifyTemplateIsActive('mono-split');
+            await editorPage.verifyTemplateIsActive(thirdId);
 
-            // Prev → dm
+            // Prev → 2nd
             await editorPage.clickPrevTemplate();
-            await editorPage.verifyTemplateIsActive('dm');
+            await editorPage.verifyTemplateIsActive(nextId);
         }
     });
 
-    test('Test 2c: Navigation reaches all templates including 8m/8m2 at the end', async ({ page, isMobile }) => {
+    test('Test 2c: Navigation reaches all templates in the registry', async ({ page, isMobile }) => {
         const feedPage = new FeedPage(page);
         const editorPage = new EditorPage(page);
 
-        await feedPage.openActivityEditor('Carrera por la mañana');
-        await editorPage.verifyEditorScreenVisible('Carrera por la mañana');
+        await feedPage.openActivityEditor(ACTIVITY_WITH_DISTANCE.name);
+        await editorPage.verifyEditorScreenVisible(ACTIVITY_WITH_DISTANCE.name);
 
-        // Navigate forward through every template — self-updating when TEMPLATES changes
-        for (let i = 1; i < TEMPLATES.length; i++) {
+        // Navigate forward through every template — dynamically derived from registry
+        for (let i = 1; i < ACTIVE_TEMPLATES.length; i++) {
             if (isMobile) {
                 await editorPage.swipeLeft();
             } else {
                 await editorPage.clickNextTemplate();
             }
-            await editorPage.verifyTemplateIsActive(TEMPLATES[i]);
+            await editorPage.verifyTemplateIsActive(ACTIVE_TEMPLATES[i].id);
         }
 
         if (!isMobile) {
@@ -104,54 +114,87 @@ test.describe('Scora App UI: Sticker Editor (POM)', () => {
         const feedPage = new FeedPage(page);
         const editorPage = new EditorPage(page);
 
-        await feedPage.openActivityEditor('Carrera por la mañana');
-        await editorPage.verifyEditorScreenVisible('Carrera por la mañana');
+        await feedPage.openActivityEditor(ACTIVITY_WITH_DISTANCE.name);
+        await editorPage.verifyEditorScreenVisible(ACTIVITY_WITH_DISTANCE.name);
 
         await page.goBack();
 
-        await feedPage.verifyActivityRendered('Carrera por la mañana', '9.64 km');
+        // Feed should render the previously open activity with its correct stats
+        const stats = TestUtils.getExpectedStats(ACTIVITY_WITH_DISTANCE);
+        await feedPage.verifyActivityRendered(ACTIVITY_WITH_DISTANCE.name, stats.mainValue);
     });
 
     test('Test 4: UI "Back" button mimics Native History API', async ({ page }) => {
         const feedPage = new FeedPage(page);
         const editorPage = new EditorPage(page);
 
-        await feedPage.openActivityEditor('Carrera por la mañana');
-        await editorPage.verifyEditorScreenVisible('Carrera por la mañana');
+        await feedPage.openActivityEditor(ACTIVITY_WITH_DISTANCE.name);
+        await editorPage.verifyEditorScreenVisible(ACTIVITY_WITH_DISTANCE.name);
 
         await editorPage.goBack();
 
-        await feedPage.verifyActivityRendered('Carrera por la mañana', '9.64 km');
+        const stats = TestUtils.getExpectedStats(ACTIVITY_WITH_DISTANCE);
+        await feedPage.verifyActivityRendered(ACTIVITY_WITH_DISTANCE.name, stats.mainValue);
     });
 
     test('Test 5: Selecting alternate activities resets template to default (#1)', async ({ page }) => {
         const feedPage = new FeedPage(page);
         const editorPage = new EditorPage(page);
 
-        // Open 1st run — switch to Minimal
-        await feedPage.openActivityEditor('Carrera por la mañana');
-        await editorPage.selectTemplate('Minimal');
-        await editorPage.verifyTemplateIsActive('minimal');
+        // Open 1st activity — switch to some alternate template (e.g. index 5)
+        const alternateId = ACTIVE_TEMPLATES[5].id;
+        await feedPage.openActivityEditor(ACTIVITY_WITH_DISTANCE.name);
+        await editorPage.selectTemplate(alternateId);
+        await editorPage.verifyTemplateIsActive(alternateId);
 
-        // Go back to feed and open 2nd workout
+        // Go back to feed and open another activity
         await editorPage.goBack();
-        await feedPage.openActivityEditor('Entrenamiento con pesas matutino');
+        await feedPage.openActivityEditor(ACTIVITY_WITHOUT_DISTANCE.name);
 
-        // Editor should load the new activity but cleanly reset to social-float (#1)
-        await editorPage.verifyEditorScreenVisible('Entrenamiento con pesas matutino');
-        await editorPage.verifyTemplateIsActive('social-float');
+        // Editor should load the new activity but cleanly reset back to default template (#1)
+        await editorPage.verifyEditorScreenVisible(ACTIVITY_WITHOUT_DISTANCE.name);
+        await editorPage.verifyTemplateIsActive(DEFAULT_ID);
     });
 
-    test('Test 6: Text color and logo toggles are present and clickable', async ({ page }) => {
+    test('Test 6: Text color and logo toggles update rendering state', async ({ page }) => {
         const feedPage = new FeedPage(page);
         const editorPage = new EditorPage(page);
 
-        await feedPage.openActivityEditor('Carrera por la mañana');
-        await editorPage.verifyEditorScreenVisible('Carrera por la mañana');
+        await feedPage.openActivityEditor(ACTIVITY_WITH_DISTANCE.name);
+        await editorPage.verifyEditorScreenVisible(ACTIVITY_WITH_DISTANCE.name);
+
+        await editorPage.injectCanvasInterceptor();
+
+        // 1. Verify Logo Toggle (Should remove "SCORA" from rendering)
+        const logoToggle = page.locator('#logo-toggle');
+
+        // On → Off
+        let startCount = await editorPage.getDrawCount();
+        await editorPage.clearCanvasTextLog();
+        await editorPage.setLogo(false);
+        await expect(logoToggle).toHaveClass(/right/); // Verify UI state
+        await page.waitForFunction((prev) => (window as any)._scoraDrawCount > prev, startCount);
+
+        let logs = await editorPage.getCanvasTextLog();
+        expect(logs.some(l => l.includes('SCORA'))).toBeFalsy();
+
+        // Off → On
+        startCount = await editorPage.getDrawCount();
+        await editorPage.clearCanvasTextLog();
+        await editorPage.setLogo(true);
+        await expect(logoToggle).not.toHaveClass(/right/); // Verify UI state
+        await page.waitForFunction((prev) => (window as any)._scoraDrawCount > prev, startCount);
+
+        logs = await editorPage.getCanvasTextLog();
+        expect(logs.some(l => l.includes('SCORA'))).toBeTruthy();
+
+        // 2. Verify Color Toggle
+        // Find a template that supports black text
+        const colorId = ACTIVE_TEMPLATES.find(t => t.supportsBlackText)?.id || DEFAULT_ID;
+        await editorPage.selectTemplate(colorId);
 
         // Both toggles should be clickable without errors
-        await editorPage.toggleTextColor(); // White → Black
-        await editorPage.toggleLogo();      // On → Off
+        await editorPage.setTextColor('black'); // White → Black
     });
 
 });

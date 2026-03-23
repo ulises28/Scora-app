@@ -15,6 +15,8 @@ export interface TemplateFeatures {
 interface TemplateConfig {
     id: string;
     features: TemplateFeatures;
+    category: 'distance' | 'workout' | 'all'; // test hint: which mock activity type provides the best coverage
+    supportsBlackText?: boolean; // Whether template logic responds to the black/white toggle
     seasonal?: boolean; // seasonal templates are inactive outside their event window
     note?: string;      // human-readable context (why it exists, when to re-enable)
 }
@@ -23,98 +25,138 @@ export const TEMPLATE_REGISTRY: readonly TemplateConfig[] = [
     // ── ACTIVE & REORDERED ──────────────────────────────────────────────────
     { 
         id: 'social-float', 
+        category: 'distance',
+        supportsBlackText: true,
         features: { distance: true, paceSpeed: true, duration: true, date: true, startTime: true } 
     },
     { 
         id: 'dm', 
-        features: { distance: true, paceSpeed: true, duration: true, date: true } 
+        category: 'distance',
+        supportsBlackText: false,
+        features: { distance: true, paceSpeed: true, duration: true, startTime: true } 
     },
     { 
         id: 'mono-split', 
+        category: 'distance',
+        supportsBlackText: true,
         features: { distance: true, paceSpeed: true } 
     },
     { 
         id: 'essential-italic', 
+        category: 'distance',
+        supportsBlackText: true,
         features: { distance: true, paceSpeed: true, duration: true } 
     },
     { 
         id: 'obsidian-bar', 
+        category: 'distance',
+        supportsBlackText: true,
         features: { distance: true, paceSpeed: true, duration: true } 
     },
     { 
         id: 'data', 
+        category: 'distance',
+        supportsBlackText: true,
         features: { distance: true, paceSpeed: true, heartRate: true } 
     },
     { 
         id: 'modern-pill', 
+        category: 'distance',
+        supportsBlackText: false,
         features: { distance: true, paceSpeed: true, heartRate: true } 
     },
     { 
         id: 'editorial-archive', 
+        category: 'distance',
+        supportsBlackText: true,
         features: { distance: true, paceSpeed: true, duration: true } 
     },
     { 
         id: 'info-glass', 
+        category: 'all',
+        supportsBlackText: false,
         features: { distance: true, paceSpeed: true, duration: true, heartRate: true } 
     },
     { 
         id: 'split-badge', 
+        category: 'all',
+        supportsBlackText: false,
         features: { distance: true, paceSpeed: true, duration: true, heartRate: true } 
     },
     { 
         id: 'workout-receipt', 
+        category: 'distance',
+        supportsBlackText: false,
         features: { distance: true, paceSpeed: true, duration: true, date: true } 
     },
     { 
         id: 'brutalist-bold', 
+        category: 'distance',
+        supportsBlackText: true,
         features: { distance: true, paceSpeed: true, duration: true } 
     },
     { 
         id: 'data-modular', 
+        category: 'distance',
+        supportsBlackText: true,
         features: { distance: true, paceSpeed: true } 
     },
     { 
         id: 'glass-slice', 
+        category: 'distance',
+        supportsBlackText: false,
         features: { distance: true, map: true } 
     },
     { 
         id: 'vhs-retro', 
+        category: 'distance',
+        supportsBlackText: false,
         features: { distance: true, date: true, startTime: true } 
     },
     { 
         id: 'stealth-bar', 
+        category: 'distance',
+        supportsBlackText: false,
         features: { distance: true, paceSpeed: true, duration: true } 
     },
-    { id: 'track-record', features: { distance: true } },
+    { id: 'track-record', category: 'distance', supportsBlackText: true, features: { distance: true } },
     { 
         id: 'metric-thin', 
+        category: 'distance',
+        supportsBlackText: true,
         features: { distance: true, paceSpeed: true } 
     },
     { 
         id: 'vertical-label', 
+        category: 'distance',
+        supportsBlackText: false,
         features: { distance: true, paceSpeed: true, duration: true } 
     },
     { 
         id: 'stats', 
+        category: 'all',
+        supportsBlackText: true,
         features: { distance: true, paceSpeed: true, duration: true, heartRate: true } 
     },
     { 
         id: 'minimal', 
+        category: 'all',
+        supportsBlackText: true,
         features: { distance: true, duration: true } 
     },
 
     // ── INACTIVE / ARCHIVED ─────────────────────────────────────────────────
-    { id: 'route', features: { distance: true, map: true }, seasonal: true },
-    { id: 'scora-stealth', features: { distance: true, paceSpeed: true, duration: true, heartRate: true, map: true }, seasonal: true },
-    { id: 'neon-capsule', features: { distance: true, paceSpeed: true }, seasonal: true },
-    { id: 'tech-hud', features: { distance: true, paceSpeed: true, duration: true }, seasonal: true },
-    { id: 'award-badge', features: { distance: true, duration: true }, seasonal: true },
-    { id: 'data-matrix', features: { distance: true, paceSpeed: true, duration: true }, seasonal: true },
-    { id: 'frosted-minimal', features: { duration: true }, seasonal: true },
+    { id: 'route', category: 'distance', features: { distance: true, map: true }, seasonal: true },
+    { id: 'scora-stealth', category: 'distance', features: { distance: true, paceSpeed: true, duration: true, heartRate: true, map: true }, seasonal: true },
+    { id: 'neon-capsule', category: 'distance', features: { distance: true, paceSpeed: true }, seasonal: true },
+    { id: 'tech-hud', category: 'distance', features: { distance: true, paceSpeed: true, duration: true }, seasonal: true },
+    { id: 'award-badge', category: 'workout', features: { distance: true, duration: true }, seasonal: true },
+    { id: 'data-matrix', category: 'distance', features: { distance: true, paceSpeed: true, duration: true }, seasonal: true },
+    { id: 'frosted-minimal', category: 'workout', features: { duration: true }, seasonal: true },
     
     // ── SEASONAL ───────────────────────────────────────────────────────────
-    { id: '8m', features: { distance: true, paceSpeed: true, duration: true, map: true }, seasonal: true, note: "International Women's Day — 8M (March 8)" },
-    { id: '8m2', features: { distance: true, paceSpeed: true, duration: true, map: true }, seasonal: true, note: "International Women's Day — 8M (March 8)" },
+    { id: '8m', category: 'distance', features: { distance: true, paceSpeed: true, duration: true, map: true }, seasonal: true, note: "International Women's Day — 8M (March 8)" },
+    { id: '8m2', category: 'distance', features: { distance: true, paceSpeed: true, duration: true, map: true }, seasonal: true, note: "International Women's Day — 8M (March 8)" },
 ];
 
 // Active template list — the only thing all consumers (UI, unit tests, e2e) should use.

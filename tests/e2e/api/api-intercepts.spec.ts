@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { MockStravaClient } from '../utils/MockStravaClient';
 import { FeedPage } from '../pages/FeedPage';
+import { TestUtils } from '../utils/TestUtils';
 
 test.describe('Scora App: API Network Intercepts (POM)', () => {
 
@@ -53,7 +54,10 @@ test.describe('Scora App: API Network Intercepts (POM)', () => {
         // 3. Navigate to the app and wait for the feed to settle
         await feedPage.goto();
         await feedPage.waitForLoaderToHide();
-        await feedPage.verifyActivityRendered('Carrera por la mañana', '9.64 km • Run');
+
+        const activity = TestUtils.findFirstActivityWithDistance()!;
+        const stats = TestUtils.getExpectedStats(activity);
+        await feedPage.verifyActivityRendered(activity.name, stats.mainValue);
 
         // 4. ✅ Core assertion: stravaAuth must be gone after auto-logout
         const stravaAuth = await page.evaluate(() => localStorage.getItem('stravaAuth'));

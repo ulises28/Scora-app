@@ -1,4 +1,8 @@
-import { type Locator, type Page, expect } from '@playwright/test';
+/**
+ * Common base for all Page Objects.
+ * Handles core cross-screen concerns like authentication injection and loader state.
+ */
+import { expect, type Page, type Locator } from '@playwright/test';
 import { step } from '../utils/logger';
 
 export class BasePage {

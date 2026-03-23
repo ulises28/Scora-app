@@ -1,7 +1,13 @@
+/**
+ * [SCREEN B] Editor Page
+ * The "Canvas" area. Allows template selection, toggle adjustments (color/logo), 
+ * and sticker download. Resets to default state whenever a new activity is opened.
+ */
 import { expect, type Locator, type Page } from '@playwright/test';
 import { BasePage } from './BasePage';
 import { step } from '../utils/logger';
-import { TEMPLATES as TEMPLATE_ORDER } from '../../../src/features/editor/TemplateManager';
+import { TEMPLATE_REGISTRY } from '../../../src/features/editor/TemplateManager';
+const TEMPLATE_ORDER = TEMPLATE_REGISTRY.map(t => t.id);
 
 export class EditorPage extends BasePage {
     readonly editorScreen: Locator;
@@ -139,14 +145,17 @@ export class EditorPage extends BasePage {
         });
     }
 
-    @step('Toggle Text Color')
-    async toggleTextColor() {
-        await this.textColorToggle.click();
+    @step('Set Text Color')
+    async setTextColor(color: 'white' | 'black') {
+        const opt = this.textColorToggle.locator(`.toggle-opt[data-value="${color}"]`);
+        await opt.click();
     }
 
-    @step('Toggle Logo Visibility')
-    async toggleLogo() {
-        await this.logoToggle.click();
+    @step('Set Logo Visibility')
+    async setLogo(visible: boolean) {
+        const val = visible ? 'on' : 'off';
+        const opt = this.logoToggle.locator(`.toggle-opt[data-value="${val}"]`);
+        await opt.click();
     }
 
     @step('Click Download')

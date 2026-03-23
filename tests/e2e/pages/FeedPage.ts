@@ -1,3 +1,7 @@
+/**
+ * [SCREEN A] Feed Page
+ * Lists Strava activities as cards. Entry point for the sticker creation flow.
+ */
 import { expect, type Locator, type Page } from '@playwright/test';
 import { BasePage } from './BasePage';
 import { step } from '../utils/logger';
