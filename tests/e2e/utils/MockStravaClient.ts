@@ -130,4 +130,51 @@ export class MockStravaClient {
             });
         });
     }
+
+    /**
+     * Mocks a detailed activity response including splits_metric.
+     * Useful for testing templates that require per-km breakdown.
+     */
+    async mockDetailedActivity(activityId: number, splitsCount: number = 5) {
+        await this.page.route('**/api/strava-activities', async route => {
+            const postData = route.request().postDataJSON();
+            if (postData && postData.activity_id === activityId) {
+                // Find base activity or use a default one
+                const base = mockActivities.find(a => a.id === activityId) || mockActivities[0];
+                
+                // Generate splits
+                const splits_metric = Array.from({ length: splitsCount }, (_, i) => ({
+                    distance: 1000,
+                    elapsed_time: 300 + Math.random() * 60,
+                    elevation_difference: Math.random() * 10,
+                    moving_time: 300 + Math.random() * 60,
+                    split: i + 1,
+                    average_speed: 1000 / (300 + Math.random() * 60), // ~5:00 pace
+                    pace_zone: 0
+                }));
+
+                // Add a remainder if splitsCount is not an integer? 
+                // For simplicity, splitsCount is the index.
+                
+                await route.fulfill({
+                    status: 200,
+                    contentType: 'application/json',
+                    body: JSON.stringify({
+                        activity: {
+                            ...base,
+                            splits_metric,
+                            device_name: 'Garmin Forerunner 955'
+                        }
+                    })
+                });
+            } else {
+                // Fallback to summary response for other calls
+                await route.fulfill({
+                    status: 200,
+                    contentType: 'application/json',
+                    body: JSON.stringify({ activities: mockActivities })
+                });
+            }
+        });
+    }
 }

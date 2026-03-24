@@ -9,9 +9,16 @@
  *  - showLogo:  controls whether the SCORA. branding is drawn
  */
 
-import { getThemeColors, drawStatWithUnit, setLetterSpacing, drawRoutePath, decodePolyline, getDynamicStats, drawMetricBlock } from './CanvasUtils';
-import { StickerStats } from '../../api/strava';
+import { getThemeColors, drawStatWithUnit, setLetterSpacing } from './CanvasUtils';
 
+// Strava polyline decoder → [lat, lng] coordinate array
+console.log("[Scora] CanvasPainter engine v1.4 (Precision Matching Applied)");
+export function decodePolyline(str) {
+    if (!str) return [];
+    let index = 0, lat = 0, lng = 0, coordinates = [], shift = 0, result = 0, byte = null, latitude_change, longitude_change, factor = 1e5;
+    while (index < str.length) { byte = null; shift = 0; result = 0; do { byte = str.charCodeAt(index++) - 63; result |= (byte & 0x1f) << shift; shift += 5; } while (byte >= 0x20); latitude_change = ((result & 1) ? ~(result >> 1) : (result >> 1)); shift = result = 0; do { byte = str.charCodeAt(index++) - 63; result |= (byte & 0x1f) << shift; shift += 5; } while (byte >= 0x20); longitude_change = ((result & 1) ? ~(result >> 1) : (result >> 1)); lat += latitude_change; lng += longitude_change; coordinates.push([lat / factor, lng / factor]); }
+    return coordinates;
+}
 
 // ─── Shared colour helpers ───────────────────────────────────────────────────
 
@@ -41,7 +48,6 @@ type StickerRenderer = (ctx: CanvasRenderingContext2D, stats: any, textColor: st
  */
 const RENDERER_REGISTRY: Record<string, StickerRenderer | { running: StickerRenderer; gym: StickerRenderer }> = {
     // Standard Templates (Identical for all categories)
-    'performance-bars': drawPerformanceBars,
     'dm': (ctx, stats) => drawDMBubble(ctx, stats),
     'modern-pill': drawModernPill,
     'scora-stealth': drawScoraStealth,
@@ -52,9 +58,6 @@ const RENDERER_REGISTRY: Record<string, StickerRenderer | { running: StickerRend
     'brutalist-bold': drawBrutalistBold,
     'tech-hud': drawTechHUD,
     'data-modular': drawDataModular,
-    'stacked-editorial': drawStackedEditorial,
-    'script-serif': drawScriptAndSerif,
-    'thin-path': drawThinPath,
     'glass-slice': drawGlassSlice,
     'vhs-retro': drawVHSRetro,
     'award-badge': drawAwardBadge,
@@ -66,7 +69,6 @@ const RENDERER_REGISTRY: Record<string, StickerRenderer | { running: StickerRend
     'editorial-archive': drawEditorialArchive,
     'social-float': drawSocialFloat,
     'metric-thin': drawMetricThin,
-    'micro-serif': drawMicroSerif,
     'data-matrix': drawDataMatrix,
     'vertical-label': drawVerticalLabel,
     'frosted-minimal': drawFrostedMinimal,
@@ -126,7 +128,7 @@ export function drawTemplate(
         ctx.fill();
 
         ctx.font = "700 42px 'Plus Jakarta Sans'";
-        ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
+        ctx.fillStyle = 'white';
         ctx.fillText('SCORA.', 110, 115);
     }
 
@@ -2221,7 +2223,7 @@ function drawVerticalLabel(ctx: CanvasRenderingContext2D, stats: any, textColor:
 
     const cx = 540;
     const cy = 950;
-    const boxW = 340; // Even narrower (was 380)
+    const boxW = 440;
     const boxH_top = 750;
     const boxH_bot = 620;
 
@@ -2229,41 +2231,40 @@ function drawVerticalLabel(ctx: CanvasRenderingContext2D, stats: any, textColor:
     ctx.fillStyle = 'black';
     ctx.fillRect(cx - boxW / 2, cy - boxH_top, boxW, boxH_top);
 
-    // 2. Vertical Hero (Shifted up slightly to avoid label overlap)
+    // 2. Vertical Hero
     ctx.save();
-    ctx.translate(cx, cy - boxH_top * 0.6); // Moved up (was 0.55)
+    ctx.translate(cx, cy - boxH_top * 0.55);
     ctx.rotate(Math.PI / 2);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = 'white';
-    
     let fontSize = 210;
     ctx.font = `italic 900 ${fontSize}px ${sysFont}`;
     const textW = ctx.measureText(main.value).width;
-    if (textW > boxH_top * 0.75) { // Tighter constraint (was 0.8)
-        fontSize *= (boxH_top * 0.75 / textW);
+    if (textW > boxH_top * 0.8) {
+        fontSize *= (boxH_top * 0.8 / textW);
         ctx.font = `italic 900 ${fontSize}px ${sysFont}`;
     }
     if (typeof ctx.letterSpacing !== 'undefined') ctx.letterSpacing = "-8px";
     ctx.fillText(main.value, 0, 0);
     ctx.restore();
 
-    // 3. KM Unit (Moved down and centered)
+    // 3. KM Unit (Small and stylized)
     ctx.save();
     ctx.textAlign = 'center';
-    ctx.fillStyle = 'rgba(255,255,255,0.6)';
-    ctx.font = `900 40px ${sysFont}`;
-    if (typeof ctx.letterSpacing !== 'undefined') ctx.letterSpacing = "12px";
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.font = `900 24px ${sysFont}`;
+    if (typeof ctx.letterSpacing !== 'undefined') ctx.letterSpacing = "16px";
     const labelMain = (main.unit || main.label).toUpperCase();
-    ctx.fillText(labelMain, cx + 6, cy - 70); // Moved down (was 140)
+    ctx.fillText(labelMain, cx + 8, cy - 80);
     ctx.restore();
 
     // 4. Bottom Section (White)
     ctx.fillStyle = 'white';
     ctx.fillRect(cx - boxW / 2, cy, boxW, boxH_bot);
 
-    // 5. Secondary Data Points (Condensed but readable)
-    const renderBotCell = (data, yOffset, size, labelOpacity, weight, labelSize) => {
+    // 5. Secondary Data Points (Condensed)
+    const renderBotCell = (data, yOffset, size, opacity, weight) => {
         ctx.save();
         ctx.translate(cx, cy + yOffset);
         ctx.textAlign = 'center';
@@ -2271,15 +2272,15 @@ function drawVerticalLabel(ctx: CanvasRenderingContext2D, stats: any, textColor:
         ctx.font = `italic ${weight} ${size}px ${sysFont}`;
         ctx.fillText(data.value, 0, 0);
 
-        ctx.font = `900 ${labelSize}px ${sysFont}`;
-        ctx.fillStyle = `rgba(0,0,0,${labelOpacity})`;
+        ctx.font = `900 18px ${sysFont}`;
+        ctx.fillStyle = `rgba(0,0,0,${opacity})`;
         if (typeof ctx.letterSpacing !== 'undefined') ctx.letterSpacing = "10px";
-        ctx.fillText(data.label.toUpperCase(), 0, labelSize + 15);
+        ctx.fillText(data.label.toUpperCase(), 0, 55);
         ctx.restore();
     };
 
-    renderBotCell(p2, 170, 100, 0.5, 900, 32); // Pace (Bigger & more opaque)
-    renderBotCell(p3, 400, 80, 0.4, 300, 32);  // Time/Duration (Bigger & more opaque)
+    renderBotCell(p2, 170, 100, 0.2, 900); // Pace
+    renderBotCell(p3, 400, 80, 0.1, 300);  // Time
 }
 
 function drawFrostedMinimal(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
@@ -2344,391 +2345,4 @@ export function exportCanvas(canvasId: string) {
     link.download = `scora_${Date.now()}.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
-}
-// ─── New Stickers Support Helpers ──────────────────────────────────────────
-
-function drawStackedEditorial(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
-    const colors = getThemeColors(textColor);
-    const { s1, s2, hasMap } = getDynamicStats(stats);
-    
-    const cx = 540;
-    const cy = 960; // adjusted for center
-    const aestheticFont = "'Outfit', sans-serif";
-
-    ctx.save();
-
-    // 1. Title (Top, Clean Sans, Spaced)
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.font = `500 50px ${aestheticFont}`;
-    ctx.fillStyle = colors.solid;
-    setLetterSpacing(ctx, "0.1em");
-    ctx.fillText((stats.title || "Activity").toUpperCase(), cx, 200);
-    setLetterSpacing(ctx, "0px");
-
-    // 2. Map (Large, Center)
-    if (hasMap) {
-        drawRoutePath(ctx, stats.polyline, cx, 850, 650, {
-            color: colors.solid,
-            strokeWidth: 2.5
-        });
-    }
-
-    // 3. Stats (Small in bottom-right corner)
-    const drawCompactStat = (data, x, y) => {
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.textAlign = 'right';
-
-        // Value
-        ctx.font = `700 90px ${aestheticFont}`;
-        ctx.fillStyle = colors.solid;
-        ctx.fillText(data.value, 0, 0);
-
-        // Label - Increased visibility
-        ctx.font = `700 32px ${aestheticFont}`;
-        ctx.fillStyle = colors.label;
-        ctx.globalAlpha = 0.9;
-        setLetterSpacing(ctx, "0.3em");
-        ctx.fillText(data.label.toUpperCase(), 0, 55);
-        ctx.restore();
-    };
-
-    const cornerX = 980;
-    const cornerY = 1750;
-    
-    // For this compact sticker, we prefer shorter labels
-    const displayS2 = { ...s2 };
-    if (displayS2.label === 'AVG SPEED') displayS2.label = 'KM/H';
-    if (displayS2.label === 'AVG HEARTRATE') displayS2.label = 'BPM';
-
-    drawCompactStat(displayS2, cornerX, cornerY); // Pace / Speed / HR
-    drawCompactStat(s1, cornerX - 320, cornerY); // Distance / Duration (Increased gap to 320px)
-
-    ctx.restore();
-}
-
-function drawScriptAndSerif(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
-    const colors = getThemeColors(textColor);
-    ctx.textBaseline = 'middle';
-    ctx.textAlign = 'center';
-    
-    const { s1, s2, hasMap } = getDynamicStats(stats);
-
-    const cx = 540;
-    const cy = 1000;
-    const scriptFont = "'Great Vibes', cursive";
-
-    ctx.save();
-    // 1. Title (Large, Cursive, Sentence Case) - Shrink to fit logic
-    let fontSize = 180;
-    const maxTextWidth = 1000;
-    ctx.font = `400 ${fontSize}px ${scriptFont}`;
-    let textWidth = ctx.measureText(stats.title || "Activity").width;
-    
-    if (textWidth > maxTextWidth) {
-        fontSize = Math.floor(fontSize * (maxTextWidth / textWidth));
-        ctx.font = `400 ${fontSize}px ${scriptFont}`;
-    }
-    
-    ctx.fillStyle = colors.solid;
-    ctx.fillText(stats.title || "Activity", cx, cy - 420);
-
-    // 2. Divider
-    const lineY = cy - 80;
-    ctx.strokeStyle = colors.trans;
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(cx - 450, lineY - 140); ctx.lineTo(cx + 450, lineY - 140); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(cx - 450, lineY + 140); ctx.lineTo(cx + 450, lineY + 140); ctx.stroke();
-
-    // 3. Stats Row (Using Unified Script Style)
-    const drawStatUnder = (data, x) => {
-        // Value (Cursive)
-        ctx.font = `400 160px ${scriptFont}`;
-        ctx.fillStyle = colors.solid;
-        ctx.fillText(data.value, x, lineY);
-
-        // Label (Cursive, smaller) - Increased visibility
-        ctx.font = `400 70px ${scriptFont}`;
-        ctx.fillStyle = colors.solid; // Use solid instead of label for better visibility
-        ctx.globalAlpha = 1.0;
-        // Move label significantly below the line
-        ctx.fillText(data.label.toLowerCase(), x, lineY + 220);
-    };
-
-    drawStatUnder(s1, cx - 220);
-    drawStatUnder(s2, cx + 220);
-
-    // 4. Route (Bottom)
-    if (hasMap) {
-        drawRoutePath(ctx, stats.polyline, cx, cy + 520, 420, {
-            color: colors.solid,
-            strokeWidth: 3
-        });
-    }
-    ctx.restore();
-}
-
-function drawThinPath(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
-    const colors = getThemeColors(textColor);
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-
-    const { s1, s2, s3, hasMap } = getDynamicStats(stats);
-
-    const cx = 540;
-    const cy = 1000;
-    const serifFont = "'Playfair Display', serif";
-    const sansFont = "'Plus Jakarta Sans', sans-serif";
-
-    ctx.save();
-    // 1. Header (Top, Small Sans, Wide)
-    ctx.font = `800 24px ${sansFont}`;
-    ctx.fillStyle = colors.label;
-    ctx.globalAlpha = 0.6;
-    setLetterSpacing(ctx, "0.5em");
-    ctx.fillText((stats.title || "Activity").toUpperCase(), cx, cy - 400);
-    setLetterSpacing(ctx, "0px");
-    ctx.globalAlpha = 1.0;
-
-    // 2. Map Backdrop (Massive) - Only if exists
-    if (hasMap) {
-        ctx.globalAlpha = 0.2;
-        drawRoutePath(ctx, stats.polyline, cx, cy, 600, {
-            color: colors.solid,
-            strokeWidth: 2
-        });
-        ctx.globalAlpha = 1.0;
-    }
-
-    // 3. Hero Value
-    ctx.font = `italic 500 480px ${serifFont}`;
-    ctx.fillStyle = colors.solid;
-    ctx.fillText(s1.value, cx, cy);
-
-    // 4. Footer Row - Increased visibility
-    const footY = cy + 300;
-    ctx.font = `italic 500 60px ${serifFont}`;
-    ctx.fillStyle = colors.solid; // Solid
-    setLetterSpacing(ctx, "0.15em");
-    const footerText = `${s2.value} ${s2.label} / ${s3.value} ${s3.label}`;
-    ctx.fillText(footerText.toUpperCase(), cx, footY);
-    setLetterSpacing(ctx, "0px");
-
-    ctx.restore();
-}
-
-function drawMicroSerif(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
-    const colors = getThemeColors(textColor);
-    const { s1, s2, hasMap } = getDynamicStats(stats);
-    
-    // EB Garamond (italic for values, normal for units)
-    const serifFont = "'EB Garamond', serif";
-    const startX = 80; // Shifted left (was 120)
-    const bottomY = 1850; 
-
-    ctx.save();
-    
-    // 1. Drop Shadow
-    ctx.shadowColor = 'rgba(0,0,0,0.8)';
-    ctx.shadowBlur = 12;
-    ctx.shadowOffsetY = 4;
-
-    // 2. Measure for dynamic spacing
-    ctx.font = `italic 500 120px ${serifFont}`;
-    const v1W = ctx.measureText(s1.value).width;
-    const v2W = ctx.measureText(s2.value).width;
-    ctx.font = `400 48px ${serifFont}`;
-    const u1W = ctx.measureText(s1.label.toLowerCase()).width;
-    const paceUnit = s2.label === 'TIME' ? '' : (s2.label === 'BPM' ? 'bpm' : (s2.label === 'KM/H' ? 'km/h' : '/km'));
-    const u2W = ctx.measureText(paceUnit).width;
-
-    const block1W = v1W + 20 + u1W;
-    const s2X = startX + block1W + 80; // 80px gap between blocks
-    const block2W = v2W + 20 + u2W;
-    const mapX = s2X + block2W + 80; // 80px gap before map
-
-    // 3. Distance Block
-    drawMetricBlock(ctx, startX, bottomY, 'Distance', s1.value, s1.label.toLowerCase(), {
-        showLabel: false,
-        labelFont: `400 32px ${serifFont}`,
-        valueFont: `italic 500 120px ${serifFont}`,
-        unitFont: `400 48px ${serifFont}`,
-        color: 'white',
-        unitGap: 20
-    });
-
-    // 4. Pace/Speed Block
-    drawMetricBlock(ctx, s2X, bottomY, s2.label, s2.value, paceUnit, {
-        showLabel: false,
-        labelFont: `400 32px ${serifFont}`,
-        valueFont: `italic 500 120px ${serifFont}`,
-        unitFont: `400 48px ${serifFont}`,
-        color: 'white',
-        unitGap: 20
-    });
-
-    // 5. Map Route Block
-    if (hasMap) {
-        ctx.save();
-        ctx.globalAlpha = 0.9;
-        // Vertically aligned with values
-        drawRoutePath(ctx, stats.polyline, mapX + 80, bottomY - 35, 160, {
-            color: 'white',
-            strokeWidth: 3.5
-        });
-        ctx.restore();
-    }
-
-    ctx.restore();
-}
-
-/**
- * Performance Bars Template
- * Adaptive rows of metrics + horizontal performance bars (Speed visualization)
- */
-function drawPerformanceBars(ctx: CanvasRenderingContext2D, stats: StickerStats, textColor: string) {
-    const { solid, trans, label: colorLabel } = buildColors(textColor);
-    const canvasH = 1080;
-    const canvasW = 1080;
-    const padding = 60;
-    const interFont = "'Inter', sans-serif";
-
-    ctx.save();
-    
-    // 1. Setup Defaults
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
-
-    // 2. Header (Kilometer | Pace) - Lowered to avoid logo overlap
-    ctx.font = `900 24px ${interFont}`;
-    ctx.fillStyle = trans;
-    setLetterSpacing(ctx, '4px');
-    ctx.fillText('KILOMETER', padding, 180);
-    
-    ctx.textAlign = 'right';
-    ctx.fillText('PACE', canvasW - padding, 180);
-    setLetterSpacing(ctx, '0px');
-
-    // 3. Dynamic Splits List
-    const splits = stats.splits || [];
-    const lineCount = splits.length;
-
-    // Adaptive Layout Logic
-    let rowH = 80;
-    let valSize = 48;
-    let labSize = 28;
-    let gap = 12;
-
-    if (lineCount > 20) {
-        rowH = 34;
-        valSize = 24;
-        labSize = 16;
-        gap = 4;
-    } else if (lineCount > 10) {
-        rowH = 55;
-        valSize = 36;
-        labSize = 22;
-        gap = 8;
-    }
-
-    const listStartY = 240;
-    const fastestPace = stats.fastestPaceSeconds || 1;
-
-    splits.forEach((split, i) => {
-        const y = listStartY + i * (rowH + gap);
-        const barTotalWidth = canvasW - (padding * 2);
-        const barWidth = (fastestPace / split.seconds) * barTotalWidth;
-        
-        // Performance Bar Background (Full width)
-        // Adjusting opacities for better contrast: 0.1 for bg, 0.4 for perf
-        ctx.fillStyle = textColor === 'white' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)';
-        ctx.fillRect(padding, y, barTotalWidth, rowH);
-
-        // Performance Bar (Actual pace)
-        ctx.fillStyle = textColor === 'white' ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.2)';
-        
-        if (split.type === 'partial') {
-            ctx.strokeStyle = trans;
-            ctx.lineWidth = 1;
-            ctx.strokeRect(canvasW - padding - barWidth, y, barWidth, rowH);
-        } else {
-            ctx.fillRect(canvasW - padding - barWidth, y, barWidth, rowH);
-        }
-
-        // KM Label
-        ctx.textAlign = 'left';
-        ctx.fillStyle = trans;
-        ctx.font = `700 ${labSize}px ${interFont}`;
-        ctx.fillText(split.label, padding + 20, y + rowH / 2);
-
-        // Pace Value
-        ctx.textAlign = 'right';
-        ctx.fillStyle = solid;
-        ctx.font = `italic 900 ${valSize}px ${interFont}`;
-        ctx.fillText(split.pace, canvasW - padding - 20, y + rowH / 2);
-    });
-
-    // 4. Summary Footer
-    const footerY = 880;
-    ctx.strokeStyle = trans;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(padding, footerY - 60);
-    ctx.lineTo(canvasW - padding, footerY - 60);
-    ctx.stroke();
-
-    // Footer: Distance (KM)
-    ctx.textAlign = 'left';
-    ctx.fillStyle = trans;
-    ctx.font = `900 22px ${interFont}`;
-    setLetterSpacing(ctx, '4px');
-    ctx.fillText('KM', padding, footerY - 10);
-    setLetterSpacing(ctx, '0px');
-
-    ctx.fillStyle = solid;
-    ctx.font = `italic 900 120px ${interFont}`;
-    ctx.fillText(stats.distanceVal || '0.0', padding, footerY + 60);
-
-    // Footer: Avg Pace
-    ctx.textAlign = 'right';
-    ctx.fillStyle = trans;
-    ctx.font = `900 22px ${interFont}`;
-    setLetterSpacing(ctx, '4px');
-    ctx.fillText('PACE', canvasW - padding, footerY - 10);
-    setLetterSpacing(ctx, '0px');
-
-    ctx.fillStyle = solid;
-    ctx.font = `italic 900 120px ${interFont}`;
-    const paceVal = stats.subValue.split(' ')[0];
-    ctx.fillText(paceVal, canvasW - padding, footerY + 60);
-    
-    // Pace Unit (/km)
-    ctx.font = `400 32px ${interFont}`;
-    ctx.fillStyle = trans;
-    ctx.fillText('/km', canvasW - padding, footerY + 60 + 40);
-
-    // Footer: Time & Attribution
-    const bottomRowY = 1000;
-    ctx.textAlign = 'left';
-    ctx.fillStyle = trans;
-    ctx.font = `900 18px ${interFont}`;
-    setLetterSpacing(ctx, '4px');
-    ctx.fillText('TIME', padding, bottomRowY);
-    setLetterSpacing(ctx, '0px');
-
-    ctx.textAlign = 'right';
-    ctx.font = `300 68px ${interFont}`;
-    ctx.fillStyle = solid;
-    ctx.fillText(stats.timeStr, canvasW - padding, bottomRowY + 10);
-
-    // Attribution (Garmin etc)
-    if (stats.deviceName) {
-        ctx.textAlign = 'center';
-        ctx.fillStyle = colorLabel;
-        ctx.font = `400 16px ${interFont}`;
-        ctx.fillText(stats.deviceName.toUpperCase(), canvasW / 2, 1050);
-    }
-
-    ctx.restore();
 }

@@ -36,6 +36,23 @@ export interface StravaActivity {
     };
 }
 
+export interface SplitMetric {
+    distance: number;
+    elapsed_time: number;
+    elevation_difference: number;
+    moving_time: number;
+    split: number;
+    average_speed: number;
+    pace_zone: number;
+}
+
+export interface DetailedActivity extends StravaActivity {
+    splits_metric?: SplitMetric[];
+    laps?: any[];
+    gear?: { name: string };
+    device_name?: string;
+}
+
 export interface StickerStatSlot {
     label: string;
     value: string;
@@ -43,6 +60,7 @@ export interface StickerStatSlot {
 }
 
 export interface StickerStats {
+    id: number;
     title: string;
     shortTitle: string;
     type: string;
@@ -64,6 +82,9 @@ export interface StickerStats {
     maxPaceLabel: string;
     maxPaceUnit: string;
     dataPoints: StickerStatSlot[];
+    splits?: { type: 'full' | 'partial', label: string, pace: string, seconds: number }[];
+    fastestPaceSeconds?: number;
+    deviceName?: string;
 }
 
 // 1. Construye el link al que enviaremos al usuario
@@ -173,6 +194,32 @@ export async function fetchStravaActivities(token: string) {
     return data;
 }
 
+/**
+ * 3.5 Obtener el detalle de una actividad (incluye splits_metric)
+ */
+export async function fetchDetailedActivity(token: string, activityId: number) {
+    const sessionId = getSessionId();
+    console.log(`[Strava] Fetching detailed activity ${activityId} using session: ${sessionId}`);
+
+    const response = await fetch('/api/strava-activities', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+            sessionId,
+            activity_id: activityId,
+            include_all_efforts: true
+        })
+    });
+
+    if (!response.ok) {
+        throw new Error(`Detailed Strava API error: ${response.status}`);
+    }
+
+    const { activity } = await response.json();
+    return activity as DetailedActivity;
+}
+
+
 // Activities that have meaningful distance to display
 const DISTANCE_SPORTS = new Set([
     'Run', 'VirtualRun',
@@ -181,59 +228,37 @@ const DISTANCE_SPORTS = new Set([
     'Swim', 'OpenWaterSwim',
 ]);
 
+import { 
+    formatTime, 
+    formatDateShort, 
+    formatDayAndNumber, 
+    formatDayAndNumberNormal, 
+    formatDuration, 
+    getDurationValueOnly, 
+    getDurationUnitOnly, 
+    formatPace, 
+    formatSwimPace, 
+    formatSpeedKmh 
+} from '../utils/formatters';
+
 // 4. Activity stats formatter
 export function formatActivityStats(activity: StravaActivity): StickerStats {
     const stats: Partial<StickerStats> = {
+        id: activity.id,
         title: activity.name,
-        // Nav header version: truncated to 15 chars so it never overflows
         shortTitle: activity.name.length > 22 ? activity.name.slice(0, 22) + '…' : activity.name,
         type: activity.type,
         hasMap: !!activity.map?.summary_polyline,
         polyline: activity.map?.summary_polyline || '',
         avgHeartrate: activity.average_heartrate ? Math.round(activity.average_heartrate) : null,
         maxHeartrate: activity.max_heartrate ? Math.round(activity.max_heartrate) : null,
-        startTime: (() => {
-            const rawDate = activity.start_date_local || activity.start_date;
-            if (!rawDate) return '';
-            try {
-                const timePart = rawDate.split('T')[1].replace('Z', ''); // '09:31:09'
-                const [hours, minutes] = timePart.split(':');
-                let h = parseInt(hours, 10);
-                const ampm = h >= 12 ? 'PM' : 'AM';
-                h = h % 12 || 12;
-                return `${h}:${minutes} ${ampm}`;
-            } catch (e) { return ''; }
-        })(),
-        date: (() => {
-            const rawDate = activity.start_date_local || activity.start_date;
-            if (!rawDate) return '';
-            try {
-                const datePart = rawDate.split('T')[0]; // '2026-03-06'
-                const [year, month, day] = datePart.split('-');
-                const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-                const mIdx = parseInt(month, 10) - 1;
-                return `${months[mIdx]} ${day}`;
-            } catch (e) { return ''; }
-        })(),
-        dayAndNumber: (() => {
-            const rawDate = activity.start_date_local || activity.start_date;
-            if (!rawDate) return '';
-            try {
-                const datePart = rawDate.split('T')[0];
-                const d = new Date(datePart + 'T12:00:00');
-                const dayNames = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
-                const dayName = dayNames[d.getDay()];
-                const dayNum = String(d.getDate()).padStart(2, '0');
-                return `${dayName} ${dayNum}`;
-            } catch (e) { return ''; }
-        })(),
+        startTime: formatTime(activity.start_date_local || activity.start_date),
+        date: formatDateShort(activity.start_date_local || activity.start_date),
+        dayAndNumber: formatDayAndNumber(activity.start_date_local || activity.start_date),
         hasDistance: DISTANCE_SPORTS.has(activity.type) && activity.distance > 0,
     };
 
-    const h_total = Math.floor(activity.moving_time / 3600);
-    const m_total = Math.floor((activity.moving_time % 3600) / 60);
-    stats.timeStr = h_total > 0 ? `${h_total}h ${m_total}m` : `${m_total}m`;
-
+    stats.timeStr = formatDuration(activity.moving_time);
     const hasDistance = stats.hasDistance;
 
     if (hasDistance) {
@@ -244,20 +269,17 @@ export function formatActivityStats(activity: StravaActivity): StickerStats {
 
         if (activity.type === 'Run' || activity.type === 'VirtualRun' ||
             activity.type === 'Walk' || activity.type === 'Hike') {
-            const paceSecs = Math.floor(1000 / activity.average_speed);
-            stats.subValue = `${Math.floor(paceSecs / 60)}:${(paceSecs % 60).toString().padStart(2, '0')} /km`;
+            stats.subValue = formatPace(activity.average_speed);
             stats.subLabel = 'Pace';
             stats.maxPace = calculateMaxPace(activity.max_speed);
             stats.maxPaceLabel = 'Max Pace';
             stats.maxPaceUnit = 'min/km';
         } else if (activity.type === 'Swim' || activity.type === 'OpenWaterSwim') {
-            const paceSecs = Math.floor(100 / activity.average_speed);
-            stats.subValue = `${Math.floor(paceSecs / 60)}:${(paceSecs % 60).toString().padStart(2, '0')} /100m`;
+            stats.subValue = formatSwimPace(activity.average_speed);
             stats.subLabel = 'Pace';
             stats.maxPace = '0:00';
         } else {
-            const speedKmh = (activity.average_speed * 3.6).toFixed(1);
-            stats.subValue = `${speedKmh} km/h`;
+            stats.subValue = formatSpeedKmh(activity.average_speed);
             stats.subLabel = 'Avg Speed';
             stats.maxPace = activity.max_speed ? (activity.max_speed * 3.6).toFixed(1) : '0.0';
             stats.maxPaceLabel = 'Max Speed';
@@ -275,30 +297,15 @@ export function formatActivityStats(activity: StravaActivity): StickerStats {
     // 5. Build Dynamic Stat List (User Defined Priority)
     const points: StickerStatSlot[] = [];
 
-    const getFormattedDay = (raw: string) => {
-        try {
-            const datePart = raw.split('T')[0];
-            const d = new Date(datePart + 'T12:00:00');
-            const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-            const dayName = dayNames[d.getDay()];
-            const dayNum = String(d.getDate()).padStart(2, '0');
-            return `${dayName} ${dayNum}`;
-        } catch (e) { return ''; }
+    const getPaceValueOnly = (speed: number) => {
+        const pace = formatPace(speed);
+        return pace.split(' ')[0];
     };
 
-    const formatDuration = (secs: number) => {
-        const h_val = Math.floor(secs / 3600);
-        const m_val = Math.floor((secs % 3600) / 60);
-        return h_val > 0 ? `${h_val}h ${m_val}m` : `${m_val}m`;
+    const getSpeedValueOnly = (speed: number) => {
+        const s = formatSpeedKmh(speed);
+        return s.split(' ')[0];
     };
-
-    const getPaceStr = (speed: number) => {
-        if (!speed || speed <= 0) return '0:00';
-        const paceSecs = Math.floor(1000 / speed);
-        return `${Math.floor(paceSecs / 60)}:${(paceSecs % 60).toString().padStart(2, '0')}`;
-    };
-
-    const getSpeedKmh = (speed: number) => (speed * 3.6).toFixed(1);
 
     const locCity = activity.location_city || '';
     const locState = activity.location_state || '';
@@ -307,10 +314,10 @@ export function formatActivityStats(activity: StravaActivity): StickerStats {
     const dataPool: Record<string, StickerStatSlot | null> = {
         distance: activity.distance > 0 ? { label: 'Distance', value: (activity.distance / 1000).toFixed(2), unit: 'km' } : null,
         duration: { label: 'Duration', value: formatDuration(activity.moving_time), unit: '' },
-        avg_speed: { label: 'Avg Speed', value: getSpeedKmh(activity.average_speed), unit: 'km/h' },
-        max_speed: { label: 'Max Speed', value: getSpeedKmh(activity.max_speed), unit: 'km/h' },
-        pace: { label: 'Pace', value: getPaceStr(activity.average_speed), unit: '/km' },
-        max_pace: { label: 'Max Pace', value: getPaceStr(activity.max_speed), unit: '/km' },
+        avg_speed: { label: 'Avg Speed', value: getSpeedValueOnly(activity.average_speed), unit: 'km/h' },
+        max_speed: { label: 'Max Speed', value: getSpeedValueOnly(activity.max_speed), unit: 'km/h' },
+        pace: { label: 'Pace', value: getPaceValueOnly(activity.average_speed), unit: '/km' },
+        max_pace: { label: 'Max Pace', value: getPaceValueOnly(activity.max_speed), unit: '/km' },
         avg_hr: activity.average_heartrate ? { label: 'Avg HR', value: String(Math.round(activity.average_heartrate)), unit: 'bpm' } : null,
         max_hr: activity.max_heartrate ? { label: 'Max HR', value: String(Math.round(activity.max_heartrate)), unit: 'bpm' } : null,
         elev_gain: activity.total_elevation_gain ? { label: 'Elevation', value: String(Math.round(activity.total_elevation_gain)), unit: 'm' } : null,
@@ -323,7 +330,7 @@ export function formatActivityStats(activity: StravaActivity): StickerStats {
         type: { label: 'Type', value: (activity.type === 'WeightTraining' || activity.type === 'Workout') ? 'Gym' : activity.type, unit: '' },
         name: { label: 'Name', value: stats.shortTitle || '', unit: '' },
         start_time: { label: 'Time', value: stats.startTime || '', unit: '' },
-        date_long: { label: 'Date', value: getFormattedDay(activity.start_date_local || activity.start_date), unit: '' }
+        date_long: { label: 'Date', value: formatDayAndNumberNormal(activity.start_date_local || activity.start_date), unit: '' }
     };
 
     let p_list: string[] = [];
@@ -348,6 +355,39 @@ export function formatActivityStats(activity: StravaActivity): StickerStats {
     }
 
     stats.dataPoints = points;
+
+    // 6. Handle Splits for Performance Bars (if present in DetailedActivity)
+    if ((activity as DetailedActivity).splits_metric) {
+        const detailed = activity as DetailedActivity;
+        const splits: any[] = [];
+        let minSeconds = Infinity;
+
+        detailed.splits_metric?.forEach(sm => {
+            const distKm = sm.distance / 1000;
+            if (distKm < 0.05) return; // Skip tiny segments
+
+            const isFull = distKm >= 0.95; // Close enough to 1km
+            const label = isFull ? String(sm.split).padStart(2, '0') : '.' + Math.round((sm.distance % 1000) / 10);
+            
+            const pace = formatPace(sm.average_speed);
+            const paceVal = pace.split(' ')[0];
+            const paceParts = paceVal.split(':');
+            const seconds = parseInt(paceParts[0]) * 60 + parseInt(paceParts[1]);
+
+            if (seconds > 0 && seconds < minSeconds) minSeconds = seconds;
+
+            splits.push({
+                type: isFull ? 'full' : 'partial',
+                label,
+                pace: paceVal,
+                seconds
+            });
+        });
+
+        stats.splits = splits;
+        stats.fastestPaceSeconds = minSeconds === Infinity ? 0 : minSeconds;
+        stats.deviceName = detailed.device_name;
+    }
 
     return stats as StickerStats;
 }
