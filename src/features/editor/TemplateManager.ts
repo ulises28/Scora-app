@@ -22,6 +22,26 @@ interface TemplateConfig {
 }
 
 export const TEMPLATE_REGISTRY: readonly TemplateConfig[] = [
+    // ─── NEW PHASE 4 TEMPLATES ─────────────────────────────────────────────
+    { 
+        id: 'stacked-editorial', 
+        category: 'distance',
+        supportsBlackText: true,
+        features: { distance: true, paceSpeed: true, map: true } 
+    },
+    { 
+        id: 'micro-serif', 
+        category: 'distance',
+        supportsBlackText: true,
+        features: { distance: true, paceSpeed: true, duration: true, map: true } 
+    },
+    { 
+        id: 'thin-path', 
+        category: 'distance',
+        supportsBlackText: true,
+        features: { distance: true, paceSpeed: true, duration: true, map: true } 
+    },
+
     // ── ACTIVE & REORDERED ──────────────────────────────────────────────────
     { 
         id: 'social-float', 
@@ -153,6 +173,22 @@ export const TEMPLATE_REGISTRY: readonly TemplateConfig[] = [
     { id: 'award-badge', category: 'workout', features: { distance: true, duration: true }, seasonal: true },
     { id: 'data-matrix', category: 'distance', features: { distance: true, paceSpeed: true, duration: true }, seasonal: true },
     { id: 'frosted-minimal', category: 'workout', features: { duration: true }, seasonal: true },
+    { 
+        id: 'performance-bars', 
+        category: 'distance',
+        supportsBlackText: true,
+        features: { distance: true, paceSpeed: true, duration: true },
+        seasonal: true,
+        note: "In development - splits data flow refinement pending"
+    },
+    { 
+        id: 'script-serif', 
+        category: 'distance',
+        supportsBlackText: true,
+        features: { distance: true, paceSpeed: true, map: true }, 
+        seasonal: true,
+        note: "Archived per user request - Mar 2026"
+    },
     
     // ── SEASONAL ───────────────────────────────────────────────────────────
     { id: '8m', category: 'distance', features: { distance: true, paceSpeed: true, duration: true, map: true }, seasonal: true, note: "International Women's Day — 8M (March 8)" },

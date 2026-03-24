@@ -1,4 +1,4 @@
-import { exchangeToken, refreshStravaToken, fetchStravaActivities, formatActivityStats } from './api/strava.js';
+import { exchangeToken, refreshStravaToken, fetchStravaActivities, fetchDetailedActivity, formatActivityStats } from './api/strava.js';
 import { openStravaAuth, saveStravaAuth } from './api/auth.js';
 import { removeLoader } from './components/Loader.js';
 import { showScreen } from './components/Navigation.js';
@@ -17,12 +17,26 @@ const btnSync = document.getElementById('btn-sync');
 const queuePositionEl = document.getElementById('queue-position-text');
 const queueWaitEl = document.getElementById('queue-wait-text');
 
+let currentAccessToken: string | null = null;
+let currentActivityId: number | null = null;
 let currentStats: any = null;
 let queuePollingInterval: ReturnType<typeof setInterval> | null = null;
 
 // Inicializa el Template Manager que reacciona a los clicks de usuario
-const templateManager = initTemplateManager((template, color, showLogo) => {
+const templateManager = initTemplateManager(async (template, color, showLogo) => {
     if (currentStats) {
+        // If Performance Bars is selected and we don't have splits yet, fetch detailed data
+        if (template === 'performance-bars' && !currentStats.splits && currentAccessToken && currentActivityId) {
+            try {
+                // Show a brief loading indication if possible (optional)
+                const detailed = await fetchDetailedActivity(currentAccessToken, currentActivityId);
+                // Update currentStats in place with detailed info
+                const detailedStats = formatActivityStats(detailed);
+                Object.assign(currentStats, detailedStats);
+            } catch (e) {
+                console.error("Error fetching detailed activity for splits:", e);
+            }
+        }
         drawTemplate('storyCanvas', currentStats, template, color, showLogo);
     }
 });
@@ -37,6 +51,7 @@ function openEditor(stats: any) {
     if (nameEl) nameEl.innerText = stats.shortTitle ?? stats.title;
 
     currentStats = stats;
+    currentActivityId = stats.id; // Activity IDs are preserved in stats or available in formatActivityStats source
 
     // Reset template completely when opening a new activity to the first one in the list (Social Float)
     templateManager.setTemplate(TEMPLATES[0]);
@@ -234,6 +249,8 @@ async function initApp() {
             }
         }
 
+        currentAccessToken = accessToken;
+
         if (accessToken) {
             activitiesData = await fetchStravaActivities(accessToken);
         } else {
@@ -241,6 +258,24 @@ async function initApp() {
         }
 
         renderActivityFeed(activitiesData);
+
+        // Proactive pre-fetching for the last 5 activities (as requested by USER)
+        if (accessToken && activitiesData.length > 0) {
+            const last5 = activitiesData.slice(0, 5);
+            last5.forEach(async (act) => {
+                const DISTANCE_SPORTS = ['Run', 'VirtualRun', 'Ride', 'Walk', 'Hike'];
+                if (DISTANCE_SPORTS.includes(act.type)) {
+                    try {
+                        const detailed = await fetchDetailedActivity(accessToken!, act.id);
+                        const detailedStats = formatActivityStats(detailed);
+                        Object.assign(act, detailedStats);
+                        console.info(`[Pre-fetch] Detailed data merged for activity ${act.id}`);
+                    } catch (e) {
+                        console.warn(`[Pre-fetch] Failed for activity ${act.id}`, e);
+                    }
+                }
+            });
+        }
 
     } catch (error) {
         console.error("Error en Scora:", error);
@@ -304,9 +339,28 @@ window.addEventListener('message', async (event) => {
             const tokenResponse = await exchangeToken(newCode, sessionId);
             saveStravaAuth(tokenResponse);
             const accessToken = tokenResponse.access_token;
+            currentAccessToken = accessToken;
 
             const activitiesData = await fetchStravaActivities(accessToken);
             renderActivityFeed(activitiesData);
+
+            // Proactive pre-fetching for the last 5 activities after fresh login
+            if (activitiesData.length > 0) {
+                const last5 = activitiesData.slice(0, 5);
+                last5.forEach(async (act) => {
+                    const DISTANCE_SPORTS = ['Run', 'VirtualRun', 'Ride', 'Walk', 'Hike'];
+                    if (DISTANCE_SPORTS.includes(act.type)) {
+                        try {
+                            const detailed = await fetchDetailedActivity(accessToken, act.id);
+                            const detailedStats = formatActivityStats(detailed);
+                            Object.assign(act, detailedStats);
+                            console.info(`[Pre-fetch Login] Detailed data merged for ${act.id}`);
+                        } catch (e) {
+                            console.warn(`[Pre-fetch Login] Failed for ${act.id}`, e);
+                        }
+                    }
+                });
+            }
 
             window.history.replaceState({ screen: 'screen-feed' }, document.title, window.location.pathname);
         } catch (error) {

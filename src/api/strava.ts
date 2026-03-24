@@ -36,6 +36,23 @@ export interface StravaActivity {
     };
 }
 
+export interface SplitMetric {
+    distance: number;
+    elapsed_time: number;
+    elevation_difference: number;
+    moving_time: number;
+    split: number;
+    average_speed: number;
+    pace_zone: number;
+}
+
+export interface DetailedActivity extends StravaActivity {
+    splits_metric?: SplitMetric[];
+    laps?: any[];
+    gear?: { name: string };
+    device_name?: string;
+}
+
 export interface StickerStatSlot {
     label: string;
     value: string;
@@ -43,6 +60,7 @@ export interface StickerStatSlot {
 }
 
 export interface StickerStats {
+    id: number;
     title: string;
     shortTitle: string;
     type: string;
@@ -64,6 +82,9 @@ export interface StickerStats {
     maxPaceLabel: string;
     maxPaceUnit: string;
     dataPoints: StickerStatSlot[];
+    splits?: { type: 'full' | 'partial', label: string, pace: string, seconds: number }[];
+    fastestPaceSeconds?: number;
+    deviceName?: string;
 }
 
 // 1. Construye el link al que enviaremos al usuario
@@ -173,6 +194,32 @@ export async function fetchStravaActivities(token: string) {
     return data;
 }
 
+/**
+ * 3.5 Obtener el detalle de una actividad (incluye splits_metric)
+ */
+export async function fetchDetailedActivity(token: string, activityId: number) {
+    const sessionId = getSessionId();
+    console.log(`[Strava] Fetching detailed activity ${activityId} using session: ${sessionId}`);
+
+    const response = await fetch('/api/strava-activities', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+            sessionId,
+            activity_id: activityId,
+            include_all_efforts: true
+        })
+    });
+
+    if (!response.ok) {
+        throw new Error(`Detailed Strava API error: ${response.status}`);
+    }
+
+    const { activity } = await response.json();
+    return activity as DetailedActivity;
+}
+
+
 // Activities that have meaningful distance to display
 const DISTANCE_SPORTS = new Set([
     'Run', 'VirtualRun',
@@ -197,6 +244,7 @@ import {
 // 4. Activity stats formatter
 export function formatActivityStats(activity: StravaActivity): StickerStats {
     const stats: Partial<StickerStats> = {
+        id: activity.id,
         title: activity.name,
         shortTitle: activity.name.length > 22 ? activity.name.slice(0, 22) + '…' : activity.name,
         type: activity.type,
@@ -307,6 +355,39 @@ export function formatActivityStats(activity: StravaActivity): StickerStats {
     }
 
     stats.dataPoints = points;
+
+    // 6. Handle Splits for Performance Bars (if present in DetailedActivity)
+    if ((activity as DetailedActivity).splits_metric) {
+        const detailed = activity as DetailedActivity;
+        const splits: any[] = [];
+        let minSeconds = Infinity;
+
+        detailed.splits_metric?.forEach(sm => {
+            const distKm = sm.distance / 1000;
+            if (distKm < 0.05) return; // Skip tiny segments
+
+            const isFull = distKm >= 0.95; // Close enough to 1km
+            const label = isFull ? String(sm.split).padStart(2, '0') : '.' + Math.round((sm.distance % 1000) / 10);
+            
+            const pace = formatPace(sm.average_speed);
+            const paceVal = pace.split(' ')[0];
+            const paceParts = paceVal.split(':');
+            const seconds = parseInt(paceParts[0]) * 60 + parseInt(paceParts[1]);
+
+            if (seconds > 0 && seconds < minSeconds) minSeconds = seconds;
+
+            splits.push({
+                type: isFull ? 'full' : 'partial',
+                label,
+                pace: paceVal,
+                seconds
+            });
+        });
+
+        stats.splits = splits;
+        stats.fastestPaceSeconds = minSeconds === Infinity ? 0 : minSeconds;
+        stats.deviceName = detailed.device_name;
+    }
 
     return stats as StickerStats;
 }
