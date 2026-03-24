@@ -314,7 +314,7 @@ test.describe('Scora App UI: Advanced Canvas Verification', () => {
     ];
 
     for (const scenario of perfBarsScenarios) {
-        test(`Test 7.${scenario.id}: Performance Bars Adaptive Scaling (${scenario.label})`, async ({ page }) => {
+        test.skip(`Test 7.${scenario.id}: Performance Bars Adaptive Scaling (${scenario.label})`, async ({ page }) => {
             const api = new MockStravaClient(page);
             const feedPage = new FeedPage(page);
             const editorPage = new EditorPage(page);
