@@ -86,7 +86,7 @@ test.describe('Scora App UI: Advanced Canvas Verification', () => {
             if (features.paceSpeed) {
                 const paceOcc = countOccurrences(expectedPace);
                 expect(paceOcc, `Template ${id} shows duplicated pace/speed ${expectedPace}`).toBeLessThanOrEqual(2);
-                
+
                 // CRITICAL: Ensure Pace is NOT equal to Time if both are shown
                 if (features.duration && expectedPace === stats.timeStr.split(' ')[0]) {
                     // This is only allowed if they are legitimately equal by coincidence, but usually indicates a bug.
@@ -337,8 +337,8 @@ test.describe('Scora App UI: Advanced Canvas Verification', () => {
             }
 
             console.info(`[Test] Selecting performance-bars for ${scenario.id}`);
-            const responsePromise = page.waitForResponse(resp => 
-                resp.url().includes('/api/strava-activities') && 
+            const responsePromise = page.waitForResponse(resp =>
+                resp.url().includes('/api/strava-activities') &&
                 resp.request().method() === 'POST' &&
                 resp.request().postDataJSON()?.activity_id === runId,
                 { timeout: 15000 }
