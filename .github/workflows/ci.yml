@@ -6,23 +6,19 @@ on:
   pull_request:
     branches: [ "main", "master" ]
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
-
+# Global environment variables
 jobs:
   unit-tests:
     name: Core Logic Tests (Vitest)
     runs-on: ubuntu-24.04
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip-tests') }}
     
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '24' 
           cache: 'npm'
@@ -44,11 +40,9 @@ jobs:
       (needs.unit-tests.result == 'success' || needs.unit-tests.result == 'skipped') &&
       !contains(github.event.pull_request.labels.*.name, 'skip-tests')
     runs-on: ubuntu-24.04
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up configuration file
         run: cp src/config.example.ts src/config.ts
@@ -67,7 +61,7 @@ jobs:
             scora-e2e
 
       - name: Upload Test Report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always() # Upload report even if tests fail
         with:
           name: blob-report
@@ -75,7 +69,7 @@ jobs:
           retention-days: 2
 
       - name: Upload Test Results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: failure()
         with:
           name: test-results
