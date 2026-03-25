@@ -7,8 +7,8 @@
     <a href="https://github.com/ulises28/Scora-app/actions">
       <img src="https://github.com/ulises28/Scora-app/actions/workflows/ci.yml/badge.svg" alt="CI Status">
     </a>
-    <img src="https://img.shields.io/badge/Vite-8.0-646CFF?logo=vite" alt="Vite 8">
-    <img src="https://img.shields.io/badge/TypeScript-6.0-3178C6?logo=typescript" alt="TypeScript 6">
+    <img src="https://img.shields.io/badge/Vite-7.3-646CFF?logo=vite" alt="Vite 7">
+    <img src="https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript" alt="TypeScript 5">
     <img src="https://img.shields.io/badge/Node-24-339933?logo=node.js" alt="Node 24">
   </p>
 </div>
@@ -50,7 +50,7 @@ The repository serves as a masterclass in modern testing architectures:
 
 ## 🚀 Technical Stack
 
-- **Framework**: [Vite 8](https://vitejs.dev/) & [TypeScript 6](https://www.typescriptlang.org/)
+- **Framework**: [Vite 7](https://vitejs.dev/) & [TypeScript 5](https://www.typescriptlang.org/)
 - **Backend**: [Vercel Serverless Functions](https://vercel.com/docs/functions) (Node.js)
 - **State/Cache**: [Upstash Redis](https://upstash.com/)
 - **Graphics**: [HTML5 Canvas API](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API)
