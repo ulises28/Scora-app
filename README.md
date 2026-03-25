@@ -1,72 +1,90 @@
 <div align="center">
-  <h1>Scora - Designed to be seen.</h1>
-  <p>Transform your Strava activities into aesthetic stickers and premium images ready to be shared on Instagram Stories, TikTok, and more.</p>
+  <h1>SCORA.</h1>
+  <p><strong>The Bridge Between Performance and Storytelling.</strong></p>
+  <p><i>Transform raw Strava activity data into premium, high-fidelity social stickers and story-ready aesthetic images.</i></p>
+
+  <p>
+    <a href="https://github.com/ulises28/Scora-app/actions">
+      <img src="https://github.com/ulises28/Scora-app/actions/workflows/ci.yml/badge.svg" alt="CI Status">
+    </a>
+    <img src="https://img.shields.io/badge/Vite-8.0-646CFF?logo=vite" alt="Vite 8">
+    <img src="https://img.shields.io/badge/TypeScript-6.0-3178C6?logo=typescript" alt="TypeScript 6">
+    <img src="https://img.shields.io/badge/Node-24-339933?logo=node.js" alt="Node 24">
+  </p>
 </div>
 
 ---
 
-## 🚀 Overview
+## 📖 Overview
 
-**Scora** is a high-performance web application designed to help athletes and creators effortlessly convert their Strava activities into highly customizable visual content. By integrating directly with the Strava API, Scora fetches your latest activities and visually renders them using the HTML Canvas API—providing premium, responsive templates that highlight your distance, max pace, and map routes.
+**Scora** is a sophisticated web application designed for athletes and creators who demand high-end visual representations of their performance. Beyond simple data visualization, Scora acts as a professional-grade rendering engine that converts **Strava API** polylines and metrics into customizable, high-resolution (1080x1920) assets ready for **Instagram Stories**, **TikTok**, and more.
 
-## 🌟 Key Features
+> [!NOTE]
+> Scora was engineered to solve the "Rigid Data" problem: bridging the gap between rugged athletic output and refined visual storytelling.
 
-- **Automated Strava Integration**: Instantly imports your latest workouts and activities through the Strava API.
-- **Dynamic & Customizable Rendering**: Generates high-quality cards and stickers using predefined visual templates (Minimal, Route, Data, Direct Message (DM), and Stats).
-- **Responsive & Premium Design**: Mobile-first UI optimized for seamless usage across devices, delivering a smooth user experience.
-- **High-Fidelity Exports**: One-click downloads directly to your device, maintaining crisp resolution.
+---
 
-## 🛠 Tech Stack
+## 🛠 Engineering Highlights
 
-- **Frontend Core**: Vite, TypeScript, Vanilla CSS, HTML5.
-- **Graphics Engine**: HTML Canvas API.
-- **Geospatial Processing**: Custom Polio algorithms for accurate Strava map polyline decoding.
-- **Static Typing**: Full TypeScript coverage for a robust and maintainable codebase.
+Scora isn't just a frontend project; it's a showcase of modern full-stack engineering patterns and complex problem-solving.
 
-## 🧪 Enterprise-Level Test Architecture
+### 1. High-Precision Vector Rendering Engine
+At the core of Scora is a custom-built **Canvas Rendering Engine** designed for micro-typography and pixel-perfect layouts.
+- **Registry-Based Architecture**: Decoupled template rendering using a plugin pattern, allowing for dozens of unique "Sticker" designs (e.g., *Performance Bars*, *Modern Pill*, *Workout Receipt*).
+- **Micro-Typography Engine**: Custom implementations for letter-spacing, unit alignment, and transparent "Hero" number effects that exceed standard CSS capabilities.
+- **Geospatial Processing**: Custom algorithms for decoding Google Polyline formats, calculating dynamic geospatial bounds, and rendering smoothed paths with aesthetic glow effects.
 
-Quality and reliability are at the core of Scora. The project features a professional, domain-driven testing architecture designed for scalability and modern CI/CD integration, acting as a strong showcase of engineering best practices.
+### 2. Concurrency Control: The Waiting Room
+To manage the Strava API's "Single Connected Athlete" limitation, Scora implements a robust **Concurrency Queue System**.
+- **Atomic Locking**: Uses **Upstash Redis** with atomic `SET NX` locks to ensure only one athlete's data is processed at a time per session slot.
+- **Session Orchestration**: A polling-based waiting room that handles cross-session state using serverless edge functions.
+- **Fault-Tolerance**: Built-in fallback mechanisms to ensure graceful degradation if the orchestration layer encounters downtime.
 
-### End-to-End (E2E) Testing with Playwright
-- **Domain-Driven Design**: The test suite employs a robust 3-layered architecture:
-  - **Page Object Model (POM)**: Ensures test maintainability and separates UI structure from testing logic. We enforce strict standards (e.g., no XPath/CSS indices, centralized constructor locators, and user-centric `getByRole` selectors).
-  - **API Client & Interceptors**: Dedicated API interception modules to mock and control Strava API responses seamlessly without hitting rate limits.
-  - **Fixtures & Utilities**: Reusable fixtures to speed up assertions, maintain isolated test states, and reduce code duplication.
-- **Continuous Integration (CI)**: Automated GitHub Actions workflows (`playwright.yml`, `ci.yml`) run formatting, linting, and full E2E suites on every pull request.
+### 3. Professional Quality Engineering (QA)
+The repository serves as a masterclass in modern testing architectures:
+- **Domain-Driven E2E**: Built with **Playwright** using a strict **Page Object Model (POM)** and custom **Fixtures**.
+- **Visual Regressions**: Automated snapshot testing to ensure rendering consistency across different browser engines (Chromium, Firefox, WebKit) and environments.
+- **CI/CD Pipeline**: A fully modernized pipeline running on **Node 24** and **GitHub Actions**, performing linting, unit testing (Vitest), and E2E validation on every push.
 
-## ☁️ Deployment Architecture
+---
 
-Scora is securely deployed on **Vercel**, leveraging enterprise-grade edge architecture:
-- **Serverless Functions**: Strava's OAuth client secrets are securely handled server-side via `/api/strava-token` and `/api/strava-refresh`, entirely abstracting credentials from the frontend.
-- **Queue System**: Built-in Vercel edge rate-limit handling and a UI queue to protect against Strava API limits.
-- **CI/CD Integrations**: Vercel automatically creates preview branches for PRs and deploys production builds securely upon merging to `main`.
+## 🚀 Technical Stack
 
-### Unit Testing with Vitest
-- **Fast & Reliable**: Leverages Vitest for lightning-fast unit and integration verification.
-- **Code Coverage**: Integrated coverage reporting powered by `@vitest/coverage-v8` to track project health and test completeness.
+- **Framework**: [Vite 8](https://vitejs.dev/) & [TypeScript 6](https://www.typescriptlang.org/)
+- **Backend**: [Vercel Serverless Functions](https://vercel.com/docs/functions) (Node.js)
+- **State/Cache**: [Upstash Redis](https://upstash.com/)
+- **Graphics**: [HTML5 Canvas API](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API)
+- **Testing**: [Playwright](https://playwright.dev/) & [Vitest 4](https://vitest.dev/)
 
-## ⚙️ Getting Started
+---
+
+## ⚙️ Development
 
 ### Prerequisites
-Since this app relies on the [Strava API](https://developers.strava.com/), you will need to create an API Application in your Strava profile to obtain the necessary credentials.
+- Node.js 24+
+- A [Strava Developer](https://developers.strava.com/) API Application
 
 ### Installation
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/ulises28/Scora-app.git
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Run the development server:
-   ```bash
-   npm run dev
-   ```
+```bash
+git clone https://github.com/ulises28/Scora-app.git
+cd Scora-app
+npm install
+npm run dev
+```
 
-### Running Tests
-- **E2E Tests**: Run `npm run test:e2e` to trigger the Playwright suite.
-- **Unit Tests**: Run `npm run test` to execute Vitest.
+### Verification
+```bash
+# Run unit tests with Vitest
+npm run test
+
+# Run E2E tests with Playwright
+npm run test:e2e
+
+# Run production build
+npm run build
+```
+
+---
 
 ## 📝 License
 
