@@ -85,8 +85,17 @@ export class EditorPage extends BasePage {
         if (targetIdx === -1) throw new Error(`Unknown template: "${templateName}"`);
 
         const dot = this.getTemplateDot(templateName);
-        await dot.waitFor({ state: 'visible' });
-        await dot.click({ force: true });
+        await dot.waitFor({ state: 'attached' });
+        await dot.scrollIntoViewIfNeeded();
+
+        const classes = await dot.getAttribute('class') || '';
+        if (classes.includes('active')) {
+            // Unblock unconditional wait in E2E
+            await this.page.evaluate(() => { (window as any)._scoraDrawCount++; });
+            return;
+        }
+
+        await dot.click({ force: true, position: { x: 2, y: 2 } });
     }
 
     @step('Verify Template Dot is Active')

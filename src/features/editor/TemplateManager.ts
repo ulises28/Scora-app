@@ -22,12 +22,158 @@ interface TemplateConfig {
 }
 
 export const TEMPLATE_REGISTRY: readonly TemplateConfig[] = [
-    // ─── NEW PHASE 4 TEMPLATES ─────────────────────────────────────────────
     { 
         id: 'location-pill', 
         category: 'all',
         supportsBlackText: true,
         features: { distance: true, duration: true } 
+    },
+    // ── ACTIVE & REORDERED ──────────────────────────────────────────────────
+    { 
+        id: 'dm', 
+        category: 'distance',
+        supportsBlackText: false,
+        features: { distance: true, paceSpeed: true, duration: true, startTime: true } 
+    },
+    { 
+        id: 'tiny-gps', 
+        category: 'all',
+        supportsBlackText: true,
+        features: { distance: true, duration: true } 
+    },
+    { 
+        id: 'pulse-row', 
+        category: 'all',
+        supportsBlackText: false,
+        features: { heartRate: true } 
+    },
+    { 
+        id: 'thin-path', 
+        category: 'distance',
+        supportsBlackText: true,
+        features: { distance: true, paceSpeed: true, duration: true, map: true } 
+    },
+    { 
+        id: 'step-master', 
+        category: 'all',
+        supportsBlackText: true,
+        features: { distance: true, duration: true } 
+    },
+    { 
+        id: 'dual-pill', 
+        category: 'all',
+        supportsBlackText: true,
+        features: { distance: true, duration: true } 
+    },
+    { 
+        id: 'brutalist-letters', 
+        category: 'all',
+        supportsBlackText: true,
+        features: { distance: true, duration: true } 
+    },
+    { 
+        id: 'boxed-metric', 
+        category: 'distance',
+        supportsBlackText: true,
+        features: { distance: true, duration: true } 
+    },
+    { 
+        id: 'mono-minimal', 
+        category: 'all',
+        supportsBlackText: true,
+        features: { distance: true, duration: true } 
+    },
+    { 
+        id: 'split-badge', 
+        category: 'all',
+        supportsBlackText: false,
+        features: { distance: true, paceSpeed: true, duration: true, heartRate: true } 
+    },
+    { 
+        id: 'stacked-editorial', 
+        category: 'distance',
+        supportsBlackText: true,
+        features: { distance: true, paceSpeed: true, duration: true, map: true } 
+    },
+    { 
+        id: 'micro-serif', 
+        category: 'distance',
+        supportsBlackText: true,
+        features: { distance: true, paceSpeed: true, duration: true, map: true } 
+    },
+    { 
+        id: 'vhs-retro', 
+        category: 'distance',
+        supportsBlackText: false,
+        features: { distance: true, duration: true, date: true, startTime: true } 
+    },
+
+    // ── REST OF TEMPLATES ──
+    { 
+        id: 'social-float', 
+        category: 'distance',
+        supportsBlackText: true,
+        features: { distance: true, paceSpeed: true, duration: true, date: true, startTime: true } 
+    },
+    { 
+        id: 'statement', 
+        category: 'distance',
+        supportsBlackText: true,
+        features: { distance: true, duration: true } 
+    },
+    { 
+        id: 'massive-serif', 
+        category: 'all',
+        supportsBlackText: true,
+        features: { distance: true, duration: true } 
+    },
+    { 
+        id: 'mag-cover', 
+        category: 'all',
+        supportsBlackText: true,
+        features: { duration: true, date: true } 
+    },
+    { 
+        id: 'mono-ghost', 
+        category: 'all',
+        supportsBlackText: true,
+        features: { duration: true, date: true } 
+    },
+    { 
+        id: 'coords-v2', 
+        category: 'distance',
+        supportsBlackText: true,
+        features: { distance: true, duration: true } 
+    },
+    { 
+        id: 'marginalia', 
+        category: 'all',
+        supportsBlackText: true,
+        features: { distance: true, duration: true } 
+    },
+    { 
+        id: 'typewriter-mono', 
+        category: 'all',
+        supportsBlackText: true,
+        features: { distance: true, duration: true, date: true } 
+    },
+    { 
+        id: 'brutal-slash', 
+        category: 'all',
+        supportsBlackText: true,
+        features: { duration: true } 
+    },
+    { 
+        id: 'swiss-minimal', 
+        category: 'distance',
+        supportsBlackText: true,
+        features: { distance: true, duration: true } 
+    },
+    { 
+        id: 'editorial-row', 
+        category: 'all',
+        supportsBlackText: true,
+        features: { distance: true, paceSpeed: true, duration: true, heartRate: true } 
     },
     { 
         id: 'pure-map', 
@@ -42,42 +188,10 @@ export const TEMPLATE_REGISTRY: readonly TemplateConfig[] = [
         features: { distance: true, paceSpeed: true, duration: true, startTime: true } 
     },
     { 
-        id: 'stacked-editorial', 
-        category: 'distance',
-        supportsBlackText: true,
-        features: { distance: true, paceSpeed: true, map: true } 
-    },
-    { 
-        id: 'micro-serif', 
-        category: 'distance',
-        supportsBlackText: true,
-        features: { distance: true, paceSpeed: true, duration: true, map: true } 
-    },
-    { 
-        id: 'thin-path', 
-        category: 'distance',
-        supportsBlackText: true,
-        features: { distance: true, paceSpeed: true, duration: true, map: true } 
-    },
-
-    // ── ACTIVE & REORDERED ──────────────────────────────────────────────────
-    { 
-        id: 'social-float', 
-        category: 'distance',
-        supportsBlackText: true,
-        features: { distance: true, paceSpeed: true, duration: true, date: true, startTime: true } 
-    },
-    { 
-        id: 'dm', 
-        category: 'distance',
-        supportsBlackText: false,
-        features: { distance: true, paceSpeed: true, duration: true, startTime: true } 
-    },
-    { 
         id: 'mono-split', 
         category: 'distance',
         supportsBlackText: true,
-        features: { distance: true, paceSpeed: true } 
+        features: { distance: true, paceSpeed: true, duration: true } 
     },
     { 
         id: 'essential-italic', 
@@ -95,13 +209,13 @@ export const TEMPLATE_REGISTRY: readonly TemplateConfig[] = [
         id: 'data', 
         category: 'distance',
         supportsBlackText: true,
-        features: { distance: true, paceSpeed: true, heartRate: true } 
+        features: { distance: true, paceSpeed: true, duration: true, heartRate: true } 
     },
     { 
         id: 'modern-pill', 
         category: 'distance',
         supportsBlackText: false,
-        features: { distance: true, paceSpeed: true, heartRate: true } 
+        features: { distance: true, paceSpeed: true, duration: true, heartRate: true } 
     },
     { 
         id: 'editorial-archive', 
@@ -111,12 +225,6 @@ export const TEMPLATE_REGISTRY: readonly TemplateConfig[] = [
     },
     { 
         id: 'info-glass', 
-        category: 'all',
-        supportsBlackText: false,
-        features: { distance: true, paceSpeed: true, duration: true, heartRate: true } 
-    },
-    { 
-        id: 'split-badge', 
         category: 'all',
         supportsBlackText: false,
         features: { distance: true, paceSpeed: true, duration: true, heartRate: true } 
@@ -137,19 +245,13 @@ export const TEMPLATE_REGISTRY: readonly TemplateConfig[] = [
         id: 'data-modular', 
         category: 'distance',
         supportsBlackText: true,
-        features: { distance: true, paceSpeed: true } 
+        features: { distance: true, paceSpeed: true, duration: true } 
     },
     { 
         id: 'glass-slice', 
         category: 'distance',
         supportsBlackText: false,
         features: { distance: true, map: true } 
-    },
-    { 
-        id: 'vhs-retro', 
-        category: 'distance',
-        supportsBlackText: false,
-        features: { distance: true, date: true, startTime: true } 
     },
     { 
         id: 'stealth-bar', 
@@ -162,7 +264,7 @@ export const TEMPLATE_REGISTRY: readonly TemplateConfig[] = [
         id: 'metric-thin', 
         category: 'distance',
         supportsBlackText: true,
-        features: { distance: true, paceSpeed: true } 
+        features: { distance: true, paceSpeed: true, duration: true } 
     },
     { 
         id: 'vertical-label', 
@@ -182,9 +284,6 @@ export const TEMPLATE_REGISTRY: readonly TemplateConfig[] = [
         supportsBlackText: true,
         features: { distance: true, duration: true } 
     },
-
-    // ── INACTIVE / ARCHIVED ─────────────────────────────────────────────────
-    { id: 'route', category: 'distance', features: { distance: true, map: true }, seasonal: true },
     { id: 'scora-stealth', category: 'distance', features: { distance: true, paceSpeed: true, duration: true, heartRate: true, map: true }, seasonal: true },
     { id: 'neon-capsule', category: 'distance', features: { distance: true, paceSpeed: true }, seasonal: true },
     { id: 'tech-hud', category: 'distance', features: { distance: true, paceSpeed: true, duration: true }, seasonal: true },
@@ -207,9 +306,6 @@ export const TEMPLATE_REGISTRY: readonly TemplateConfig[] = [
         seasonal: true,
         note: "Archived per user request - Mar 2026"
     },
-    
-    // ── SEASONAL ───────────────────────────────────────────────────────────
-    { id: '8m', category: 'distance', features: { distance: true, paceSpeed: true, duration: true, map: true }, seasonal: true, note: "International Women's Day — 8M (March 8)" },
     { id: '8m2', category: 'distance', features: { distance: true, paceSpeed: true, duration: true, map: true }, seasonal: true, note: "International Women's Day — 8M (March 8)" },
 ];
 

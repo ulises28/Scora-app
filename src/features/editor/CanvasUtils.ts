@@ -46,7 +46,7 @@ export function drawStatWithUnit(
     const align = options.align ?? 'left';
 
     ctx.save();
-    
+
     // Measure total width
     ctx.font = options.valueFont;
     const valWidth = ctx.measureText(value).width;
@@ -144,6 +144,39 @@ export function drawRoutePath(ctx: CanvasRenderingContext2D, polyline: string, x
 }
 
 /**
+ * Parses a duration string (e.g., "1h 11m", "45m", "1:22:33") into numeric and unit parts.
+ * Used for consistent styling (transparent numbers, solid units).
+ */
+export function parseDurationParts(durationStr: string) {
+    const parts: { val: string; unit: string }[] = [];
+    if (!durationStr) return parts;
+
+    // Handle HH:MM:SS format
+    if (durationStr.includes(':')) {
+        parts.push({ val: durationStr, unit: '' });
+        return parts;
+    }
+
+    // Handle "1h 11m" format
+    // Match numbers and their following units (if any)
+    const regex = /(\d+)\s*([a-zA-Z]+)?/g;
+    let m;
+    while ((m = regex.exec(durationStr)) !== null) {
+        parts.push({
+            val: m[1],
+            unit: m[2] || ''
+        });
+    }
+
+    // Fallback if no numbers found
+    if (parts.length === 0) {
+        parts.push({ val: durationStr, unit: '' });
+    }
+
+    return parts;
+}
+
+/**
  * Sets letter spacing with a fallback for older browsers.
  */
 export function setLetterSpacing(ctx: any, spacing: string) {
@@ -188,7 +221,7 @@ export function drawMetricBlock(
         ctx.fillStyle = options.color;
         ctx.globalAlpha = options.labelAlpha ?? 0.4;
         setLetterSpacing(ctx, "0.15em");
-        ctx.fillText(label.toUpperCase(), 0, -spacing); 
+        ctx.fillText(label.toUpperCase(), 0, -spacing);
         ctx.restore();
     }
 
@@ -233,4 +266,41 @@ export function getDynamicStats(stats: any) {
     }
 
     return { s1, s2, s3, hasMap, type };
+}
+
+/**
+ * Draws a sequence of duration parts (val/unit) with alternating alpha/fonts.
+ * Returns the total width drawn.
+ */
+export function drawDurationSequence(
+    ctx: CanvasRenderingContext2D,
+    startX: number,
+    y: number,
+    parts: { val: string; unit: string }[],
+    options: {
+        valFont: string;
+        unitFont: string;
+        valColor: string;
+        unitColor: string;
+        gap: number;
+        unitGap: number;
+    }
+) {
+    let currentX = startX;
+    parts.forEach((p, i) => {
+        // Draw Value
+        ctx.font = options.valFont;
+        ctx.fillStyle = options.valColor;
+        ctx.fillText(p.val, currentX, y);
+        currentX += ctx.measureText(p.val).width + options.unitGap;
+
+        // Draw Unit
+        if (p.unit) {
+            ctx.font = options.unitFont;
+            ctx.fillStyle = options.unitColor;
+            ctx.fillText(p.unit, currentX, y);
+            currentX += ctx.measureText(p.unit).width + (i < parts.length - 1 ? options.gap : 0);
+        }
+    });
+    return currentX - startX;
 }
