@@ -159,7 +159,7 @@ export function parseDurationParts(durationStr: string) {
 
     // Handle "1h 11m" format
     // Match numbers and their following units (if any)
-    const regex = /(\d+)\s*([a-zA-Z]+)?/g;
+    const regex = /(\d+(?:\.\d+)?)\s*([a-zA-Z]+)?/g;
     let m;
     while ((m = regex.exec(durationStr)) !== null) {
         parts.push({
