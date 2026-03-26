@@ -71,6 +71,7 @@ const RENDERER_REGISTRY: Record<string, StickerRenderer | { running: StickerRend
     'vertical-label': drawVerticalLabel,
     'frosted-minimal': drawFrostedMinimal,
     'location-pill': drawLocationPill,
+    'pure-map': drawPureMap,
     'pro-vertical': drawProVertical,
 
     // Category-Specific Templates
@@ -2845,6 +2846,52 @@ function drawLocationPill(ctx: CanvasRenderingContext2D, stats: any, textColor =
             (ctx as any).letterSpacing = "0px";
         }
     }
+}
+function drawPureMap(ctx: CanvasRenderingContext2D, stats: any, textColor = 'white') {
+    if (!stats.polyline) return;
+
+    const isDark = textColor === 'white'; 
+    const cSolid = isDark ? '#ffffff' : '#000000';
+
+    const coords = decodePolyline(stats.polyline);
+    if (!coords || coords.length === 0) return;
+
+    const lineColor = cSolid;
+
+    // Bounding Box in center
+    const mapBox = { x: 140, y: 560, w: 800, h: 800 }; 
+
+    // Find min/max to scale
+    let minLat = coords[0][0], maxLat = minLat, minLng = coords[0][1], maxLng = minLng;
+    coords.forEach((p: any) => {
+        if (p[0] < minLat) minLat = p[0]; if (p[0] > maxLat) maxLat = p[0];
+        if (p[1] < minLng) minLng = p[1]; if (p[1] > maxLng) maxLng = p[1];
+    });
+
+    const scale = Math.min(mapBox.w / (maxLng - minLng), mapBox.h / (maxLat - minLat));
+
+    ctx.beginPath();
+    ctx.strokeStyle = lineColor;
+    ctx.lineWidth = 14;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    
+    // Shadow for visibility
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
+    ctx.shadowBlur = 30;
+    ctx.shadowOffsetY = 10;
+
+    coords.forEach((p: any, i: number) => {
+        const x = mapBox.x + (p[1] - minLng) * scale + (mapBox.w - ((maxLng - minLng) * scale)) / 2;
+        const y = mapBox.y + mapBox.h - ((p[0] - minLat) * scale) - (mapBox.h - ((maxLat - minLat) * scale)) / 2;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    
+    // Reset shadow
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+    ctx.shadowColor = 'transparent';
 }
 
 function drawProVertical(ctx: CanvasRenderingContext2D, stats: any, textColor = 'white') {

@@ -30,6 +30,12 @@ export const TEMPLATE_REGISTRY: readonly TemplateConfig[] = [
         features: { distance: true, duration: true } 
     },
     { 
+        id: 'pure-map', 
+        category: 'distance',
+        supportsBlackText: true,
+        features: { map: true } 
+    },
+    { 
         id: 'pro-vertical', 
         category: 'all',
         supportsBlackText: true,
