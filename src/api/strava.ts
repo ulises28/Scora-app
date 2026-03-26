@@ -186,10 +186,9 @@ export async function fetchStravaActivities(token: string) {
         }
         localStorage.setItem('stravaActivities', JSON.stringify(data));
 
-        // ✅ AUTO-LOGOUT: El token ya fue revocado en el servidor.
-        // Solo limpiamos el estado local.
-        localStorage.removeItem('stravaAuth');
-        console.log("Session cleared locally. Slot was freed on the server.");
+        // Note: We no longer clear stravaAuth here because we might need it for pre-fetching.
+        // It will be cleared explicitly by deauthorizeAthlete at the end of the flow.
+        console.log("Activity list cached. Session remains for pre-fetching.");
     }
 
     return data;
@@ -218,6 +217,29 @@ export async function fetchDetailedActivity(token: string, activityId: number) {
 
     const { activity } = await response.json();
     return activity as DetailedActivity;
+}
+
+/**
+ * 3.8 Revocar el acceso del atleta (Desconexión total de Strava)
+ * Importante llamar a esto solo después de haber obtenido todos los datos.
+ */
+export async function deauthorizeAthlete(token: string) {
+    const url = '/api/strava-deauth';
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ access_token: token })
+    });
+    
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(`Deauthorization failed: ${error.message || response.statusText}`);
+    }
+    
+    // Solo después de una revocación exitosa limpiamos el estado local
+    localStorage.removeItem('stravaAuth');
+    console.log("[Strava] Access revoked and local session cleared.");
+    return await response.json();
 }
 
 

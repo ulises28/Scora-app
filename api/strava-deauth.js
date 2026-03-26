@@ -25,10 +25,20 @@ export default async function handler(req, res) {
             })
         });
 
-        const data = await stravaResponse.json();
+        let data = { message: 'Deauthorized' };
+        try {
+            data = await stravaResponse.json();
+        } catch (e) {
+            console.warn('[Deauth] Could not parse Strava response JSON');
+        }
 
         if (!stravaResponse.ok) {
-            return res.status(stravaResponse.status).json(data);
+            // Even if Strava fails, we should consider clearing our local lock if it's a 401/403
+            if (stravaResponse.status === 401 || stravaResponse.status === 403) {
+                console.info('[Deauth] Token already invalid, proceeding to release lock.');
+            } else {
+                return res.status(stravaResponse.status).json(data);
+            }
         }
 
         // ✅ Token revoked — release the queue lock so the next user can proceed.

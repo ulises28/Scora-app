@@ -40,36 +40,16 @@ export default async function handler(req: any, res: any) {
         } else {
             // Fetch activities list
             console.log(`[API] Fetching activities for session: ${sessionId}`);
-            const activitiesResponse = await fetch('https://www.strava.com/api/v3/athlete/activities?per_page=30', {
+            const activitiesResponse = await fetch('https://www.strava.com/api/v3/athlete/activities?per_page=10', {
                 headers: { 'Authorization': `Bearer ${access_token}` }
             });
             if (!activitiesResponse.ok) throw new Error(`Strava API error: ${activitiesResponse.status}`);
             responseData = { activities: await activitiesResponse.json() };
         }
 
-        // 3. Immediate Revocation (Fire and forget)
-        fetch('https://www.strava.com/oauth/deauthorize', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ access_token })
-        }).catch(err => console.warn('[API] Deauth failed:', err));
-
-        // 4. Lock & Queue Management (Atomic-focused logic)
-        try {
-            if (sessionId) {
-                const currentLockHolder = await redis.get<string>(LOCK_KEY);
-                if (currentLockHolder === sessionId) {
-                    const nextInQueue = await redis.lpop<string>(QUEUE_KEY);
-                    if (nextInQueue) {
-                        await redis.set(LOCK_KEY, nextInQueue, { ex: 30 });
-                    } else {
-                        await redis.del(LOCK_KEY);
-                    }
-                }
-            }
-        } catch (redisError) {
-            console.error('[Critical] Redis cleanup failed:', redisError);
-        }
+        // 4. Redis Queue Handover (Slot releasing)
+        // Note: Instead of releasing the lock here, we allow the frontend to call /api/strava-deauth
+        // when it's fully finished with all data (list + details). This ensures the token works for pre-fetching.
 
         return res.status(200).json(responseData);
 

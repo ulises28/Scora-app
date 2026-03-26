@@ -1,4 +1,4 @@
-import { exchangeToken, refreshStravaToken, fetchStravaActivities, fetchDetailedActivity, formatActivityStats } from './api/strava.js';
+import { exchangeToken, refreshStravaToken, fetchStravaActivities, fetchDetailedActivity, deauthorizeAthlete, formatActivityStats } from './api/strava.js';
 import { openStravaAuth, saveStravaAuth } from './api/auth.js';
 import { removeLoader } from './components/Loader.js';
 import { showScreen } from './components/Navigation.js';
@@ -356,12 +356,12 @@ async function initApp() {
             activitiesData = cachedActivities ? JSON.parse(cachedActivities) : [];
         }
 
-        // Proactive pre-fetching for the last 5 activities
+        // Proactive pre-fetching for the last 10 activities
         if (accessToken && activitiesData.length > 0) {
-            const last5 = activitiesData.slice(0, 5);
+            const last10 = activitiesData.slice(0, 10);
             let anyChanges = false;
 
-            for (const act of last5) {
+            for (const act of last10) {
                 // Skip if already has detailed info (like splits)
                 if (act.splits) continue;
 
@@ -382,6 +382,18 @@ async function initApp() {
             // Save updated detailed data back to cache so it's instant next time
             if (anyChanges) {
                 localStorage.setItem('stravaActivities', JSON.stringify(activitiesData));
+            }
+        }
+
+        // 🏁 FINAL STEP: Revoke token and clear session only after everything (including pre-fetch) is done
+        if (accessToken) {
+            try {
+                await deauthorizeAthlete(accessToken);
+                console.log("[App] Session finalized correctly.");
+            } catch (e) {
+                console.warn("[App] Final deauthorization failed:", e);
+                // Even if it fails, we should clear local state to stay safe
+                localStorage.removeItem('stravaAuth');
             }
         }
 
@@ -452,12 +464,12 @@ window.addEventListener('message', async (event) => {
             const activitiesData = await fetchStravaActivities(accessToken);
             renderActivityFeed(activitiesData);
 
-            // Proactive pre-fetching for the last 5 activities after fresh login
+            // Proactive pre-fetching for the last 10 activities after fresh login
             if (activitiesData.length > 0) {
-                const last5 = activitiesData.slice(0, 5);
+                const last10 = activitiesData.slice(0, 10);
                 let anyChanges = false;
 
-                for (const act of last5) {
+                for (const act of last10) {
                     if (act.splits) continue;
                     
                     const DISTANCE_SPORTS = ['Run', 'VirtualRun', 'Ride', 'Walk', 'Hike'];
@@ -476,6 +488,17 @@ window.addEventListener('message', async (event) => {
 
                 if (anyChanges) {
                     localStorage.setItem('stravaActivities', JSON.stringify(activitiesData));
+                }
+            }
+
+            // 🏁 FINAL STEP: Revoke token and clear session after login + pre-fetch
+            if (accessToken) {
+                try {
+                    await deauthorizeAthlete(accessToken);
+                    console.log("[App Login] Session finalized correctly.");
+                } catch (e) {
+                    console.warn("[App Login] Final deauthorization failed:", e);
+                    localStorage.removeItem('stravaAuth');
                 }
             }
 
