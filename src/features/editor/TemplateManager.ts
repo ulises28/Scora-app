@@ -116,6 +116,12 @@ export const TEMPLATE_REGISTRY: readonly TemplateConfig[] = [
         features: { distance: true, paceSpeed: true, duration: true, date: true, startTime: true } 
     },
     { 
+        id: 'serif-float', 
+        category: 'distance',
+        supportsBlackText: true,
+        features: { distance: true } 
+    },
+    { 
         id: 'statement', 
         category: 'distance',
         supportsBlackText: true,

@@ -26,6 +26,102 @@ function buildColors(textColor: string) {
     };
 }
 
+/**
+ * Draws the Scora Activity Icons (Run, Bike, Train) using Canvas Paths.
+ * Optimized for high-fidelity rendering within stickers.
+ */
+function drawScoraActivityIcon(ctx: CanvasRenderingContext2D, type: string, size = 24, color = "white") {
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.strokeStyle = color;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    const lowerType = type.toLowerCase();
+
+    if (lowerType.includes('bike') || lowerType.includes('ride') || lowerType.includes('cycling')) {
+        // BIKE ICON
+        const scale = size / 24;
+        ctx.lineWidth = 1.8 * scale;
+
+        // Front Wheel
+        ctx.beginPath(); ctx.arc(6 * scale, 16 * scale, 4 * scale, 0, Math.PI * 2); ctx.stroke();
+        // Back Wheel
+        ctx.beginPath(); ctx.arc(18 * scale, 16 * scale, 4 * scale, 0, Math.PI * 2); ctx.stroke();
+        // Frame
+        ctx.beginPath();
+        ctx.moveTo(12 * scale, 16 * scale);
+        ctx.lineTo(9 * scale, 8 * scale);
+        ctx.lineTo(15 * scale, 8 * scale);
+        ctx.lineTo(18 * scale, 12 * scale);
+        ctx.stroke();
+        // Handlebars
+        ctx.beginPath();
+        ctx.moveTo(11 * scale, 8 * scale);
+        ctx.lineTo(8 * scale, 4 * scale);
+        ctx.lineTo(5 * scale, 4 * scale);
+        ctx.stroke();
+        // Seat
+        ctx.beginPath();
+        ctx.arc(14 * scale, 6 * scale, 1.5 * scale, 0, Math.PI * 2);
+        ctx.fill();
+    } else if (lowerType.includes('train') || lowerType.includes('gym') || lowerType.includes('workout')) {
+        // TRAIN/GYM ICON (Custom Red/White design from React)
+        const scale = size / 24;
+        const red = "#ef4444";
+
+        ctx.fillStyle = red;
+        // Left small
+        ctx.beginPath(); ctx.roundRect(2 * scale, 9 * scale, 2 * scale, 6 * scale, 1 * scale); ctx.fill();
+        // Left large
+        ctx.beginPath(); ctx.roundRect(5 * scale, 7 * scale, 2 * scale, 10 * scale, 1 * scale); ctx.fill();
+        // Right large
+        ctx.beginPath(); ctx.roundRect(17 * scale, 7 * scale, 2 * scale, 10 * scale, 1 * scale); ctx.fill();
+        // Right small
+        ctx.beginPath(); ctx.roundRect(20 * scale, 9 * scale, 2 * scale, 6 * scale, 1 * scale); ctx.fill();
+        // Center White bar
+        ctx.fillStyle = "white";
+        ctx.beginPath(); ctx.roundRect(7 * scale, 10.5 * scale, 10 * scale, 3 * scale, 0.5 * scale); ctx.fill();
+    } else {
+        // RUN ICON
+        const scale = size / 24;
+        ctx.lineWidth = 2 * scale;
+
+        // Head
+        ctx.beginPath(); ctx.arc(13 * scale, 4 * scale, 2 * scale, 0, Math.PI * 2); ctx.fill();
+        // Body / Arms
+        ctx.beginPath();
+        ctx.moveTo(8 * scale, 11 * scale);
+        ctx.lineTo(11 * scale, 8 * scale);
+        ctx.lineTo(15 * scale, 10 * scale);
+        ctx.lineTo(18 * scale, 8 * scale);
+        ctx.stroke();
+        // Legs
+        ctx.beginPath();
+        ctx.moveTo(11 * scale, 12 * scale);
+        ctx.lineTo(10 * scale, 17 * scale);
+        ctx.lineTo(7 * scale, 21 * scale);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(12 * scale, 13 * scale);
+        ctx.lineTo(16 * scale, 17 * scale);
+        ctx.lineTo(19 * scale, 16 * scale);
+        ctx.stroke();
+
+        // Motion Lines
+        ctx.lineWidth = 1 * scale;
+        ctx.globalAlpha = 0.6;
+        ctx.beginPath(); ctx.moveTo(2 * scale, 8 * scale); ctx.lineTo(6 * scale, 8 * scale); ctx.stroke();
+        ctx.globalAlpha = 0.4;
+        ctx.beginPath(); ctx.moveTo(3 * scale, 11 * scale); ctx.lineTo(7 * scale, 11 * scale); ctx.stroke();
+        ctx.globalAlpha = 0.2;
+        ctx.beginPath(); ctx.moveTo(2 * scale, 14 * scale); ctx.lineTo(5 * scale, 14 * scale); ctx.stroke();
+    }
+
+    ctx.restore();
+}
+
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 // ─── Sticker Registry Architecture ───────────────────────────────────────────
@@ -65,6 +161,7 @@ const RENDERER_REGISTRY: Record<string, StickerRenderer | { running: StickerRend
     'mono-split': drawMonoSplit,
     'editorial-archive': drawEditorialArchive,
     'social-float': drawSocialFloat,
+    'serif-float': drawSerifFloat,
     'metric-thin': drawMetricThin,
     'micro-serif': drawMicroSerif,
     'data-matrix': drawDataMatrix,
@@ -2457,7 +2554,7 @@ function drawThinPath(ctx: CanvasRenderingContext2D, stats: any, textColor: stri
 
     // 2. Map Backdrop (Massive) - Only if exists
     if (hasMap) {
-        ctx.globalAlpha = 0.2;
+        ctx.globalAlpha = 0.45; // Increased visibility from 0.2
         drawRoutePath(ctx, stats.polyline, cx, cy, 600, {
             color: colors.solid,
             strokeWidth: 2
@@ -2884,33 +2981,53 @@ function drawMassiveSerif(ctx: CanvasRenderingContext2D, stats: any, textColor =
     const rawVal = stats.mainValue || stats.distanceVal || '0.00';
     const isDuration = String(rawVal).includes('h') || String(rawVal).includes('m');
 
-    ctx.shadowColor = 'rgba(0,0,0,0.15)';
-    ctx.shadowBlur = 30;
-    ctx.shadowOffsetY = 15;
+    ctx.shadowColor = 'rgba(0,0,0,0.2)';
+    ctx.shadowBlur = 40;
+    ctx.shadowOffsetY = 20;
 
     ctx.globalAlpha = 0.9;
     ctx.fillStyle = cSolid;
 
+    const cx = 540;
+    const cy = 960;
+
     if (isDuration) {
         const displayVal = String(rawVal).trim();
-        ctx.font = "italic 900 240px 'Playfair Display'"; // smaller for duration
-        if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "-0.02em"; }
-        ctx.fillText(displayVal, 540, 1000);
-    } else {
-        const mainVal = String(rawVal).replace(/[a-zA-Z]/g, '').trim();
-        const mainUnit = String(rawVal).replace(/[0-9.]/g, '').trim() || 'km';
+        let fontSize = 320;
+        ctx.font = `italic 900 ${fontSize}px 'Playfair Display'`;
 
-        ctx.font = "italic 900 480px 'Playfair Display'";
+        // Auto-scale
+        while (ctx.measureText(displayVal).width > 900 && fontSize > 150) {
+            fontSize -= 20;
+            ctx.font = `italic 900 ${fontSize}px 'Playfair Display'`;
+        }
+
         if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "-0.05em"; }
-        ctx.fillText(mainVal, 540, 1000);
+        ctx.fillText(displayVal, cx, cy + 40);
+    } else {
+        // From React #01: Value is massive, unit is far below and spaced out
+        const mainVal = String(rawVal).replace(/[a-zA-Z]/g, '').trim();
+        const mainUnit = (String(rawVal).replace(/[0-9.]/g, '').trim() || 'km').toUpperCase();
+
+        let fontSize = 520;
+        ctx.font = `italic 900 ${fontSize}px 'Playfair Display'`;
+
+        // Auto-scale
+        while (ctx.measureText(mainVal).width > 920 && fontSize > 200) {
+            fontSize -= 40;
+            ctx.font = `italic 900 ${fontSize}px 'Playfair Display'`;
+        }
+
+        if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "-0.08em"; }
+        ctx.fillText(mainVal, cx, cy + 80);
 
         ctx.shadowColor = 'transparent';
         if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0px"; }
 
         ctx.globalAlpha = 0.4;
-        ctx.font = "900 50px 'Plus Jakarta Sans'";
-        if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0.5em"; }
-        ctx.fillText(mainUnit.toUpperCase(), 540, 1140);
+        ctx.font = "900 32px 'Plus Jakarta Sans'";
+        if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "1em"; }
+        ctx.fillText(mainUnit, cx, cy + 180);
     }
 
     ctx.globalAlpha = 1.0;
@@ -3289,61 +3406,76 @@ function drawBoxedMetric(ctx: CanvasRenderingContext2D, stats: any, textColor = 
 }
 
 function drawStepMaster(ctx: CanvasRenderingContext2D, stats: any, textColor = 'white') {
-    const bgOuter = '#000000';
-    const fgOuter = '#ffffff';
-    const bgInner = '#ffffff';
-    const fgInner = '#000000';
+    // Force specific colors to match Image 2 (White pill, Black box)
+    const bgOuter = '#ffffff';
+    const fgOuter = '#000000';
+    const bgInner = '#000000';
+    const fgInner = '#ffffff';
 
-    const valStr = stats.distanceVal || '0.00';
-    const subStr = 'KM TOTAL';
+    const hasDistance = stats.hasDistance || (stats.distanceVal && parseFloat(stats.distanceVal) > 0);
+    const activityType = stats.type || (hasDistance ? 'Run' : 'Workout');
+
+    // Values based on category
+    let valStr, subStr;
+    if (activityType.toLowerCase().includes('train') || activityType.toLowerCase().includes('gym') || activityType.toLowerCase().includes('workout')) {
+        valStr = stats.timeStr || '0:00';
+        subStr = 'DURATION';
+    } else {
+        valStr = stats.distanceVal || '0.00';
+        subStr = 'KM TOTAL';
+    }
 
     ctx.textAlign = 'left';
     ctx.textBaseline = 'alphabetic';
 
-    ctx.font = "italic 900 85px 'Plus Jakarta Sans'";
+    // Measure
+    ctx.font = "italic 900 120px 'Plus Jakarta Sans'";
     const valW = ctx.measureText(valStr).width;
     ctx.font = "800 28px 'Plus Jakarta Sans'";
-    const subW = ctx.measureText(subStr.toUpperCase()).width;
+    const subW = ctx.measureText(subStr).width;
 
-    const pillH = 220;
-    const iconBoxSize = 160;
-    const padding = 30;
-    const gap = 40;
-    const totalW = iconBoxSize + gap + Math.max(valW, subW) + padding * 2;
+    const pillH = 260;
+    const iconBoxSize = 210;
+    const padding = 25;
+    const gap = 50;
+    const totalW = iconBoxSize + gap + Math.max(valW, subW) + padding + 60; // Extra right padding
 
-    const startX = 540 - totalW / 2;
-    const startY = 960 - pillH / 2;
+    const cx = 540;
+    const cy = 960;
+    const startX = cx - totalW / 2;
+    const startY = cy - pillH / 2;
 
-    // Main Pill
+    // 1. Main Pill (White)
     ctx.fillStyle = bgOuter;
     ctx.beginPath();
-    ctx.roundRect(startX, startY, totalW, pillH, 110);
+    ctx.roundRect(startX, startY, totalW, pillH, 130);
     ctx.fill();
 
-    // Icon Box
+    // 2. Icon Box (Black)
     ctx.fillStyle = bgInner;
     ctx.beginPath();
     ctx.roundRect(startX + padding, startY + (pillH - iconBoxSize) / 2, iconBoxSize, iconBoxSize, 60);
     ctx.fill();
 
-    // Icon (Bike)
+    // 3. Activity Icon (Centered in black box)
+    const iconSize = 90;
     ctx.save();
-    ctx.translate(startX + padding + 30, startY + (pillH - iconBoxSize) / 2 + 30);
-    ctx.scale(4, 4);
-    ctx.fillStyle = fgInner;
-    // Simple bike icon matching image
-    ctx.fill(new Path2D('M18 17.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0Zm-9 0a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0ZM16 11l-3.5-5h-3l2 4h-2l-1.5-2h-3v2h2.5l1.5 2h3.5v2.5h2V11z'));
+    ctx.translate(
+        startX + padding + (iconBoxSize - iconSize) / 2,
+        startY + (pillH - iconBoxSize) / 2 + (iconBoxSize - iconSize) / 2
+    );
+    drawScoraActivityIcon(ctx, activityType, iconSize, fgInner);
     ctx.restore();
 
-    // Text
+    // 4. Text
     ctx.fillStyle = fgOuter;
-    ctx.font = "italic 900 85px 'Plus Jakarta Sans'";
-    ctx.fillText(valStr, startX + padding + iconBoxSize + gap, startY + 115);
+    ctx.font = "italic 900 120px 'Plus Jakarta Sans'";
+    ctx.fillText(valStr, startX + padding + iconBoxSize + gap, startY + 140);
 
-    ctx.globalAlpha = 0.5;
+    ctx.globalAlpha = 0.35;
     ctx.font = "800 28px 'Plus Jakarta Sans'";
-    if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0.1em"; }
-    ctx.fillText(subStr.toUpperCase(), startX + padding + iconBoxSize + gap, startY + 165);
+    if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0.25em"; }
+    ctx.fillText(subStr, startX + padding + iconBoxSize + gap, startY + 200);
     if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0px"; }
     ctx.globalAlpha = 1.0;
 }
@@ -3418,7 +3550,7 @@ function drawSocialFloat(ctx: CanvasRenderingContext2D, stats: any, textColor = 
     ctx.fill();
 }
 
-function drawMonoGhost(ctx: CanvasRenderingContext2D, stats: any, textColor = 'white') {
+function drawSerifFloat(ctx: CanvasRenderingContext2D, stats: any, textColor = 'white') {
     const isDark = textColor === 'white';
     const cSolid = isDark ? '#ffffff' : '#000000';
 
@@ -3428,34 +3560,55 @@ function drawMonoGhost(ctx: CanvasRenderingContext2D, stats: any, textColor = 'w
     const rawVal = stats.mainValue || stats.distanceVal || '0.00';
     const displayVal = String(rawVal).trim();
 
-    // Header
-    ctx.globalAlpha = 0.2;
+    const cx = 540;
+    const cy = 960;
+
+    ctx.shadowColor = 'rgba(0,0,0,0.4)';
+    ctx.shadowBlur = 60;
+    ctx.shadowOffsetY = 30;
+
+    // 1. Tagline
+    ctx.globalAlpha = 0.4;
     ctx.fillStyle = cSolid;
-    ctx.font = "900 24px 'JetBrains Mono'";
-    if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0.5em"; }
-    ctx.fillText(stats.dayAndNumber || 'DATE', 540, 800);
-    if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0px"; }
+    ctx.font = "italic 400 65px 'EB Garamond'";
+    ctx.fillText("The total distance was", cx, cy - 100);
 
-    // Massive Ghost Value
-    // Use the Transparency Rule from workflow
-    ctx.font = "italic 900 280px 'JetBrains Mono'";
+    // 2. Massive Value
+    ctx.globalAlpha = 1.0;
+    ctx.font = "italic 900 180px 'Playfair Display'";
     if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "-0.05em"; }
+    ctx.fillText(displayVal, cx, cy + 40);
 
-    const parts = displayVal.match(/(\d+|[a-zA-Z]+|\s+)/g) || [displayVal];
-    let totalW = 0;
-    parts.forEach(p => {
-        ctx.font = /[a-zA-Z]/.test(p) ? "800 80px 'JetBrains Mono'" : "italic 900 280px 'JetBrains Mono'";
-        totalW += ctx.measureText(p).width;
-    });
+    ctx.shadowBlur = 0;
+    if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0px"; }
+}
 
-    let currentX = 540 - totalW / 2;
-    parts.forEach(p => {
-        const isUnit = /[a-zA-Z]/.test(p);
-        ctx.font = isUnit ? "800 80px 'JetBrains Mono'" : "italic 900 280px 'JetBrains Mono'";
-        ctx.globalAlpha = isUnit ? 0.8 : 0.15; // "Ghost" feel
-        ctx.fillText(p, currentX + ctx.measureText(p).width / 2, 960);
-        currentX += ctx.measureText(p).width;
-    });
+function drawMonoGhost(ctx: CanvasRenderingContext2D, stats: any, textColor = 'white') {
+    const isDark = textColor === 'white';
+    const cSolid = isDark ? '#ffffff' : '#000000';
+
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+
+    const rawVal = stats.timeStr || stats.mainValue || '0:00';
+    const displayVal = String(rawVal).trim();
+    const loc = (stats.dataPoints?.find((p: any) => p.label === 'Location')?.value || 'LOCATION').toUpperCase();
+    const date = (stats.dayAndNumber || 'DATE').toUpperCase();
+
+    const cx = 950; // Shifted right for "End" alignment
+    const cy = 960;
+
+    // 1. Massive Ghost Value
+    ctx.font = "italic 300 240px 'JetBrains Mono'";
+    ctx.fillStyle = cSolid;
+    ctx.globalAlpha = 0.25;
+    ctx.fillText(displayVal, cx, cy);
+
+    // 2. Meta Line below
+    ctx.globalAlpha = 0.6;
+    ctx.font = "800 22px 'JetBrains Mono'";
+    if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0.4em"; }
+    ctx.fillText(`${loc} // ${date}`, cx, cy + 120);
 
     ctx.globalAlpha = 1.0;
     if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0px"; }
@@ -3542,50 +3695,39 @@ function drawTypewriterMono(ctx: CanvasRenderingContext2D, stats: any, textColor
     ctx.textBaseline = 'top';
 
     const displayVal = (stats.mainValue || stats.distanceVal || '0.00').toString().trim();
-
-    let loc = stats.dataPoints?.find((p: any) => p.label === 'Location')?.value || 'LOCATION';
-    const date = stats.dayAndNumber || 'DATE';
-
-    let type = stats.type || 'Workout';
-    const lowerType = type.toLowerCase();
-    if (lowerType.includes('bike') || lowerType.includes('ride') || lowerType.includes('cycling')) {
-        type = 'RIDE';
-    } else if (lowerType.includes('run')) {
-        type = 'RUN';
-    } else {
-        type = 'TRAIN';
-    }
+    const loc = (stats.dataPoints?.find((p: any) => p.label === 'Location')?.value || 'LOCATION').toUpperCase();
+    const date = (stats.dayAndNumber || 'DATE').toUpperCase();
 
     const cx = 540;
     const cy = 960;
 
     ctx.save();
-    ctx.translate(cx - 280, cy - 80);
+    ctx.translate(cx - 300, cy - 100);
 
     // Left Border
-    ctx.globalAlpha = 0.1;
+    ctx.globalAlpha = 0.15;
     ctx.fillStyle = cSolid;
-    ctx.fillRect(0, 0, 4, 160);
+    ctx.fillRect(0, 0, 3, 200);
 
     // Content
-    const tx = 30;
+    const tx = 45;
 
     ctx.globalAlpha = 0.3;
-    ctx.font = "bold 24px 'Courier Prime'";
-    if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0.3em"; }
-    ctx.fillText(type + ":", tx, 10);
+    ctx.font = "700 24px 'Courier Prime'";
+    if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0.4em"; }
+    ctx.fillText("OBSERVATION:", tx, 10);
     if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0px"; }
 
     ctx.globalAlpha = 1.0;
-    ctx.font = "bold italic 65px 'Courier Prime'";
+    ctx.font = "bold italic 85px 'Courier Prime'";
     if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "-0.05em"; }
-    ctx.fillText(`"${displayVal} logged."`, tx, 55);
+    ctx.fillText(`"${displayVal} logged."`, tx, 60);
     if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0px"; }
 
-    ctx.globalAlpha = 0.2;
-    ctx.font = "20px 'Courier Prime'";
-    if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0.1em"; }
-    ctx.fillText(`${loc.toUpperCase()} // ${date}`, tx, 130);
+    ctx.globalAlpha = 0.25;
+    ctx.font = "400 22px 'Courier Prime'";
+    if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0.2em"; }
+    ctx.fillText(`${loc} // ${date}`, tx, 160);
     if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0px"; }
 
     ctx.restore();
@@ -3603,25 +3745,25 @@ function drawBrutalSlash(ctx: CanvasRenderingContext2D, stats: any, textColor = 
 
     ctx.fillStyle = cSolid;
 
-    // Giant Slash
+    // 1. Giant Slash (Reduced alpha)
     ctx.globalAlpha = 0.1;
-    ctx.font = "900 320px 'Plus Jakarta Sans'";
+    ctx.font = "900 360px 'Plus Jakarta Sans'";
     if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "-0.05em"; }
     const slashW = ctx.measureText("/").width;
-    ctx.fillText("/", cx - slashW / 2, cy + 100);
+    ctx.fillText("/", cx - slashW / 2, cy + 120);
     if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0px"; }
 
-    // Text Content
+    // 2. Text Content (Shifted to overlap slightly)
     ctx.globalAlpha = 1.0;
-    ctx.font = "italic 900 120px 'Plus Jakarta Sans'";
+    ctx.font = "italic 900 140px 'Plus Jakarta Sans'";
     if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "-0.05em"; }
-    ctx.fillText(stats.timeStr || '0:00', cx + slashW / 2 - 40, cy + 20);
+    ctx.fillText(stats.timeStr || '0:00', cx + slashW / 2 - 60, cy + 30);
     if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0px"; }
 
     ctx.globalAlpha = 0.3;
-    ctx.font = "800 24px 'Plus Jakarta Sans'";
-    if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0.4em"; }
-    ctx.fillText("DURATION", cx + slashW / 2 - 40, cy + 80);
+    ctx.font = "800 28px 'Plus Jakarta Sans'";
+    if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0.45em"; }
+    ctx.fillText("DURATION", cx + slashW / 2 - 60, cy + 95);
     if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0px"; }
 }
 
@@ -3690,51 +3832,53 @@ function drawSwissMinimal(ctx: CanvasRenderingContext2D, stats: any, textColor =
 
     const hasDistance = stats.hasDistance || (stats.distanceVal && parseFloat(stats.distanceVal) > 0);
     const type = stats.type || (hasDistance ? 'Run' : 'Workout');
-    const mainUnit = stats.mainValue ? stats.mainValue.replace(/[0-9.]/g, '').trim() || 'km' : 'km';
+    const mainUnit = stats.mainValue ? stats.mainValue.replace(/[0-9.]/g, '').trim() || 'KM' : 'KM';
 
     const cx = 540;
     const cy = 960;
 
-    // Value
+    // 1. Value
     ctx.fillStyle = cSolid;
-    ctx.font = isDuration ? "900 120px 'Plus Jakarta Sans'" : "900 180px 'Plus Jakarta Sans'";
-    if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "-0.05em"; }
-    ctx.fillText(displayVal, cx, cy - 40);
+    ctx.font = isDuration ? "900 160px 'Plus Jakarta Sans'" : "900 240px 'Plus Jakarta Sans'";
+    if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "-0.08em"; }
+    ctx.fillText(displayVal, cx, cy - 60);
     if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0px"; }
 
-    // Unit + Type Pill
-    ctx.font = "900 24px 'Plus Jakarta Sans'";
+    // 2. Unit + Type Pill
+    ctx.font = "900 22px 'Plus Jakarta Sans'";
     const txt1 = mainUnit.toUpperCase();
     const txt2 = type.toUpperCase();
     const w1 = ctx.measureText(txt1).width;
     const w2 = ctx.measureText(txt2).width;
 
-    const pillW = w1 + 15 + 6 + 15 + w2 + 40;
-    const pillH = 50;
+    const padding = 20;
+    const dotGap = 20;
+    const pillW = w1 + dotGap + 8 + dotGap + w2 + padding * 2;
+    const pillH = 55;
 
     ctx.fillStyle = bgPill;
     ctx.beginPath();
-    ctx.roundRect(cx - pillW / 2, cy + 50, pillW, pillH, 10);
+    ctx.roundRect(cx - pillW / 2, cy + 80, pillW, pillH, 10);
     ctx.fill();
 
     ctx.fillStyle = fgPill;
-    let currX = cx - pillW / 2 + 20;
+    let currX = cx - pillW / 2 + padding;
 
     ctx.textAlign = 'left';
     if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0.3em"; }
 
-    ctx.fillText(txt1, currX, cy + 50 + pillH / 2);
-    currX += w1 + 15;
+    ctx.fillText(txt1, currX, cy + 80 + pillH / 2);
+    currX += w1 + dotGap;
 
     // Dot
     ctx.globalAlpha = 0.3;
     ctx.beginPath();
-    ctx.arc(currX + 3, cy + 50 + pillH / 2, 3, 0, Math.PI * 2);
+    ctx.arc(currX + 4, cy + 80 + pillH / 2, 4, 0, Math.PI * 2);
     ctx.fill();
     ctx.globalAlpha = 1.0;
 
-    currX += 6 + 15;
-    ctx.fillText(txt2, currX, cy + 50 + pillH / 2);
+    currX += 8 + dotGap;
+    ctx.fillText(txt2, currX, cy + 80 + pillH / 2);
 
     if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0px"; }
 }
