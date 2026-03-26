@@ -40,30 +40,39 @@ function drawScoraActivityIcon(ctx: CanvasRenderingContext2D, type: string, size
     const lowerType = type.toLowerCase();
 
     if (lowerType.includes('bike') || lowerType.includes('ride') || lowerType.includes('cycling')) {
-        // BIKE ICON
+        // BIKE ICON WITH RIDER
         const scale = size / 24;
         ctx.lineWidth = 1.8 * scale;
-
-        // Front Wheel
-        ctx.beginPath(); ctx.arc(6 * scale, 16 * scale, 4 * scale, 0, Math.PI * 2); ctx.stroke();
-        // Back Wheel
-        ctx.beginPath(); ctx.arc(18 * scale, 16 * scale, 4 * scale, 0, Math.PI * 2); ctx.stroke();
+        
+        // Wheels
+        ctx.beginPath(); ctx.arc(6 * scale, 17 * scale, 3.5 * scale, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(18 * scale, 17 * scale, 3.5 * scale, 0, Math.PI * 2); ctx.stroke();
+        
         // Frame
         ctx.beginPath();
-        ctx.moveTo(12 * scale, 16 * scale);
-        ctx.lineTo(9 * scale, 8 * scale);
-        ctx.lineTo(15 * scale, 8 * scale);
-        ctx.lineTo(18 * scale, 12 * scale);
+        ctx.moveTo(6 * scale, 17 * scale);
+        ctx.lineTo(10 * scale, 11 * scale);
+        ctx.lineTo(17 * scale, 11 * scale);
+        ctx.lineTo(18 * scale, 17 * scale);
         ctx.stroke();
-        // Handlebars
+        
         ctx.beginPath();
-        ctx.moveTo(11 * scale, 8 * scale);
-        ctx.lineTo(8 * scale, 4 * scale);
-        ctx.lineTo(5 * scale, 4 * scale);
+        ctx.moveTo(10 * scale, 11 * scale);
+        ctx.lineTo(13 * scale, 17 * scale);
         ctx.stroke();
-        // Seat
+
+        // Rider (Minimalist)
+        ctx.lineWidth = 1.5 * scale;
+        // Body
         ctx.beginPath();
-        ctx.arc(14 * scale, 6 * scale, 1.5 * scale, 0, Math.PI * 2);
+        ctx.moveTo(11 * scale, 11 * scale); // Seat area
+        ctx.lineTo(13 * scale, 6 * scale);  // Torso
+        ctx.lineTo(17 * scale, 8 * scale);  // Arms to handlebars
+        ctx.stroke();
+        
+        // Head
+        ctx.beginPath();
+        ctx.arc(14 * scale, 4 * scale, 1.5 * scale, 0, Math.PI * 2);
         ctx.fill();
     } else if (lowerType.includes('train') || lowerType.includes('gym') || lowerType.includes('workout')) {
         // TRAIN/GYM ICON (Custom Red/White design from React)
@@ -3406,11 +3415,11 @@ function drawBoxedMetric(ctx: CanvasRenderingContext2D, stats: any, textColor = 
 }
 
 function drawStepMaster(ctx: CanvasRenderingContext2D, stats: any, textColor = 'white') {
-    // Force specific colors to match Image 2 (White pill, Black box)
-    const bgOuter = '#ffffff';
-    const fgOuter = '#000000';
-    const bgInner = '#000000';
-    const fgInner = '#ffffff';
+    const isDark = textColor === 'white';
+    const bgOuter = isDark ? '#ffffff' : '#000000';
+    const fgOuter = isDark ? '#000000' : '#ffffff';
+    const bgInner = isDark ? '#000000' : '#ffffff';
+    const fgInner = isDark ? '#ffffff' : '#000000';
 
     const hasDistance = stats.hasDistance || (stats.distanceVal && parseFloat(stats.distanceVal) > 0);
     const activityType = stats.type || (hasDistance ? 'Run' : 'Workout');
@@ -3429,36 +3438,36 @@ function drawStepMaster(ctx: CanvasRenderingContext2D, stats: any, textColor = '
     ctx.textBaseline = 'alphabetic';
 
     // Measure
-    ctx.font = "italic 900 120px 'Plus Jakarta Sans'";
+    ctx.font = "italic 900 110px 'Plus Jakarta Sans'";
     const valW = ctx.measureText(valStr).width;
     ctx.font = "800 28px 'Plus Jakarta Sans'";
     const subW = ctx.measureText(subStr).width;
 
-    const pillH = 260;
-    const iconBoxSize = 210;
-    const padding = 25;
-    const gap = 50;
-    const totalW = iconBoxSize + gap + Math.max(valW, subW) + padding + 60; // Extra right padding
+    const pillH = 220; // Increased height to make white area bigger
+    const iconBoxSize = 130; // Smaller icon box as requested
+    const padding = 25; // Increased padding
+    const gap = 45;
+    const totalW = iconBoxSize + gap + Math.max(valW, subW) + padding + 60; 
 
     const cx = 540;
     const cy = 960;
     const startX = cx - totalW / 2;
     const startY = cy - pillH / 2;
 
-    // 1. Main Pill (White)
+    // 1. Main Pill
     ctx.fillStyle = bgOuter;
     ctx.beginPath();
-    ctx.roundRect(startX, startY, totalW, pillH, 130);
+    ctx.roundRect(startX, startY, totalW, pillH, 110);
     ctx.fill();
 
-    // 2. Icon Box (Black)
+    // 2. Icon Box
     ctx.fillStyle = bgInner;
     ctx.beginPath();
-    ctx.roundRect(startX + padding, startY + (pillH - iconBoxSize) / 2, iconBoxSize, iconBoxSize, 60);
+    ctx.roundRect(startX + padding, startY + (pillH - iconBoxSize) / 2, iconBoxSize, iconBoxSize, 40);
     ctx.fill();
 
-    // 3. Activity Icon (Centered in black box)
-    const iconSize = 90;
+    // 3. Activity Icon (Centered in box)
+    const iconSize = 65;
     ctx.save();
     ctx.translate(
         startX + padding + (iconBoxSize - iconSize) / 2,
@@ -3469,13 +3478,13 @@ function drawStepMaster(ctx: CanvasRenderingContext2D, stats: any, textColor = '
 
     // 4. Text
     ctx.fillStyle = fgOuter;
-    ctx.font = "italic 900 120px 'Plus Jakarta Sans'";
-    ctx.fillText(valStr, startX + padding + iconBoxSize + gap, startY + 140);
+    ctx.font = "italic 900 110px 'Plus Jakarta Sans'";
+    ctx.fillText(valStr, startX + padding + iconBoxSize + gap, startY + 130);
 
     ctx.globalAlpha = 0.35;
     ctx.font = "800 28px 'Plus Jakarta Sans'";
     if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0.25em"; }
-    ctx.fillText(subStr, startX + padding + iconBoxSize + gap, startY + 200);
+    ctx.fillText(subStr, startX + padding + iconBoxSize + gap, startY + 180);
     if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0px"; }
     ctx.globalAlpha = 1.0;
 }
@@ -3487,7 +3496,9 @@ function drawSocialFloat(ctx: CanvasRenderingContext2D, stats: any, textColor = 
     const cyan = '#22d3ee';
     const darkPillBg = 'rgba(20, 20, 20, 0.6)';
 
-    const mainText = `${stats.mainValue || stats.distanceVal || '0.00'} ${stats.hasDistance ? 'km' : 'm'}`;
+    const rawVal = stats.mainValue || stats.distanceVal || '0.00';
+    const valClean = String(rawVal).toLowerCase().replace(/km|m/g, '').trim();
+    const mainText = `${valClean} ${stats.hasDistance ? 'km' : 'm'}`;
     const paceText = `${stats.subValue || '0:00'} /KM`;
     const dateText = (stats.dateShort || 'MAR 04').toUpperCase();
 
@@ -3568,10 +3579,13 @@ function drawSerifFloat(ctx: CanvasRenderingContext2D, stats: any, textColor = '
     ctx.shadowOffsetY = 30;
 
     // 1. Tagline
+    const isDuration = String(rawVal).includes('h') || String(rawVal).includes('m');
+    const tagline = isDuration ? "The total time was" : "The total distance was";
+
     ctx.globalAlpha = 0.4;
     ctx.fillStyle = cSolid;
     ctx.font = "italic 400 65px 'EB Garamond'";
-    ctx.fillText("The total distance was", cx, cy - 100);
+    ctx.fillText(tagline, cx, cy - 100);
 
     // 2. Massive Value
     ctx.globalAlpha = 1.0;
@@ -3831,7 +3845,10 @@ function drawSwissMinimal(ctx: CanvasRenderingContext2D, stats: any, textColor =
     const displayVal = String(rawVal).trim();
 
     const hasDistance = stats.hasDistance || (stats.distanceVal && parseFloat(stats.distanceVal) > 0);
-    const type = stats.type || (hasDistance ? 'Run' : 'Workout');
+    let type = stats.type || (hasDistance ? 'Run' : 'Workout');
+    if (type.toLowerCase() === 'weighttraining') {
+        type = 'Training';
+    }
     const mainUnit = stats.mainValue ? stats.mainValue.replace(/[0-9.]/g, '').trim() || 'KM' : 'KM';
 
     const cx = 540;
@@ -3844,16 +3861,13 @@ function drawSwissMinimal(ctx: CanvasRenderingContext2D, stats: any, textColor =
     ctx.fillText(displayVal, cx, cy - 60);
     if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0px"; }
 
-    // 2. Unit + Type Pill
+    // 2. Type Pill
     ctx.font = "900 22px 'Plus Jakarta Sans'";
-    const txt1 = mainUnit.toUpperCase();
     const txt2 = type.toUpperCase();
-    const w1 = ctx.measureText(txt1).width;
     const w2 = ctx.measureText(txt2).width;
 
-    const padding = 20;
-    const dotGap = 20;
-    const pillW = w1 + dotGap + 8 + dotGap + w2 + padding * 2;
+    const padding = 40;
+    const pillW = w2 + padding * 2;
     const pillH = 55;
 
     ctx.fillStyle = bgPill;
@@ -3862,23 +3876,10 @@ function drawSwissMinimal(ctx: CanvasRenderingContext2D, stats: any, textColor =
     ctx.fill();
 
     ctx.fillStyle = fgPill;
-    let currX = cx - pillW / 2 + padding;
-
-    ctx.textAlign = 'left';
+    ctx.textAlign = 'center';
     if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0.3em"; }
 
-    ctx.fillText(txt1, currX, cy + 80 + pillH / 2);
-    currX += w1 + dotGap;
-
-    // Dot
-    ctx.globalAlpha = 0.3;
-    ctx.beginPath();
-    ctx.arc(currX + 4, cy + 80 + pillH / 2, 4, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.globalAlpha = 1.0;
-
-    currX += 8 + dotGap;
-    ctx.fillText(txt2, currX, cy + 80 + pillH / 2);
+    ctx.fillText(txt2, cx, cy + 80 + pillH / 2);
 
     if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0px"; }
 }
