@@ -5,6 +5,7 @@ import { showScreen } from './components/Navigation.js';
 import { createActivityCard } from './components/ActivityCard.js';
 import { drawTemplate, exportCanvas } from './features/editor/CanvasPainter.js';
 import { initTemplateManager, TEMPLATES } from './features/editor/TemplateManager.js';
+import { MOCK_ACTIVITIES } from './api/mocks.js';
 
 // --- ELEMENTOS DE LA INTERFAZ ---
 const authSection = document.getElementById('auth-section');
@@ -212,7 +213,28 @@ async function initApp() {
     // UI State: No sessions
     if (!authCode && !authData && !cachedActivities) {
         showScreen('screen-feed');
-        if (authSection) authSection.classList.remove('hidden');
+        if (authSection) {
+            authSection.classList.remove('hidden');
+            
+            // 🛠️ MOCK MODE: Add a demo button if on localhost to unblock testing
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                const existingMock = document.getElementById('btn-mock-data');
+                if (!existingMock) {
+                    const mockBtn = document.createElement('button');
+                    mockBtn.id = 'btn-mock-data';
+                    mockBtn.className = 'btn-secondary';
+                    mockBtn.style.marginTop = '1rem';
+                    mockBtn.style.background = 'rgba(128, 203, 196, 0.1)';
+                    mockBtn.style.border = '1px dashed #80cbc4';
+                    mockBtn.innerHTML = '✨ Probar con Datos Demo';
+                    mockBtn.onclick = () => {
+                        localStorage.setItem('stravaActivities', JSON.stringify(MOCK_ACTIVITIES));
+                        window.location.reload();
+                    };
+                    authSection.appendChild(mockBtn);
+                }
+            }
+        }
         if (activitySection) activitySection.classList.add('hidden');
         if (btnLogin) {
             btnLogin.addEventListener('click', handleLoginClick);
@@ -225,7 +247,81 @@ async function initApp() {
     showScreen('screen-feed');
     if (authSection) authSection.classList.add('hidden');
     if (activitySection) activitySection.classList.remove('hidden');
-    if (activityListEl) activityListEl.innerHTML = "<p class='status-msg'>Sincronizando tus rutas...</p>";
+
+    // ⚡ Optimization: Render cache immediately to make the app feel instant
+    if (cachedActivities && activityListEl) {
+        renderActivityFeed(JSON.parse(cachedActivities));
+    } else if (activityListEl) {
+        activityListEl.innerHTML = "<p class='status-msg'>Sincronizando tus rutas...</p>";
+    }
+
+    // 🛠️ DEBUG/STAGING MODE: Gated Export/Import for testing
+    const isDebugEnabled = import.meta.env.VITE_ENABLE_DEBUG === 'true';
+    if (isDebugEnabled && urlParams.has('debug')) {
+        // 1. Export JSON Button (for Production -> Cloud transfer)
+        if (cachedActivities && activitySection) {
+            const existingExport = document.getElementById('btn-export-json');
+            if (!existingExport) {
+                const exportBtn = document.createElement('button');
+                exportBtn.id = 'btn-export-json';
+                exportBtn.className = 'btn-secondary';
+                exportBtn.style.margin = '1rem auto';
+                exportBtn.style.display = 'block';
+                exportBtn.style.background = 'rgba(255, 255, 255, 0.05)';
+                exportBtn.style.border = '1px solid #80cbc4';
+                exportBtn.innerHTML = '📥 Exportar Actividades (JSON)';
+                exportBtn.onclick = () => {
+                    const blob = new Blob([cachedActivities], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `scora-activities-${new Date().toISOString().split('T')[0]}.json`;
+                    a.click();
+                };
+                activitySection.prepend(exportBtn);
+            }
+        }
+
+        // 2. Import JSON Button (for Staging site)
+        if (authSection) {
+            const existingImport = document.getElementById('btn-import-json-container');
+            if (!existingImport) {
+                const container = document.createElement('div');
+                container.id = 'btn-import-json-container';
+                container.style.marginTop = '1.5rem';
+                container.style.textAlign = 'center';
+                container.innerHTML = `
+                    <label for="import-json-file" class="btn-secondary" style="display:inline-block; cursor:pointer; background:rgba(128, 203, 196, 0.1); border:1px dashed #80cbc4;">
+                        📤 Importar JSON Local
+                    </label>
+                    <input type="file" id="import-json-file" accept=".json" style="display:none;">
+                `;
+                authSection.appendChild(container);
+                
+                const fileInput = container.querySelector('#import-json-file') as HTMLInputElement;
+                fileInput.onchange = (e: any) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (re) => {
+                        const content = re.target?.result as string;
+                        try {
+                            const parsed = JSON.parse(content);
+                            if (Array.isArray(parsed)) {
+                                localStorage.setItem('stravaActivities', content);
+                                window.location.reload();
+                            } else {
+                                alert("Error: El archivo JSON no tiene el formato de Strava (debe ser un array).");
+                            }
+                        } catch (err) {
+                            alert("Error al leer el archivo JSON.");
+                        }
+                    };
+                    reader.readAsText(file);
+                };
+            }
+        }
+    }
 
     try {
         let activitiesData;
@@ -252,29 +348,41 @@ async function initApp() {
         currentAccessToken = accessToken;
 
         if (accessToken) {
+            // Background fetch
             activitiesData = await fetchStravaActivities(accessToken);
+            // Re-render only if we got new data
+            renderActivityFeed(activitiesData);
         } else {
             activitiesData = cachedActivities ? JSON.parse(cachedActivities) : [];
         }
 
-        renderActivityFeed(activitiesData);
-
-        // Proactive pre-fetching for the last 5 activities (as requested by USER)
+        // Proactive pre-fetching for the last 5 activities
         if (accessToken && activitiesData.length > 0) {
             const last5 = activitiesData.slice(0, 5);
-            last5.forEach(async (act) => {
+            let anyChanges = false;
+
+            for (const act of last5) {
+                // Skip if already has detailed info (like splits)
+                if (act.splits) continue;
+
                 const DISTANCE_SPORTS = ['Run', 'VirtualRun', 'Ride', 'Walk', 'Hike'];
                 if (DISTANCE_SPORTS.includes(act.type)) {
                     try {
                         const detailed = await fetchDetailedActivity(accessToken!, act.id);
                         const detailedStats = formatActivityStats(detailed);
                         Object.assign(act, detailedStats);
+                        anyChanges = true;
                         console.info(`[Pre-fetch] Detailed data merged for activity ${act.id}`);
                     } catch (e) {
                         console.warn(`[Pre-fetch] Failed for activity ${act.id}`, e);
                     }
                 }
-            });
+            }
+
+            // Save updated detailed data back to cache so it's instant next time
+            if (anyChanges) {
+                localStorage.setItem('stravaActivities', JSON.stringify(activitiesData));
+            }
         }
 
     } catch (error) {
@@ -347,19 +455,28 @@ window.addEventListener('message', async (event) => {
             // Proactive pre-fetching for the last 5 activities after fresh login
             if (activitiesData.length > 0) {
                 const last5 = activitiesData.slice(0, 5);
-                last5.forEach(async (act) => {
+                let anyChanges = false;
+
+                for (const act of last5) {
+                    if (act.splits) continue;
+                    
                     const DISTANCE_SPORTS = ['Run', 'VirtualRun', 'Ride', 'Walk', 'Hike'];
                     if (DISTANCE_SPORTS.includes(act.type)) {
                         try {
                             const detailed = await fetchDetailedActivity(accessToken, act.id);
                             const detailedStats = formatActivityStats(detailed);
                             Object.assign(act, detailedStats);
+                            anyChanges = true;
                             console.info(`[Pre-fetch Login] Detailed data merged for ${act.id}`);
                         } catch (e) {
                             console.warn(`[Pre-fetch Login] Failed for ${act.id}`, e);
                         }
                     }
-                });
+                }
+
+                if (anyChanges) {
+                    localStorage.setItem('stravaActivities', JSON.stringify(activitiesData));
+                }
             }
 
             window.history.replaceState({ screen: 'screen-feed' }, document.title, window.location.pathname);

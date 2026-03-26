@@ -24,6 +24,18 @@ interface TemplateConfig {
 export const TEMPLATE_REGISTRY: readonly TemplateConfig[] = [
     // ─── NEW PHASE 4 TEMPLATES ─────────────────────────────────────────────
     { 
+        id: 'location-pill', 
+        category: 'all',
+        supportsBlackText: true,
+        features: { distance: true, duration: true } 
+    },
+    { 
+        id: 'pro-vertical', 
+        category: 'all',
+        supportsBlackText: true,
+        features: { distance: true, paceSpeed: true, duration: true, startTime: true } 
+    },
+    { 
         id: 'stacked-editorial', 
         category: 'distance',
         supportsBlackText: true,

@@ -70,6 +70,8 @@ const RENDERER_REGISTRY: Record<string, StickerRenderer | { running: StickerRend
     'data-matrix': drawDataMatrix,
     'vertical-label': drawVerticalLabel,
     'frosted-minimal': drawFrostedMinimal,
+    'location-pill': drawLocationPill,
+    'pro-vertical': drawProVertical,
 
     // Category-Specific Templates
     'minimal': {
@@ -2731,4 +2733,156 @@ function drawPerformanceBars(ctx: CanvasRenderingContext2D, stats: StickerStats,
     }
 
     ctx.restore();
+}
+
+// ─── AI Mockup Translations ───────────────────────────────────────────────────
+
+function drawLocationPill(ctx: CanvasRenderingContext2D, stats: any, textColor = 'white') {
+    ctx.textBaseline = 'alphabetic';
+
+    // Get location
+    let loc = stats.dataPoints?.find((p: any) => p.label === 'Location')?.value;
+    if (!loc || loc === '-') {
+        loc = '';
+    }
+
+    const mainVal = stats.mainValue ? stats.mainValue.replace(/[a-zA-Z]/g, '').trim() : stats.distanceVal || '0.00';
+    const mainUnit = stats.mainValue ? stats.mainValue.replace(/[0-9.]/g, '').trim() || (stats.hasDistance ? 'km' : 'm') : 'km';
+
+    if (!loc && (!mainVal || mainVal === '0.00')) return;
+
+    // Design: A pill background
+    ctx.font = "600 45px 'Plus Jakarta Sans'";
+    const locText = loc + (mainVal && loc ? ',' : '');
+    const locW = locText ? ctx.measureText(locText).width : 0;
+    
+    ctx.font = "900 55px 'Plus Jakarta Sans'";
+    const valW = mainVal ? ctx.measureText(mainVal).width : 0;
+    
+    ctx.font = "900 28px 'Plus Jakarta Sans'";
+    const unitText = mainUnit.toUpperCase();
+    const unitW = mainUnit ? ctx.measureText(unitText).width : 0;
+
+    const iconW = 40; // width for the map pin icon
+    const gap = 15;
+    const paddingX = 50;
+    
+    const totalW = (loc ? iconW + gap + locW : 0) + (mainVal ? (loc ? gap : 0) + valW : 0) + (mainUnit ? gap + unitW : 0);
+    const pillW = totalW + (paddingX * 2);
+    const pillH = 120;
+    
+    const startX = 540 - (pillW / 2);
+    const startY = 960 - (pillH / 2);
+
+    // Color definitions
+    const isDark = textColor === 'white'; // User selected white text -> black background pill
+    const bgFill = isDark ? 'rgba(20, 20, 22, 0.95)' : 'rgba(255, 255, 255, 0.95)';
+    const shadowC = isDark ? 'rgba(0, 0, 0, 0.6)' : 'rgba(0, 0, 0, 0.2)';
+    const mainFill = isDark ? '#ffffff' : '#000000';
+    const unitFill = isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.4)';
+    const dotFill = isDark ? '#000000' : '#ffffff';
+
+    // Draw Pill
+    ctx.fillStyle = bgFill;
+    ctx.shadowColor = shadowC;
+    ctx.shadowBlur = 30;
+    ctx.shadowOffsetY = 10;
+    ctx.beginPath();
+    ctx.roundRect(startX, startY, pillW, pillH, 60);
+    ctx.fill();
+    
+    // Reset shadow
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+
+    // Draw content
+    let currentX = startX + paddingX;
+    
+    if (loc) {
+        // Draw Map Pin icon (Solid) using native SVG Path
+        ctx.save();
+        // Shift context to line up with the text baseline natively
+        ctx.translate(currentX + 8, startY + 32);
+        ctx.scale(1.7, 1.7); // scale up the 24x24 box
+        ctx.fillStyle = mainFill;
+        
+        // Exact Lucide MapPin filled path
+        const pinPath = new Path2D('M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z');
+        ctx.fill(pinPath);
+        
+        // Draw inner dot
+        ctx.fillStyle = dotFill;
+        ctx.beginPath();
+        ctx.arc(12, 10, 3, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.restore();
+
+        currentX += iconW + gap;
+
+        ctx.fillStyle = mainFill;
+        ctx.font = "600 45px 'Plus Jakarta Sans'";
+        ctx.fillText(locText, currentX, startY + 75);
+        currentX += locW + gap;
+    }
+
+    if (mainVal) {
+        ctx.fillStyle = mainFill;
+        ctx.font = "900 55px 'Plus Jakarta Sans'";
+        ctx.fillText(mainVal, currentX, startY + 75);
+        currentX += valW + gap;
+    }
+
+    if (mainUnit) {
+        ctx.fillStyle = unitFill;
+        ctx.font = "900 28px 'Plus Jakarta Sans'";
+        if ((ctx as any).letterSpacing !== undefined) {
+            (ctx as any).letterSpacing = "4px";
+        }
+        ctx.fillText(unitText, currentX, startY + 75 - 2);
+        if ((ctx as any).letterSpacing !== undefined) {
+            (ctx as any).letterSpacing = "0px";
+        }
+    }
+}
+
+function drawProVertical(ctx: CanvasRenderingContext2D, stats: any, textColor = 'white') {
+    const c = buildColors(textColor);
+
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+
+    // Left Border 
+    ctx.fillStyle = c.accent;
+    ctx.fillRect(80, 1400, 16, 320);
+
+    const mainVal = stats.mainValue ? stats.mainValue.replace(/[a-zA-Z]/g, '').trim() : stats.distanceVal || '0.00';
+    const mainUnit = stats.mainValue ? stats.mainValue.replace(/[0-9.]/g, '').trim() || (stats.hasDistance ? 'km' : 'm') : 'km';
+
+    ctx.font = "italic 900 180px 'Plus Jakarta Sans'";
+    ctx.fillStyle = c.solid;
+    ctx.fillText(mainVal, 140, 1580);
+    
+    const valW = ctx.measureText(mainVal).width;
+    
+    ctx.font = "900 60px 'Plus Jakarta Sans'";
+    ctx.fillStyle = c.trans;
+    ctx.fillText(mainUnit.toUpperCase(), 140 + valW + 20, 1580);
+
+    // Sub grid
+    ctx.font = "800 35px 'Plus Jakarta Sans'";
+    if ((ctx as any).letterSpacing !== undefined) {
+        (ctx as any).letterSpacing = "6px";
+    }
+    // Using opacity
+    ctx.globalAlpha = 0.8;
+    ctx.fillStyle = c.accent;
+    
+    const subString = `${stats.subValue} ${stats.subValue?.includes(':') ? '/km' : ''}  ·  ${stats.startTime || ''}`.toUpperCase();
+    ctx.fillText(subString, 140, 1680);
+    ctx.globalAlpha = 1.0;
+    if ((ctx as any).letterSpacing !== undefined) {
+        (ctx as any).letterSpacing = "0px";
+    }
 }

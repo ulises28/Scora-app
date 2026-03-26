@@ -28,6 +28,7 @@ export interface StravaActivity {
     elev_high?: number;
     location_city?: string | null;
     location_state?: string | null;
+    timezone?: string;
     pr_count?: number;
     start_date_local: string;
     start_date: string;
@@ -309,7 +310,15 @@ export function formatActivityStats(activity: StravaActivity): StickerStats {
 
     const locCity = activity.location_city || '';
     const locState = activity.location_state || '';
-    const locationStr = locCity ? (locState ? `${locCity}, ${locState}` : locCity) : null;
+    let locationStr = locCity ? (locState ? `${locCity}, ${locState}` : locCity) : null;
+
+    if (!locationStr && activity.timezone) {
+        // match everything after the last slash, e.g. America/Mexico_City -> Mexico_City
+        const tzMatch = activity.timezone.match(/\/(.*)$/);
+        if (tzMatch) {
+            locationStr = tzMatch[1].replace(/_/g, ' ');
+        }
+    }
 
     const dataPool: Record<string, StickerStatSlot | null> = {
         distance: activity.distance > 0 ? { label: 'Distance', value: (activity.distance / 1000).toFixed(2), unit: 'km' } : null,

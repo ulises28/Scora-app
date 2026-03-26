@@ -48,6 +48,24 @@ The repository serves as a masterclass in modern testing architectures:
 
 ---
 
+## 🛠 Local Development
+
+To run Scora locally for testing or development, you have two options:
+
+### 1. Mock Mode (Zero Configuration)
+If you run the app on `localhost` without a Strava API configuration, you will see a **"✨ Probar con Datos Demo"** button on the login screen. 
+- This instantly populates your feed with high-quality activity samples (including maps and splits).
+- Perfect for quickly testing UI changes, the Canvas engine, or performance.
+
+### 2. Full Stack (Real API)
+To test the real Strava integration and serverless functions locally:
+1. Install the [Vercel CLI](https://vercel.com/download): `npm i -g vercel`
+2. Run `vercel dev` instead of `npm run dev`.
+3. Set your `VITE_STRAVA_CLIENT_ID` and `VITE_STRAVA_CLIENT_SECRET` in a `.env` file.
+4. Ensure your **Authorization Callback Domain** in [Strava Settings](https://www.strava.com/settings/api) is set to `localhost`.
+
+---
+
 ## 🚀 Technical Stack
 
 - **Framework**: [Vite 7](https://vitejs.dev/) & [TypeScript 5](https://www.typescriptlang.org/)
