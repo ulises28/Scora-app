@@ -17,272 +17,288 @@ interface TemplateConfig {
     features: TemplateFeatures;
     category: 'distance' | 'workout' | 'all'; // test hint: which mock activity type provides the best coverage
     supportsBlackText?: boolean; // Whether template logic responds to the black/white toggle
+    compact?: boolean; // If true, only one primary metric is shown (Distance for runs/rides, Duration for workouts)
     seasonal?: boolean; // seasonal templates are inactive outside their event window
     note?: string;      // human-readable context (why it exists, when to re-enable)
 }
 
 export const TEMPLATE_REGISTRY: readonly TemplateConfig[] = [
-    { 
-        id: 'location-pill', 
+    {
+        id: 'location-pill',
         category: 'all',
         supportsBlackText: true,
-        features: { distance: true, duration: true } 
+        compact: true,
+        features: { distance: true, duration: true }
     },
     // ── ACTIVE & REORDERED ──────────────────────────────────────────────────
-    { 
-        id: 'dm', 
+    {
+        id: 'dm',
         category: 'distance',
         supportsBlackText: false,
-        features: { distance: true, paceSpeed: true, duration: true, startTime: true } 
+        features: { distance: true, paceSpeed: true, startTime: true }
     },
-    { 
-        id: 'tiny-gps', 
+    {
+        id: 'tiny-gps',
         category: 'all',
         supportsBlackText: true,
-        features: { distance: true, duration: true } 
+        compact: true,
+        features: { distance: true, duration: true }
     },
-    { 
-        id: 'pulse-row', 
-        category: 'all',
-        supportsBlackText: false,
-        features: { heartRate: true } 
-    },
-    { 
-        id: 'thin-path', 
-        category: 'distance',
-        supportsBlackText: true,
-        features: { distance: true, paceSpeed: true, duration: true, map: true } 
-    },
-    { 
-        id: 'step-master', 
-        category: 'all',
-        supportsBlackText: true,
-        features: { distance: true, duration: true } 
-    },
-    { 
-        id: 'dual-pill', 
-        category: 'all',
-        supportsBlackText: true,
-        features: { distance: true, duration: true } 
-    },
-    { 
-        id: 'brutalist-letters', 
-        category: 'all',
-        supportsBlackText: true,
-        features: { distance: true, duration: true } 
-    },
-    { 
-        id: 'boxed-metric', 
-        category: 'distance',
-        supportsBlackText: true,
-        features: { distance: true, duration: true } 
-    },
-    { 
-        id: 'mono-minimal', 
-        category: 'all',
-        supportsBlackText: true,
-        features: { distance: true, duration: true } 
-    },
-    { 
-        id: 'split-badge', 
+    {
+        id: 'pulse-row',
         category: 'all',
         supportsBlackText: false,
-        features: { distance: true, paceSpeed: true, duration: true, heartRate: true } 
+        features: { heartRate: true }
     },
-    { 
-        id: 'stacked-editorial', 
+    {
+        id: 'thin-path',
         category: 'distance',
         supportsBlackText: true,
-        features: { distance: true, paceSpeed: true, duration: true, map: true } 
+        features: { distance: true, paceSpeed: true, map: true }
     },
-    { 
-        id: 'micro-serif', 
+    {
+        id: 'step-master',
+        category: 'all',
+        supportsBlackText: true,
+        compact: true,
+        features: { distance: true, duration: true }
+    },
+    {
+        id: 'dual-pill',
+        category: 'all',
+        supportsBlackText: true,
+        compact: true,
+        features: { distance: true, duration: true }
+    },
+    {
+        id: 'brutalist-letters',
+        category: 'all',
+        supportsBlackText: true,
+        compact: true,
+        features: { distance: true, duration: true }
+    },
+    {
+        id: 'boxed-metric',
         category: 'distance',
         supportsBlackText: true,
-        features: { distance: true, paceSpeed: true, duration: true, map: true } 
+        compact: true,
+        features: { distance: true, duration: true }
     },
-    { 
-        id: 'vhs-retro', 
+    {
+        id: 'mono-minimal',
+        category: 'all',
+        supportsBlackText: true,
+        compact: true,
+        features: { distance: true, duration: true }
+    },
+    {
+        id: 'split-badge',
+        category: 'all',
+        supportsBlackText: false,
+        features: { distance: true, paceSpeed: true, duration: true, heartRate: true }
+    },
+    {
+        id: 'stacked-editorial',
+        category: 'distance',
+        supportsBlackText: true,
+        features: { distance: true, paceSpeed: true, map: true }
+    },
+    {
+        id: 'micro-serif',
+        category: 'distance',
+        supportsBlackText: true,
+        features: { distance: true, paceSpeed: true, duration: true, map: true }
+    },
+    {
+        id: 'vhs-retro',
         category: 'distance',
         supportsBlackText: false,
-        features: { distance: true, duration: true, date: true, startTime: true } 
+        features: { distance: true, duration: true, date: true, startTime: true }
     },
 
     // ── REST OF TEMPLATES ──
-    { 
-        id: 'serif-float', 
+    {
+        id: 'serif-float',
         category: 'distance',
         supportsBlackText: true,
-        features: { distance: true } 
+        compact: true,
+        features: { distance: true, duration: true }
     },
-    { 
-        id: 'statement', 
+    {
+        id: 'statement',
         category: 'distance',
         supportsBlackText: true,
-        features: { distance: true, duration: true } 
+        compact: true,
+        features: { distance: true, duration: true }
     },
-    { 
-        id: 'massive-serif', 
+    {
+        id: 'massive-serif',
         category: 'all',
         supportsBlackText: true,
-        features: { distance: true, duration: true } 
+        compact: true,
+        features: { distance: true, duration: true }
     },
-    { 
-        id: 'mag-cover', 
+    {
+        id: 'mag-cover',
         category: 'all',
         supportsBlackText: true,
-        features: { duration: true, date: true } 
+        features: { duration: true, date: true }
     },
-    { 
-        id: 'mono-ghost', 
+    {
+        id: 'mono-ghost',
         category: 'all',
         supportsBlackText: true,
-        features: { duration: true, date: true } 
+        features: { duration: true, date: true }
     },
-    { 
-        id: 'coords-v2', 
+    {
+        id: 'coords-v2',
         category: 'distance',
         supportsBlackText: true,
-        features: { distance: true, duration: true } 
+        compact: true,
+        features: { distance: true, duration: true }
     },
-    { 
-        id: 'marginalia', 
+    {
+        id: 'marginalia',
         category: 'all',
         supportsBlackText: true,
-        features: { distance: true, duration: true } 
+        compact: true,
+        features: { distance: true, duration: true }
     },
-    { 
-        id: 'typewriter-mono', 
+    {
+        id: 'typewriter-mono',
         category: 'all',
         supportsBlackText: true,
-        features: { distance: true, duration: true, date: true } 
+        features: { distance: true, duration: true, date: true }
     },
-    { 
-        id: 'brutal-slash', 
+    {
+        id: 'brutal-slash',
         category: 'all',
         supportsBlackText: true,
-        features: { duration: true } 
+        features: { duration: true }
     },
-    { 
-        id: 'swiss-minimal', 
+    {
+        id: 'swiss-minimal',
         category: 'distance',
         supportsBlackText: true,
-        features: { distance: true, duration: true } 
+        compact: true,
+        features: { distance: true, duration: true }
     },
-    { 
-        id: 'editorial-row', 
+    {
+        id: 'editorial-row',
         category: 'all',
         supportsBlackText: true,
-        features: { distance: true, paceSpeed: true, duration: true, heartRate: true } 
+        features: { distance: true, paceSpeed: true, duration: true, heartRate: true }
     },
-    { 
-        id: 'pure-map', 
+    {
+        id: 'pure-map',
         category: 'distance',
         supportsBlackText: true,
-        features: { map: true } 
+        features: { map: true }
     },
-    { 
-        id: 'pro-vertical', 
+
+    {
+        id: 'pro-vertical',
         category: 'all',
         supportsBlackText: true,
-        features: { distance: true, paceSpeed: true, duration: true, startTime: true } 
+        features: { distance: true, paceSpeed: true, duration: true, startTime: true }
     },
-    { 
-        id: 'mono-split', 
-        category: 'distance',
-        supportsBlackText: true,
-        features: { distance: true, paceSpeed: true, duration: true } 
-    },
-    { 
-        id: 'essential-italic', 
-        category: 'distance',
-        supportsBlackText: true,
-        features: { distance: true, paceSpeed: true, duration: true } 
-    },
-    { 
-        id: 'obsidian-bar', 
-        category: 'distance',
-        supportsBlackText: true,
-        features: { distance: true, paceSpeed: true, duration: true } 
-    },
-    { 
-        id: 'data', 
-        category: 'distance',
-        supportsBlackText: true,
-        features: { distance: true, paceSpeed: true, duration: true, heartRate: true } 
-    },
-    { 
-        id: 'modern-pill', 
+    {
+        id: 'mono-split',
         category: 'distance',
         supportsBlackText: false,
-        features: { distance: true, paceSpeed: true, duration: true, heartRate: true } 
+        features: { distance: true, paceSpeed: true }
     },
-    { 
-        id: 'editorial-archive', 
+    {
+        id: 'essential-italic',
         category: 'distance',
         supportsBlackText: true,
-        features: { distance: true, paceSpeed: true, duration: true } 
+        features: { distance: true, paceSpeed: true }
     },
-    { 
-        id: 'info-glass', 
+    {
+        id: 'obsidian-bar',
+        category: 'distance',
+        supportsBlackText: false,
+        features: { distance: true, paceSpeed: true }
+    },
+    {
+        id: 'data',
+        category: 'distance',
+        supportsBlackText: true,
+        features: { distance: true, paceSpeed: true, duration: true, heartRate: true }
+    },
+    {
+        id: 'modern-pill',
+        category: 'distance',
+        supportsBlackText: false,
+        features: { distance: true, paceSpeed: true }
+    },
+    {
+        id: 'editorial-archive',
+        category: 'distance',
+        supportsBlackText: false,
+        features: { distance: true, paceSpeed: true }
+    },
+    {
+        id: 'info-glass',
         category: 'all',
         supportsBlackText: false,
-        features: { distance: true, paceSpeed: true, duration: true, heartRate: true } 
+        features: { distance: true, paceSpeed: true, duration: true, heartRate: true }
     },
-    { 
-        id: 'workout-receipt', 
+    {
+        id: 'workout-receipt',
         category: 'distance',
         supportsBlackText: false,
-        features: { distance: true, paceSpeed: true, duration: true, date: true } 
+        features: { distance: true, paceSpeed: true, duration: true, date: true }
     },
-    { 
-        id: 'brutalist-bold', 
-        category: 'distance',
-        supportsBlackText: true,
-        features: { distance: true, paceSpeed: true, duration: true } 
-    },
-    { 
-        id: 'data-modular', 
-        category: 'distance',
-        supportsBlackText: true,
-        features: { distance: true, paceSpeed: true, duration: true } 
-    },
-    { 
-        id: 'glass-slice', 
+    {
+        id: 'brutalist-bold',
         category: 'distance',
         supportsBlackText: false,
-        features: { distance: true, map: true } 
+        features: { distance: true, paceSpeed: true }
     },
-    { 
-        id: 'stealth-bar', 
+    {
+        id: 'data-modular',
         category: 'distance',
         supportsBlackText: false,
-        features: { distance: true, paceSpeed: true, duration: true } 
+        features: { distance: true, paceSpeed: true }
+    },
+    {
+        id: 'glass-slice',
+        category: 'distance',
+        supportsBlackText: false,
+        features: { distance: true, map: true }
+    },
+    {
+        id: 'stealth-bar',
+        category: 'distance',
+        supportsBlackText: false,
+        features: { distance: true, paceSpeed: true }
     },
     { id: 'track-record', category: 'distance', supportsBlackText: true, features: { distance: true } },
-    { 
-        id: 'metric-thin', 
+    {
+        id: 'metric-thin',
         category: 'distance',
         supportsBlackText: true,
-        features: { distance: true, paceSpeed: true, duration: true } 
+        features: { distance: true, paceSpeed: true }
     },
-    { 
-        id: 'vertical-label', 
+    {
+        id: 'vertical-label',
         category: 'distance',
         supportsBlackText: false,
-        features: { distance: true, paceSpeed: true, duration: true } 
+        features: { distance: true, paceSpeed: true, duration: true }
     },
-    { 
-        id: 'stats', 
+    {
+        id: 'stats',
+        category: 'distance',
+        supportsBlackText: true,
+        features: { distance: true, paceSpeed: true }
+    },
+    {
+        id: 'minimal',
         category: 'all',
         supportsBlackText: true,
-        features: { distance: true, paceSpeed: true, duration: true, heartRate: true } 
-    },
-    { 
-        id: 'minimal', 
-        category: 'all',
-        supportsBlackText: true,
-        features: { distance: true, duration: true } 
+        compact: true,
+        features: { distance: true, duration: true }
     },
     { id: 'scora-stealth', category: 'distance', features: { distance: true, paceSpeed: true, duration: true, heartRate: true, map: true }, seasonal: true },
     { id: 'neon-capsule', category: 'distance', features: { distance: true, paceSpeed: true }, seasonal: true },
@@ -290,23 +306,27 @@ export const TEMPLATE_REGISTRY: readonly TemplateConfig[] = [
     { id: 'award-badge', category: 'workout', features: { distance: true, duration: true }, seasonal: true },
     { id: 'data-matrix', category: 'distance', features: { distance: true, paceSpeed: true, duration: true }, seasonal: true },
     { id: 'frosted-minimal', category: 'workout', features: { duration: true }, seasonal: true },
-    { 
-        id: 'performance-bars', 
+    { id: 'pure-map', category: 'distance', features: { map: true }, seasonal: true },
+    { id: 'mag-cover', category: 'workout', features: { date: true }, seasonal: true },
+    { id: 'mono-ghost', category: 'workout', features: { date: true }, seasonal: true },
+    { id: 'typewriter-mono', category: 'all', features: { distance: true, duration: true, date: true }, seasonal: true },
+    { id: 'brutal-slash', category: 'workout', features: { duration: true }, seasonal: true },
+    {
+        id: 'performance-bars',
         category: 'distance',
         supportsBlackText: true,
         features: { distance: true, paceSpeed: true, duration: true },
         seasonal: true,
         note: "In development - splits data flow refinement pending"
     },
-    { 
-        id: 'script-serif', 
+    {
+        id: 'minimal-vertical',
         category: 'distance',
-        supportsBlackText: true,
-        features: { distance: true, paceSpeed: true, map: true }, 
+        features: { distance: true, paceSpeed: true, map: true },
         seasonal: true,
         note: "Archived per user request - Mar 2026"
     },
-    { id: '8m2', category: 'distance', features: { distance: true, paceSpeed: true, duration: true, map: true }, seasonal: true, note: "International Women's Day — 8M (March 8)" },
+{ id: '8m2', category: 'distance', features: { distance: true, paceSpeed: true, duration: true, map: true }, seasonal: true, note: "International Women's Day — 8M (March 8)" },
 ];
 
 // Active template list — the only thing all consumers (UI, unit tests, e2e) should use.

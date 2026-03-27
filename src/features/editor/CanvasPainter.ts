@@ -3579,8 +3579,8 @@ function drawSerifFloat(ctx: CanvasRenderingContext2D, stats: any, textColor = '
     ctx.shadowOffsetY = 30;
 
     // 1. Tagline
-    const isDuration = String(rawVal).includes('h') || String(rawVal).includes('m');
-    const tagline = isDuration ? "The total time was" : "The total distance was";
+    const isDistance = stats.hasDistance || displayVal.toLowerCase().includes('km');
+    const tagline = isDistance ? "The total distance was" : "The total time was";
 
     ctx.globalAlpha = 0.4;
     ctx.fillStyle = cSolid;
@@ -3901,15 +3901,15 @@ function drawEditorialRow(ctx: CanvasRenderingContext2D, stats: any, textColor =
     let subVal = '0:00';
     let subUnit = 'pace';
     if (stats.dataPoints) {
-        const pacePt = stats.dataPoints.find((p: any) => p.label === 'Pace');
+        const pacePt = stats.dataPoints.find((p: any) => p.label === 'Pace' || p.label === 'Avg Speed');
         if (pacePt) {
             subVal = pacePt.value;
-            subUnit = 'pace';
+            subUnit = pacePt.label === 'Avg Speed' ? 'km/h' : 'pace';
         } else {
-            const timePt = stats.dataPoints.find((p: any) => p.label === 'Time');
+            const timePt = stats.dataPoints.find((p: any) => p.label === 'Time' || p.label === 'Duration');
             if (timePt) {
                 subVal = timePt.value;
-                subUnit = 'time';
+                subUnit = (timePt.label || 'TIME').toLowerCase();
             }
         }
     }

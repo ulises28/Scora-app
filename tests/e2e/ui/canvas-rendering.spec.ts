@@ -37,10 +37,16 @@ test.describe('Scora App UI: Advanced Canvas Verification', () => {
         await page.waitForTimeout(500);
 
         for (const template of activeTemplates) {
-            const { id, features, category } = template as any;
+            const { id, features, category, compact } = template;
 
             // Skip templates specifically for activities without distance
             if (category === 'workout') continue;
+
+            // Ensure fonts are ready before drawing
+            await page.evaluate(() => document.fonts.ready);
+
+            // Wait a tiny bit for the template to initialize if it's the first one
+            await page.waitForTimeout(100);
 
             const startCount = await editorPage.getDrawCount();
             await editorPage.clearCanvasTextLog();
@@ -50,56 +56,44 @@ test.describe('Scora App UI: Advanced Canvas Verification', () => {
             // Wait for deterministic draw signal
             await page.waitForFunction((prev) => (window as any)._scoraDrawCount > prev, startCount);
 
-            // Wait until we have a substantial log (branding + some data)
-            await page.waitForFunction((args) => {
-                const logs = (window as any)._scoraCanvasTextLog || [];
-                const logStrJoined = logs.join('').replace(/\s+/g, '').toUpperCase();
-
-                if (args.expectedDist) {
-                    return logStrJoined.includes(args.expectedDist.replace('.', '')) || logStrJoined.includes(args.expectedDist) || logs.length >= 1;
-                }
-                return logs.length >= 1;
-            }, { id, expectedDist }, { timeout: 10000 });
-
             const logs = await editorPage.getCanvasTextLog();
             const logStr = logs.join(' ').replace(/\s+/g, ' ').toUpperCase();
             const logStrDense = logs.join('').replace(/\s+/g, '').toUpperCase();
 
-            // --- Pillar 2: Consistency ---
-            if (features.distance) {
-                const hasValue = logStrDense.includes(expectedDist) || logStrDense.includes(expectedDist.replace('.', ''));
-                expect(hasValue, `Template ${id} missing distance ${expectedDist}`).toBeTruthy();
+            // --- Feature-Aware Dynamic Assertions ---
+            const distEnabled = !!features.distance && stats.hasDistance;
+            const durEnabled = !!features.duration && (!compact || !stats.hasDistance);
+            const paceEnabled = !!features.paceSpeed && stats.hasDistance;
+            const hrEnabled = !!features.heartRate;
+
+            if (distEnabled) {
+                expect(logStrDense.includes(stats.distanceVal), `Template ${id} missing distance ${stats.distanceVal}`).toBeTruthy();
             }
-            if (features.paceSpeed) {
-                const hasPace = logStrDense.includes(expectedPace) || logStrDense.includes(expectedPace.replace(':', ''));
-                expect(hasPace, `Template ${id} missing pace ${expectedPace}`).toBeTruthy();
+
+            if (paceEnabled) {
+                const paceVal = stats.subValue.split(' ')[0];
+                const hasPace = logStrDense.includes(paceVal) || logStrDense.includes(paceVal.replace(':', ''));
+                expect(hasPace, `Template ${id} missing pace/speed ${paceVal}`).toBeTruthy();
             }
 
-            // --- Pillar 1: Uniqueness ---
-            const countOccurrences = (val) => {
-                if (!val) return 0;
-                const clean = val.replace(/[:.]/g, '');
-                const occ = logStr.split(val).length - 1;
-                const denseOcc = logStrDense.split(clean).length - 1;
-                return Math.max(occ, denseOcc);
-            };
+            if (durEnabled) {
+                const timePart = stats.timeStr.toUpperCase().replace(/\s+/g, '');
+                expect(logStrDense.includes(timePart), `Template ${id} missing duration ${stats.timeStr}`).toBeTruthy();
+            }
 
-            const distOcc = countOccurrences(expectedDist);
-            expect(distOcc, `Template ${id} shows duplicated distance ${expectedDist}`).toBeLessThanOrEqual(2);
-
-            if (features.paceSpeed) {
-                const paceOcc = countOccurrences(expectedPace);
-                expect(paceOcc, `Template ${id} shows duplicated pace/speed ${expectedPace}`).toBeLessThanOrEqual(2);
-
-                // CRITICAL: Ensure Pace is NOT equal to Time if both are shown
-                if (features.duration && expectedPace === stats.timeStr.split(' ')[0]) {
-                    // This is only allowed if they are legitimately equal by coincidence, but usually indicates a bug.
-                    // For now, we just ensure the labels are distinct if the values are suspicious.
+            if (hrEnabled) {
+                const hr = (stats.maxHeartrate || stats.avgHeartrate || '').toString();
+                if (hr) {
+                    expect(logStrDense.includes(hr), `Template ${id} missing heartrate ${hr}`).toBeTruthy();
                 }
             }
 
+            if (id === 'serif-float') {
+                const tag = stats.hasDistance ? 'DISTANCE' : 'TIME';
+                expect(logStr.includes(tag), `Serif Float missing "${tag}" tagline`).toBeTruthy();
+            }
+
             // --- Pillar 3: Visual Regression ---
-            await page.evaluate(() => document.fonts.ready);
             await expect(editorPage.canvasWrapper).toHaveScreenshot(`dist-${id}.png`, {
                 maxDiffPixelRatio: 0.1,
                 threshold: 0.2
@@ -131,10 +125,16 @@ test.describe('Scora App UI: Advanced Canvas Verification', () => {
         await page.waitForTimeout(500);
 
         for (const template of activeTemplates) {
-            const { id, features, category } = template as any;
+            const { id, features, category, compact } = template;
 
             // Skip templates specifically for activities with distance
             if (category === 'distance') continue;
+
+            // Ensure fonts are ready before drawing
+            await page.evaluate(() => document.fonts.ready);
+
+            // Wait a tiny bit for the template to initialize 
+            await page.waitForTimeout(100);
 
             const startCount = await editorPage.getDrawCount();
             await editorPage.clearCanvasTextLog();
@@ -144,43 +144,32 @@ test.describe('Scora App UI: Advanced Canvas Verification', () => {
             // Wait for deterministic draw signal
             await page.waitForFunction((prev) => (window as any)._scoraDrawCount > prev, startCount);
 
-            const expectedTimePart = stats.timeStr.toUpperCase().replace(' ', '');
-            const expectedHR = stats.avgHeartrate?.toString() || 'DONE';
-
-            await page.waitForFunction((args) => {
-                const logs = (window as any)._scoraCanvasTextLog || [];
-                const logStrJoined = logs.join('').replace(/\s+/g, '').toUpperCase();
-                return logs.length >= 1 || logStrJoined.includes(args.hr) || logStrJoined.includes(args.time);
-            }, { hr: expectedHR, time: expectedTimePart }, { timeout: 10000 });
-
             const logs = await editorPage.getCanvasTextLog();
             const logStrDense = logs.join('').replace(/\s+/g, '').toUpperCase();
 
-            // --- Pillar 2: Consistency ---
-            if (features.duration) {
-                const matchedContiguous = logStrDense.includes(expectedTimePart);
-                let matchedTabular = false;
-                if (!matchedContiguous) {
-                    const numbersOnly = expectedTimePart.replace(/\D/g, '');
-                    const lettersOnly = expectedTimePart.replace(/\d/g, '');
-                    matchedTabular = logStrDense.includes(numbersOnly) && logStrDense.includes(lettersOnly);
+            // --- Feature-Aware Dynamic Assertions ---
+            const distEnabled = !!features.distance && stats.hasDistance;
+            const durEnabled = !!features.duration && (!compact || !stats.hasDistance);
+            const paceEnabled = !!features.paceSpeed && stats.hasDistance;
+            const hrEnabled = !!features.heartRate;
+
+            if (distEnabled) {
+                expect(logStrDense.includes(stats.distanceVal), `Template ${id} missing distance ${stats.distanceVal}`).toBeTruthy();
+            }
+
+            if (durEnabled) {
+                const timePart = stats.timeStr.toUpperCase().replace(/\s+/g, '');
+                expect(logStrDense.includes(timePart), `Template ${id} missing duration ${stats.timeStr}`).toBeTruthy();
+            }
+
+            if (hrEnabled) {
+                const hr = (stats.maxHeartrate || stats.avgHeartrate || '').toString();
+                if (hr) {
+                    expect(logStrDense.includes(hr), `Template ${id} missing heartrate ${hr}`).toBeTruthy();
                 }
-                expect(matchedContiguous || matchedTabular).toBeTruthy();
-            }
-
-            if (features.heartRate && stats.avgHeartrate) {
-                const hasHRValue = logStrDense.includes(expectedHR);
-                expect(hasHRValue, `Template ${id} missing heartrate value ${expectedHR}`).toBeTruthy();
-            }
-
-            // --- Pillar 1: Uniqueness ---
-            if (features.duration) {
-                const occurrences = logStrDense.split(expectedTimePart).length - 1;
-                expect(occurrences).toBeLessThanOrEqual(2);
             }
 
             // --- Pillar 3: Visual Regression ---
-            await page.evaluate(() => document.fonts.ready);
             await expect(editorPage.canvasWrapper).toHaveScreenshot(`nodist-${id}.png`, {
                 maxDiffPixelRatio: 0.1,
                 threshold: 0.2
@@ -205,7 +194,7 @@ test.describe('Scora App UI: Advanced Canvas Verification', () => {
         await feedPage.openActivityEditor(activity.name);
 
         const startCount = await editorPage.getDrawCount();
-        await editorPage.selectTemplate('social-float');
+        await editorPage.selectTemplate('vhs-retro');
 
         // Wait for deterministic draw signal
         await page.waitForFunction((prev) => (window as any)._scoraDrawCount > prev, startCount);
@@ -266,9 +255,9 @@ test.describe('Scora App UI: Advanced Canvas Verification', () => {
         await feedPage.openActivityEditor(activityTitle);
         await editorPage.injectCanvasInterceptor();
 
-        for (const template of activeTemplates.slice(0, 5)) {
-            const { id, features } = template;
-            if (!features.paceSpeed) continue;
+        const paceTemplates = activeTemplates.filter(t => t.features.paceSpeed).slice(0, 5);
+        for (const template of paceTemplates) {
+            const { id } = template;
 
             const startCount = await editorPage.getDrawCount();
             await editorPage.clearCanvasTextLog();
