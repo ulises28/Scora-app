@@ -414,8 +414,47 @@ async function initApp() {
 
 // --- EVENT LISTENERS GLOBALES ---
 
+const goHomeEl = document.getElementById('go-home');
+if (goHomeEl) goHomeEl.addEventListener('click', () => {
+    if (window.location.hash === '#editor') {
+        window.history.back();
+    } else {
+        showScreen('screen-feed');
+    }
+});
+
 if (btnBack) btnBack.addEventListener('click', () => window.history.back());
+
 if (btnDownload) btnDownload.addEventListener('click', () => exportCanvas('storyCanvas'));
+
+// --- STUDIO PRECISION: Click-to-Copy Feature ---
+const canvasWrapper = document.querySelector('.canvas-wrapper');
+if (canvasWrapper) {
+    canvasWrapper.addEventListener('click', async () => {
+        try {
+            const canvas = document.getElementById('storyCanvas') as HTMLCanvasElement;
+            if (!canvas) return;
+
+            canvas.toBlob(async (blob) => {
+                if (!blob) return;
+                try {
+                    const item = new ClipboardItem({ "image/png": blob });
+                    await navigator.clipboard.write([item]);
+                    
+                    // Visual Feedback
+                    canvasWrapper.classList.add('copied');
+                    setTimeout(() => canvasWrapper.classList.remove('copied'), 1500);
+                    console.log("[Studio] Sticker copied to clipboard.");
+                } catch (err) {
+                    console.error("[Studio] Copy failed:", err);
+                }
+            });
+        } catch (err) {
+            console.error("[Studio] Clipboard API failed:", err);
+        }
+    });
+}
+
 
 if (btnSync) {
     btnSync.addEventListener('click', () => {

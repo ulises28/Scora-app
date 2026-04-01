@@ -239,11 +239,22 @@ export function drawTemplate(
     const ctx = canvas.getContext('2d');
 
     // Standard Story resolution (1080 × 1920)
-    canvas.width = 1080;
-    canvas.height = 1920;
+    const TARGET_W = 1080;
+    const TARGET_H = 1920;
 
-    // Transparent canvas (stickers have no background)
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Only set width/height if they aren't already proportionally set (avoids memory bombs on gallery)
+    if (canvas.width === 300 || canvas.width === 0) {
+        canvas.width = TARGET_W;
+        canvas.height = TARGET_H;
+    }
+
+    const scaleX = canvas.width / TARGET_W;
+    const scaleY = canvas.height / TARGET_H;
+
+    ctx.save();
+    ctx.scale(scaleX, scaleY);
+    ctx.clearRect(0, 0, TARGET_W, TARGET_H);
+
 
     // ── Optional SCORA branding ──────────────────────────────────────────────
     if (showLogo) {
@@ -271,7 +282,9 @@ export function drawTemplate(
 
     // ARCHITECT NOTE: Deterministic synchronization signal for E2E tests
     (window as any)._scoraDrawCount = ((window as any)._scoraDrawCount || 0) + 1;
+    ctx.restore();
 }
+
 
 // ─── 8M Special Templates ─────────────────────────────────────────────────────
 // Feminist running stickers for International Women's Day (8M)
