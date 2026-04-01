@@ -60,6 +60,9 @@ test.describe('Scora App: API Network Intercepts (POM)', () => {
         await feedPage.verifyActivityRendered(activity.name, stats.mainValue);
 
         // 4. ✅ Core assertion: stravaAuth must be gone after auto-logout
+        // We wait for the async deauthorization flow to finish (it happens after pre-fetch)
+        await page.waitForFunction(() => localStorage.getItem('stravaAuth') === null, { timeout: 5000 });
+        
         const stravaAuth = await page.evaluate(() => localStorage.getItem('stravaAuth'));
         expect(stravaAuth).toBeNull();
     });

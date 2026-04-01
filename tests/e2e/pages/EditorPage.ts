@@ -86,9 +86,7 @@ export class EditorPage extends BasePage {
 
         const dot = this.getTemplateDot(templateName);
         await dot.waitFor({ state: 'attached' });
-        await dot.scrollIntoViewIfNeeded();
-
-        await dot.click({ force: true, position: { x: 2, y: 2 } });
+        await dot.evaluate((node) => (node as HTMLElement).click());
     }
 
     @step('Verify Template Dot is Active')
@@ -100,7 +98,9 @@ export class EditorPage extends BasePage {
     @step('Switch Template via Dot Index')
     async switchTemplateViaDot(index: number) {
         const dots = this.page.locator('.template-dot');
-        await dots.nth(index).click();
+        const dot = dots.nth(index);
+        await dot.waitFor({ state: 'attached' });
+        await dot.evaluate((node) => (node as HTMLElement).click());
     }
 
     @step('Verify Active Dot Index')

@@ -110,8 +110,9 @@ function formatActivityStats(activity: StravaActivity): StickerStats {
         stats.mainValue = stats.timeStr;
         stats.distanceVal = '0.00';
         stats.mainLabel = 'Duration';
-        stats.subValue = activity.average_heartrate ? `${Math.round(activity.average_heartrate)} bpm` : 'Done';
-        stats.subLabel = 'Avg Heartrate';
+        const hrVal = activity.max_heartrate || activity.average_heartrate;
+        stats.subValue = hrVal ? `${Math.round(hrVal)} bpm` : 'Done';
+        stats.subLabel = activity.max_heartrate ? 'Max Heartrate' : 'Avg Heartrate';
     }
 
     return stats as StickerStats;

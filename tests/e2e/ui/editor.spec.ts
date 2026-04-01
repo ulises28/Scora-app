@@ -12,6 +12,9 @@ test.describe('Scora App UI: Sticker Editor (POM)', () => {
     
     const ACTIVE_TEMPLATES = TEMPLATE_REGISTRY.filter(t => !t.seasonal);
     const DEFAULT_ID = ACTIVE_TEMPLATES[0].id;
+    
+    const DISTANCE_STATS = TestUtils.getExpectedStats(ACTIVITY_WITH_DISTANCE).mainValue;
+    const NODIST_STATS = TestUtils.getExpectedStats(ACTIVITY_WITHOUT_DISTANCE).mainValue;
 
     test.beforeEach(async ({ page }) => {
         const feedPage = new FeedPage(page);
@@ -28,7 +31,7 @@ test.describe('Scora App UI: Sticker Editor (POM)', () => {
         const feedPage = new FeedPage(page);
         const editorPage = new EditorPage(page);
 
-        await feedPage.openActivityEditor(ACTIVITY_WITH_DISTANCE.name);
+        await feedPage.openActivityEditor(ACTIVITY_WITH_DISTANCE.name, DISTANCE_STATS);
         await editorPage.verifyEditorScreenVisible(ACTIVITY_WITH_DISTANCE.name);
 
         // Default should be the first active template in the registry
@@ -51,7 +54,7 @@ test.describe('Scora App UI: Sticker Editor (POM)', () => {
         const feedPage = new FeedPage(page);
         const editorPage = new EditorPage(page);
 
-        await feedPage.openActivityEditor(ACTIVITY_WITH_DISTANCE.name);
+        await feedPage.openActivityEditor(ACTIVITY_WITH_DISTANCE.name, DISTANCE_STATS);
         await editorPage.verifyEditorScreenVisible(ACTIVITY_WITH_DISTANCE.name);
 
         // Start at default template (first)
@@ -91,7 +94,7 @@ test.describe('Scora App UI: Sticker Editor (POM)', () => {
         const feedPage = new FeedPage(page);
         const editorPage = new EditorPage(page);
 
-        await feedPage.openActivityEditor(ACTIVITY_WITH_DISTANCE.name);
+        await feedPage.openActivityEditor(ACTIVITY_WITH_DISTANCE.name, DISTANCE_STATS);
         await editorPage.verifyEditorScreenVisible(ACTIVITY_WITH_DISTANCE.name);
 
         // Navigate forward through every template — dynamically derived from registry
@@ -114,7 +117,7 @@ test.describe('Scora App UI: Sticker Editor (POM)', () => {
         const feedPage = new FeedPage(page);
         const editorPage = new EditorPage(page);
 
-        await feedPage.openActivityEditor(ACTIVITY_WITH_DISTANCE.name);
+        await feedPage.openActivityEditor(ACTIVITY_WITH_DISTANCE.name, DISTANCE_STATS);
         await editorPage.verifyEditorScreenVisible(ACTIVITY_WITH_DISTANCE.name);
 
         await page.goBack();
@@ -128,7 +131,7 @@ test.describe('Scora App UI: Sticker Editor (POM)', () => {
         const feedPage = new FeedPage(page);
         const editorPage = new EditorPage(page);
 
-        await feedPage.openActivityEditor(ACTIVITY_WITH_DISTANCE.name);
+        await feedPage.openActivityEditor(ACTIVITY_WITH_DISTANCE.name, DISTANCE_STATS);
         await editorPage.verifyEditorScreenVisible(ACTIVITY_WITH_DISTANCE.name);
 
         await editorPage.goBack();
@@ -143,13 +146,13 @@ test.describe('Scora App UI: Sticker Editor (POM)', () => {
 
         // Open 1st activity — switch to some alternate template (e.g. index 5)
         const alternateId = ACTIVE_TEMPLATES[5].id;
-        await feedPage.openActivityEditor(ACTIVITY_WITH_DISTANCE.name);
+        await feedPage.openActivityEditor(ACTIVITY_WITH_DISTANCE.name, DISTANCE_STATS);
         await editorPage.selectTemplate(alternateId);
         await editorPage.verifyTemplateIsActive(alternateId);
 
         // Go back to feed and open another activity
         await editorPage.goBack();
-        await feedPage.openActivityEditor(ACTIVITY_WITHOUT_DISTANCE.name);
+        await feedPage.openActivityEditor(ACTIVITY_WITHOUT_DISTANCE.name, NODIST_STATS);
 
         // Editor should load the new activity but cleanly reset back to default template (#1)
         await editorPage.verifyEditorScreenVisible(ACTIVITY_WITHOUT_DISTANCE.name);
@@ -160,7 +163,7 @@ test.describe('Scora App UI: Sticker Editor (POM)', () => {
         const feedPage = new FeedPage(page);
         const editorPage = new EditorPage(page);
 
-        await feedPage.openActivityEditor(ACTIVITY_WITH_DISTANCE.name);
+        await feedPage.openActivityEditor(ACTIVITY_WITH_DISTANCE.name, DISTANCE_STATS);
         await editorPage.verifyEditorScreenVisible(ACTIVITY_WITH_DISTANCE.name);
 
         await editorPage.injectCanvasInterceptor();

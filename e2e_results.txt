@@ -1,0 +1,671 @@
+
+> scora-app@1.0.0 test:e2e
+> playwright test
+
+
+Running 93 tests using 5 workers
+
+  ✓   3 [chromium] › tests/e2e/api/api-intercepts.spec.ts:26:5 › Scora App: API Network Intercepts (POM) › Test 7: Handles Empty Activity State (0 Runs) (966ms)
+  ✓   1 [chromium] › tests/e2e/api/api-intercepts.spec.ts:8:5 › Scora App: API Network Intercepts (POM) › Test 6: Handles API 401 Unauthorized (Expired Token) Gracefully (970ms)
+  ✓   4 [chromium] › tests/e2e/api/api-intercepts.spec.ts:43:5 › Scora App: API Network Intercepts (POM) › Test 8: Auto-Logout clears stravaAuth from localStorage after data fetch (985ms)
+  ✓   2 [chromium] › tests/e2e/api/api-intercepts.spec.ts:68:5 › Scora App: API Network Intercepts (POM) › Test 9: Queue Waiting Room renders when Strava slot is busy (1.1s)
+  ✓   6 [chromium] › tests/e2e/api/backend-verification.spec.ts:6:5 › Scora App: Backend API Verification (APIRequestContext) › POST /api/queue-join: returns session and position (542ms)
+  ✓   7 [chromium] › tests/e2e/api/backend-verification.spec.ts:33:5 › Scora App: Backend API Verification (APIRequestContext) › GET /api/queue-status: returns status for session (553ms)
+  ✓   8 [chromium] › tests/e2e/api/backend-verification.spec.ts:61:5 › Scora App: Backend API Verification (APIRequestContext) › Strava API Integration: fetches activities with auth (599ms)
+  ✓   9 [chromium] › tests/e2e/api/backend-verification.spec.ts:92:5 › Scora App: Backend API Verification (APIRequestContext) › Strava API Integration: handles 401 Unauthorized (542ms)
+  ✓  10 [chromium] › tests/e2e/api/storage-edge.spec.ts:7:5 › Scora App UI: Storage & Strava Edge Cases › Test 1: App strictly falls back to Strava Auth immediately if local storage is missing (540ms)
+  ✓  11 [chromium] › tests/e2e/api/storage-edge.spec.ts:19:5 › Scora App UI: Storage & Strava Edge Cases › Test 2: If Strava API returns 0 activities (empty array), feed shows blank slate (586ms)
+  ✓  12 [chromium] › tests/e2e/api/storage-edge.spec.ts:40:5 › Scora App UI: Storage & Strava Edge Cases › Test 3: If Strava API returns exactly 1 activity, feed renders it cleanly (540ms)
+  ✓  16 [chromium] › tests/e2e/ui/canvas-rendering.spec.ts:210:5 › Scora App UI: Advanced Canvas Verification › Test 4: Private Activity (With Distance, No Map) displays accurately (683ms)
+  ✓  15 [chromium] › tests/e2e/ui/canvas-rendering.spec.ts:180:5 › Scora App UI: Advanced Canvas Verification › Test 3: Start Time Consistency (No Drift) (776ms)
+  ✓  17 [chromium] › tests/e2e/ui/canvas-rendering.spec.ts:240:5 › Scora App UI: Advanced Canvas Verification › Test 5: Cycling activity uses Speed labels instead of Pace (1.6s)
+  -  19 [chromium] › tests/e2e/ui/canvas-rendering.spec.ts:323:14 › Scora App UI: Advanced Canvas Verification › Test 7.5k: Performance Bars Adaptive Scaling (5k (White))
+  -  20 [chromium] › tests/e2e/ui/canvas-rendering.spec.ts:323:14 › Scora App UI: Advanced Canvas Verification › Test 7.5k-black: Performance Bars Adaptive Scaling (5k (Black Tech))
+  -  21 [chromium] › tests/e2e/ui/canvas-rendering.spec.ts:323:14 › Scora App UI: Advanced Canvas Verification › Test 7.half: Performance Bars Adaptive Scaling (21k (Half))
+  -  22 [chromium] › tests/e2e/ui/canvas-rendering.spec.ts:323:14 › Scora App UI: Advanced Canvas Verification › Test 7.marathon: Performance Bars Adaptive Scaling (42k (Marathon))
+  ✓  23 [chromium] › tests/e2e/ui/editor.spec.ts:27:5 › Scora App UI: Sticker Editor (POM) › Test 2: Switching templates via dots updates active dot (711ms)
+  ✘  14 [chromium] › tests/e2e/ui/canvas-rendering.spec.ts:104:5 › Scora App UI: Advanced Canvas Verification › Test 2: Activity without Distance Verification (Uniqueness + Consistency + Visual) (3.2s)
+  ✘  13 [chromium] › tests/e2e/ui/canvas-rendering.spec.ts:13:5 › Scora App UI: Advanced Canvas Verification › Test 1: Activity with Distance Verification (Uniqueness + Consistency + Visual) (3.9s)
+  ✓  24 [chromium] › tests/e2e/ui/editor.spec.ts:50:5 › Scora App UI: Sticker Editor (POM) › Test 2b: Arrow/Swipe navigation between templates (1.1s)
+  ✓  25 [chromium] › tests/e2e/ui/editor.spec.ts:127:5 › Scora App UI: Sticker Editor (POM) › Test 4: UI "Back" button mimics Native History API (638ms)
+  ✓  27 [chromium] › tests/e2e/ui/editor.spec.ts:113:5 › Scora App UI: Sticker Editor (POM) › Test 3: Browser History API "Back" button functions natively (738ms)
+  ✓  28 [chromium] › tests/e2e/ui/editor.spec.ts:140:5 › Scora App UI: Sticker Editor (POM) › Test 5: Selecting alternate activities resets template to default (#1) (775ms)
+  ✓  30 [chromium] › tests/e2e/ui/feed.spec.ts:19:5 › Scora App UI: Feed (POM) › Test 1: Feed successfully renders all mocked incoming data (631ms)
+  ✓   5 [chromium] › tests/e2e/api/api-intercepts.spec.ts:88:5 › Scora App: API Network Intercepts (POM) › Test 10: Queue Join lets user through gracefully if an orphaned token was cleared (8.6s)
+  ✓  29 [chromium] › tests/e2e/ui/editor.spec.ts:159:5 › Scora App UI: Sticker Editor (POM) › Test 6: Text color and logo toggles update rendering state (937ms)
+  ✓  31 [chromium] › tests/e2e/ui/feedCount.spec.ts:7:5 › Scora App: Activity Feed Limit › Verification: Activities list is limited to 10 items (604ms)
+  ✓  32 [Mobile Safari] › tests/e2e/api/api-intercepts.spec.ts:8:5 › Scora App: API Network Intercepts (POM) › Test 6: Handles API 401 Unauthorized (Expired Token) Gracefully (1.2s)
+  ✓  33 [Mobile Safari] › tests/e2e/api/api-intercepts.spec.ts:26:5 › Scora App: API Network Intercepts (POM) › Test 7: Handles Empty Activity State (0 Runs) (1.3s)
+  ✓  34 [Mobile Safari] › tests/e2e/api/api-intercepts.spec.ts:43:5 › Scora App: API Network Intercepts (POM) › Test 8: Auto-Logout clears stravaAuth from localStorage after data fetch (1.0s)
+  ✓  35 [Mobile Safari] › tests/e2e/api/api-intercepts.spec.ts:68:5 › Scora App: API Network Intercepts (POM) › Test 9: Queue Waiting Room renders when Strava slot is busy (753ms)
+  ✓  36 [Mobile Safari] › tests/e2e/api/api-intercepts.spec.ts:88:5 › Scora App: API Network Intercepts (POM) › Test 10: Queue Join lets user through gracefully if an orphaned token was cleared (826ms)
+  ✓  37 [Mobile Safari] › tests/e2e/api/backend-verification.spec.ts:6:5 › Scora App: Backend API Verification (APIRequestContext) › POST /api/queue-join: returns session and position (623ms)
+  ✓  38 [Mobile Safari] › tests/e2e/api/backend-verification.spec.ts:33:5 › Scora App: Backend API Verification (APIRequestContext) › GET /api/queue-status: returns status for session (490ms)
+  ✓  39 [Mobile Safari] › tests/e2e/api/backend-verification.spec.ts:61:5 › Scora App: Backend API Verification (APIRequestContext) › Strava API Integration: fetches activities with auth (557ms)
+  ✓  40 [Mobile Safari] › tests/e2e/api/backend-verification.spec.ts:92:5 › Scora App: Backend API Verification (APIRequestContext) › Strava API Integration: handles 401 Unauthorized (541ms)
+  ✓  41 [Mobile Safari] › tests/e2e/api/storage-edge.spec.ts:7:5 › Scora App UI: Storage & Strava Edge Cases › Test 1: App strictly falls back to Strava Auth immediately if local storage is missing (534ms)
+  ✓  42 [Mobile Safari] › tests/e2e/api/storage-edge.spec.ts:19:5 › Scora App UI: Storage & Strava Edge Cases › Test 2: If Strava API returns 0 activities (empty array), feed shows blank slate (530ms)
+  ✓  43 [Mobile Safari] › tests/e2e/api/storage-edge.spec.ts:40:5 › Scora App UI: Storage & Strava Edge Cases › Test 3: If Strava API returns exactly 1 activity, feed renders it cleanly (532ms)
+  ✓  46 [Mobile Safari] › tests/e2e/ui/canvas-rendering.spec.ts:180:5 › Scora App UI: Advanced Canvas Verification › Test 3: Start Time Consistency (No Drift) (792ms)
+  ✓  47 [Mobile Safari] › tests/e2e/ui/canvas-rendering.spec.ts:210:5 › Scora App UI: Advanced Canvas Verification › Test 4: Private Activity (With Distance, No Map) displays accurately (551ms)
+  ✓  18 [chromium] › tests/e2e/ui/canvas-rendering.spec.ts:277:5 › Scora App UI: Advanced Canvas Verification › Test 6: Multi-Activity Regression Matrix (Phase 4 + Micro Serif) (11.8s)
+  ✓  26 [chromium] › tests/e2e/ui/editor.spec.ts:90:5 › Scora App UI: Sticker Editor (POM) › Test 2c: Navigation reaches all templates in the registry (9.7s)
+  -  50 [Mobile Safari] › tests/e2e/ui/canvas-rendering.spec.ts:323:14 › Scora App UI: Advanced Canvas Verification › Test 7.5k: Performance Bars Adaptive Scaling (5k (White))
+  -  51 [Mobile Safari] › tests/e2e/ui/canvas-rendering.spec.ts:323:14 › Scora App UI: Advanced Canvas Verification › Test 7.5k-black: Performance Bars Adaptive Scaling (5k (Black Tech))
+  -  52 [Mobile Safari] › tests/e2e/ui/canvas-rendering.spec.ts:323:14 › Scora App UI: Advanced Canvas Verification › Test 7.half: Performance Bars Adaptive Scaling (21k (Half))
+  -  53 [Mobile Safari] › tests/e2e/ui/canvas-rendering.spec.ts:323:14 › Scora App UI: Advanced Canvas Verification › Test 7.marathon: Performance Bars Adaptive Scaling (42k (Marathon))
+  ✘  44 [Mobile Safari] › tests/e2e/ui/canvas-rendering.spec.ts:13:5 › Scora App UI: Advanced Canvas Verification › Test 1: Activity with Distance Verification (Uniqueness + Consistency + Visual) (11.6s)
+  ✘  45 [Mobile Safari] › tests/e2e/ui/canvas-rendering.spec.ts:104:5 › Scora App UI: Advanced Canvas Verification › Test 2: Activity without Distance Verification (Uniqueness + Consistency + Visual) (11.7s)
+  ✓  55 [Mobile Safari] › tests/e2e/ui/editor.spec.ts:50:5 › Scora App UI: Sticker Editor (POM) › Test 2b: Arrow/Swipe navigation between templates (922ms)
+  ✓  57 [Mobile Safari] › tests/e2e/ui/editor.spec.ts:113:5 › Scora App UI: Sticker Editor (POM) › Test 3: Browser History API "Back" button functions natively (593ms)
+  ✓  49 [Mobile Safari] › tests/e2e/ui/canvas-rendering.spec.ts:277:5 › Scora App UI: Advanced Canvas Verification › Test 6: Multi-Activity Regression Matrix (Phase 4 + Micro Serif) (11.6s)
+  ✓  56 [Mobile Safari] › tests/e2e/ui/editor.spec.ts:90:5 › Scora App UI: Sticker Editor (POM) › Test 2c: Navigation reaches all templates in the registry (1.7s)
+  ✓  58 [Mobile Safari] › tests/e2e/ui/editor.spec.ts:127:5 › Scora App UI: Sticker Editor (POM) › Test 4: UI "Back" button mimics Native History API (711ms)
+  ✓  61 [Mobile Safari] › tests/e2e/ui/feed.spec.ts:19:5 › Scora App UI: Feed (POM) › Test 1: Feed successfully renders all mocked incoming data (541ms)
+  ✓  60 [Mobile Safari] › tests/e2e/ui/editor.spec.ts:159:5 › Scora App UI: Sticker Editor (POM) › Test 6: Text color and logo toggles update rendering state (879ms)
+  ✓  62 [Mobile Safari] › tests/e2e/ui/feedCount.spec.ts:7:5 › Scora App: Activity Feed Limit › Verification: Activities list is limited to 10 items (473ms)
+  ✓  63 [Mobile Chrome] › tests/e2e/api/api-intercepts.spec.ts:8:5 › Scora App: API Network Intercepts (POM) › Test 6: Handles API 401 Unauthorized (Expired Token) Gracefully (768ms)
+  ✓  64 [Mobile Chrome] › tests/e2e/api/api-intercepts.spec.ts:26:5 › Scora App: API Network Intercepts (POM) › Test 7: Handles Empty Activity State (0 Runs) (622ms)
+  ✓  65 [Mobile Chrome] › tests/e2e/api/api-intercepts.spec.ts:43:5 › Scora App: API Network Intercepts (POM) › Test 8: Auto-Logout clears stravaAuth from localStorage after data fetch (591ms)
+  ✓  66 [Mobile Chrome] › tests/e2e/api/api-intercepts.spec.ts:68:5 › Scora App: API Network Intercepts (POM) › Test 9: Queue Waiting Room renders when Strava slot is busy (667ms)
+  ✓  68 [Mobile Chrome] › tests/e2e/api/backend-verification.spec.ts:6:5 › Scora App: Backend API Verification (APIRequestContext) › POST /api/queue-join: returns session and position (546ms)
+  ✓  69 [Mobile Chrome] › tests/e2e/api/backend-verification.spec.ts:33:5 › Scora App: Backend API Verification (APIRequestContext) › GET /api/queue-status: returns status for session (544ms)
+  ✓  70 [Mobile Chrome] › tests/e2e/api/backend-verification.spec.ts:61:5 › Scora App: Backend API Verification (APIRequestContext) › Strava API Integration: fetches activities with auth (525ms)
+  ✓  71 [Mobile Chrome] › tests/e2e/api/backend-verification.spec.ts:92:5 › Scora App: Backend API Verification (APIRequestContext) › Strava API Integration: handles 401 Unauthorized (529ms)
+  ✓  72 [Mobile Chrome] › tests/e2e/api/storage-edge.spec.ts:7:5 › Scora App UI: Storage & Strava Edge Cases › Test 1: App strictly falls back to Strava Auth immediately if local storage is missing (548ms)
+  ✓  73 [Mobile Chrome] › tests/e2e/api/storage-edge.spec.ts:19:5 › Scora App UI: Storage & Strava Edge Cases › Test 2: If Strava API returns 0 activities (empty array), feed shows blank slate (537ms)
+  ✓  74 [Mobile Chrome] › tests/e2e/api/storage-edge.spec.ts:40:5 › Scora App UI: Storage & Strava Edge Cases › Test 3: If Strava API returns exactly 1 activity, feed renders it cleanly (545ms)
+  ✓  67 [Mobile Chrome] › tests/e2e/api/api-intercepts.spec.ts:88:5 › Scora App: API Network Intercepts (POM) › Test 10: Queue Join lets user through gracefully if an orphaned token was cleared (5.7s)
+  ✘  59 [Mobile Safari] › tests/e2e/ui/editor.spec.ts:140:5 › Scora App UI: Sticker Editor (POM) › Test 5: Selecting alternate activities resets template to default (#1) (10.9s)
+  ✓  77 [Mobile Chrome] › tests/e2e/ui/canvas-rendering.spec.ts:180:5 › Scora App UI: Advanced Canvas Verification › Test 3: Start Time Consistency (No Drift) (705ms)
+  ✓  78 [Mobile Chrome] › tests/e2e/ui/canvas-rendering.spec.ts:210:5 › Scora App UI: Advanced Canvas Verification › Test 4: Private Activity (With Distance, No Map) displays accurately (647ms)
+  ✘  75 [Mobile Chrome] › tests/e2e/ui/canvas-rendering.spec.ts:13:5 › Scora App UI: Advanced Canvas Verification › Test 1: Activity with Distance Verification (Uniqueness + Consistency + Visual) (11.5s)
+  ✘  76 [Mobile Chrome] › tests/e2e/ui/canvas-rendering.spec.ts:104:5 › Scora App UI: Advanced Canvas Verification › Test 2: Activity without Distance Verification (Uniqueness + Consistency + Visual) (11.6s)
+  -  81 [Mobile Chrome] › tests/e2e/ui/canvas-rendering.spec.ts:323:14 › Scora App UI: Advanced Canvas Verification › Test 7.5k: Performance Bars Adaptive Scaling (5k (White))
+  -  82 [Mobile Chrome] › tests/e2e/ui/canvas-rendering.spec.ts:323:14 › Scora App UI: Advanced Canvas Verification › Test 7.5k-black: Performance Bars Adaptive Scaling (5k (Black Tech))
+  -  83 [Mobile Chrome] › tests/e2e/ui/canvas-rendering.spec.ts:323:14 › Scora App UI: Advanced Canvas Verification › Test 7.half: Performance Bars Adaptive Scaling (21k (Half))
+  -  84 [Mobile Chrome] › tests/e2e/ui/canvas-rendering.spec.ts:323:14 › Scora App UI: Advanced Canvas Verification › Test 7.marathon: Performance Bars Adaptive Scaling (42k (Marathon))
+  ✓  80 [Mobile Chrome] › tests/e2e/ui/canvas-rendering.spec.ts:277:5 › Scora App UI: Advanced Canvas Verification › Test 6: Multi-Activity Regression Matrix (Phase 4 + Micro Serif) (11.4s)
+  ✓  86 [Mobile Chrome] › tests/e2e/ui/editor.spec.ts:50:5 › Scora App UI: Sticker Editor (POM) › Test 2b: Arrow/Swipe navigation between templates (651ms)
+  ✓  87 [Mobile Chrome] › tests/e2e/ui/editor.spec.ts:90:5 › Scora App UI: Sticker Editor (POM) › Test 2c: Navigation reaches all templates in the registry (909ms)
+  ✓  88 [Mobile Chrome] › tests/e2e/ui/editor.spec.ts:113:5 › Scora App UI: Sticker Editor (POM) › Test 3: Browser History API "Back" button functions natively (585ms)
+  ✓  89 [Mobile Chrome] › tests/e2e/ui/editor.spec.ts:127:5 › Scora App UI: Sticker Editor (POM) › Test 4: UI "Back" button mimics Native History API (578ms)
+  ✘  90 [Mobile Chrome] › tests/e2e/ui/editor.spec.ts:140:5 › Scora App UI: Sticker Editor (POM) › Test 5: Selecting alternate activities resets template to default (#1) (10.9s)
+  ✓  91 [Mobile Chrome] › tests/e2e/ui/editor.spec.ts:159:5 › Scora App UI: Sticker Editor (POM) › Test 6: Text color and logo toggles update rendering state (839ms)
+  ✓  92 [Mobile Chrome] › tests/e2e/ui/feed.spec.ts:19:5 › Scora App UI: Feed (POM) › Test 1: Feed successfully renders all mocked incoming data (569ms)
+  ✓  93 [Mobile Chrome] › tests/e2e/ui/feedCount.spec.ts:7:5 › Scora App: Activity Feed Limit › Verification: Activities list is limited to 10 items (597ms)
+  ✘  48 [Mobile Safari] › tests/e2e/ui/canvas-rendering.spec.ts:240:5 › Scora App UI: Advanced Canvas Verification › Test 5: Cycling activity uses Speed labels instead of Pace (1.0m)
+  ✘  54 [Mobile Safari] › tests/e2e/ui/editor.spec.ts:27:5 › Scora App UI: Sticker Editor (POM) › Test 2: Switching templates via dots updates active dot (1.0m)
+  ✘  79 [Mobile Chrome] › tests/e2e/ui/canvas-rendering.spec.ts:240:5 › Scora App UI: Advanced Canvas Verification › Test 5: Cycling activity uses Speed labels instead of Pace (1.0m)
+  ✘  85 [Mobile Chrome] › tests/e2e/ui/editor.spec.ts:27:5 › Scora App UI: Sticker Editor (POM) › Test 2: Switching templates via dots updates active dot (1.0m)
+
+
+  1) [chromium] › tests/e2e/ui/canvas-rendering.spec.ts:13:5 › Scora App UI: Advanced Canvas Verification › Test 1: Activity with Distance Verification (Uniqueness + Consistency + Visual) 
+
+    Error: Template split-badge missing duration 6m
+
+    [2mexpect([22m[31mreceived[39m[2m).[22mtoBeTruthy[2m()[22m
+
+    Received: [31mfalse[39m
+
+      79 |             if (durEnabled) {
+      80 |                 const timePart = stats.timeStr.toUpperCase().replace(/\s+/g, '');
+    > 81 |                 expect(logStrDense.includes(timePart), `Template ${id} missing duration ${stats.timeStr}`).toBeTruthy();
+         |                                                                                                            ^
+      82 |             }
+      83 |
+      84 |             if (hrEnabled) {
+        at /Users/ulises/Developer/Scora-app/tests/e2e/ui/canvas-rendering.spec.ts:81:108
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/ui-canvas-rendering-Scora--c3bc8-queness-Consistency-Visual--chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/ui-canvas-rendering-Scora--c3bc8-queness-Consistency-Visual--chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/ui-canvas-rendering-Scora--c3bc8-queness-Consistency-Visual--chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/ui-canvas-rendering-Scora--c3bc8-queness-Consistency-Visual--chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/ui-canvas-rendering-Scora--c3bc8-queness-Consistency-Visual--chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [chromium] › tests/e2e/ui/canvas-rendering.spec.ts:104:5 › Scora App UI: Advanced Canvas Verification › Test 2: Activity without Distance Verification (Uniqueness + Consistency + Visual) 
+
+    Error: Template split-badge missing heartrate 172
+
+    [2mexpect([22m[31mreceived[39m[2m).[22mtoBeTruthy[2m()[22m
+
+    Received: [31mfalse[39m
+
+      166 |                 const hr = (stats.maxHeartrate || stats.avgHeartrate || '').toString();
+      167 |                 if (hr) {
+    > 168 |                     expect(logStrDense.includes(hr), `Template ${id} missing heartrate ${hr}`).toBeTruthy();
+          |                                                                                                ^
+      169 |                 }
+      170 |             }
+      171 |
+        at /Users/ulises/Developer/Scora-app/tests/e2e/ui/canvas-rendering.spec.ts:168:96
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/ui-canvas-rendering-Scora--1b28e-queness-Consistency-Visual--chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/ui-canvas-rendering-Scora--1b28e-queness-Consistency-Visual--chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/ui-canvas-rendering-Scora--1b28e-queness-Consistency-Visual--chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/ui-canvas-rendering-Scora--1b28e-queness-Consistency-Visual--chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/ui-canvas-rendering-Scora--1b28e-queness-Consistency-Visual--chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) [Mobile Safari] › tests/e2e/ui/canvas-rendering.spec.ts:13:5 › Scora App UI: Advanced Canvas Verification › Test 1: Activity with Distance Verification (Uniqueness + Consistency + Visual) › Verify Template Dot is Active 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoHaveClass[2m([22m[32mexpected[39m[2m)[22m failed
+
+    Locator: locator('.template-dot[data-template="location-pill"]')
+    Expected pattern: [32m/active/[39m
+    Received string:  [31m"template-dot"[39m
+    Timeout: 10000ms
+
+    Call log:
+    [2m  - Expect "toHaveClass" with timeout 10000ms[22m
+    [2m  - waiting for locator('.template-dot[data-template="location-pill"]')[22m
+    [2m    14 × locator resolved to <span class="template-dot" data-template="location-pill"></span>[22m
+    [2m       - unexpected value "template-dot"[22m
+
+
+       at pages/EditorPage.ts:97
+
+       95 |     async verifyTemplateIsActive(templateName: string) {
+       96 |         const dot = this.getTemplateDot(templateName);
+    >  97 |         await expect(dot).toHaveClass(/active/);
+          |                           ^
+       98 |     }
+       99 |
+      100 |     @step('Switch Template via Dot Index')
+        at EditorPage.call (/Users/ulises/Developer/Scora-app/tests/e2e/pages/EditorPage.ts:97:27)
+        at /Users/ulises/Developer/Scora-app/tests/e2e/utils/logger.ts:15:51
+        at EditorPage.verifyTemplateIsActive (/Users/ulises/Developer/Scora-app/tests/e2e/utils/logger.ts:14:25)
+        at /Users/ulises/Developer/Scora-app/tests/e2e/ui/canvas-rendering.spec.ts:54:30
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/ui-canvas-rendering-Scora--c3bc8-queness-Consistency-Visual--Mobile-Safari/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/ui-canvas-rendering-Scora--c3bc8-queness-Consistency-Visual--Mobile-Safari/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/ui-canvas-rendering-Scora--c3bc8-queness-Consistency-Visual--Mobile-Safari/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/ui-canvas-rendering-Scora--c3bc8-queness-Consistency-Visual--Mobile-Safari/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/ui-canvas-rendering-Scora--c3bc8-queness-Consistency-Visual--Mobile-Safari/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4) [Mobile Safari] › tests/e2e/ui/canvas-rendering.spec.ts:104:5 › Scora App UI: Advanced Canvas Verification › Test 2: Activity without Distance Verification (Uniqueness + Consistency + Visual) › Verify Template Dot is Active 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoHaveClass[2m([22m[32mexpected[39m[2m)[22m failed
+
+    Locator: locator('.template-dot[data-template="location-pill"]')
+    Expected pattern: [32m/active/[39m
+    Received string:  [31m"template-dot"[39m
+    Timeout: 10000ms
+
+    Call log:
+    [2m  - Expect "toHaveClass" with timeout 10000ms[22m
+    [2m  - waiting for locator('.template-dot[data-template="location-pill"]')[22m
+    [2m    14 × locator resolved to <span class="template-dot" data-template="location-pill"></span>[22m
+    [2m       - unexpected value "template-dot"[22m
+
+
+       at pages/EditorPage.ts:97
+
+       95 |     async verifyTemplateIsActive(templateName: string) {
+       96 |         const dot = this.getTemplateDot(templateName);
+    >  97 |         await expect(dot).toHaveClass(/active/);
+          |                           ^
+       98 |     }
+       99 |
+      100 |     @step('Switch Template via Dot Index')
+        at EditorPage.call (/Users/ulises/Developer/Scora-app/tests/e2e/pages/EditorPage.ts:97:27)
+        at /Users/ulises/Developer/Scora-app/tests/e2e/utils/logger.ts:15:51
+        at EditorPage.verifyTemplateIsActive (/Users/ulises/Developer/Scora-app/tests/e2e/utils/logger.ts:14:25)
+        at /Users/ulises/Developer/Scora-app/tests/e2e/ui/canvas-rendering.spec.ts:142:30
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/ui-canvas-rendering-Scora--1b28e-queness-Consistency-Visual--Mobile-Safari/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/ui-canvas-rendering-Scora--1b28e-queness-Consistency-Visual--Mobile-Safari/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/ui-canvas-rendering-Scora--1b28e-queness-Consistency-Visual--Mobile-Safari/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/ui-canvas-rendering-Scora--1b28e-queness-Consistency-Visual--Mobile-Safari/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/ui-canvas-rendering-Scora--1b28e-queness-Consistency-Visual--Mobile-Safari/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  5) [Mobile Safari] › tests/e2e/ui/canvas-rendering.spec.ts:240:5 › Scora App UI: Advanced Canvas Verification › Test 5: Cycling activity uses Speed labels instead of Pace 
+
+    [31mTest timeout of 60000ms exceeded.[39m
+
+    Error: page.waitForFunction: Test timeout of 60000ms exceeded.
+
+      263 |             await editorPage.clearCanvasTextLog();
+      264 |             await editorPage.selectTemplate(id);
+    > 265 |             await page.waitForFunction((prev) => (window as any)._scoraDrawCount > prev, startCount);
+          |                        ^
+      266 |
+      267 |             const logs = await editorPage.getCanvasTextLog();
+      268 |             const logStrDense = logs.join('').replace(/\s+/g, '').toUpperCase();
+        at /Users/ulises/Developer/Scora-app/tests/e2e/ui/canvas-rendering.spec.ts:265:24
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/ui-canvas-rendering-Scora--17e2b-peed-labels-instead-of-Pace-Mobile-Safari/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/ui-canvas-rendering-Scora--17e2b-peed-labels-instead-of-Pace-Mobile-Safari/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/ui-canvas-rendering-Scora--17e2b-peed-labels-instead-of-Pace-Mobile-Safari/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/ui-canvas-rendering-Scora--17e2b-peed-labels-instead-of-Pace-Mobile-Safari/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/ui-canvas-rendering-Scora--17e2b-peed-labels-instead-of-Pace-Mobile-Safari/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  6) [Mobile Safari] › tests/e2e/ui/editor.spec.ts:27:5 › Scora App UI: Sticker Editor (POM) › Test 2: Switching templates via dots updates active dot › Switch Template via Dot Index 
+
+    [31mTest timeout of 60000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 60000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('.template-dot').nth(1)[22m
+    [2m    - locator resolved to <span data-template="dm" class="template-dot"></span>[22m
+    [2m  - attempting click action[22m
+    [2m    2 × waiting for element to be visible, enabled and stable[22m
+    [2m      - element is visible, enabled and stable[22m
+    [2m      - scrolling into view if needed[22m
+    [2m      - done scrolling[22m
+    [2m      - element is outside of the viewport[22m
+    [2m    - retrying click action[22m
+    [2m    - waiting 20ms[22m
+    [2m    2 × waiting for element to be visible, enabled and stable[22m
+    [2m      - element is visible, enabled and stable[22m
+    [2m      - scrolling into view if needed[22m
+    [2m      - done scrolling[22m
+    [2m      - element is outside of the viewport[22m
+    [2m    - retrying click action[22m
+    [2m      - waiting 100ms[22m
+    [2m    114 × waiting for element to be visible, enabled and stable[22m
+    [2m        - element is visible, enabled and stable[22m
+    [2m        - scrolling into view if needed[22m
+    [2m        - done scrolling[22m
+    [2m        - element is outside of the viewport[22m
+    [2m      - retrying click action[22m
+    [2m        - waiting 500ms[22m
+
+
+       at pages/EditorPage.ts:103
+
+      101 |     async switchTemplateViaDot(index: number) {
+      102 |         const dots = this.page.locator('.template-dot');
+    > 103 |         await dots.nth(index).click();
+          |                               ^
+      104 |     }
+      105 |
+      106 |     @step('Verify Active Dot Index')
+        at EditorPage.call (/Users/ulises/Developer/Scora-app/tests/e2e/pages/EditorPage.ts:103:31)
+        at /Users/ulises/Developer/Scora-app/tests/e2e/utils/logger.ts:15:51
+        at EditorPage.switchTemplateViaDot (/Users/ulises/Developer/Scora-app/tests/e2e/utils/logger.ts:14:25)
+        at /Users/ulises/Developer/Scora-app/tests/e2e/ui/editor.spec.ts:39:26
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/ui-editor-Scora-App-UI-Sti-7429f-via-dots-updates-active-dot-Mobile-Safari/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/ui-editor-Scora-App-UI-Sti-7429f-via-dots-updates-active-dot-Mobile-Safari/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/ui-editor-Scora-App-UI-Sti-7429f-via-dots-updates-active-dot-Mobile-Safari/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/ui-editor-Scora-App-UI-Sti-7429f-via-dots-updates-active-dot-Mobile-Safari/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/ui-editor-Scora-App-UI-Sti-7429f-via-dots-updates-active-dot-Mobile-Safari/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  7) [Mobile Safari] › tests/e2e/ui/editor.spec.ts:140:5 › Scora App UI: Sticker Editor (POM) › Test 5: Selecting alternate activities resets template to default (#1) › Verify Template Dot is Active 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoHaveClass[2m([22m[32mexpected[39m[2m)[22m failed
+
+    Locator: locator('.template-dot[data-template="step-master"]')
+    Expected pattern: [32m/active/[39m
+    Received string:  [31m"template-dot"[39m
+    Timeout: 10000ms
+
+    Call log:
+    [2m  - Expect "toHaveClass" with timeout 10000ms[22m
+    [2m  - waiting for locator('.template-dot[data-template="step-master"]')[22m
+    [2m    14 × locator resolved to <span class="template-dot" data-template="step-master"></span>[22m
+    [2m       - unexpected value "template-dot"[22m
+
+
+       at pages/EditorPage.ts:97
+
+       95 |     async verifyTemplateIsActive(templateName: string) {
+       96 |         const dot = this.getTemplateDot(templateName);
+    >  97 |         await expect(dot).toHaveClass(/active/);
+          |                           ^
+       98 |     }
+       99 |
+      100 |     @step('Switch Template via Dot Index')
+        at EditorPage.call (/Users/ulises/Developer/Scora-app/tests/e2e/pages/EditorPage.ts:97:27)
+        at /Users/ulises/Developer/Scora-app/tests/e2e/utils/logger.ts:15:51
+        at EditorPage.verifyTemplateIsActive (/Users/ulises/Developer/Scora-app/tests/e2e/utils/logger.ts:14:25)
+        at /Users/ulises/Developer/Scora-app/tests/e2e/ui/editor.spec.ts:148:26
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/ui-editor-Scora-App-UI-Sti-9d58f-sets-template-to-default-1--Mobile-Safari/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/ui-editor-Scora-App-UI-Sti-9d58f-sets-template-to-default-1--Mobile-Safari/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/ui-editor-Scora-App-UI-Sti-9d58f-sets-template-to-default-1--Mobile-Safari/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/ui-editor-Scora-App-UI-Sti-9d58f-sets-template-to-default-1--Mobile-Safari/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/ui-editor-Scora-App-UI-Sti-9d58f-sets-template-to-default-1--Mobile-Safari/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  8) [Mobile Chrome] › tests/e2e/ui/canvas-rendering.spec.ts:13:5 › Scora App UI: Advanced Canvas Verification › Test 1: Activity with Distance Verification (Uniqueness + Consistency + Visual) › Verify Template Dot is Active 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoHaveClass[2m([22m[32mexpected[39m[2m)[22m failed
+
+    Locator: locator('.template-dot[data-template="location-pill"]')
+    Expected pattern: [32m/active/[39m
+    Received string:  [31m"template-dot"[39m
+    Timeout: 10000ms
+
+    Call log:
+    [2m  - Expect "toHaveClass" with timeout 10000ms[22m
+    [2m  - waiting for locator('.template-dot[data-template="location-pill"]')[22m
+    [2m    14 × locator resolved to <span class="template-dot" data-template="location-pill"></span>[22m
+    [2m       - unexpected value "template-dot"[22m
+
+
+       at pages/EditorPage.ts:97
+
+       95 |     async verifyTemplateIsActive(templateName: string) {
+       96 |         const dot = this.getTemplateDot(templateName);
+    >  97 |         await expect(dot).toHaveClass(/active/);
+          |                           ^
+       98 |     }
+       99 |
+      100 |     @step('Switch Template via Dot Index')
+        at EditorPage.call (/Users/ulises/Developer/Scora-app/tests/e2e/pages/EditorPage.ts:97:27)
+        at /Users/ulises/Developer/Scora-app/tests/e2e/utils/logger.ts:15:51
+        at EditorPage.verifyTemplateIsActive (/Users/ulises/Developer/Scora-app/tests/e2e/utils/logger.ts:14:25)
+        at /Users/ulises/Developer/Scora-app/tests/e2e/ui/canvas-rendering.spec.ts:54:30
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/ui-canvas-rendering-Scora--c3bc8-queness-Consistency-Visual--Mobile-Chrome/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/ui-canvas-rendering-Scora--c3bc8-queness-Consistency-Visual--Mobile-Chrome/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/ui-canvas-rendering-Scora--c3bc8-queness-Consistency-Visual--Mobile-Chrome/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/ui-canvas-rendering-Scora--c3bc8-queness-Consistency-Visual--Mobile-Chrome/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/ui-canvas-rendering-Scora--c3bc8-queness-Consistency-Visual--Mobile-Chrome/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  9) [Mobile Chrome] › tests/e2e/ui/canvas-rendering.spec.ts:104:5 › Scora App UI: Advanced Canvas Verification › Test 2: Activity without Distance Verification (Uniqueness + Consistency + Visual) › Verify Template Dot is Active 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoHaveClass[2m([22m[32mexpected[39m[2m)[22m failed
+
+    Locator: locator('.template-dot[data-template="location-pill"]')
+    Expected pattern: [32m/active/[39m
+    Received string:  [31m"template-dot"[39m
+    Timeout: 10000ms
+
+    Call log:
+    [2m  - Expect "toHaveClass" with timeout 10000ms[22m
+    [2m  - waiting for locator('.template-dot[data-template="location-pill"]')[22m
+    [2m    14 × locator resolved to <span class="template-dot" data-template="location-pill"></span>[22m
+    [2m       - unexpected value "template-dot"[22m
+
+
+       at pages/EditorPage.ts:97
+
+       95 |     async verifyTemplateIsActive(templateName: string) {
+       96 |         const dot = this.getTemplateDot(templateName);
+    >  97 |         await expect(dot).toHaveClass(/active/);
+          |                           ^
+       98 |     }
+       99 |
+      100 |     @step('Switch Template via Dot Index')
+        at EditorPage.call (/Users/ulises/Developer/Scora-app/tests/e2e/pages/EditorPage.ts:97:27)
+        at /Users/ulises/Developer/Scora-app/tests/e2e/utils/logger.ts:15:51
+        at EditorPage.verifyTemplateIsActive (/Users/ulises/Developer/Scora-app/tests/e2e/utils/logger.ts:14:25)
+        at /Users/ulises/Developer/Scora-app/tests/e2e/ui/canvas-rendering.spec.ts:142:30
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/ui-canvas-rendering-Scora--1b28e-queness-Consistency-Visual--Mobile-Chrome/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/ui-canvas-rendering-Scora--1b28e-queness-Consistency-Visual--Mobile-Chrome/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/ui-canvas-rendering-Scora--1b28e-queness-Consistency-Visual--Mobile-Chrome/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/ui-canvas-rendering-Scora--1b28e-queness-Consistency-Visual--Mobile-Chrome/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/ui-canvas-rendering-Scora--1b28e-queness-Consistency-Visual--Mobile-Chrome/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  10) [Mobile Chrome] › tests/e2e/ui/canvas-rendering.spec.ts:240:5 › Scora App UI: Advanced Canvas Verification › Test 5: Cycling activity uses Speed labels instead of Pace 
+
+    [31mTest timeout of 60000ms exceeded.[39m
+
+    Error: page.waitForFunction: Test timeout of 60000ms exceeded.
+
+      263 |             await editorPage.clearCanvasTextLog();
+      264 |             await editorPage.selectTemplate(id);
+    > 265 |             await page.waitForFunction((prev) => (window as any)._scoraDrawCount > prev, startCount);
+          |                        ^
+      266 |
+      267 |             const logs = await editorPage.getCanvasTextLog();
+      268 |             const logStrDense = logs.join('').replace(/\s+/g, '').toUpperCase();
+        at /Users/ulises/Developer/Scora-app/tests/e2e/ui/canvas-rendering.spec.ts:265:24
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/ui-canvas-rendering-Scora--17e2b-peed-labels-instead-of-Pace-Mobile-Chrome/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/ui-canvas-rendering-Scora--17e2b-peed-labels-instead-of-Pace-Mobile-Chrome/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/ui-canvas-rendering-Scora--17e2b-peed-labels-instead-of-Pace-Mobile-Chrome/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/ui-canvas-rendering-Scora--17e2b-peed-labels-instead-of-Pace-Mobile-Chrome/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/ui-canvas-rendering-Scora--17e2b-peed-labels-instead-of-Pace-Mobile-Chrome/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  11) [Mobile Chrome] › tests/e2e/ui/editor.spec.ts:27:5 › Scora App UI: Sticker Editor (POM) › Test 2: Switching templates via dots updates active dot › Switch Template via Dot Index 
+
+    [31mTest timeout of 60000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 60000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('.template-dot').nth(1)[22m
+    [2m    - locator resolved to <span data-template="dm" class="template-dot"></span>[22m
+    [2m  - attempting click action[22m
+    [2m    2 × waiting for element to be visible, enabled and stable[22m
+    [2m      - element is visible, enabled and stable[22m
+    [2m      - scrolling into view if needed[22m
+    [2m      - done scrolling[22m
+    [2m      - element is outside of the viewport[22m
+    [2m    - retrying click action[22m
+    [2m    - waiting 20ms[22m
+    [2m    2 × waiting for element to be visible, enabled and stable[22m
+    [2m      - element is visible, enabled and stable[22m
+    [2m      - scrolling into view if needed[22m
+    [2m      - done scrolling[22m
+    [2m      - element is outside of the viewport[22m
+    [2m    - retrying click action[22m
+    [2m      - waiting 100ms[22m
+    [2m    115 × waiting for element to be visible, enabled and stable[22m
+    [2m        - element is visible, enabled and stable[22m
+    [2m        - scrolling into view if needed[22m
+    [2m        - done scrolling[22m
+    [2m        - element is outside of the viewport[22m
+    [2m      - retrying click action[22m
+    [2m        - waiting 500ms[22m
+
+
+       at pages/EditorPage.ts:103
+
+      101 |     async switchTemplateViaDot(index: number) {
+      102 |         const dots = this.page.locator('.template-dot');
+    > 103 |         await dots.nth(index).click();
+          |                               ^
+      104 |     }
+      105 |
+      106 |     @step('Verify Active Dot Index')
+        at EditorPage.call (/Users/ulises/Developer/Scora-app/tests/e2e/pages/EditorPage.ts:103:31)
+        at /Users/ulises/Developer/Scora-app/tests/e2e/utils/logger.ts:15:51
+        at EditorPage.switchTemplateViaDot (/Users/ulises/Developer/Scora-app/tests/e2e/utils/logger.ts:14:25)
+        at /Users/ulises/Developer/Scora-app/tests/e2e/ui/editor.spec.ts:39:26
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/ui-editor-Scora-App-UI-Sti-7429f-via-dots-updates-active-dot-Mobile-Chrome/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/ui-editor-Scora-App-UI-Sti-7429f-via-dots-updates-active-dot-Mobile-Chrome/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/ui-editor-Scora-App-UI-Sti-7429f-via-dots-updates-active-dot-Mobile-Chrome/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/ui-editor-Scora-App-UI-Sti-7429f-via-dots-updates-active-dot-Mobile-Chrome/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/ui-editor-Scora-App-UI-Sti-7429f-via-dots-updates-active-dot-Mobile-Chrome/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  12) [Mobile Chrome] › tests/e2e/ui/editor.spec.ts:140:5 › Scora App UI: Sticker Editor (POM) › Test 5: Selecting alternate activities resets template to default (#1) › Verify Template Dot is Active 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoHaveClass[2m([22m[32mexpected[39m[2m)[22m failed
+
+    Locator: locator('.template-dot[data-template="step-master"]')
+    Expected pattern: [32m/active/[39m
+    Received string:  [31m"template-dot"[39m
+    Timeout: 10000ms
+
+    Call log:
+    [2m  - Expect "toHaveClass" with timeout 10000ms[22m
+    [2m  - waiting for locator('.template-dot[data-template="step-master"]')[22m
+    [2m    14 × locator resolved to <span class="template-dot" data-template="step-master"></span>[22m
+    [2m       - unexpected value "template-dot"[22m
+
+
+       at pages/EditorPage.ts:97
+
+       95 |     async verifyTemplateIsActive(templateName: string) {
+       96 |         const dot = this.getTemplateDot(templateName);
+    >  97 |         await expect(dot).toHaveClass(/active/);
+          |                           ^
+       98 |     }
+       99 |
+      100 |     @step('Switch Template via Dot Index')
+        at EditorPage.call (/Users/ulises/Developer/Scora-app/tests/e2e/pages/EditorPage.ts:97:27)
+        at /Users/ulises/Developer/Scora-app/tests/e2e/utils/logger.ts:15:51
+        at EditorPage.verifyTemplateIsActive (/Users/ulises/Developer/Scora-app/tests/e2e/utils/logger.ts:14:25)
+        at /Users/ulises/Developer/Scora-app/tests/e2e/ui/editor.spec.ts:148:26
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/ui-editor-Scora-App-UI-Sti-9d58f-sets-template-to-default-1--Mobile-Chrome/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/ui-editor-Scora-App-UI-Sti-9d58f-sets-template-to-default-1--Mobile-Chrome/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/ui-editor-Scora-App-UI-Sti-9d58f-sets-template-to-default-1--Mobile-Chrome/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/ui-editor-Scora-App-UI-Sti-9d58f-sets-template-to-default-1--Mobile-Chrome/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/ui-editor-Scora-App-UI-Sti-9d58f-sets-template-to-default-1--Mobile-Chrome/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  12 failed
+    [chromium] › tests/e2e/ui/canvas-rendering.spec.ts:13:5 › Scora App UI: Advanced Canvas Verification › Test 1: Activity with Distance Verification (Uniqueness + Consistency + Visual) 
+    [chromium] › tests/e2e/ui/canvas-rendering.spec.ts:104:5 › Scora App UI: Advanced Canvas Verification › Test 2: Activity without Distance Verification (Uniqueness + Consistency + Visual) 
+    [Mobile Safari] › tests/e2e/ui/canvas-rendering.spec.ts:13:5 › Scora App UI: Advanced Canvas Verification › Test 1: Activity with Distance Verification (Uniqueness + Consistency + Visual) 
+    [Mobile Safari] › tests/e2e/ui/canvas-rendering.spec.ts:104:5 › Scora App UI: Advanced Canvas Verification › Test 2: Activity without Distance Verification (Uniqueness + Consistency + Visual) 
+    [Mobile Safari] › tests/e2e/ui/canvas-rendering.spec.ts:240:5 › Scora App UI: Advanced Canvas Verification › Test 5: Cycling activity uses Speed labels instead of Pace 
+    [Mobile Safari] › tests/e2e/ui/editor.spec.ts:27:5 › Scora App UI: Sticker Editor (POM) › Test 2: Switching templates via dots updates active dot 
+    [Mobile Safari] › tests/e2e/ui/editor.spec.ts:140:5 › Scora App UI: Sticker Editor (POM) › Test 5: Selecting alternate activities resets template to default (#1) 
+    [Mobile Chrome] › tests/e2e/ui/canvas-rendering.spec.ts:13:5 › Scora App UI: Advanced Canvas Verification › Test 1: Activity with Distance Verification (Uniqueness + Consistency + Visual) 
+    [Mobile Chrome] › tests/e2e/ui/canvas-rendering.spec.ts:104:5 › Scora App UI: Advanced Canvas Verification › Test 2: Activity without Distance Verification (Uniqueness + Consistency + Visual) 
+    [Mobile Chrome] › tests/e2e/ui/canvas-rendering.spec.ts:240:5 › Scora App UI: Advanced Canvas Verification › Test 5: Cycling activity uses Speed labels instead of Pace 
+    [Mobile Chrome] › tests/e2e/ui/editor.spec.ts:27:5 › Scora App UI: Sticker Editor (POM) › Test 2: Switching templates via dots updates active dot 
+    [Mobile Chrome] › tests/e2e/ui/editor.spec.ts:140:5 › Scora App UI: Sticker Editor (POM) › Test 5: Selecting alternate activities resets template to default (#1) 
+  12 skipped
+  69 passed (1.9m)
+
+[36m  Serving HTML report at http://localhost:57230. Press Ctrl+C to quit.[39m

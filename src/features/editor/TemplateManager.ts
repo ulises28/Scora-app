@@ -82,7 +82,7 @@ export const TEMPLATE_REGISTRY: readonly TemplateConfig[] = [
         category: 'distance',
         supportsBlackText: true,
         compact: true,
-        features: { distance: true, duration: true }
+        features: { distance: true }
     },
     {
         id: 'mono-minimal',
@@ -95,7 +95,8 @@ export const TEMPLATE_REGISTRY: readonly TemplateConfig[] = [
         id: 'split-badge',
         category: 'all',
         supportsBlackText: false,
-        features: { distance: true, paceSpeed: true, duration: true, heartRate: true }
+        compact: true,
+        features: { distance: true, paceSpeed: true }
     },
     {
         id: 'stacked-editorial',
@@ -107,13 +108,13 @@ export const TEMPLATE_REGISTRY: readonly TemplateConfig[] = [
         id: 'micro-serif',
         category: 'distance',
         supportsBlackText: true,
-        features: { distance: true, paceSpeed: true, duration: true, map: true }
+        features: { distance: true, paceSpeed: true, map: true }
     },
     {
         id: 'vhs-retro',
         category: 'distance',
         supportsBlackText: false,
-        features: { distance: true, duration: true, date: true, startTime: true }
+        features: { distance: true, date: true, startTime: true }
     },
 
     // ── REST OF TEMPLATES ──
@@ -129,7 +130,7 @@ export const TEMPLATE_REGISTRY: readonly TemplateConfig[] = [
         category: 'distance',
         supportsBlackText: true,
         compact: true,
-        features: { distance: true, duration: true }
+        features: { distance: true, duration: true, date: true }
     },
     {
         id: 'massive-serif',
@@ -142,7 +143,7 @@ export const TEMPLATE_REGISTRY: readonly TemplateConfig[] = [
         id: 'mag-cover',
         category: 'all',
         supportsBlackText: true,
-        features: { duration: true, date: true }
+        features: { date: true }
     },
     {
         id: 'mono-ghost',
@@ -168,6 +169,7 @@ export const TEMPLATE_REGISTRY: readonly TemplateConfig[] = [
         id: 'typewriter-mono',
         category: 'all',
         supportsBlackText: true,
+        compact: true,
         features: { distance: true, duration: true, date: true }
     },
     {
@@ -187,7 +189,7 @@ export const TEMPLATE_REGISTRY: readonly TemplateConfig[] = [
         id: 'editorial-row',
         category: 'all',
         supportsBlackText: true,
-        features: { distance: true, paceSpeed: true, duration: true, heartRate: true }
+        features: { distance: true, paceSpeed: true, heartRate: true }
     },
     {
         id: 'pure-map',
@@ -200,7 +202,7 @@ export const TEMPLATE_REGISTRY: readonly TemplateConfig[] = [
         id: 'pro-vertical',
         category: 'all',
         supportsBlackText: true,
-        features: { distance: true, paceSpeed: true, duration: true, startTime: true }
+        features: { distance: true, paceSpeed: true, startTime: true }
     },
     {
         id: 'mono-split',
@@ -224,7 +226,7 @@ export const TEMPLATE_REGISTRY: readonly TemplateConfig[] = [
         id: 'data',
         category: 'distance',
         supportsBlackText: true,
-        features: { distance: true, paceSpeed: true, duration: true, heartRate: true }
+        features: { distance: true, paceSpeed: true, duration: true }
     },
     {
         id: 'modern-pill',
@@ -236,13 +238,13 @@ export const TEMPLATE_REGISTRY: readonly TemplateConfig[] = [
         id: 'editorial-archive',
         category: 'distance',
         supportsBlackText: false,
-        features: { distance: true, paceSpeed: true }
+        features: { distance: true, paceSpeed: true, duration: true, date: true }
     },
     {
         id: 'info-glass',
         category: 'all',
         supportsBlackText: false,
-        features: { distance: true, paceSpeed: true, duration: true, heartRate: true }
+        features: { distance: true, paceSpeed: true, duration: true }
     },
     {
         id: 'workout-receipt',
@@ -266,7 +268,7 @@ export const TEMPLATE_REGISTRY: readonly TemplateConfig[] = [
         id: 'glass-slice',
         category: 'distance',
         supportsBlackText: false,
-        features: { distance: true, map: true }
+        features: { distance: true, paceSpeed: true }
     },
     {
         id: 'stealth-bar',
@@ -326,7 +328,7 @@ export const TEMPLATE_REGISTRY: readonly TemplateConfig[] = [
         seasonal: true,
         note: "Archived per user request - Mar 2026"
     },
-{ id: '8m2', category: 'distance', features: { distance: true, paceSpeed: true, duration: true, map: true }, seasonal: true, note: "International Women's Day — 8M (March 8)" },
+    { id: '8m2', category: 'distance', features: { distance: true, paceSpeed: true, duration: true, map: true }, seasonal: true, note: "International Women's Day — 8M (March 8)" },
 ];
 
 // Active template list — the only thing all consumers (UI, unit tests, e2e) should use.

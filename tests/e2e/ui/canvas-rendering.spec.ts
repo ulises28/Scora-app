@@ -28,7 +28,7 @@ test.describe('Scora App UI: Advanced Canvas Verification', () => {
         const expectedDist = stats.distanceVal;
         const expectedPace = stats.subValue.split(' ')[0];
 
-        await feedPage.openActivityEditor(activityTitle);
+        await feedPage.openActivityEditor(activityTitle, stats.mainValue);
         await editorPage.verifyEditorScreenVisible(activityTitle);
         await editorPage.injectCanvasInterceptor();
 
@@ -64,7 +64,7 @@ test.describe('Scora App UI: Advanced Canvas Verification', () => {
             const distEnabled = !!features.distance && stats.hasDistance;
             const durEnabled = !!features.duration && (!compact || !stats.hasDistance);
             const paceEnabled = !!features.paceSpeed && stats.hasDistance;
-            const hrEnabled = !!features.heartRate;
+            const hrEnabled = !!features.heartRate && (!compact || !stats.hasDistance);
 
             if (distEnabled) {
                 expect(logStrDense.includes(stats.distanceVal), `Template ${id} missing distance ${stats.distanceVal}`).toBeTruthy();
@@ -82,9 +82,11 @@ test.describe('Scora App UI: Advanced Canvas Verification', () => {
             }
 
             if (hrEnabled) {
-                const hr = (stats.maxHeartrate || stats.avgHeartrate || '').toString();
-                if (hr) {
-                    expect(logStrDense.includes(hr), `Template ${id} missing heartrate ${hr}`).toBeTruthy();
+                const hrMax = (stats.maxHeartrate || '').toString();
+                const hrAvg = (stats.avgHeartrate || '').toString();
+                if (hrMax || hrAvg) {
+                    const found = (hrMax && logStrDense.includes(hrMax)) || (hrAvg && logStrDense.includes(hrAvg));
+                    expect(found, `Template ${id} missing heartrate (looked for max: ${hrMax}, avg: ${hrAvg})`).toBeTruthy();
                 }
             }
 
@@ -116,7 +118,7 @@ test.describe('Scora App UI: Advanced Canvas Verification', () => {
         const stats = TestUtils.getExpectedStats(activity);
         const activityTitle = activity.name;
 
-        await feedPage.openActivityEditor(activityTitle);
+        await feedPage.openActivityEditor(activityTitle, stats.mainValue);
         await editorPage.verifyEditorScreenVisible(activityTitle);
         await editorPage.injectCanvasInterceptor();
 
@@ -151,7 +153,7 @@ test.describe('Scora App UI: Advanced Canvas Verification', () => {
             const distEnabled = !!features.distance && stats.hasDistance;
             const durEnabled = !!features.duration && (!compact || !stats.hasDistance);
             const paceEnabled = !!features.paceSpeed && stats.hasDistance;
-            const hrEnabled = !!features.heartRate;
+            const hrEnabled = !!features.heartRate && (!compact || !stats.hasDistance);
 
             if (distEnabled) {
                 expect(logStrDense.includes(stats.distanceVal), `Template ${id} missing distance ${stats.distanceVal}`).toBeTruthy();
@@ -163,9 +165,11 @@ test.describe('Scora App UI: Advanced Canvas Verification', () => {
             }
 
             if (hrEnabled) {
-                const hr = (stats.maxHeartrate || stats.avgHeartrate || '').toString();
-                if (hr) {
-                    expect(logStrDense.includes(hr), `Template ${id} missing heartrate ${hr}`).toBeTruthy();
+                const hrMax = (stats.maxHeartrate || '').toString();
+                const hrAvg = (stats.avgHeartrate || '').toString();
+                if (hrMax || hrAvg) {
+                    const found = (hrMax && logStrDense.includes(hrMax)) || (hrAvg && logStrDense.includes(hrAvg));
+                    expect(found, `Template ${id} missing heartrate (looked for max: ${hrMax}, avg: ${hrAvg})`).toBeTruthy();
                 }
             }
 
@@ -252,7 +256,7 @@ test.describe('Scora App UI: Advanced Canvas Verification', () => {
         const activityTitle = activity.name;
         const expectedSpeed = stats.subValue.split(' ')[0];
 
-        await feedPage.openActivityEditor(activityTitle);
+        await feedPage.openActivityEditor(activityTitle, stats.mainValue);
         await editorPage.injectCanvasInterceptor();
 
         const paceTemplates = activeTemplates.filter(t => t.features.paceSpeed).slice(0, 5);

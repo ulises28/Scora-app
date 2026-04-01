@@ -68,8 +68,8 @@ export class FeedPage extends BasePage {
     }
 
     @step('Click Activity Card to open Editor')
-    async openActivityEditor(activityName: string) {
-        const card = this.getActivityCard(activityName);
-        await card.click();
+    async openActivityEditor(activityName: string, stats?: string) {
+        const card = this.getActivityCard(activityName, stats);
+        await card.first().click();
     }
 }
