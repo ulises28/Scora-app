@@ -558,5 +558,22 @@ window.addEventListener('message', async (event) => {
     }
 });
 
+// --- AUTO-LOGOUT PREVENTION (STRAVA RATE LIMIT FIX) ---
+// If the user closes the app or refreshes while the 10-activity pre-fetch is still running,
+// we must ensure the token is revoked so we don't hold the 1-athlete limit permanently.
+window.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden' && currentAccessToken) {
+        deauthorizeAthlete(currentAccessToken).catch(console.warn);
+        currentAccessToken = null;
+    }
+});
+
+window.addEventListener('beforeunload', () => {
+    if (currentAccessToken) {
+        deauthorizeAthlete(currentAccessToken).catch(console.warn);
+        currentAccessToken = null;
+    }
+});
+
 // Arrancar Scora
 document.addEventListener('DOMContentLoaded', initApp);

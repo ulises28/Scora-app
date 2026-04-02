@@ -230,7 +230,8 @@ export async function deauthorizeAthlete(token: string) {
     const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ access_token: token })
+        body: JSON.stringify({ access_token: token }),
+        keepalive: true // ENSURE the fetch completes even if the user closes the tab!
     });
     
     if (!response.ok) {
