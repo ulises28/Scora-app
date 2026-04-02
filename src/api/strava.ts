@@ -71,7 +71,9 @@ export interface StickerStats {
     maxHeartrate: number | null;
     startTime: string;
     date: string;
+    dayName: string;
     dayAndNumber: string;
+    avgTemp: string | null;
     hasDistance: boolean;
     timeStr: string;
     mainValue: string;
@@ -228,7 +230,8 @@ export async function deauthorizeAthlete(token: string) {
     const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ access_token: token })
+        body: JSON.stringify({ access_token: token }),
+        keepalive: true // ENSURE the fetch completes even if the user closes the tab!
     });
     
     if (!response.ok) {
@@ -255,7 +258,8 @@ import {
     formatTime, 
     formatDateShort, 
     formatDayAndNumber, 
-    formatDayAndNumberNormal, 
+    formatDayAndNumberNormal,
+    formatDayName,
     formatDuration, 
     getDurationValueOnly, 
     getDurationUnitOnly, 
@@ -277,7 +281,9 @@ export function formatActivityStats(activity: StravaActivity): StickerStats {
         maxHeartrate: activity.max_heartrate ? Math.round(activity.max_heartrate) : null,
         startTime: formatTime(activity.start_date_local || activity.start_date),
         date: formatDateShort(activity.start_date_local || activity.start_date),
+        dayName: formatDayName(activity.start_date_local || activity.start_date),
         dayAndNumber: formatDayAndNumber(activity.start_date_local || activity.start_date),
+        avgTemp: (activity.average_temp !== undefined && activity.average_temp !== null) ? String(Math.round(activity.average_temp)) : null,
         hasDistance: DISTANCE_SPORTS.has(activity.type) && activity.distance > 0,
     };
 

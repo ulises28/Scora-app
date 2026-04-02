@@ -30,7 +30,7 @@ function buildColors(textColor: string) {
  * Draws the Scora Activity Icons (Run, Bike, Train) using Canvas Paths.
  * Optimized for high-fidelity rendering within stickers.
  */
-function drawScoraActivityIcon(ctx: CanvasRenderingContext2D, type: string, size = 24, color = "white") {
+function drawScoraActivityIcon(ctx: CanvasRenderingContext2D, type: string, size = 24, color = "white", x?: number, y?: number) {
     ctx.save();
     ctx.fillStyle = color;
     ctx.strokeStyle = color;
@@ -38,94 +38,72 @@ function drawScoraActivityIcon(ctx: CanvasRenderingContext2D, type: string, size
     ctx.lineJoin = 'round';
 
     const lowerType = type.toLowerCase();
+    const s = size / 24;
+    
+    // If x/y not provided, fall back to default sticker center-bottom logic
+    const drawX = x !== undefined ? x : (540 - size / 2);
+    const drawY = y !== undefined ? y : 1450;
 
-    if (lowerType.includes('bike') || lowerType.includes('ride') || lowerType.includes('cycling')) {
-        // BIKE ICON WITH RIDER
-        const scale = size / 24;
-        ctx.lineWidth = 1.8 * scale;
+    ctx.translate(drawX, drawY);
+
+    if (lowerType.includes('run')) {
+        // SCORA V15 "ABSOLUTE PERFECTION" RUNNER (Definitive Dreamstime Match)
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
         
-        // Wheels
-        ctx.beginPath(); ctx.arc(6 * scale, 17 * scale, 3.5 * scale, 0, Math.PI * 2); ctx.stroke();
-        ctx.beginPath(); ctx.arc(18 * scale, 17 * scale, 3.5 * scale, 0, Math.PI * 2); ctx.stroke();
+        // Head (Properly scaled)
+        ctx.beginPath(); ctx.arc(17.5 * s, 4.5 * s, 3 * s, 0, Math.PI * 2); ctx.fill();
         
-        // Frame
+        ctx.lineWidth = 4 * s; // Bold professional weight
         ctx.beginPath();
-        ctx.moveTo(6 * scale, 17 * scale);
-        ctx.lineTo(10 * scale, 11 * scale);
-        ctx.lineTo(17 * scale, 11 * scale);
-        ctx.lineTo(18 * scale, 17 * scale);
+        
+        // Torso
+        ctx.moveTo(15 * s, 8.5 * s); ctx.lineTo(11.5 * s, 15 * s);
+        
+        // Back Leg (Precise Hook)
+        ctx.moveTo(11.5 * s, 15 * s); ctx.lineTo(5 * s, 18.5 * s); ctx.lineTo(1.5 * s, 14 * s); 
+        
+        // Lead Leg (Power Strike)
+        ctx.moveTo(11.5 * s, 15 * s); ctx.lineTo(19 * s, 20 * s); ctx.lineTo(16 * s, 24 * s);
+        
+        // Lead Arm (Pumping Forward)
+        ctx.moveTo(15 * s, 9 * s); ctx.lineTo(21 * s, 12 * s); ctx.lineTo(17.5 * s, 16.5 * s);
+        
+        // Back Arm (Trailing)
+        ctx.moveTo(15 * s, 9 * s); ctx.lineTo(9.5 * s, 12 * s); ctx.lineTo(12.5 * s, 16 * s);
+        
         ctx.stroke();
+    } else if (lowerType.includes('bike') || lowerType.includes('ride')) {
+        // SCORA V3 BIKE ICON
+        ctx.lineWidth = 1.8 * s;
+        ctx.beginPath(); ctx.arc(6.5 * s, 17 * s, 4 * s, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(17.5 * s, 17 * s, 4 * s, 0, Math.PI * 2); ctx.stroke();
         
         ctx.beginPath();
-        ctx.moveTo(10 * scale, 11 * scale);
-        ctx.lineTo(13 * scale, 17 * scale);
+        ctx.moveTo(6.5 * s, 17 * s);
+        ctx.lineTo(10 * s, 10 * s);
+        ctx.quadraticCurveTo(11 * s, 7 * s, 14 * s, 7 * s);
+        ctx.quadraticCurveTo(17 * s, 7 * s, 16 * s, 11 * s);
+        ctx.lineTo(12 * s, 11 * s);
         ctx.stroke();
 
-        // Rider (Minimalist)
-        ctx.lineWidth = 1.5 * scale;
-        // Body
         ctx.beginPath();
-        ctx.moveTo(11 * scale, 11 * scale); // Seat area
-        ctx.lineTo(13 * scale, 6 * scale);  // Torso
-        ctx.lineTo(17 * scale, 8 * scale);  // Arms to handlebars
+        ctx.moveTo(17.5 * s, 17 * s);
+        ctx.lineTo(14 * s, 8.5 * s);
+        ctx.lineTo(16 * s, 6.5 * s);
         ctx.stroke();
-        
-        // Head
+
         ctx.beginPath();
-        ctx.arc(14 * scale, 4 * scale, 1.5 * scale, 0, Math.PI * 2);
+        ctx.arc(15.5 * s, 4 * s, 1.5 * s, 0, Math.PI * 2);
         ctx.fill();
-    } else if (lowerType.includes('train') || lowerType.includes('gym') || lowerType.includes('workout')) {
-        // TRAIN/GYM ICON (Custom Red/White design from React)
-        const scale = size / 24;
-        const red = "#ef4444";
-
-        ctx.fillStyle = red;
-        // Left small
-        ctx.beginPath(); ctx.roundRect(2 * scale, 9 * scale, 2 * scale, 6 * scale, 1 * scale); ctx.fill();
-        // Left large
-        ctx.beginPath(); ctx.roundRect(5 * scale, 7 * scale, 2 * scale, 10 * scale, 1 * scale); ctx.fill();
-        // Right large
-        ctx.beginPath(); ctx.roundRect(17 * scale, 7 * scale, 2 * scale, 10 * scale, 1 * scale); ctx.fill();
-        // Right small
-        ctx.beginPath(); ctx.roundRect(20 * scale, 9 * scale, 2 * scale, 6 * scale, 1 * scale); ctx.fill();
-        // Center White bar
-        ctx.fillStyle = "white";
-        ctx.beginPath(); ctx.roundRect(7 * scale, 10.5 * scale, 10 * scale, 3 * scale, 0.5 * scale); ctx.fill();
     } else {
-        // RUN ICON
-        const scale = size / 24;
-        ctx.lineWidth = 2 * scale;
-
-        // Head
-        ctx.beginPath(); ctx.arc(13 * scale, 4 * scale, 2 * scale, 0, Math.PI * 2); ctx.fill();
-        // Body / Arms
-        ctx.beginPath();
-        ctx.moveTo(8 * scale, 11 * scale);
-        ctx.lineTo(11 * scale, 8 * scale);
-        ctx.lineTo(15 * scale, 10 * scale);
-        ctx.lineTo(18 * scale, 8 * scale);
-        ctx.stroke();
-        // Legs
-        ctx.beginPath();
-        ctx.moveTo(11 * scale, 12 * scale);
-        ctx.lineTo(10 * scale, 17 * scale);
-        ctx.lineTo(7 * scale, 21 * scale);
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.moveTo(12 * scale, 13 * scale);
-        ctx.lineTo(16 * scale, 17 * scale);
-        ctx.lineTo(19 * scale, 16 * scale);
-        ctx.stroke();
-
-        // Motion Lines
-        ctx.lineWidth = 1 * scale;
-        ctx.globalAlpha = 0.6;
-        ctx.beginPath(); ctx.moveTo(2 * scale, 8 * scale); ctx.lineTo(6 * scale, 8 * scale); ctx.stroke();
-        ctx.globalAlpha = 0.4;
-        ctx.beginPath(); ctx.moveTo(3 * scale, 11 * scale); ctx.lineTo(7 * scale, 11 * scale); ctx.stroke();
-        ctx.globalAlpha = 0.2;
-        ctx.beginPath(); ctx.moveTo(2 * scale, 14 * scale); ctx.lineTo(5 * scale, 14 * scale); ctx.stroke();
+        // SCORA V3 GYM ICON
+        ctx.lineWidth = 2.2 * s;
+        ctx.beginPath(); ctx.moveTo(5 * s, 8 * s); ctx.lineTo(5 * s, 16 * s); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(8 * s, 6 * s); ctx.lineTo(8 * s, 18 * s); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(16 * s, 6 * s); ctx.lineTo(16 * s, 18 * s); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(19 * s, 8 * s); ctx.lineTo(19 * s, 16 * s); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(8 * s, 12 * s); ctx.lineTo(16 * s, 12 * s); ctx.stroke();
     }
 
     ctx.restore();
@@ -179,6 +157,8 @@ const RENDERER_REGISTRY: Record<string, StickerRenderer | { running: StickerRend
     'location-pill': drawLocationPill,
     'pure-map': drawPureMap,
     'pro-vertical': drawProVertical,
+    'editorial-strip': drawEditorialStrip,
+    'science-pro': drawSciencePro,
 
     // Scora 20 Collection
     'massive-serif': drawMassiveSerif,
@@ -254,7 +234,6 @@ export function drawTemplate(
     ctx.save();
     ctx.scale(scaleX, scaleY);
     ctx.clearRect(0, 0, TARGET_W, TARGET_H);
-
 
     // ── Optional SCORA branding ──────────────────────────────────────────────
     if (showLogo) {
@@ -3450,18 +3429,18 @@ function drawStepMaster(ctx: CanvasRenderingContext2D, stats: any, textColor = '
     ctx.textAlign = 'left';
     ctx.textBaseline = 'alphabetic';
 
-    // Measure
-    ctx.font = "italic 900 110px 'Plus Jakarta Sans'";
+    // Measure dynamically
+    ctx.font = "900 72px 'Plus Jakarta Sans'";
     const valW = ctx.measureText(valStr).width;
-    ctx.font = "800 28px 'Plus Jakarta Sans'";
+    ctx.font = "800 22px 'Plus Jakarta Sans'";
     const subW = ctx.measureText(subStr).width;
 
-    const pillH = 220; // Increased height to make white area bigger
-    const iconBoxSize = 130; // Smaller icon box as requested
-    const padding = 25; // Increased padding
-    const gap = 45;
-    const totalW = iconBoxSize + gap + Math.max(valW, subW) + padding + 60; 
-
+    const pillH = 120; // Pro Slim
+    const iconBoxSize = 90; // Balanced circle
+    const padding = 15;
+    const gap = 30;
+    const totalW = padding + iconBoxSize + gap + Math.max(valW, subW) + padding + 30; 
+    
     const cx = 540;
     const cy = 960;
     const startX = cx - totalW / 2;
@@ -3470,34 +3449,42 @@ function drawStepMaster(ctx: CanvasRenderingContext2D, stats: any, textColor = '
     // 1. Main Pill
     ctx.fillStyle = bgOuter;
     ctx.beginPath();
-    ctx.roundRect(startX, startY, totalW, pillH, 110);
+    ctx.roundRect(startX, startY, totalW, pillH, pillH / 2);
     ctx.fill();
 
-    // 2. Icon Box
+    // 2. Icon Box (Circle)
     ctx.fillStyle = bgInner;
     ctx.beginPath();
-    ctx.roundRect(startX + padding, startY + (pillH - iconBoxSize) / 2, iconBoxSize, iconBoxSize, 40);
+    const boxY = startY + (pillH - iconBoxSize) / 2;
+    ctx.roundRect(startX + padding, boxY, iconBoxSize, iconBoxSize, iconBoxSize / 2);
     ctx.fill();
 
-    // 3. Activity Icon (Centered in box)
-    const iconSize = 65;
+    // 3. Activity Icon (Centered in circle)
+    const iconSize = 50;
     ctx.save();
     ctx.translate(
         startX + padding + (iconBoxSize - iconSize) / 2,
-        startY + (pillH - iconBoxSize) / 2 + (iconBoxSize - iconSize) / 2
+        boxY + (iconBoxSize - iconSize) / 2
     );
-    drawScoraActivityIcon(ctx, activityType, iconSize, fgInner);
+    drawScoraActivityIcon(ctx, activityType, iconSize, fgInner, 0, 0);
     ctx.restore();
 
     // 4. Text
     ctx.fillStyle = fgOuter;
-    ctx.font = "italic 900 110px 'Plus Jakarta Sans'";
-    ctx.fillText(valStr, startX + padding + iconBoxSize + gap, startY + 130);
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    
+    const textX = startX + padding + iconBoxSize + gap;
+    
+    // Value text
+    ctx.font = "900 74px 'Plus Jakarta Sans'";
+    ctx.fillText(valStr, textX, startY + 45);
 
-    ctx.globalAlpha = 0.35;
-    ctx.font = "800 28px 'Plus Jakarta Sans'";
+    // Sub text
+    ctx.globalAlpha = 0.45;
+    ctx.font = "800 22px 'Plus Jakarta Sans'";
     if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0.25em"; }
-    ctx.fillText(subStr, startX + padding + iconBoxSize + gap, startY + 180);
+    ctx.fillText(subStr, textX, startY + 84);
     if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0px"; }
     ctx.globalAlpha = 1.0;
 }
@@ -3959,5 +3946,232 @@ function drawEditorialRow(ctx: CanvasRenderingContext2D, stats: any, textColor =
         ctx.fillText(u.toUpperCase(), x, cy + 40);
         if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0px"; }
     }
+}
+
+
+// ─── Editorial Strip Template ──────────────────────────────────────────────
+
+function drawCloudIcon(ctx: CanvasRenderingContext2D, x: number, y: number, size: number, color: string) {
+    ctx.save();
+    ctx.fillStyle = color;
+    const s = size / 24;
+    ctx.beginPath();
+    ctx.moveTo(x + 18 * s, x + 10 * s);
+    // Simplified cloud path
+    ctx.arc(x + 17 * s, y + 15 * s, 6 * s, -Math.PI/2, Math.PI, true);
+    ctx.arc(x + 8 * s, y + 15 * s, 5 * s, Math.PI, -Math.PI/4, true);
+    ctx.arc(x + 12 * s, y + 10 * s, 5 * s, -Math.PI, 0, false);
+    ctx.fill();
+    ctx.restore();
+}
+
+function drawMapPinIcon(ctx: CanvasRenderingContext2D, x: number, y: number, size: number, color: string) {
+    ctx.save();
+    ctx.fillStyle = color;
+    const s = size / 24;
+    
+    // Solid Marker Shape (Inverted Drop)
+    ctx.beginPath();
+    ctx.moveTo(x, y + 10 * s);
+    ctx.bezierCurveTo(x - 9 * s, y + 2 * s, x - 9 * s, y - 8 * s, x, y - 8 * s);
+    ctx.bezierCurveTo(x + 9 * s, y - 8 * s, x + 9 * s, y + 2 * s, x, y + 10 * s);
+    
+    // Inner cutout (the "hole") - using winding rule to create transparent center
+    ctx.moveTo(x + 3 * s, y - 1 * s);
+    ctx.arc(x, y - 1 * s, 3 * s, 0, Math.PI * 2, true);
+    
+    ctx.fill();
+    ctx.restore();
+}
+
+/**
+ * Dynamic Greeting based on start time string (e.g. "9:00 AM")
+ */
+function getGreeting(startTimeStr: string): string {
+    if (!startTimeStr) return "GOOD MORNING";
+    const [time, ampm] = startTimeStr.split(' ');
+    const [hour] = time.split(':').map(Number);
+    
+    let h24 = hour;
+    if (ampm === 'PM' && hour !== 12) h24 += 12;
+    if (ampm === 'AM' && hour === 12) h24 = 0;
+
+    if (h24 >= 5 && h24 < 12) return "GOOD MORNING";
+    if (h24 >= 12 && h24 < 19) return "GOOD AFTERNOON";
+    return "GOOD NIGHT";
+}
+
+function drawEditorialStrip(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const c = buildColors(textColor);
+    ctx.textBaseline = 'middle';
+
+    // 1. Top Section (Weather/Time)
+    ctx.textAlign = 'right';
+    ctx.fillStyle = c.solid;
+    
+    if (stats.avgTemp) {
+        ctx.font = "900 64px 'Inter'";
+        ctx.fillText(stats.avgTemp + '°', 1000, 150);
+    }
+    
+    ctx.font = "900 24px 'Plus Jakarta Sans'";
+    ctx.fillStyle = c.trans;
+    ctx.fillText('LOCAL TIME', 1000, 220);
+    
+    ctx.font = "700 32px 'Plus Jakarta Sans'";
+    ctx.fillStyle = c.solid;
+    ctx.fillText((stats.startTime || '--:--').toUpperCase(), 1000, 265);
+
+    // 2. Vertical Day Headline
+    ctx.save();
+    ctx.translate(900, 1000);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = 'center';
+    
+    // Dynamic Greeting
+    ctx.font = "900 28px 'Inter'";
+    ctx.fillStyle = c.trans;
+    setLetterSpacing(ctx, '12px');
+    ctx.fillText(getGreeting(stats.startTime), 0, -290);
+    setLetterSpacing(ctx, '0px');
+
+    // Massive Rotated Day
+    const dayStr = (stats.dayName || 'FRIDAY').toUpperCase();
+    let fontSize = 320;
+    ctx.font = `900 ${fontSize}px 'Inter'`;
+    let dayWidth = ctx.measureText(dayStr).width;
+    
+    if (dayWidth > 1100) {
+        fontSize = Math.floor(320 * (1100 / dayWidth));
+        ctx.font = `900 ${fontSize}px 'Inter'`;
+    }
+
+    const dayGrad = ctx.createLinearGradient(-500, 0, 500, 0);
+    dayGrad.addColorStop(0, textColor === 'black' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)');
+    dayGrad.addColorStop(1, textColor === 'black' ? 'rgba(0,0,0,0.9)' : 'rgba(255,255,255,0.9)');
+    ctx.fillStyle = dayGrad;
+    ctx.fillText(dayStr, 0, -125);
+    ctx.restore();
+
+    // 3. Bottom Section (Location/Stats)
+    const bottomY = 1730; // 1750 -> 1730
+    ctx.textAlign = 'left';
+    
+    ctx.strokeStyle = c.trans;
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(80, bottomY - 50); ctx.lineTo(1000, bottomY - 50); ctx.stroke();
+
+    // Location
+    drawMapPinIcon(ctx, 100, bottomY, 24, c.accent);
+    ctx.font = "900 24px 'Plus Jakarta Sans'";
+    ctx.fillStyle = c.trans;
+    setLetterSpacing(ctx, '4px');
+    ctx.fillText((stats.location || 'MEXICO CITY').toUpperCase(), 130, bottomY);
+    setLetterSpacing(ctx, '0px');
+
+    // Main Stat (Distance/Duration)
+    const mainVal = stats.distanceVal || stats.mainValue || '0.00';
+    const mainUnit = stats.hasDistance ? 'KM' : 'TIME';
+
+    drawStatWithUnit(ctx, 100, bottomY + 70, mainVal, mainUnit, { // 80 -> 70
+        valueFont: "900 84px 'Inter'",
+        unitFont: "700 32px 'Plus Jakarta Sans'",
+        valueColor: c.solid,
+        unitColor: c.trans,
+        gap: 20,
+        align: 'left'
+    });
+}
+
+function drawSciencePro(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const accent = '#A3FFD6';
+    ctx.textAlign = 'center';
+    
+    // 1. Header (Ultra-Compact)
+    const title = (stats.title || stats.type || 'Activity').toUpperCase();
+    ctx.font = "400 82px 'Space Grotesk'";
+    ctx.fillStyle = accent;
+    ctx.fillText(title, 540, 700); // Moved up from 720
+    
+    ctx.font = "400 32px 'Space Grotesk'";
+    const meta = `${(stats.location || 'MEXICO CITY').toUpperCase()} — ${stats.distanceVal || stats.mainValue || '0.00'} KM`;
+    ctx.globalAlpha = 0.8;
+    setLetterSpacing(ctx, '4px');
+    ctx.fillText(meta, 540, 745); // Gap reduced to 45
+    setLetterSpacing(ctx, '0px');
+    ctx.globalAlpha = 1.0;
+
+    // 2. Middle Row (Technical Grid V9 - Bold & Linked)
+    const iconY = 840; // Tighter vertical positioning
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = 5; // Bolder icons as requested
+
+    // A. Pace Pill (Standardized Width)
+    const paceVal = (stats.subValue || '5:15 /KM').toUpperCase();
+    const pillWidth = 200;
+    const startX = 320; 
+    
+    ctx.beginPath(); ctx.roundRect(startX, iconY - 35, pillWidth, 70, 35); ctx.stroke();
+    ctx.font = "700 24px 'Space Grotesk'";
+    ctx.fillText(paceVal, startX + pillWidth/2, iconY + 10);
+
+    // B. Globe Icon (Bold Wireframe)
+    function drawScientificGlobe(x, y) {
+        ctx.save();
+        ctx.lineWidth = 2.5; // Thicker wireframe
+        ctx.beginPath(); ctx.ellipse(x, y, 15, 38, 0, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath(); ctx.ellipse(x, y, 30, 32, 0, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x - 38, y); ctx.lineTo(x + 38, y); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x, y - 38); ctx.lineTo(x, y + 38); ctx.stroke();
+        ctx.restore();
+    }
+    drawScientificGlobe(startX + pillWidth + 40, iconY);
+
+    // C. Lightning Bolt (Bold Circle)
+    function drawScientificBolt(x, y) {
+        ctx.save();
+        ctx.beginPath(); ctx.arc(x, y, 40, 0, Math.PI * 2); ctx.stroke();
+        ctx.fillStyle = accent;
+        ctx.beginPath(); 
+        ctx.moveTo(x + 5, y - 18); ctx.lineTo(x - 12, y + 2); 
+        ctx.lineTo(x + 2, y + 2); ctx.lineTo(x - 5, y + 20); 
+        ctx.lineTo(x + 12, y); ctx.lineTo(x, y); ctx.fill();
+        ctx.restore();
+    }
+    drawScientificBolt(startX + pillWidth + 120, iconY);
+
+    // D. Chevron Target (Bold Multi-Chevron)
+    function drawScientificTarget(x, y) {
+        ctx.save();
+        ctx.beginPath(); ctx.arc(x, y, 40, 0, Math.PI * 2); ctx.stroke();
+        ctx.lineWidth = 3.5; // Bolder chevrons
+        const d = 12; // offset
+        const s = 6;  // size
+        ctx.beginPath(); ctx.moveTo(x - s, y - d - s); ctx.lineTo(x, y - d); ctx.lineTo(x + s, y - d - s); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x - s, y + d + s); ctx.lineTo(x, y + d); ctx.lineTo(x + s, y + d + s); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x - d - s, y - s); ctx.lineTo(x - d, y); ctx.lineTo(x - d - s, y + s); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x + d + s, y - s); ctx.lineTo(x + d, y); ctx.lineTo(x + d + s, y + s); ctx.stroke();
+        ctx.restore();
+    }
+    drawScientificTarget(startX + pillWidth + 200, iconY);
+
+    // 3. Performance Stats (Elite Density)
+    ctx.font = "400 62px 'Space Grotesk'";
+    ctx.fillText('PERFORMANCE', 540, 975); // Shaved 35px
+    ctx.globalAlpha = 0.9;
+    ctx.font = "400 52px 'Space Grotesk'";
+    const hrVal = stats.avgHeartrate || stats.maxHeartrate || '170';
+    ctx.fillText(hrVal + ' BPM', 540, 1025); // Shaved 40px
+    ctx.globalAlpha = 1.0;
+
+    // 4. Footer (Elite Density)
+    ctx.font = "700 36px 'Space Grotesk'";
+    ctx.globalAlpha = 0.6;
+    ctx.fillText(`© ${new Date().getFullYear()} SCORA`, 540, 1100); // Shaved 50px
+    ctx.globalAlpha = 1.0;
+    
+    ctx.font = "400 58px 'Space Grotesk'";
+    const tempVal = stats.avgTemp || '--';
+    ctx.fillText(tempVal + '°C TRACKED', 540, 1160);
 }
 

@@ -234,6 +234,44 @@ async function initApp() {
                     authSection.appendChild(mockBtn);
                 }
             }
+
+            // 👑 ADMIN KICK BUTTON: Force Reset System (Only visible with ?admin=scora)
+            if (urlParams.get('admin') === 'scora') {
+                const existingAdmin = document.getElementById('btn-admin-reset');
+                if (!existingAdmin) {
+                    const adminBtn = document.createElement('button');
+                    adminBtn.id = 'btn-admin-reset';
+                    adminBtn.className = 'btn-secondary';
+                    adminBtn.style.marginTop = '1rem';
+                    adminBtn.style.marginLeft = '1rem';
+                    adminBtn.style.background = 'rgba(255, 82, 82, 0.1)';
+                    adminBtn.style.border = '1px solid #ff5252';
+                    adminBtn.style.color = '#ff5252';
+                    adminBtn.style.fontSize = '0.9rem';
+                    adminBtn.innerHTML = '🚨 Admin: Liberar App';
+                    adminBtn.onclick = async () => {
+                        if (!confirm('Esto eliminará de la fila a todos los que estén esperando y liberará la conexión a Strava. ¿Continuar?')) return;
+                        adminBtn.textContent = 'Liberando...';
+                        try {
+                            const res = await fetch('/api/admin-reset', { method: 'POST' });
+                            const data = await res.json();
+                            localStorage.removeItem('stravaAuth');
+                            localStorage.removeItem('stravaActivities');
+                            if (data.tokenRevoked) {
+                                alert('¡Éxito! Sistema limpiado y usuario anterior desconectado de Strava.');
+                            } else {
+                                alert('Sistema limpiado (cola vaciada). \\n\\n⚠️ IMPORTANTE: No se pudo desautorizar automáticamente al usuario anterior porque la llave se perdió.\\nSi SIGUES sin poder conectarte (Error 403), ve a Strava.com en tu PC -> Ajustes -> "Mis Aplicaciones" y haz clic en "Revocar Acceso" de Scora.');
+                            }
+                        } catch (e) {
+                             alert('Error al reiniciar el sistema.');
+                        } finally {
+                            adminBtn.innerHTML = '🚨 Admin: Liberar App';
+                            window.location.reload();
+                        }
+                    };
+                    authSection.appendChild(adminBtn);
+                }
+            }
         }
         if (activitySection) activitySection.classList.add('hidden');
         if (btnLogin) {
@@ -555,6 +593,23 @@ window.addEventListener('message', async (event) => {
             if (activityListEl) activityListEl.innerHTML = `<p class='error-msg'>No pudimos conectar con la pista. Intenta de nuevo.</p>`;
             console.error("Error en Scora Auth:", error);
         }
+    }
+});
+
+// --- AUTO-LOGOUT PREVENTION (STRAVA RATE LIMIT FIX) ---
+// If the user closes the app or refreshes while the 10-activity pre-fetch is still running,
+// we must ensure the token is revoked so we don't hold the 1-athlete limit permanently.
+window.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden' && currentAccessToken) {
+        deauthorizeAthlete(currentAccessToken).catch(console.warn);
+        currentAccessToken = null;
+    }
+});
+
+window.addEventListener('beforeunload', () => {
+    if (currentAccessToken) {
+        deauthorizeAthlete(currentAccessToken).catch(console.warn);
+        currentAccessToken = null;
     }
 });
 
