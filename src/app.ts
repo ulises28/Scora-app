@@ -596,19 +596,40 @@ window.addEventListener('message', async (event) => {
     }
 });
 
+function sendDeauthBeacon(token: string) {
+    try {
+        if (navigator.sendBeacon) {
+            // Using a Blob to force the Content-Type to application/json so Vercel parses req.body correctly.
+            const payload = new Blob([JSON.stringify({ access_token: token })], { type: 'application/json' });
+            navigator.sendBeacon('/api/strava-deauth', payload);
+        } else {
+            deauthorizeAthlete(token).catch(console.warn);
+        }
+    } catch (e) {
+        console.warn('Deauth beacon failed:', e);
+    }
+}
+
 // --- AUTO-LOGOUT PREVENTION (STRAVA RATE LIMIT FIX) ---
 // If the user closes the app or refreshes while the 10-activity pre-fetch is still running,
 // we must ensure the token is revoked so we don't hold the 1-athlete limit permanently.
 window.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden' && currentAccessToken) {
-        deauthorizeAthlete(currentAccessToken).catch(console.warn);
+        sendDeauthBeacon(currentAccessToken);
+        currentAccessToken = null;
+    }
+});
+
+window.addEventListener('pagehide', () => {
+    if (currentAccessToken) {
+        sendDeauthBeacon(currentAccessToken);
         currentAccessToken = null;
     }
 });
 
 window.addEventListener('beforeunload', () => {
     if (currentAccessToken) {
-        deauthorizeAthlete(currentAccessToken).catch(console.warn);
+        sendDeauthBeacon(currentAccessToken);
         currentAccessToken = null;
     }
 });
