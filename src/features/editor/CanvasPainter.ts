@@ -4070,7 +4070,7 @@ function drawEditorialStrip(ctx: CanvasRenderingContext2D, stats: any, textColor
     setLetterSpacing(ctx, '0px');
 
     // Main Stat (Distance/Duration)
-    const mainVal = stats.distanceVal || stats.mainValue || '0.00';
+    const mainVal = stats.hasDistance ? stats.distanceVal : stats.mainValue;
     const mainUnit = stats.hasDistance ? 'KM' : 'TIME';
 
     drawStatWithUnit(ctx, 100, bottomY + 70, mainVal, mainUnit, { // 80 -> 70

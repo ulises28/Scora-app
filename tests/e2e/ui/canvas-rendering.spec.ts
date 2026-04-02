@@ -416,7 +416,9 @@ test.describe('Scora App UI: Advanced Canvas Verification', () => {
         const logs = await editorPage.getCanvasTextLog();
         const logStr = logs.join(' ').toUpperCase();
         expect(logStr).toContain('LOCAL TIME');
-        expect(logStr).toContain('9:00 AM');
+        
+        const expectedTime = TestUtils.getExpectedStats(mockActivities[0]).startTime;
+        expect(logStr).toContain(expectedTime.toUpperCase());
     });
 
     test('Test 11: Science Pro - Technical HUD & Performance', async ({ page }) => {
