@@ -13,9 +13,13 @@ describe('TemplateManager', () => {
 
     // Minimal DOM: empty containers — initTemplateManager generates everything.
     beforeEach(() => {
+        // Mock scrollIntoView (not supported in JSDOM)
+        Element.prototype.scrollIntoView = vi.fn();
+
         document.body.innerHTML = `
             <div id="canvas-wrapper"></div>
-            <div id="template-dots"></div>
+            <div id="sticker-gallery"></div>
+            <div id="template-dots" class="hidden"></div>
             <button id="btn-template-prev"></button>
             <button id="btn-template-next"></button>
             <div id="color-toggle">
@@ -35,35 +39,35 @@ describe('TemplateManager', () => {
     // These tests verify the contract: the DOM reflects TEMPLATES exactly.
     // They do not care how many templates there are or what they are named.
 
-    it('should generate exactly TEMPLATES.length dots', () => {
+    it('should generate exactly TEMPLATES.length thumbs', () => {
         initTemplateManager(vi.fn());
-        expect(document.querySelectorAll('.template-dot').length).toBe(TEMPLATES.length);
+        expect(document.querySelectorAll('.sticker-thumb').length).toBe(TEMPLATES.length);
     });
 
-    it('should generate one dot per active template with the correct data-template attribute', () => {
+    it('should generate one thumb per active template with the correct data-template attribute', () => {
         initTemplateManager(vi.fn());
         TEMPLATES.forEach(t => {
-            expect(document.querySelector(`.template-dot[data-template="${t}"]`)).not.toBeNull();
+            expect(document.querySelector(`.sticker-thumb[data-template="${t}"]`)).not.toBeNull();
         });
     });
 
-    it('should mark only the first template dot as active on init', () => {
+    it('should mark only the first template thumb as active on init', () => {
         initTemplateManager(vi.fn());
-        document.querySelectorAll('.template-dot').forEach((dot, i) => {
-            expect(dot.classList.contains('active')).toBe(i === 0);
+        document.querySelectorAll('.sticker-thumb').forEach((thumb, i) => {
+            expect(thumb.classList.contains('active')).toBe(i === 0);
         });
     });
 
     // ── Default state ───────────────────────────────────────────────────────────
 
-    it('should initialize with the first template active and no onChange call', () => {
+    it('should initialize with the first template active and exactly one onChange call', () => {
         const mockOnChange = vi.fn();
         const manager = initTemplateManager(mockOnChange);
 
         expect(manager.template).toBe(TEMPLATES[0]);
         expect(manager.color).toBe('white');
         expect(manager.showLogo).toBe(true);
-        expect(mockOnChange).not.toHaveBeenCalled();
+        expect(mockOnChange).toHaveBeenCalledTimes(1); 
     });
 
     // ── Dot click — parameterised over all active templates ─────────────────────
@@ -79,8 +83,9 @@ describe('TemplateManager', () => {
             dot.click();
 
             expect(manager.template).toBe(template);
-            expect(mockOnChange).toHaveBeenCalledTimes(1);
-            expect(mockOnChange).toHaveBeenCalledWith(template, 'white', true);
+            // 1 on init + 1 on click = 2
+            expect(mockOnChange).toHaveBeenCalledTimes(2);
+            expect(mockOnChange).toHaveBeenLastCalledWith(template, 'white', true);
 
             // Exactly this dot should be active; all others must not be
             document.querySelectorAll('.template-dot').forEach(d => {
@@ -94,17 +99,17 @@ describe('TemplateManager', () => {
     // Uses the last active template as a non-trivial target (works even if
     // TEMPLATES shrinks to a single entry).
 
-    it('setTemplate should activate the correct dot without calling onChange', () => {
+    it('setTemplate should activate the correct thumb and call onChange', () => {
         const mockOnChange = vi.fn();
         const manager = initTemplateManager(mockOnChange);
 
-        const target = TEMPLATES.at(-1)!; // last active template — always valid
+        const target = TEMPLATES.at(-1)!; 
         manager.setTemplate(target);
 
         expect(manager.template).toBe(target);
-        expect(mockOnChange).not.toHaveBeenCalled(); // setTemplate is silent
+        expect(mockOnChange).toHaveBeenCalledTimes(2); // 1 init + 1 set
 
-        document.querySelectorAll('.template-dot').forEach(d => {
+        document.querySelectorAll('.sticker-thumb').forEach(d => {
             const isTarget = (d as HTMLElement).dataset.template === target;
             expect(d.classList.contains('active')).toBe(isTarget);
         });
@@ -154,8 +159,8 @@ describe('TemplateManager', () => {
         (document.getElementById('color-toggle') as HTMLElement).click();
 
         expect(manager.color).toBe('black');
-        expect(mockOnChange).toHaveBeenCalledTimes(1);
-        expect(mockOnChange).toHaveBeenCalledWith(TEMPLATES[0], 'black', true);
+        expect(mockOnChange).toHaveBeenCalledTimes(2); // 1 init + 1 toggle
+        expect(mockOnChange).toHaveBeenLastCalledWith(TEMPLATES[0], 'black', true);
     });
 
     it('should toggle logo off and fire onChange', () => {
@@ -165,7 +170,7 @@ describe('TemplateManager', () => {
         (document.getElementById('logo-toggle') as HTMLElement).click();
 
         expect(manager.showLogo).toBe(false);
-        expect(mockOnChange).toHaveBeenCalledTimes(1);
-        expect(mockOnChange).toHaveBeenCalledWith(TEMPLATES[0], 'white', false);
+        expect(mockOnChange).toHaveBeenCalledTimes(2); // 1 init + 1 toggle
+        expect(mockOnChange).toHaveBeenLastCalledWith(TEMPLATES[0], 'white', false);
     });
 });

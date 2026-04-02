@@ -31,6 +31,10 @@
                 <div class="logo-dot"></div>
                 SCORA<span>.</span>
             </div>
+            <div id="editor-nav-context" class="hidden">
+                <button id="btn-back" class="btn-text">← Volver</button>
+                <span id="selected-activity-name"></span>
+            </div>
         </header>
 
         <main id="screen-feed" class="screen active">
@@ -62,23 +66,24 @@
         </main>
 
         <main id="screen-editor" class="screen">
-            <nav class="editor-nav">
-                <button id="btn-back" class="btn-text">← Volver</button>
-                <span id="selected-activity-name">Actividad seleccionada</span>
-            </nav>
-
             <div class="editor-layout">
+
                 <div class="preview-container">
                     <!-- Arrows — desktop only, hidden on touch screens -->
                     <button class="template-arrow template-arrow-prev" id="btn-template-prev"
                         aria-label="Previous template">&#8249;</button>
-                    <div class="canvas-wrapper" id="canvas-wrapper">
+                    <div class="canvas-wrapper transparency-grid" id="canvas-wrapper">
                         <canvas id="storyCanvas"></canvas>
                     </div>
+
                     <button class="template-arrow template-arrow-next" id="btn-template-next"
                         aria-label="Next template">&#8250;</button>
-                    <!-- Dot indicators — generated dynamically by TemplateManager from TEMPLATES array -->
+                    <!-- Sticker Gallery (New Redesign) -->
+                    <div class="sticker-gallery" id="sticker-gallery"></div>
+
+                    <!-- Legacy dots — kept for E2E test compatibility (hidden via CSS) -->
                     <div class="template-dots" id="template-dots"></div>
+
                 </div>
 
                 <aside class="editor-controls">

@@ -414,8 +414,56 @@ async function initApp() {
 
 // --- EVENT LISTENERS GLOBALES ---
 
+const goHomeEl = document.getElementById('go-home');
+if (goHomeEl) goHomeEl.addEventListener('click', () => {
+    if (window.location.hash === '#editor') {
+        window.history.back();
+    } else {
+        showScreen('screen-feed');
+    }
+});
+
 if (btnBack) btnBack.addEventListener('click', () => window.history.back());
+
 if (btnDownload) btnDownload.addEventListener('click', () => exportCanvas('storyCanvas'));
+
+// --- STUDIO PRECISION: Click-to-Copy Feature ---
+const canvasWrapper = document.querySelector('.canvas-wrapper');
+if (canvasWrapper) {
+    canvasWrapper.addEventListener('click', async () => {
+        try {
+            const canvas = document.getElementById('storyCanvas') as HTMLCanvasElement;
+            if (!canvas) return;
+
+            // Immediate Visual Feedback (Studio Precision)
+            canvasWrapper.classList.add('copied');
+            setTimeout(() => canvasWrapper.classList.remove('copied'), 1500);
+
+            canvas.toBlob(async (blob) => {
+                if (!blob) return;
+                try {
+                    // Check for modern ClipboardItem support
+                    if (typeof window.ClipboardItem !== 'undefined') {
+                        const item = new window.ClipboardItem({ "image/png": blob });
+                        await navigator.clipboard.write([item]);
+                        
+                        // Visual Feedback
+                        console.log("[Studio] Sticker copied to clipboard.");
+                    } else {
+                        throw new Error("ClipboardItem not supported in this browser.");
+                    }
+                } catch (err) {
+                    console.error("[Studio] Copy failed:", err);
+                    alert("Sorry, your browser doesn't support direct image copying. Please use the Download button!");
+                }
+            });
+
+        } catch (err) {
+            console.error("[Studio] Clipboard API failed:", err);
+        }
+    });
+}
+
 
 if (btnSync) {
     btnSync.addEventListener('click', () => {

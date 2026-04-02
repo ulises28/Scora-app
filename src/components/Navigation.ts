@@ -7,4 +7,12 @@ export function showScreen(screenId: string) {
 
     const target = document.getElementById(screenId);
     if (target) target.classList.add('active');
+
+    // Toggle Header Context
+    const navContext = document.getElementById('editor-nav-context');
+    if (navContext) {
+        if (screenId === 'screen-editor') navContext.classList.remove('hidden');
+        else navContext.classList.add('hidden');
+    }
 }
+
