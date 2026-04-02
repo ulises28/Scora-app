@@ -235,8 +235,8 @@ export function drawTemplate(
     showLogo = true
 ) {
     const canvas = document.getElementById(canvasId) as HTMLCanvasElement;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas?.getContext('2d');
+    if (!ctx) return;
 
     // Standard Story resolution (1080 × 1920)
     const TARGET_W = 1080;

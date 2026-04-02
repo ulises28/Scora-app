@@ -24,13 +24,13 @@ export class EditorPage extends BasePage {
         super(page);
         this.editorScreen = page.locator('#screen-editor');
         this.titleLabel = page.locator('#selected-activity-name');
-        this.nextTemplateButton = page.locator('#btn-template-next');
-        this.prevTemplateButton = page.locator('#btn-template-prev');
+        this.nextTemplateButton = page.locator('.template-arrow-next'); // High-end arrows
+        this.prevTemplateButton = page.locator('.template-arrow-prev'); // High-end arrows
         this.textColorToggle = page.locator('#color-toggle');
         this.logoToggle = page.locator('#logo-toggle');
         this.downloadButton = page.locator('#btn-download');
         this.backButton = page.locator('#btn-back');
-        this.canvasWrapper = page.locator('#canvas-wrapper');
+        this.canvasWrapper = page.locator('.canvas-wrapper');
     }
 
     @step('Verify Editor Screen is Visible')
@@ -73,40 +73,36 @@ export class EditorPage extends BasePage {
         return await this.page.evaluate(() => (window as any)._scoraDrawCount || 0);
     }
 
-    getTemplateDot(templateName: string): Locator {
-        const slug = templateName.toLowerCase();
-        return this.page.locator(`.template-dot[data-template="${slug}"]`);
+    getStickerThumb(templateId: string): Locator {
+        const slug = templateId.toLowerCase();
+        return this.page.locator(`.sticker-thumb[data-template="${slug}"]`);
     }
 
-    @step('Select Template via Arrow Navigation')
-    async selectTemplate(templateName: string) {
-        const targetSlug = templateName.toLowerCase();
-        const targetIdx = TEMPLATE_ORDER.indexOf(targetSlug);
-        if (targetIdx === -1) throw new Error(`Unknown template: "${templateName}"`);
-
-        const dot = this.getTemplateDot(templateName);
-        await dot.waitFor({ state: 'attached' });
-        await dot.evaluate((node) => (node as HTMLElement).click());
+    @step('Select Template via Gallery Thumbnail')
+    async selectTemplate(templateId: string) {
+        const thumb = this.getStickerThumb(templateId);
+        await thumb.waitFor({ state: 'visible' });
+        await thumb.click();
     }
 
-    @step('Verify Template Dot is Active')
-    async verifyTemplateIsActive(templateName: string) {
-        const dot = this.getTemplateDot(templateName);
-        await expect(dot).toHaveClass(/active/);
+    @step('Verify Thumbnail is Active')
+    async verifyTemplateIsActive(templateId: string) {
+        const thumb = this.getStickerThumb(templateId);
+        await expect(thumb).toHaveClass(/active/);
     }
 
-    @step('Switch Template via Dot Index')
-    async switchTemplateViaDot(index: number) {
-        const dots = this.page.locator('.template-dot');
-        const dot = dots.nth(index);
-        await dot.waitFor({ state: 'attached' });
-        await dot.evaluate((node) => (node as HTMLElement).click());
+    @step('Switch Template via Thumbnail Index')
+    async switchTemplateViaThumb(index: number) {
+        const thumbs = this.page.locator('.sticker-thumb');
+        const thumb = thumbs.nth(index);
+        await thumb.waitFor({ state: 'visible' });
+        await thumb.click();
     }
 
-    @step('Verify Active Dot Index')
-    async verifyActiveDotIndex(index: number) {
-        const dots = this.page.locator('.template-dot');
-        await expect(dots.nth(index)).toHaveClass(/active/);
+    @step('Verify Active Thumbnail Index')
+    async verifyActiveThumbIndex(index: number) {
+        const thumbs = this.page.locator('.sticker-thumb');
+        await expect(thumbs.nth(index)).toHaveClass(/active/);
     }
 
     @step('Navigate to Next Template via Arrow')
@@ -121,8 +117,7 @@ export class EditorPage extends BasePage {
 
     @step('Swipe Left (Next Template)')
     async swipeLeft() {
-        const wrapper = this.page.locator('#canvas-wrapper');
-        await wrapper.evaluate((el: HTMLElement) => {
+        await this.canvasWrapper.evaluate((el: HTMLElement) => {
             const touchStart = new Event('touchstart', { bubbles: true }) as any;
             touchStart.touches = [{ clientX: 300 }];
             el.dispatchEvent(touchStart);
@@ -135,8 +130,7 @@ export class EditorPage extends BasePage {
 
     @step('Swipe Right (Prev Template)')
     async swipeRight() {
-        const wrapper = this.page.locator('#canvas-wrapper');
-        await wrapper.evaluate((el: HTMLElement) => {
+        await this.canvasWrapper.evaluate((el: HTMLElement) => {
             const touchStart = new Event('touchstart', { bubbles: true }) as any;
             touchStart.touches = [{ clientX: 100 }];
             el.dispatchEvent(touchStart);
@@ -145,6 +139,29 @@ export class EditorPage extends BasePage {
             touchEnd.changedTouches = [{ clientX: 300 }];
             el.dispatchEvent(touchEnd);
         });
+    }
+
+    @step('Click Canvas to Copy')
+    async clickCanvasToCopy() {
+        await this.canvasWrapper.click({ force: true });
+    }
+
+    @step('Verify One-Tap Copy Feedback')
+    async verifyCopyFeedback() {
+        await expect(this.canvasWrapper).toHaveClass(/copied/);
+        // Should fade out eventually
+        await expect(this.canvasWrapper).not.toHaveClass(/copied/, { timeout: 3000 });
+    }
+
+    @step('Verify Desktop Arrows Visibility')
+    async verifyDesktopArrowsVisibility(shouldBeVisible: boolean) {
+        if (shouldBeVisible) {
+            await expect(this.nextTemplateButton).toBeVisible();
+            await expect(this.prevTemplateButton).toBeVisible();
+        } else {
+            await expect(this.nextTemplateButton).not.toBeVisible();
+            await expect(this.prevTemplateButton).not.toBeVisible();
+        }
     }
 
     @step('Set Text Color')

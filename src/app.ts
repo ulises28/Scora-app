@@ -435,20 +435,29 @@ if (canvasWrapper) {
             const canvas = document.getElementById('storyCanvas') as HTMLCanvasElement;
             if (!canvas) return;
 
+            // Immediate Visual Feedback (Studio Precision)
+            canvasWrapper.classList.add('copied');
+            setTimeout(() => canvasWrapper.classList.remove('copied'), 1500);
+
             canvas.toBlob(async (blob) => {
                 if (!blob) return;
                 try {
-                    const item = new ClipboardItem({ "image/png": blob });
-                    await navigator.clipboard.write([item]);
-                    
-                    // Visual Feedback
-                    canvasWrapper.classList.add('copied');
-                    setTimeout(() => canvasWrapper.classList.remove('copied'), 1500);
-                    console.log("[Studio] Sticker copied to clipboard.");
+                    // Check for modern ClipboardItem support
+                    if (typeof window.ClipboardItem !== 'undefined') {
+                        const item = new window.ClipboardItem({ "image/png": blob });
+                        await navigator.clipboard.write([item]);
+                        
+                        // Visual Feedback
+                        console.log("[Studio] Sticker copied to clipboard.");
+                    } else {
+                        throw new Error("ClipboardItem not supported in this browser.");
+                    }
                 } catch (err) {
                     console.error("[Studio] Copy failed:", err);
+                    alert("Sorry, your browser doesn't support direct image copying. Please use the Download button!");
                 }
             });
+
         } catch (err) {
             console.error("[Studio] Clipboard API failed:", err);
         }

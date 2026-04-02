@@ -312,62 +312,75 @@ test.describe('Scora App UI: Advanced Canvas Verification', () => {
         }
     });
 
-    // --- Isolated Performance Bars Scenarios ---
-    const runName = 'Carrera por la mañana';
-    const runId = 17625485696;
 
-    const perfBarsScenarios = [
-        { id: '5k', count: 5, label: '5k (White)', textColor: 'white' as const },
-        { id: '5k-black', count: 5, label: '5k (Black Tech)', textColor: 'black' as const },
-        { id: 'half', count: 21, label: '21k (Half)', textColor: 'white' as const },
-        { id: 'marathon', count: 43, label: '42k (Marathon)', textColor: 'white' as const }
-    ];
+    test('Test 8: Absolute Perfection - One-Tap Copy & Feedback', async ({ page, context }, testInfo) => {
+        // Mock Clipboard API for the test environment (Hardened for Safari)
+        if (testInfo.project.name !== 'Mobile Safari') {
+            await context.grantPermissions(['clipboard-write', 'clipboard-read']).catch(() => {});
+        }
+        await page.addInitScript(() => {
+            const mockClipboard = {
+                write: async () => Promise.resolve(),
+                writeText: async () => Promise.resolve(),
+            };
+            
+            // Force override even if it exists partially
+            Object.defineProperty(navigator, 'clipboard', {
+                value: mockClipboard,
+                configurable: true,
+                writable: true
+            });
 
-    for (const scenario of perfBarsScenarios) {
-        test.skip(`Test 7.${scenario.id}: Performance Bars Adaptive Scaling (${scenario.label})`, async ({ page }) => {
-            const api = new MockStravaClient(page);
-            const feedPage = new FeedPage(page);
-            const editorPage = new EditorPage(page);
-
-            await feedPage.injectMockAuth();
-            await api.mockSuccessfulActivities();
-            await feedPage.goto();
-            await feedPage.waitForLoaderToHide();
-
-            // 1. Mock detailed response
-            await api.mockDetailedActivity(runId, scenario.count);
-
-            // 2. Open editor
-            await feedPage.openActivityEditor(runName);
-            await editorPage.verifyEditorScreenVisible(runName);
-
-            // 3. Set color if needed and Select Performance Bars
-            if (scenario.textColor === 'black') {
-                await editorPage.setTextColor('black');
+            if (typeof (window as any).ClipboardItem === 'undefined') {
+                (window as any).ClipboardItem = class MockClipboardItem {
+                    constructor(data: any) { (this as any).data = data; }
+                };
             }
-
-            console.info(`[Test] Selecting performance-bars for ${scenario.id}`);
-            const responsePromise = page.waitForResponse(resp =>
-                resp.url().includes('/api/strava-activities') &&
-                resp.request().method() === 'POST' &&
-                resp.request().postDataJSON()?.activity_id === runId,
-                { timeout: 15000 }
-            );
-
-            await editorPage.selectTemplate('performance-bars');
-            await responsePromise;
-
-            // Wait for canvas to settle
-            await page.waitForFunction(() => {
-                const canvas = document.getElementById('storyCanvas') as HTMLCanvasElement;
-                return canvas && canvas.style.opacity === '1';
-            });
-
-            // 4. Verification
-            await expect(editorPage.canvasWrapper).toHaveScreenshot(`perf-bars-${scenario.id}.png`, {
-                maxDiffPixelRatio: 0.1,
-                threshold: 0.2
-            });
         });
-    }
+
+        const feedPage = new FeedPage(page);
+        const editorPage = new EditorPage(page);
+        const api = new MockStravaClient(page);
+
+        await feedPage.injectMockAuth();
+        await api.mockSuccessfulActivities();
+        await feedPage.goto();
+        await feedPage.waitForLoaderToHide();
+
+        const activity = TestUtils.findFirstActivityWithDistance()!;
+        await feedPage.openActivityEditor(activity.name);
+        
+        // 1. Verify Universal Grid on thumbnails
+        const firstThumb = editorPage.getStickerThumb(activeTemplates[0].id);
+        await expect(firstThumb).toHaveClass(/transparency-grid/);
+
+        // 2. Click to Copy (Wait for canvas to be ready)
+        await page.waitForSelector('#storyCanvas');
+        await editorPage.clickCanvasToCopy();
+        
+        // 3. Verify Feedback pulse/class
+        await editorPage.verifyCopyFeedback();
+    });
+
+    test('Test 9: Studio Precision - Desktop Navigation Arrows (Viewport Specific)', async ({ page }) => {
+        const feedPage = new FeedPage(page);
+        const editorPage = new EditorPage(page);
+        const api = new MockStravaClient(page);
+
+        await feedPage.injectMockAuth();
+        await api.mockSuccessfulActivities();
+        
+        // 1. Check Large Viewport (Desktop)
+        await page.setViewportSize({ width: 1200, height: 800 });
+        await feedPage.goto();
+        await feedPage.waitForLoaderToHide();
+        const activity = TestUtils.findFirstActivityWithDistance()!;
+        await feedPage.openActivityEditor(activity.name);
+        
+        await editorPage.verifyDesktopArrowsVisibility(true);
+
+        // 2. Check Small Viewport (Mobile)
+        await page.setViewportSize({ width: 375, height: 667 });
+        await editorPage.verifyDesktopArrowsVisibility(false);
+    });
 });

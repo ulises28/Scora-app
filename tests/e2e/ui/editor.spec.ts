@@ -27,7 +27,7 @@ test.describe('Scora App UI: Sticker Editor (POM)', () => {
         await feedPage.waitForLoaderToHide();
     });
 
-    test('Test 2: Switching templates via dots updates active dot', async ({ page }) => {
+    test('Test 2: Switching templates via gallery thumbnails', async ({ page }) => {
         const feedPage = new FeedPage(page);
         const editorPage = new EditorPage(page);
 
@@ -37,17 +37,17 @@ test.describe('Scora App UI: Sticker Editor (POM)', () => {
         // Default should be the first active template in the registry
         await editorPage.verifyTemplateIsActive(DEFAULT_ID);
 
-        // Switch to 2nd template in registry
+        // Switch to 2nd template via thumbnail
         const secondId = ACTIVE_TEMPLATES[1].id;
-        await editorPage.switchTemplateViaDot(1);
+        await editorPage.switchTemplateViaThumb(1);
         await editorPage.verifyTemplateIsActive(secondId);
-        await editorPage.verifyActiveDotIndex(1);
+        await editorPage.verifyActiveThumbIndex(1);
 
-        // Switch to 3rd template in registry
+        // Switch to 3rd template via thumbnail
         const thirdId = ACTIVE_TEMPLATES[2].id;
-        await editorPage.switchTemplateViaDot(2);
+        await editorPage.switchTemplateViaThumb(2);
         await editorPage.verifyTemplateIsActive(thirdId);
-        await editorPage.verifyActiveDotIndex(2);
+        await editorPage.verifyActiveThumbIndex(2);
     });
 
     test('Test 2b: Arrow/Swipe navigation between templates', async ({ page, isMobile }) => {
@@ -109,7 +109,7 @@ test.describe('Scora App UI: Sticker Editor (POM)', () => {
 
         if (!isMobile) {
             // At the last template the Next button must be disabled (Desktop only check)
-            await expect(page.locator('#btn-template-next')).toBeDisabled();
+            await expect(editorPage.nextTemplateButton).toBeDisabled();
         }
     });
 
