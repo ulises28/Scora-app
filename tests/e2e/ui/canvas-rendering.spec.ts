@@ -11,7 +11,8 @@ test.describe('Scora App UI: Advanced Canvas Verification', () => {
     const activeTemplates = TEMPLATE_REGISTRY.filter(t => !t.seasonal);
 
     test('Test 1: Activity with Distance Verification (Uniqueness + Consistency + Visual)', async ({ page }) => {
-        test.setTimeout(90000);
+        // Increase timeout for the large template matrix (40+ templates)
+        test.setTimeout(120000);
 
         const feedPage = new FeedPage(page);
         const editorPage = new EditorPage(page);
@@ -25,12 +26,14 @@ test.describe('Scora App UI: Advanced Canvas Verification', () => {
         const activity = TestUtils.findFirstActivityWithDistance()!;
         const stats = TestUtils.getExpectedStats(activity);
         const activityTitle = activity.name;
-        const expectedDist = stats.distanceVal;
-        const expectedPace = stats.subValue.split(' ')[0];
-
+        
         await feedPage.openActivityEditor(activityTitle, stats.mainValue);
         await editorPage.verifyEditorScreenVisible(activityTitle);
         await editorPage.injectCanvasInterceptor();
+
+        // Ensure fonts are ready ONCE before the matrix begins
+        await page.waitForLoadState('networkidle');
+        await page.evaluate(() => document.fonts.ready);
 
         const lastTemplateId = activeTemplates[activeTemplates.length - 1].id;
         await editorPage.selectTemplate(lastTemplateId);
@@ -42,11 +45,8 @@ test.describe('Scora App UI: Advanced Canvas Verification', () => {
             // Skip templates specifically for activities without distance
             if (category === 'workout') continue;
 
-            // Ensure fonts are ready before drawing
-            await page.evaluate(() => document.fonts.ready);
-
-            // Wait a tiny bit for the template to initialize if it's the first one
-            await page.waitForTimeout(100);
+            // Wait a tiny bit for the template to initialize 
+            await page.waitForTimeout(50);
 
             const startCount = await editorPage.getDrawCount();
             await editorPage.clearCanvasTextLog();
@@ -104,7 +104,8 @@ test.describe('Scora App UI: Advanced Canvas Verification', () => {
     });
 
     test('Test 2: Activity without Distance Verification (Uniqueness + Consistency + Visual)', async ({ page }) => {
-        test.setTimeout(90000);
+        // Increase timeout for the matrix
+        test.setTimeout(120000);
         const feedPage = new FeedPage(page);
         const editorPage = new EditorPage(page);
         const api = new MockStravaClient(page);
@@ -122,6 +123,10 @@ test.describe('Scora App UI: Advanced Canvas Verification', () => {
         await editorPage.verifyEditorScreenVisible(activityTitle);
         await editorPage.injectCanvasInterceptor();
 
+        // Ensure fonts are ready ONCE
+        await page.waitForLoadState('networkidle');
+        await page.evaluate(() => document.fonts.ready);
+
         const lastTemplateId = activeTemplates[activeTemplates.length - 1].id;
         await editorPage.selectTemplate(lastTemplateId);
         await page.waitForTimeout(500);
@@ -132,11 +137,8 @@ test.describe('Scora App UI: Advanced Canvas Verification', () => {
             // Skip templates specifically for activities with distance
             if (category === 'distance') continue;
 
-            // Ensure fonts are ready before drawing
-            await page.evaluate(() => document.fonts.ready);
-
             // Wait a tiny bit for the template to initialize 
-            await page.waitForTimeout(100);
+            await page.waitForTimeout(50);
 
             const startCount = await editorPage.getDrawCount();
             await editorPage.clearCanvasTextLog();
@@ -279,7 +281,8 @@ test.describe('Scora App UI: Advanced Canvas Verification', () => {
     });
 
     test('Test 6: Multi-Activity Regression Matrix (Phase 4 + Micro Serif)', async ({ page }) => {
-        test.setTimeout(120000);
+        // High-stress matrix test
+        test.setTimeout(180000);
         const feedPage = new FeedPage(page);
         const editorPage = new EditorPage(page);
         const api = new MockStravaClient(page);
@@ -288,6 +291,10 @@ test.describe('Scora App UI: Advanced Canvas Verification', () => {
         await api.mockSuccessfulActivities();
         await feedPage.goto();
         await feedPage.waitForLoaderToHide();
+
+        // Ensure fonts are ready ONCE
+        await page.waitForLoadState('networkidle');
+        await page.evaluate(() => document.fonts.ready);
 
         const targets = ['stacked-editorial', 'thin-path', 'micro-serif'];
         const matrix = [
@@ -382,5 +389,61 @@ test.describe('Scora App UI: Advanced Canvas Verification', () => {
         // 2. Check Small Viewport (Mobile)
         await page.setViewportSize({ width: 375, height: 667 });
         await editorPage.verifyDesktopArrowsVisibility(false);
+    });
+
+    test('Test 10: Editorial Strip - Vertical Layout & Weather', async ({ page }) => {
+        const feedPage = new FeedPage(page);
+        const editorPage = new EditorPage(page);
+        const api = new MockStravaClient(page);
+
+        await feedPage.injectMockAuth();
+        await api.mockSuccessfulActivities();
+        await feedPage.goto();
+        await feedPage.waitForLoaderToHide();
+
+        await editorPage.injectCanvasInterceptor();
+        await feedPage.openActivityEditor(mockActivities[0].name);
+        await editorPage.selectTemplate('editorial-strip');
+
+        // Wait for fonts and gradient
+        await page.waitForTimeout(1000);
+        
+        await expect(editorPage.canvasWrapper).toHaveScreenshot('editorial-strip-v3.png', {
+            maxDiffPixelRatio: 0.1,
+            threshold: 0.2
+        });
+
+        const logs = await editorPage.getCanvasTextLog();
+        const logStr = logs.join(' ').toUpperCase();
+        expect(logStr).toContain('LOCAL TIME');
+        expect(logStr).toContain('9:00 AM');
+    });
+
+    test('Test 11: Science Pro - Technical HUD & Performance', async ({ page }) => {
+        const feedPage = new FeedPage(page);
+        const editorPage = new EditorPage(page);
+        const api = new MockStravaClient(page);
+
+        await feedPage.injectMockAuth();
+        await api.mockSuccessfulActivities();
+        await feedPage.goto();
+        await feedPage.waitForLoaderToHide();
+
+        await editorPage.injectCanvasInterceptor();
+        await feedPage.openActivityEditor(mockActivities[0].name);
+        await editorPage.selectTemplate('science-pro');
+
+        // Wait for tech circles to draw
+        await page.waitForTimeout(1000);
+        
+        await expect(editorPage.canvasWrapper).toHaveScreenshot('science-pro-v3.png', {
+            maxDiffPixelRatio: 0.1,
+            threshold: 0.2
+        });
+
+        const logs = await editorPage.getCanvasTextLog();
+        const logStr = logs.join(' ').toUpperCase();
+        expect(logStr).toContain('PERFORMANCE');
+        expect(logStr).toContain('TRACKED');
     });
 });

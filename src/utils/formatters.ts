@@ -11,6 +11,20 @@ export const dayNamesFull = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSD
 export const dayNamesNormal = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 /**
+ * Formats a raw ISO date into 'FRIDAY' style
+ */
+export function formatDayName(rawDate: string): string {
+    if (!rawDate) return '';
+    try {
+        const datePart = rawDate.split('T')[0];
+        const d = new Date(datePart + 'T12:00:00');
+        return dayNamesFull[d.getDay()];
+    } catch (e) {
+        return '';
+    }
+}
+
+/**
  * Formats a raw ISO date into '12:34 PM' style
  */
 export function formatTime(rawDate: string): string {

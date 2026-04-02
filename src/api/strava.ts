@@ -71,7 +71,9 @@ export interface StickerStats {
     maxHeartrate: number | null;
     startTime: string;
     date: string;
+    dayName: string;
     dayAndNumber: string;
+    avgTemp: string | null;
     hasDistance: boolean;
     timeStr: string;
     mainValue: string;
@@ -255,7 +257,8 @@ import {
     formatTime, 
     formatDateShort, 
     formatDayAndNumber, 
-    formatDayAndNumberNormal, 
+    formatDayAndNumberNormal,
+    formatDayName,
     formatDuration, 
     getDurationValueOnly, 
     getDurationUnitOnly, 
@@ -277,7 +280,9 @@ export function formatActivityStats(activity: StravaActivity): StickerStats {
         maxHeartrate: activity.max_heartrate ? Math.round(activity.max_heartrate) : null,
         startTime: formatTime(activity.start_date_local || activity.start_date),
         date: formatDateShort(activity.start_date_local || activity.start_date),
+        dayName: formatDayName(activity.start_date_local || activity.start_date),
         dayAndNumber: formatDayAndNumber(activity.start_date_local || activity.start_date),
+        avgTemp: (activity.average_temp !== undefined && activity.average_temp !== null) ? String(Math.round(activity.average_temp)) : null,
         hasDistance: DISTANCE_SPORTS.has(activity.type) && activity.distance > 0,
     };
 
