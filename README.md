@@ -1,4 +1,12 @@
 <div align="center">
+
+  <!-- 
+    TODO: Add a beautiful 16:9 or horizontal split image showcasing 
+    your stickers (e.g., Editorial Strip, Science Pro, V15 Runner).
+    Replace the src below with your actual image path or URL.
+  -->
+  <img src="docs/scora-hero-banner.png" alt="Scora Sticker Showcase" width="100%" style="border-radius: 8px; margin-bottom: 24px;" />
+
   <h1>SCORA.</h1>
   <p><strong>The Bridge Between Performance and Storytelling.</strong></p>
   <p><i>Transform raw Strava activity data into premium, high-fidelity social stickers and story-ready aesthetic images.</i></p>
@@ -26,25 +34,29 @@
 
 ## 🛠 Engineering Highlights
 
-Scora isn't just a frontend project; it's a showcase of modern full-stack engineering patterns and complex problem-solving.
+Scora isn't just a frontend project; it's a showcase of modern full-stack engineering patterns, strict API concurrency, and complex problem-solving.
 
 ### 1. High-Precision Vector Rendering Engine
 At the core of Scora is a custom-built **Canvas Rendering Engine** designed for micro-typography and pixel-perfect layouts.
-- **Registry-Based Architecture**: Decoupled template rendering using a plugin pattern, allowing for dozens of unique "Sticker" designs (e.g., *Performance Bars*, *Modern Pill*, *Workout Receipt*).
+- **Registry-Based Architecture**: Decoupled template rendering using a plugin pattern, allowing for dozens of unique "Sticker" designs (e.g., *Editorial Strip*, *Science Pro*, *Performance Bars*).
 - **Micro-Typography Engine**: Custom implementations for letter-spacing, unit alignment, and transparent "Hero" number effects that exceed standard CSS capabilities.
-- **Geospatial Processing**: Custom algorithms for decoding Google Polyline formats, calculating dynamic geospatial bounds, and rendering smoothed paths with aesthetic glow effects.
+- **Geospatial Processing**: Custom algorithms for decoding Google Polyline formats, calculating dynamic geospatial bounds, and rendering perfectly smoothed paths.
 
 ### 2. Concurrency Control: The Waiting Room
-To manage the Strava API's "Single Connected Athlete" limitation, Scora implements a robust **Concurrency Queue System**.
+To manage the Strava API's strict "Single Connected Athlete" limitation without sacrificing user experience, Scora implements a robust **Queue System**.
 - **Atomic Locking**: Uses **Upstash Redis** with atomic `SET NX` locks to ensure only one athlete's data is processed at a time per session slot.
 - **Session Orchestration**: A polling-based waiting room that handles cross-session state using serverless edge functions.
-- **Fault-Tolerance**: Built-in fallback mechanisms to ensure graceful degradation if the orchestration layer encounters downtime.
 
-### 3. Professional Quality Engineering (QA)
-The repository serves as a masterclass in modern testing architectures:
-- **Domain-Driven E2E**: Built with **Playwright** using a strict **Page Object Model (POM)** and custom **Fixtures**.
-- **Visual Regressions**: Automated snapshot testing to ensure rendering consistency across different browser engines (Chromium, Firefox, WebKit) and environments.
-- **CI/CD Pipeline**: A fully modernized pipeline running on **Node 24** and **GitHub Actions**, performing linting, unit testing (Vitest), and E2E validation on every push.
+### 3. Self-Healing State Architecture
+To protect limits against sudden browser closures (e.g., Incognito Mode tab exits), Scora utilizes a **Dual-Layer Defense** to prevent orphaned tokens.
+- **Client-Side Ejection**: Uses `navigator.sendBeacon` hooked into browser lifecycle events (`visibilitychange`, `pagehide`) to guarantee deauthorization payloads fire even when the browser process is instantly killed.
+- **The "Janitor" (Server-Side)**: A hardened, background Vercel Cron Job that proactively sweeps Redis and the Strava API to securely sever any stuck authentications. Protected via `CRON_SECRET` validation.
+
+### 4. Professional Quality Engineering (QA)
+The repository serves as a masterclass in modern automated testing architectures:
+- **Domain-Driven E2E**: Built with **Playwright**, utilizing a strict **Page Object Model (POM)** and custom API Intercept **Fixtures**.
+- **Cross-Platform Visual Regressions**: Automated pixel-perfect snapshot testing running specifically across simulated **Mobile Safari**, **Mobile Chrome**, and Desktop Chromium.
+- **CI/CD Pipeline**: A fully modernized GitHub Actions pipeline that performs linting, unit testing (Vitest), and matrix E2E validation against ephemeral Linux environments on every push.
 
 ---
 
@@ -54,8 +66,8 @@ To run Scora locally for testing or development, you have two options:
 
 ### 1. Mock Mode (Zero Configuration)
 If you run the app on `localhost` without a Strava API configuration, you will see a **"✨ Probar con Datos Demo"** button on the login screen. 
-- This instantly populates your feed with high-quality activity samples (including maps and splits).
-- Perfect for quickly testing UI changes, the Canvas engine, or performance.
+- This instantly populates your feed with high-quality activity samples.
+- Perfect for quickly testing the UI Canvas engine or adding new templates.
 
 ### 2. Full Stack (Real API)
 To test the real Strava integration and serverless functions locally:
@@ -95,11 +107,11 @@ npm run dev
 # Run unit tests with Vitest
 npm run test
 
-# Run E2E tests with Playwright
+# Run E2E tests with Playwright (updates mock data & core logic)
 npm run test:e2e
 
-# Run production build
-npm run build
+# Update visual regression snapshots (if changing Sticker templates)
+npm run test:e2e -- --update-snapshots
 ```
 
 ---
