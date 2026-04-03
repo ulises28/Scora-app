@@ -87,13 +87,14 @@ body { background-color: var(--bg); color: var(--text); font-family: var(--font-
     cursor: pointer;
     transition: var(--transit);
     letter-spacing: -0.5px;
-    display: inline-flex;
+    display: flex;
     align-items: center;
     justify-content: center;
     box-shadow: 0 8px 30px rgba(252, 97, 36, 0.2);
     width: 100%;
-    max-width: 320px;
+    margin-top: 15px;
 }
+@media (min-width: 800px) { .btn-strava { max-width: 320px; } }
 .btn-strava:hover {
     transform: translateY(-2px);
     box-shadow: 0 12px 40px rgba(252, 97, 36, 0.5);
