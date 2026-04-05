@@ -71,3 +71,4 @@ test-debug-*.png
 test_output*.txt
 test-results-**/
 trace.zip
+.dev-logs/
