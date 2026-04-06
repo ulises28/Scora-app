@@ -20,8 +20,18 @@ export default defineConfig({
   /* SCALE: Dynamic worker allocation based on machine CPU. */
   workers: process.env.CI ? 4 : undefined,
 
-  /* OBSERVABILITY: Use 'blob' for CI merging and 'html' for local reviews. */
-  reporter: process.env.CI ? [['github'], ['blob']] : [['html'], ['list']],
+  /* OBSERVABILITY: Use 'blob' for CI merging and 'monocart' for professional local reporting. */
+  reporter: process.env.CI ? [['github'], ['blob']] : [
+    ['list'],
+    ['monocart-reporter', {
+      name: 'Scora E2E Test Report',
+      outputFile: './test-results/report.html',
+      // Keep attachments external to avoid a massive single HTML file
+      attachmentPath: (currentPath, attachmentName) => {
+        return `attachments/${attachmentName}`;
+      }
+    }]
+  ],
 
   /* TIMEOUTS: Explicit control to prevent "Hung" tests. */
   globalTimeout: 10 * 60 * 1000, // Kill entire run after 10 minutes

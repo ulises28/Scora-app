@@ -54,7 +54,7 @@ To protect limits against sudden browser closures (e.g., Incognito Mode tab exit
 
 ### 4. Professional Quality Engineering (QA)
 The repository serves as a masterclass in modern automated testing architectures:
-- **Domain-Driven E2E**: Built with **Playwright**, utilizing a strict **Page Object Model (POM)** and custom API Intercept **Fixtures**.
+- **Domain-Driven E2E**: Built with **Playwright**, utilizing a strict **Page Object Model (POM)**, custom API Intercept **Fixtures**, and **Monocart Reporter** for professional-grade analytics.
 - **Cross-Platform Visual Regressions**: Automated pixel-perfect snapshot testing running specifically across simulated **Mobile Safari**, **Mobile Chrome**, and Desktop Chromium.
 - **CI/CD Pipeline**: A fully modernized GitHub Actions pipeline that performs linting, unit testing (Vitest), and matrix E2E validation against ephemeral Linux environments on every push.
 
@@ -109,6 +109,9 @@ npm run test
 
 # Run E2E tests with Playwright (updates mock data & core logic)
 npm run test:e2e
+
+# Open the professional Monocart test report dashboard
+npm run test:report
 
 # Update visual regression snapshots (if changing Sticker templates)
 npm run test:e2e -- --update-snapshots

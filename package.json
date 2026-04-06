@@ -13,6 +13,7 @@
     "test:mobileSafari": "playwright test --project=\"Mobile Safari\"",
     "test:chromium": "playwright test --project=chromium",
     "test:clean": "ps aux | grep playwright | grep -v grep | awk '{print $2}' | xargs kill -9 || true",
+    "test:report": "npx monocart show-report test-results/report.html",
     "docker:build": "docker build -f Dockerfile.playwright -t scora-e2e .",
     "docker:test": "docker compose -f docker-compose.playwright.yml up --build --exit-code-from playwright"
   },
@@ -34,6 +35,7 @@
     "@vitejs/plugin-vue": "^6.0.4",
     "@vitest/coverage-v8": "^4.0.18",
     "jsdom": "^28.1.0",
+    "monocart-reporter": "^2.10.0",
     "typescript": "^5.9.3",
     "vite": "^7.3.1",
     "vitest": "^4.0.18"
