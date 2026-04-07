@@ -11,6 +11,25 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Method Not Allowed' });
     }
 
+    // 🔒 GATEKEEPER: Ensure only the Boss (you) can trigger a total reset.
+    const authHeader = req.headers.authorization;
+    const expectedUser = process.env.ADMIN_USER || 'admin';
+    const expectedPass = process.env.ADMIN_PASS;
+
+    if (!expectedPass) {
+        console.warn('[Admin] SECURITY ALERT: ADMIN_PASS not set in Vercel. Reset blocked.');
+        return res.status(500).json({ error: 'System not configured for remote reset. Add ADMIN_PASS in Vercel.' });
+    }
+
+    // Simple comparison for 'Useful Admin' logic
+    const providedSecret = authHeader ? authHeader.replace('Bearer ', '') : '';
+    const masterSecret = Buffer.from(`${expectedUser}:${expectedPass}`).toString('base64');
+
+    if (providedSecret !== masterSecret) {
+        console.warn('[Admin] FAILED LOGIN ATTEMPT for reset.');
+        return res.status(401).json({ error: 'Unauthorized: Incorrect Admin credentials.' });
+    }
+
     if (!REDIS_CONFIGURED) {
         return res.status(200).json({ message: 'Redis is not configured. Reset not necessary.' });
     }

@@ -23,6 +23,56 @@ let currentActivityId: number | null = null;
 let currentStats: any = null;
 let queuePollingInterval: ReturnType<typeof setInterval> | null = null;
 
+/**
+ * Handle Forced Admin Reset (Liberar App)
+ */
+async function handleAdminReset() {
+    let adminToken = localStorage.getItem('scora_admin_token');
+    
+    // 🔐 One-time prompt for credentials if not already cached
+    if (!adminToken) {
+        const user = prompt('Usuario Maestro (Scora):');
+        const pass = prompt('Contraseña Maestra:');
+        if (!user || !pass) return;
+        
+        // Simple base64 token (not military grade, but perfect for private usage)
+        adminToken = btoa(`${user}:${pass}`);
+        localStorage.setItem('scora_admin_token', adminToken);
+    }
+
+    if (!confirm('Esto eliminará de la fila a todos los que estén esperando y liberará la conexión a Strava. ¿Continuar?')) return;
+    
+    try {
+        const res = await fetch('/api/admin-reset', { 
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${adminToken}`
+            }
+        });
+
+        if (res.status === 401) {
+            localStorage.removeItem('scora_admin_token');
+            alert('Credenciales incorrectas. Se han eliminado de la memoria.');
+            return;
+        }
+
+        const data = await res.json();
+        localStorage.removeItem('stravaAuth');
+        localStorage.removeItem('stravaActivities');
+        
+        if (data.tokenRevoked) {
+            alert('¡Éxito! Sistema limpiado y usuario anterior (Beto) desconectado de Strava.');
+        } else {
+            alert('Sistema limpiado (cola vaciada). \n\n⚠️ IMPORTANTE: No se pudo desautorizar automáticamente porque la llave se perdió.\nSi SIGUES sin poder conectarte (Error 403), ve a Strava.com -> Ajustes -> "Mis Aplicaciones" y haz clic en "Revocar Acceso" de Scora.');
+        }
+        window.location.reload();
+    } catch (e) {
+        alert('Error al reiniciar el sistema.');
+    } finally {
+        // Re-enable any buttons if needed (though we reload)
+    }
+}
+
 // Inicializa el Template Manager que reacciona a los clicks de usuario
 const templateManager = initTemplateManager(async (template, color, showLogo) => {
     if (currentStats) {
@@ -241,35 +291,30 @@ async function initApp() {
                 if (!existingAdmin) {
                     const adminBtn = document.createElement('button');
                     adminBtn.id = 'btn-admin-reset';
-                    adminBtn.className = 'btn-secondary';
-                    adminBtn.style.marginTop = '1rem';
-                    adminBtn.style.marginLeft = '1rem';
-                    adminBtn.style.background = 'rgba(255, 82, 82, 0.1)';
-                    adminBtn.style.border = '1px solid #ff5252';
-                    adminBtn.style.color = '#ff5252';
-                    adminBtn.style.fontSize = '0.9rem';
-                    adminBtn.innerHTML = '🚨 Admin: Liberar App';
-                    adminBtn.onclick = async () => {
-                        if (!confirm('Esto eliminará de la fila a todos los que estén esperando y liberará la conexión a Strava. ¿Continuar?')) return;
-                        adminBtn.textContent = 'Liberando...';
-                        try {
-                            const res = await fetch('/api/admin-reset', { method: 'POST' });
-                            const data = await res.json();
-                            localStorage.removeItem('stravaAuth');
-                            localStorage.removeItem('stravaActivities');
-                            if (data.tokenRevoked) {
-                                alert('¡Éxito! Sistema limpiado y usuario anterior desconectado de Strava.');
-                            } else {
-                                alert('Sistema limpiado (cola vaciada). \\n\\n⚠️ IMPORTANTE: No se pudo desautorizar automáticamente al usuario anterior porque la llave se perdió.\\nSi SIGUES sin poder conectarte (Error 403), ve a Strava.com en tu PC -> Ajustes -> "Mis Aplicaciones" y haz clic en "Revocar Acceso" de Scora.');
-                            }
-                        } catch (e) {
-                            alert('Error al reiniciar el sistema.');
-                        } finally {
-                            adminBtn.innerHTML = '🚨 Admin: Liberar App';
-                            window.location.reload();
-                        }
-                    };
-                    authSection.appendChild(adminBtn);
+                    adminBtn.className = 'btn-rescue'; 
+                    adminBtn.innerHTML = '<span>🚨</span> EMERGENCY BUTTON';
+                    adminBtn.onclick = handleAdminReset;
+                    
+                    // Container for centering and distance
+                    const adminContainer = document.createElement('div');
+                    adminContainer.style.width = '100%';
+                    adminContainer.style.display = 'flex';
+                    adminContainer.style.justifyContent = 'center';
+                    adminContainer.style.marginTop = '4rem'; // Generous spacing as requested
+                    adminContainer.appendChild(adminBtn);
+                    
+                    authSection.appendChild(adminContainer);
+                    
+                    // Activate Admin Mode styling
+                    document.body.classList.add('admin-mode-active');
+
+                    // Also add it to the Queue screen rescue container if it exists
+                    const queueRescueContainer = document.getElementById('queue-rescue-container');
+                    if (queueRescueContainer) {
+                        const queueAdminBtn = adminBtn.cloneNode(true) as HTMLButtonElement;
+                        queueAdminBtn.onclick = handleAdminReset;
+                        queueRescueContainer.appendChild(queueAdminBtn);
+                    }
                 }
             }
         }
@@ -303,10 +348,6 @@ async function initApp() {
                 const exportBtn = document.createElement('button');
                 exportBtn.id = 'btn-export-json';
                 exportBtn.className = 'btn-secondary';
-                exportBtn.style.margin = '1rem auto';
-                exportBtn.style.display = 'block';
-                exportBtn.style.background = 'rgba(255, 255, 255, 0.05)';
-                exportBtn.style.border = '1px solid #80cbc4';
                 exportBtn.innerHTML = '📥 Exportar Actividades (JSON)';
                 exportBtn.onclick = () => {
                     const blob = new Blob([cachedActivities], { type: 'application/json' });
@@ -394,49 +435,6 @@ async function initApp() {
             activitiesData = cachedActivities ? JSON.parse(cachedActivities) : [];
         }
 
-        /* 
-        // Proactive pre-fetching for the last 10 activities
-        if (accessToken && activitiesData.length > 0) {
-            const last10 = activitiesData.slice(0, 10);
-            let anyChanges = false;
-
-            for (const act of last10) {
-                // Skip if already has detailed info (like splits)
-                if (act.splits) continue;
-
-                const DISTANCE_SPORTS = ['Run', 'VirtualRun', 'Ride', 'Walk', 'Hike'];
-                if (DISTANCE_SPORTS.includes(act.type)) {
-                    try {
-                        const detailed = await fetchDetailedActivity(accessToken!, act.id);
-                        const detailedStats = formatActivityStats(detailed);
-                        Object.assign(act, detailedStats);
-                        anyChanges = true;
-                        console.info(`[Pre-fetch] Detailed data merged for activity ${act.id}`);
-                    } catch (e) {
-                        console.warn(`[Pre-fetch] Failed for activity ${act.id}`, e);
-                    }
-                }
-            }
-
-            // Save updated detailed data back to cache so it's instant next time
-            if (anyChanges) {
-                localStorage.setItem('stravaActivities', JSON.stringify(activitiesData));
-            }
-        }
-        */
-
-        // 🏁 FINAL STEP: Revoke token and clear session only after everything (including pre-fetch) is done
-        if (accessToken) {
-            try {
-                await deauthorizeAthlete(accessToken);
-                console.log("[App] Session finalized correctly.");
-            } catch (e) {
-                console.warn("[App] Final deauthorization failed:", e);
-                // Even if it fails, we should clear local state to stay safe
-                localStorage.removeItem('stravaAuth');
-            }
-        }
-
     } catch (error) {
         console.error("Error en Scora:", error);
         if (error instanceof Error && error.message === 'Unauthorized') {
@@ -447,7 +445,42 @@ async function initApp() {
             if (activitySection) activitySection.classList.add('hidden');
             if (activityListEl) activityListEl.innerHTML = "";
         } else {
-            if (activityListEl) activityListEl.innerHTML = `<p class='error-msg'>No pudimos conectar con la pista. Intenta de nuevo.</p>`;
+            // DETECT 403 (BETO BLOCK)
+            const isRateLimit = (error as any).status === 403 || String(error).includes('403');
+            if (isRateLimit && authSection) {
+                 if (activityListEl) {
+                    activityListEl.innerHTML = `
+                        <div class="error-container">
+                            <span class="error-title">⚡ SISTEMA BLOQUEADO</span>
+                            <p class='error-msg'>Beto está ocupando la pista en Strava. ¿Quieres forzar su salida para continuar?</p>
+                            <button id="btn-rescue-reset" class="btn-rescue">
+                                <span>🚨</span> EMERGENCY BUTTON
+                            </button>
+                        </div>
+                    `;
+                    const rescueBtn = document.getElementById('btn-rescue-reset');
+                    if (rescueBtn) {
+                        rescueBtn.onclick = async () => {
+                            rescueBtn.innerHTML = "<span>⏳</span> LIBERANDO...";
+                            await handleAdminReset();
+                        };
+                    }
+                }
+            } else {
+                if (activityListEl) activityListEl.innerHTML = `<p class='error-msg'>No pudimos conectar con la pista. Intenta de nuevo.</p>`;
+            }
+        }
+    } finally {
+        // 🏁 GUARANTEED CLEANUP: No matter what happened, revoke the session to unblock the next user.
+        if (currentAccessToken) {
+            try {
+                await deauthorizeAthlete(currentAccessToken);
+                console.log("[App] Session finalized correctly (Finally block).");
+                currentAccessToken = null;
+            } catch (e) {
+                console.warn("[App] Final deauthorization failed:", e);
+                localStorage.removeItem('stravaAuth');
+            }
         }
     }
 }
@@ -552,50 +585,45 @@ window.addEventListener('message', async (event) => {
             const activitiesData = await fetchStravaActivities(accessToken);
             renderActivityFeed(activitiesData);
 
-            /* 
-            // Proactive pre-fetching for the last 10 activities after fresh login
-            if (activitiesData.length > 0) {
-                const last10 = activitiesData.slice(0, 10);
-                let anyChanges = false;
-
-                for (const act of last10) {
-                    if (act.splits) continue;
-                    
-                    const DISTANCE_SPORTS = ['Run', 'VirtualRun', 'Ride', 'Walk', 'Hike'];
-                    if (DISTANCE_SPORTS.includes(act.type)) {
-                        try {
-                            const detailed = await fetchDetailedActivity(accessToken, act.id);
-                            const detailedStats = formatActivityStats(detailed);
-                            Object.assign(act, detailedStats);
-                            anyChanges = true;
-                            console.info(`[Pre-fetch Login] Detailed data merged for ${act.id}`);
-                        } catch (e) {
-                            console.warn(`[Pre-fetch Login] Failed for ${act.id}`, e);
-                        }
-                    }
-                }
-
-                if (anyChanges) {
-                    localStorage.setItem('stravaActivities', JSON.stringify(activitiesData));
-                }
-            }
-            */
-
-            // 🏁 FINAL STEP: Revoke token and clear session after login + pre-fetch
-            if (accessToken) {
-                try {
-                    await deauthorizeAthlete(accessToken);
-                    console.log("[App Login] Session finalized correctly.");
-                } catch (e) {
-                    console.warn("[App Login] Final deauthorization failed:", e);
-                    localStorage.removeItem('stravaAuth');
-                }
-            }
-
             window.history.replaceState({ screen: 'screen-feed' }, document.title, window.location.pathname);
         } catch (error) {
-            if (activityListEl) activityListEl.innerHTML = `<p class='error-msg'>No pudimos conectar con la pista. Intenta de nuevo.</p>`;
             console.error("Error en Scora Auth:", error);
+            const isRateLimit = (error as any).status === 403 || String(error).includes('403');
+            
+            if (isRateLimit) {
+                if (activityListEl) {
+                    activityListEl.innerHTML = `
+                        <div class="error-container">
+                            <span class="error-title">🔒 ACCESO RESTRINGIDO</span>
+                            <p class='error-msg'>Beto detectado en la pista. Como Administrador, puedes revocar su sesión ahora mismo.</p>
+                            <button id="btn-rescue-auth" class="btn-rescue">
+                                <span>🚨</span> EMERGENCY BUTTON
+                            </button>
+                        </div>
+                    `;
+                    const rescueBtn = document.getElementById('btn-rescue-auth');
+                    if (rescueBtn) {
+                        rescueBtn.onclick = async () => {
+                            rescueBtn.innerHTML = "<span>⚔️</span> KICKING BETO...";
+                            await handleAdminReset();
+                        };
+                    }
+                }
+            } else {
+                if (activityListEl) activityListEl.innerHTML = `<p class='error-msg'>No pudimos conectar con la pista. Intenta de nuevo.</p>`;
+            }
+        } finally {
+             // 🏁 GUARANTEED CLEANUP: Kill token on Strava side to unblock the 1-athlete slot.
+             if (currentAccessToken) {
+                 try {
+                     await deauthorizeAthlete(currentAccessToken);
+                     console.log("[App Auth] Session finalized (Finally block).");
+                     currentAccessToken = null;
+                 } catch (e) {
+                     console.warn("[App Auth] Final deauth failed:", e);
+                     localStorage.removeItem('stravaAuth');
+                 }
+             }
         }
     }
 });

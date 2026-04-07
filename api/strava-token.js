@@ -64,16 +64,17 @@ export default async function handler(req, res) {
         }
 
         // Éxito: Le devolvemos el payload al frontend (que contiene el access_token)
-
-        // Save the active token for dead man's switch
-        if (REDIS_CONFIGURED) {
+        // 🚨 CRITICAL: Save the active token for dead man's switch/kick logic IMMEDIATELY.
+        if (REDIS_CONFIGURED && data.access_token) {
             try {
                 const redis = new Redis({
                     url: process.env.UPSTASH_REDIS_REST_URL,
                     token: process.env.UPSTASH_REDIS_REST_TOKEN
                 });
-                await redis.set('strava:active_token', data.access_token);
-                console.log('[Queue] Saved active token to Redis for dead-man switch');
+                // Set the active token with a 10-minute safety expiry (TTL)
+                // This ensures Beto can't block the slot indefinitely if deauth fails.
+                await redis.set('strava:active_token', data.access_token, { ex: 600 });
+                console.log('[Queue] Saved active token to Redis with 10m TTL');
             } catch (kvError) {
                 console.warn('[Queue] Failed to save active token:', kvError.message);
             }
