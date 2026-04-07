@@ -207,6 +207,7 @@ export async function fetchDetailedActivity(token: string, activityId: number) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
+            access_token: token,
             sessionId,
             activity_id: activityId,
             include_all_efforts: true

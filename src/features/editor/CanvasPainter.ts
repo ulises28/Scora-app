@@ -39,7 +39,7 @@ function drawScoraActivityIcon(ctx: CanvasRenderingContext2D, type: string, size
 
     const lowerType = type.toLowerCase();
     const s = size / 24;
-    
+
     // If x/y not provided, fall back to default sticker center-bottom logic
     const drawX = x !== undefined ? x : (540 - size / 2);
     const drawY = y !== undefined ? y : 1450;
@@ -50,35 +50,35 @@ function drawScoraActivityIcon(ctx: CanvasRenderingContext2D, type: string, size
         // SCORA V15 "ABSOLUTE PERFECTION" RUNNER (Definitive Dreamstime Match)
         ctx.lineJoin = 'round';
         ctx.lineCap = 'round';
-        
+
         // Head (Properly scaled)
         ctx.beginPath(); ctx.arc(17.5 * s, 4.5 * s, 3 * s, 0, Math.PI * 2); ctx.fill();
-        
+
         ctx.lineWidth = 4 * s; // Bold professional weight
         ctx.beginPath();
-        
+
         // Torso
         ctx.moveTo(15 * s, 8.5 * s); ctx.lineTo(11.5 * s, 15 * s);
-        
+
         // Back Leg (Precise Hook)
-        ctx.moveTo(11.5 * s, 15 * s); ctx.lineTo(5 * s, 18.5 * s); ctx.lineTo(1.5 * s, 14 * s); 
-        
+        ctx.moveTo(11.5 * s, 15 * s); ctx.lineTo(5 * s, 18.5 * s); ctx.lineTo(1.5 * s, 14 * s);
+
         // Lead Leg (Power Strike)
         ctx.moveTo(11.5 * s, 15 * s); ctx.lineTo(19 * s, 20 * s); ctx.lineTo(16 * s, 24 * s);
-        
+
         // Lead Arm (Pumping Forward)
         ctx.moveTo(15 * s, 9 * s); ctx.lineTo(21 * s, 12 * s); ctx.lineTo(17.5 * s, 16.5 * s);
-        
+
         // Back Arm (Trailing)
         ctx.moveTo(15 * s, 9 * s); ctx.lineTo(9.5 * s, 12 * s); ctx.lineTo(12.5 * s, 16 * s);
-        
+
         ctx.stroke();
     } else if (lowerType.includes('bike') || lowerType.includes('ride')) {
         // SCORA V3 BIKE ICON
         ctx.lineWidth = 1.8 * s;
         ctx.beginPath(); ctx.arc(6.5 * s, 17 * s, 4 * s, 0, Math.PI * 2); ctx.stroke();
         ctx.beginPath(); ctx.arc(17.5 * s, 17 * s, 4 * s, 0, Math.PI * 2); ctx.stroke();
-        
+
         ctx.beginPath();
         ctx.moveTo(6.5 * s, 17 * s);
         ctx.lineTo(10 * s, 10 * s);
@@ -3439,8 +3439,8 @@ function drawStepMaster(ctx: CanvasRenderingContext2D, stats: any, textColor = '
     const iconBoxSize = 90; // Balanced circle
     const padding = 15;
     const gap = 30;
-    const totalW = padding + iconBoxSize + gap + Math.max(valW, subW) + padding + 30; 
-    
+    const totalW = padding + iconBoxSize + gap + Math.max(valW, subW) + padding + 30;
+
     const cx = 540;
     const cy = 960;
     const startX = cx - totalW / 2;
@@ -3473,9 +3473,9 @@ function drawStepMaster(ctx: CanvasRenderingContext2D, stats: any, textColor = '
     ctx.fillStyle = fgOuter;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    
+
     const textX = startX + padding + iconBoxSize + gap;
-    
+
     // Value text
     ctx.font = "900 74px 'Plus Jakarta Sans'";
     ctx.fillText(valStr, textX, startY + 45);
@@ -3958,8 +3958,8 @@ function drawCloudIcon(ctx: CanvasRenderingContext2D, x: number, y: number, size
     ctx.beginPath();
     ctx.moveTo(x + 18 * s, x + 10 * s);
     // Simplified cloud path
-    ctx.arc(x + 17 * s, y + 15 * s, 6 * s, -Math.PI/2, Math.PI, true);
-    ctx.arc(x + 8 * s, y + 15 * s, 5 * s, Math.PI, -Math.PI/4, true);
+    ctx.arc(x + 17 * s, y + 15 * s, 6 * s, -Math.PI / 2, Math.PI, true);
+    ctx.arc(x + 8 * s, y + 15 * s, 5 * s, Math.PI, -Math.PI / 4, true);
     ctx.arc(x + 12 * s, y + 10 * s, 5 * s, -Math.PI, 0, false);
     ctx.fill();
     ctx.restore();
@@ -3969,17 +3969,17 @@ function drawMapPinIcon(ctx: CanvasRenderingContext2D, x: number, y: number, siz
     ctx.save();
     ctx.fillStyle = color;
     const s = size / 24;
-    
+
     // Solid Marker Shape (Inverted Drop)
     ctx.beginPath();
     ctx.moveTo(x, y + 10 * s);
     ctx.bezierCurveTo(x - 9 * s, y + 2 * s, x - 9 * s, y - 8 * s, x, y - 8 * s);
     ctx.bezierCurveTo(x + 9 * s, y - 8 * s, x + 9 * s, y + 2 * s, x, y + 10 * s);
-    
+
     // Inner cutout (the "hole") - using winding rule to create transparent center
     ctx.moveTo(x + 3 * s, y - 1 * s);
     ctx.arc(x, y - 1 * s, 3 * s, 0, Math.PI * 2, true);
-    
+
     ctx.fill();
     ctx.restore();
 }
@@ -3991,7 +3991,7 @@ function getGreeting(startTimeStr: string): string {
     if (!startTimeStr) return "GOOD MORNING";
     const [time, ampm] = startTimeStr.split(' ');
     const [hour] = time.split(':').map(Number);
-    
+
     let h24 = hour;
     if (ampm === 'PM' && hour !== 12) h24 += 12;
     if (ampm === 'AM' && hour === 12) h24 = 0;
@@ -4008,16 +4008,16 @@ function drawEditorialStrip(ctx: CanvasRenderingContext2D, stats: any, textColor
     // 1. Top Section (Weather/Time)
     ctx.textAlign = 'right';
     ctx.fillStyle = c.solid;
-    
+
     if (stats.avgTemp) {
         ctx.font = "900 64px 'Inter'";
         ctx.fillText(stats.avgTemp + '°', 1000, 150);
     }
-    
+
     ctx.font = "900 24px 'Plus Jakarta Sans'";
     ctx.fillStyle = c.trans;
     ctx.fillText('LOCAL TIME', 1000, 220);
-    
+
     ctx.font = "700 32px 'Plus Jakarta Sans'";
     ctx.fillStyle = c.solid;
     ctx.fillText((stats.startTime || '--:--').toUpperCase(), 1000, 265);
@@ -4027,7 +4027,7 @@ function drawEditorialStrip(ctx: CanvasRenderingContext2D, stats: any, textColor
     ctx.translate(900, 1000);
     ctx.rotate(-Math.PI / 2);
     ctx.textAlign = 'center';
-    
+
     // Dynamic Greeting
     ctx.font = "900 28px 'Inter'";
     ctx.fillStyle = c.trans;
@@ -4040,7 +4040,7 @@ function drawEditorialStrip(ctx: CanvasRenderingContext2D, stats: any, textColor
     let fontSize = 320;
     ctx.font = `900 ${fontSize}px 'Inter'`;
     let dayWidth = ctx.measureText(dayStr).width;
-    
+
     if (dayWidth > 1100) {
         fontSize = Math.floor(320 * (1100 / dayWidth));
         ctx.font = `900 ${fontSize}px 'Inter'`;
@@ -4056,7 +4056,7 @@ function drawEditorialStrip(ctx: CanvasRenderingContext2D, stats: any, textColor
     // 3. Bottom Section (Location/Stats)
     const bottomY = 1730; // 1750 -> 1730
     ctx.textAlign = 'left';
-    
+
     ctx.strokeStyle = c.trans;
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(80, bottomY - 50); ctx.lineTo(1000, bottomY - 50); ctx.stroke();
@@ -4086,13 +4086,13 @@ function drawEditorialStrip(ctx: CanvasRenderingContext2D, stats: any, textColor
 function drawSciencePro(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
     const accent = '#A3FFD6';
     ctx.textAlign = 'center';
-    
+
     // 1. Header (Ultra-Compact)
     const title = (stats.title || stats.type || 'Activity').toUpperCase();
     ctx.font = "400 82px 'Space Grotesk'";
     ctx.fillStyle = accent;
     ctx.fillText(title, 540, 700); // Moved up from 720
-    
+
     ctx.font = "400 32px 'Space Grotesk'";
     const meta = `${(stats.location || 'MEXICO CITY').toUpperCase()} — ${stats.distanceVal || stats.mainValue || '0.00'} KM`;
     ctx.globalAlpha = 0.8;
@@ -4109,11 +4109,11 @@ function drawSciencePro(ctx: CanvasRenderingContext2D, stats: any, textColor: st
     // A. Pace Pill (Standardized Width)
     const paceVal = (stats.subValue || '5:15 /KM').toUpperCase();
     const pillWidth = 200;
-    const startX = 320; 
-    
+    const startX = 320;
+
     ctx.beginPath(); ctx.roundRect(startX, iconY - 35, pillWidth, 70, 35); ctx.stroke();
     ctx.font = "700 24px 'Space Grotesk'";
-    ctx.fillText(paceVal, startX + pillWidth/2, iconY + 10);
+    ctx.fillText(paceVal, startX + pillWidth / 2, iconY + 10);
 
     // B. Globe Icon (Bold Wireframe)
     function drawScientificGlobe(x, y) {
@@ -4132,9 +4132,9 @@ function drawSciencePro(ctx: CanvasRenderingContext2D, stats: any, textColor: st
         ctx.save();
         ctx.beginPath(); ctx.arc(x, y, 40, 0, Math.PI * 2); ctx.stroke();
         ctx.fillStyle = accent;
-        ctx.beginPath(); 
-        ctx.moveTo(x + 5, y - 18); ctx.lineTo(x - 12, y + 2); 
-        ctx.lineTo(x + 2, y + 2); ctx.lineTo(x - 5, y + 20); 
+        ctx.beginPath();
+        ctx.moveTo(x + 5, y - 18); ctx.lineTo(x - 12, y + 2);
+        ctx.lineTo(x + 2, y + 2); ctx.lineTo(x - 5, y + 20);
         ctx.lineTo(x + 12, y); ctx.lineTo(x, y); ctx.fill();
         ctx.restore();
     }
@@ -4169,7 +4169,7 @@ function drawSciencePro(ctx: CanvasRenderingContext2D, stats: any, textColor: st
     ctx.globalAlpha = 0.6;
     ctx.fillText(`© ${new Date().getFullYear()} SCORA`, 540, 1100); // Shaved 50px
     ctx.globalAlpha = 1.0;
-    
+
     ctx.font = "400 58px 'Space Grotesk'";
     const tempVal = stats.avgTemp || '--';
     ctx.fillText(tempVal + '°C TRACKED', 540, 1160);
