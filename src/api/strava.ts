@@ -88,6 +88,9 @@ export interface StickerStats {
     splits?: { type: 'full' | 'partial', label: string, pace: string, seconds: number }[];
     fastestPaceSeconds?: number;
     deviceName?: string;
+    location?: string;
+    region?: string;
+    activityType: string;
 }
 
 // 1. Construye el link al que enviaremos al usuario
@@ -266,7 +269,8 @@ import {
     getDurationUnitOnly,
     formatPace,
     formatSwimPace,
-    formatSpeedKmh
+    formatSpeedKmh,
+    formatDateNarrative
 } from '../utils/formatters';
 
 // 4. Activity stats formatter
@@ -281,12 +285,28 @@ export function formatActivityStats(activity: StravaActivity): StickerStats {
         avgHeartrate: activity.average_heartrate ? Math.round(activity.average_heartrate) : null,
         maxHeartrate: activity.max_heartrate ? Math.round(activity.max_heartrate) : null,
         startTime: formatTime(activity.start_date_local || activity.start_date),
-        date: formatDateShort(activity.start_date_local || activity.start_date),
+        date: formatDateNarrative(activity.start_date_local || activity.start_date),
         dayName: formatDayName(activity.start_date_local || activity.start_date),
         dayAndNumber: formatDayAndNumber(activity.start_date_local || activity.start_date),
         avgTemp: (activity.average_temp !== undefined && activity.average_temp !== null) ? String(Math.round(activity.average_temp)) : null,
         hasDistance: DISTANCE_SPORTS.has(activity.type) && activity.distance > 0,
+        activityType: activity.type,
     };
+
+    // Location extraction logic
+    let city = activity.location_city || '';
+    let state = activity.location_state || '';
+
+    if (!city && activity.timezone) {
+        // Fallback: Parse timezone (e.g. "America/Mexico_City" -> "Mexico City")
+        const tzMatch = activity.timezone.match(/\/(.*)$/);
+        if (tzMatch) {
+            city = tzMatch[1].replace(/_/g, ' ');
+        }
+    }
+
+    stats.location = city || 'Unknown';
+    stats.region = state || (city ? '' : 'World');
 
     stats.timeStr = formatDuration(activity.moving_time);
     const hasDistance = stats.hasDistance;

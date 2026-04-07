@@ -26,6 +26,7 @@ interface TemplateConfig {
 export const TEMPLATE_REGISTRY: readonly TemplateConfig[] = [
     { id: 'editorial-strip', category: 'all', supportsBlackText: false, compact: true, features: { distance: true, duration: true, date: true } },
     { id: 'science-pro', category: 'all', supportsBlackText: false, features: { distance: true, paceSpeed: true, heartRate: true, date: true } },
+    { id: 'narrative-highlight', category: 'all', supportsBlackText: true, features: { distance: true, duration: true, paceSpeed: true, date: true } },
     { id: 'location-pill', category: 'all', supportsBlackText: true, compact: true, features: { distance: true, duration: true } },
     { id: 'dm', category: 'distance', supportsBlackText: false, features: { distance: true, paceSpeed: true, startTime: true } },
     { id: 'tiny-gps', category: 'all', supportsBlackText: true, compact: true, features: { distance: true, duration: true } },

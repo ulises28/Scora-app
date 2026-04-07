@@ -7,8 +7,24 @@ import { calculateMaxPace } from './mathUtils';
  */
 
 export const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+export const monthsTitleCase = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 export const dayNamesFull = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
 export const dayNamesNormal = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+/**
+ * Formats a raw ISO date into 'Apr 06' style (Title Case)
+ */
+export function formatDateNarrative(rawDate: string): string {
+    if (!rawDate) return '';
+    try {
+        const datePart = rawDate.split('T')[0];
+        const [year, month, day] = datePart.split('-');
+        const mIdx = parseInt(month, 10) - 1;
+        return `${monthsTitleCase[mIdx]} ${day}`;
+    } catch (e) {
+        return '';
+    }
+}
 
 /**
  * Formats a raw ISO date into 'FRIDAY' style

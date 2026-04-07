@@ -61,8 +61,8 @@ body { background-color: var(--bg); color: var(--text); font-family: var(--font-
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
 /* ====== FEED SCREEN ====== */
-#screen-feed { max-width: 1000px; margin: 0 auto; padding: 50px 25px 120px; width: 100%; }
-@media (min-width: 800px) { #screen-feed { padding: 25px 25px 120px; } }
+#screen-feed { max-width: 1000px; margin: 0 auto; padding: 50px 25px 40px; width: 100%; }
+@media (min-width: 800px) { #screen-feed { padding: 25px 25px 40px; } }
 .intro-section { margin-bottom: 50px; width: 100%; }
 @media (min-width: 800px) { .intro-section { margin-bottom: 25px; } }
 .intro-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
@@ -222,3 +222,26 @@ canvas { width: 100%; height: 100%; display: block; }
 /* QUEUE */
 #screen-queue { top: 0; background: #000; }
 .queue-container { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; text-align: center; }
+
+/* ====== STRAVA ATTRIBUTION ====== */
+.strava-attribution-container {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    padding: 40px 0 0;
+}
+
+.strava-attribution {
+    height: 32px;
+    width: auto;
+    opacity: 0.8;
+    transition: var(--transit);
+}
+
+.strava-attribution:hover {
+    opacity: 1;
+}
+
+@media (max-width: 600px) {
+    .strava-attribution { height: 24px; }
+}

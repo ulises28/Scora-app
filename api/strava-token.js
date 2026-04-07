@@ -58,13 +58,13 @@ export default async function handler(req, res) {
                     });
                     await redis.del(LOCK_KEY);
                     console.log('[Queue] 403 Limit Hit: Cleared lock to allow recovery.');
-                } catch (e) {}
+                } catch (e) { }
             }
             return res.status(stravaResponse.status).json(data);
         }
 
         // Éxito: Le devolvemos el payload al frontend (que contiene el access_token)
-        
+
         // Save the active token for dead man's switch
         if (REDIS_CONFIGURED) {
             try {

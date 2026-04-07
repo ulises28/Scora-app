@@ -159,6 +159,7 @@ const RENDERER_REGISTRY: Record<string, StickerRenderer | { running: StickerRend
     'pro-vertical': drawProVertical,
     'editorial-strip': drawEditorialStrip,
     'science-pro': drawSciencePro,
+    'narrative-highlight': drawNarrativeHighlight,
 
     // Scora 20 Collection
     'massive-serif': drawMassiveSerif,
@@ -2407,6 +2408,145 @@ export function exportCanvas(canvasId: string) {
     link.href = canvas.toDataURL('image/png');
     link.click();
 }
+// ─── Narrative Highlight Sticker (Precision Replication) ─────────────────────
+
+function drawNarrativeHighlight(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const serifFont = "'EB Garamond', serif";
+    const highlightColor = "#FFD644";
+    const bgColor = "#f2f2f2";
+    const textCol = "#1a1a1a";
+
+    const cx = 540;
+    const cy = 960; 
+
+    // ─── Data Extraction & Sport Logic ───────────────────────────────────────
+    const distNum = parseFloat(stats.distanceVal);
+    const activityType = stats.activityType || 'Run';
+    const activityLower = activityType.toLowerCase();
+    
+    // 1. Determine Units & Labels
+    let unit = 'kilometers';
+    let metricLabel = 'pace';
+    let activityAction = 'through';
+    let mainMetric = stats.distanceVal;
+    
+    if (activityLower === 'ride' || activityLower.includes('cycle')) {
+        unit = distNum === 1 ? 'kilometer' : 'kilometers';
+        metricLabel = 'speed';
+    } else if (activityLower === 'run' || activityLower === 'walk' || activityLower === 'hike') {
+        unit = distNum === 1 ? 'kilometer' : 'kilometers';
+        metricLabel = 'pace';
+    } else if (activityLower === 'swim') {
+        unit = distNum === 1 ? 'meter' : 'meters';
+        metricLabel = 'pace';
+        activityAction = 'in';
+        mainMetric = Math.round(distNum * 1000).toString(); // Convert km to meters for swim narrative
+    }
+
+    const location = stats.location && stats.location !== 'Unknown' ? stats.location : '';
+    const region = stats.region && stats.region !== 'World' ? stats.region : '';
+    const duration = stats.timeStr || '0m';
+    const pace = (stats.subValue || '').split(' ')[0] || '0:00';
+    const paceUnit = (stats.subValue || '').split(' ')[1] || '/km';
+    const dateStr = stats.date || '';
+
+    // 2. Build Narrative Lines
+    let l1_p1 = "";
+    let l1_p2 = "";
+    let l2_p1 = "";
+    let l2_p2 = "";
+    let l2_p3 = "";
+    let l2_p4 = "";
+    let l2_p5 = "";
+
+    const isWorkout = activityLower.includes('workout') || activityLower.includes('training') || activityLower.includes('gym');
+
+    if (isWorkout) {
+        l1_p1 = `${duration}`;
+        l1_p2 = ` ${activityLower} ${location ? 'in ' + location : ''},`;
+        l2_p1 = region ? `${region} at ` : 'At ';
+        l2_p2 = stats.avgHeartrate ? `${stats.avgHeartrate} bpm` : 'steady';
+        l2_p3 = ` effort · ${dateStr}`;
+        l2_p4 = "";
+        l2_p5 = "";
+    } else {
+        l1_p1 = `${mainMetric} ${unit}`;
+        l1_p2 = ` ${activityLower} ${activityAction} ${location || 'the world'},`;
+        l2_p1 = region ? `${region} in ` : 'In ';
+        l2_p2 = `${duration}`;
+        l2_p3 = `, at `;
+        l2_p4 = `${pace}${paceUnit}`;
+        l2_p5 = ` ${metricLabel} · ${dateStr}`;
+    }
+
+    // 3. Text Content Setup (Pre-measure for scaling)
+    ctx.save();
+    let baseFontSize = 64; 
+    ctx.font = `600 ${baseFontSize}px ${serifFont}`;
+    
+    const maxTextW = 900; 
+    const w1 = ctx.measureText(l1_p1 + l1_p2).width;
+    const w2 = ctx.measureText(l2_p1 + l2_p2 + l2_p3 + l2_p4 + l2_p5).width;
+    const maxW = Math.max(w1, w2);
+
+    if (maxW > maxTextW) {
+        baseFontSize *= (maxTextW / maxW);
+        ctx.font = `600 ${baseFontSize}px ${serifFont}`;
+    }
+
+    const cardW = 1040;
+    const cardH = 300; // Reduced from 420 for tighter fit
+
+    // 4. Card Background
+    ctx.save();
+    ctx.fillStyle = bgColor;
+    ctx.shadowColor = 'rgba(0,0,0,0.12)';
+    ctx.shadowBlur = 40;
+    ctx.shadowOffsetY = 15;
+    ctx.beginPath();
+    ctx.roundRect(cx - cardW / 2, cy - cardH / 2, cardW, cardH, 4);
+    ctx.fill();
+    ctx.restore();
+
+    // 5. Draw Text
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'left';
+
+    const gap = baseFontSize * 1.5;
+    const l1Y = cy - gap / 2.2;
+    const l2Y = cy + gap / 2.2;
+    const startX = cx - cardW / 2 + 70; 
+
+    function drawSegment(text: string, x: number, y: number, highlight: boolean) {
+        const width = ctx.measureText(text).width;
+        if (highlight) {
+            ctx.save();
+            ctx.fillStyle = highlightColor;
+            const hH = baseFontSize * 1.1; 
+            ctx.fillRect(x - 6, y - hH / 2 + 3, width + 12, hH);
+            ctx.restore();
+        }
+        ctx.fillStyle = textCol;
+        ctx.fillText(text, x, y);
+        return width;
+    }
+
+    // Line 1
+    let currX = startX;
+    currX += drawSegment(l1_p1, currX, l1Y, true);
+    drawSegment(l1_p2, currX, l1Y, false);
+
+    // Line 2
+    currX = startX;
+    currX += drawSegment(l2_p1, currX, l2Y, false);
+    currX += drawSegment(l2_p2, currX, l2Y, true);
+    currX += drawSegment(l2_p3, currX, l2Y, false);
+    if (l2_p4) currX += drawSegment(l2_p4, currX, l2Y, true);
+    drawSegment(l2_p5, currX, l2Y, false);
+
+    ctx.restore();
+}
+
 // ─── New Stickers Support Helpers ──────────────────────────────────────────
 
 function drawStackedEditorial(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
