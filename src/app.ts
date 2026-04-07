@@ -26,6 +26,7 @@ let queuePollingInterval: ReturnType<typeof setInterval> | null = null;
 // Inicializa el Template Manager que reacciona a los clicks de usuario
 const templateManager = initTemplateManager(async (template, color, showLogo) => {
     if (currentStats) {
+        /* 
         // If Performance Bars is selected and we don't have splits yet, fetch detailed data
         if (template === 'performance-bars' && !currentStats.splits && currentAccessToken && currentActivityId) {
             try {
@@ -38,6 +39,7 @@ const templateManager = initTemplateManager(async (template, color, showLogo) =>
                 console.error("Error fetching detailed activity for splits:", e);
             }
         }
+        */
         drawTemplate('storyCanvas', currentStats, template, color, showLogo);
     }
 });
@@ -394,6 +396,7 @@ async function initApp() {
             activitiesData = cachedActivities ? JSON.parse(cachedActivities) : [];
         }
 
+        /* 
         // Proactive pre-fetching for the last 10 activities
         if (accessToken && activitiesData.length > 0) {
             const last10 = activitiesData.slice(0, 10);
@@ -422,6 +425,7 @@ async function initApp() {
                 localStorage.setItem('stravaActivities', JSON.stringify(activitiesData));
             }
         }
+        */
 
         // 🏁 FINAL STEP: Revoke token and clear session only after everything (including pre-fetch) is done
         if (accessToken) {
@@ -550,6 +554,7 @@ window.addEventListener('message', async (event) => {
             const activitiesData = await fetchStravaActivities(accessToken);
             renderActivityFeed(activitiesData);
 
+            /* 
             // Proactive pre-fetching for the last 10 activities after fresh login
             if (activitiesData.length > 0) {
                 const last10 = activitiesData.slice(0, 10);
@@ -576,6 +581,7 @@ window.addEventListener('message', async (event) => {
                     localStorage.setItem('stravaActivities', JSON.stringify(activitiesData));
                 }
             }
+            */
 
             // 🏁 FINAL STEP: Revoke token and clear session after login + pre-fetch
             if (accessToken) {
