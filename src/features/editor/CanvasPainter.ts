@@ -2494,8 +2494,8 @@ function drawNarrativeHighlight(ctx: CanvasRenderingContext2D, stats: any, textC
         ctx.font = `600 ${baseFontSize}px ${serifFont}`;
     }
 
-    const cardW = 1040;
-    const cardH = 300; // Reduced from 420 for tighter fit
+    const cardW = 1060; // Increased from 1040
+    const cardH = 260; // Reduced from 300 for an ultra-tight look
 
     // 4. Card Background
     ctx.save();
