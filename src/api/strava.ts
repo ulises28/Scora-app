@@ -135,7 +135,7 @@ const getSessionId = (): string => {
     try {
         const rawData = localStorage.getItem('stravaAuth');
         if (!rawData) return 'fallback_' + Math.random().toString(36).substring(7);
-        
+
         const parsed = JSON.parse(rawData);
         return parsed.sessionId || 'fallback';
     } catch (e) {
@@ -165,9 +165,9 @@ export async function fetchStravaActivities(token: string) {
     const response = await fetch('/api/strava-activities', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-            access_token: token, 
-            sessionId 
+        body: JSON.stringify({
+            access_token: token,
+            sessionId
         })
     });
 
@@ -206,7 +206,7 @@ export async function fetchDetailedActivity(token: string, activityId: number) {
     const response = await fetch('/api/strava-activities', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
             access_token: token,
             sessionId,
             activity_id: activityId,
@@ -234,12 +234,12 @@ export async function deauthorizeAthlete(token: string) {
         body: JSON.stringify({ access_token: token }),
         keepalive: true // ENSURE the fetch completes even if the user closes the tab!
     });
-    
+
     if (!response.ok) {
         const error = await response.json();
         throw new Error(`Deauthorization failed: ${error.message || response.statusText}`);
     }
-    
+
     // Solo después de una revocación exitosa limpiamos el estado local
     localStorage.removeItem('stravaAuth');
     console.log("[Strava] Access revoked and local session cleared.");
@@ -255,18 +255,18 @@ const DISTANCE_SPORTS = new Set([
     'Swim', 'OpenWaterSwim',
 ]);
 
-import { 
-    formatTime, 
-    formatDateShort, 
-    formatDayAndNumber, 
+import {
+    formatTime,
+    formatDateShort,
+    formatDayAndNumber,
     formatDayAndNumberNormal,
     formatDayName,
-    formatDuration, 
-    getDurationValueOnly, 
-    getDurationUnitOnly, 
-    formatPace, 
-    formatSwimPace, 
-    formatSpeedKmh 
+    formatDuration,
+    getDurationValueOnly,
+    getDurationUnitOnly,
+    formatPace,
+    formatSwimPace,
+    formatSpeedKmh
 } from '../utils/formatters';
 
 // 4. Activity stats formatter
@@ -407,7 +407,7 @@ export function formatActivityStats(activity: StravaActivity): StickerStats {
 
             const isFull = distKm >= 0.95; // Close enough to 1km
             const label = isFull ? String(sm.split).padStart(2, '0') : '.' + Math.round((sm.distance % 1000) / 10);
-            
+
             const pace = formatPace(sm.average_speed);
             const paceVal = pace.split(' ')[0];
             const paceParts = paceVal.split(':');

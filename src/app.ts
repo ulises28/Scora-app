@@ -164,7 +164,6 @@ function updateQueueUI(data: { position: number; estimatedWait: number } | null)
 async function handleLoginClick() {
     // Show loading state immediately so the click feels instant
     if (btnLogin) {
-        btnLogin.textContent = 'Conectando...';
         (btnLogin as HTMLButtonElement).disabled = true;
         btnLogin.style.cursor = 'wait';
     }
@@ -184,7 +183,6 @@ async function handleLoginClick() {
     } finally {
         // Reset button state (in case OAuth popup was blocked or user returns)
         if (btnLogin) {
-            btnLogin.textContent = 'Conectar con Strava';
             (btnLogin as HTMLButtonElement).disabled = false;
             btnLogin.style.cursor = '';
         }
@@ -217,7 +215,7 @@ async function initApp() {
         showScreen('screen-feed');
         if (authSection) {
             authSection.classList.remove('hidden');
-            
+
             // 🛠️ MOCK MODE: Add a demo button if on localhost to unblock testing
             if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
                 const existingMock = document.getElementById('btn-mock-data');
@@ -265,7 +263,7 @@ async function initApp() {
                                 alert('Sistema limpiado (cola vaciada). \\n\\n⚠️ IMPORTANTE: No se pudo desautorizar automáticamente al usuario anterior porque la llave se perdió.\\nSi SIGUES sin poder conectarte (Error 403), ve a Strava.com en tu PC -> Ajustes -> "Mis Aplicaciones" y haz clic en "Revocar Acceso" de Scora.');
                             }
                         } catch (e) {
-                             alert('Error al reiniciar el sistema.');
+                            alert('Error al reiniciar el sistema.');
                         } finally {
                             adminBtn.innerHTML = '🚨 Admin: Liberar App';
                             window.location.reload();
@@ -337,7 +335,7 @@ async function initApp() {
                     <input type="file" id="import-json-file" accept=".json" style="display:none;">
                 `;
                 authSection.appendChild(container);
-                
+
                 const fileInput = container.querySelector('#import-json-file') as HTMLInputElement;
                 fileInput.onchange = (e: any) => {
                     const file = e.target.files[0];
@@ -488,7 +486,7 @@ if (canvasWrapper) {
                     if (typeof window.ClipboardItem !== 'undefined') {
                         const item = new window.ClipboardItem({ "image/png": blob });
                         await navigator.clipboard.write([item]);
-                        
+
                         // Visual Feedback
                         console.log("[Studio] Sticker copied to clipboard.");
                     } else {
