@@ -1,10 +1,6 @@
 name: Scora QA Automation
 
 on:
-  push:
-    branches: [ "main", "master" ]
-  pull_request:
-    branches: [ "main", "master" ]
   workflow_dispatch:
     inputs:
       update_snapshots:
@@ -12,6 +8,10 @@ on:
         required: false
         type: boolean
         default: false
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
 
 # Global environment variables
 jobs:
