@@ -16,7 +16,7 @@ import { StickerStats } from '../../api/strava';
 // ─── Shared colour helpers ───────────────────────────────────────────────────
 
 function buildColors(textColor: string) {
-    const alphaValue = 0.45;
+    const alphaValue = 0.85;
     const base = textColor === 'black' ? '0, 0, 0' : '255, 255, 255';
     return {
         solid: `rgb(${base})`,
@@ -123,7 +123,11 @@ type StickerRenderer = (ctx: CanvasRenderingContext2D, stats: any, textColor: st
  * Supports category-specific overrides (running/gym).
  */
 const RENDERER_REGISTRY: Record<string, StickerRenderer | { running: StickerRenderer; gym: StickerRenderer }> = {
-    // Standard Templates (Identical for all categories)
+    'condesa-stack': drawCondesaStack,
+    'editorial-strip': drawEditorialStrip,
+    'science-pro': drawSciencePro,
+    'narrative-highlight': drawNarrativeHighlight,
+    'location-pill': drawLocationPill,
     'performance-bars': drawPerformanceBars,
     'dm': (ctx, stats) => drawDMBubble(ctx, stats),
     'modern-pill': drawModernPill,
@@ -139,6 +143,9 @@ const RENDERER_REGISTRY: Record<string, StickerRenderer | { running: StickerRend
     'script-serif': drawScriptAndSerif,
     'thin-path': drawThinPath,
     'glass-slice': drawGlassSlice,
+    'classic-stack': drawClassicStack,
+    'neon-slanted': drawNeonSlanted,
+    'aesthetic-medal': drawAestheticMedal,
     'vhs-retro': drawVHSRetro,
     'award-badge': drawAwardBadge,
     'stealth-bar': drawStealthBar,
@@ -154,12 +161,8 @@ const RENDERER_REGISTRY: Record<string, StickerRenderer | { running: StickerRend
     'data-matrix': drawDataMatrix,
     'vertical-label': drawVerticalLabel,
     'frosted-minimal': drawFrostedMinimal,
-    'location-pill': drawLocationPill,
     'pure-map': drawPureMap,
     'pro-vertical': drawProVertical,
-    'editorial-strip': drawEditorialStrip,
-    'science-pro': drawSciencePro,
-    'narrative-highlight': drawNarrativeHighlight,
 
     // Scora 20 Collection
     'massive-serif': drawMassiveSerif,
@@ -1451,7 +1454,7 @@ function drawDataModular(ctx, stats, textColor) {
     // Text for Bottom
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)';
+    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.85)';
     ctx.font = `900 14px ${sysFont}`;
     ctx.letterSpacing = "6px";
     ctx.fillText("SCORA PERFORMANCE LOG", cx + 3, startY + topH + 1 + botH / 2);
@@ -1462,8 +1465,111 @@ function drawDataModular(ctx, stats, textColor) {
     ctx.beginPath();
     ctx.roundRect(cx - w / 2, cy - h / 2, w, h, r);
     ctx.lineWidth = 1;
-    ctx.strokeStyle = textColor === 'black' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)';
+    ctx.strokeStyle = textColor === 'black' ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.3)';
     ctx.stroke();
+}
+
+function drawVHSRetro(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const margin = 80;
+    const canvasW = 1080;
+    const canvasH = 1920;
+    const osdY = 220; // Shifted down to clear the SCORA logo at Y=115
+
+    // 1. Data Processing
+    const rawType = stats.activityType || 'RUN';
+    const activity = (rawType === 'WeightTraining' ? 'TRAIN' : rawType).toUpperCase();
+    const distanceVal = stats.distanceVal || '0.00';
+    
+    const rawDate = stats.rawDate ? new Date(stats.rawDate) : new Date();
+    const hours = rawDate.getHours();
+    const mins = rawDate.getMinutes().toString().padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const timeStr = `${ampm}  ${hours % 12 || 12}:${mins}`;
+    
+    const month = new Intl.DateTimeFormat('en-US', { month: 'short' }).format(rawDate).toUpperCase();
+    const day = rawDate.getDate().toString().padStart(2, '0');
+    const year = rawDate.getFullYear();
+    const dateStr = `${month}. ${day} ${year}`;
+    const paceVal = (stats.subValue || '').split(' ')[0] || '0:00';
+
+    // Helper for absolute scoped rendering
+    const drawVCR = (text: string, x: number, y: number, align: CanvasTextAlign = 'left', baseline: CanvasTextBaseline = 'top', size = 58) => {
+        ctx.save();
+        ctx.textAlign = align;
+        ctx.textBaseline = baseline;
+        ctx.translate(x, y);
+        ctx.scale(0.85, 1.15); // Stretched retro look
+        
+        ctx.shadowColor = 'rgba(0,0,0,0.9)';
+        ctx.shadowOffsetX = 4;
+        ctx.shadowOffsetY = 4;
+        ctx.shadowBlur = 0; // Hardware-sharp shadows
+        
+        ctx.fillStyle = 'white'; 
+        ctx.font = `400 ${size}px 'VT323', monospace`;
+        (ctx as any).letterSpacing = "0.05em";
+        
+        ctx.fillText(text, 0, 0);
+        ctx.restore();
+    };
+
+    // 2. Rendering
+    ctx.save();
+    
+    // Reset and protect coordinate space
+    const baseTransform = ctx.getTransform();
+    ctx.setTransform(baseTransform.a, 0, 0, baseTransform.d, baseTransform.e, baseTransform.f);
+
+    // --- TOP LEFT: REC Indicator ---
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(margin + 20, osdY + 25, 18, 0, Math.PI * 2);
+    ctx.fillStyle = '#ff0000';
+    ctx.shadowColor = 'rgba(255,0,0,0.5)';
+    ctx.shadowBlur = 15;
+    ctx.fill();
+    ctx.restore();
+    
+    drawVCR("REC", margin + 65, osdY, 'left', 'top', 64);
+    drawVCR(activity, margin, osdY + 100, 'left', 'top', 64);
+
+    // --- TOP RIGHT: PLAY Block (v26.0 Isolated Stack) ---
+    const trX = canvasW - margin;
+    const trY = osdY;
+
+    // Line 1: PLAY + Triangle
+    drawVCR("PLAY", trX - 60, trY, 'right', 'top', 64);
+    
+    ctx.save();
+    ctx.translate(trX, trY);
+    ctx.scale(0.85, 1.15);
+    ctx.fillStyle = 'white';
+    ctx.shadowColor = 'rgba(0,0,0,0.9)';
+    ctx.shadowOffsetX = 4;
+    ctx.shadowOffsetY = 4;
+    ctx.beginPath();
+    ctx.moveTo(-45, 10);     
+    ctx.lineTo(-45, 50);    
+    ctx.lineTo(-10, 30);   
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    // Line 2: SP
+    drawVCR("SP", trX, trY + 65, 'right', 'top', 48);
+
+    // Line 3: Distance
+    drawVCR(`${distanceVal} KM`, trX, trY + 135, 'right', 'top', 64);
+
+    // --- BOTTOM LEFT: Timestamps ---
+    drawVCR(timeStr, margin, canvasH - margin - 85, 'left', 'bottom', 58);
+    drawVCR(dateStr, margin, canvasH - margin, 'left', 'bottom', 58);
+
+    // --- BOTTOM RIGHT: Data ---
+    drawVCR(`${paceVal} /KM`, canvasW - margin, canvasH - margin - 85, 'right', 'bottom', 58);
+    drawVCR("TRACKING", canvasW - margin, canvasH - margin, 'right', 'bottom', 58);
+
+    ctx.restore();
 }
 
 function drawGlassSlice(ctx, stats, textColor) {
@@ -1517,7 +1623,7 @@ function drawGlassSlice(ctx, stats, textColor) {
     ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
     ctx.font = `italic 900 70px ${sysFont}`;
     ctx.fillText(distText, -w / 4, -10);
-    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)';
+    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.85)';
     ctx.font = `900 16px ${sysFont}`;
     ctx.fillText(distUnit, -w / 4, 40);
 
@@ -1529,72 +1635,13 @@ function drawGlassSlice(ctx, stats, textColor) {
     ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
     ctx.font = `italic 900 40px ${sysFont}`;
     ctx.fillText(paceText, w / 4, -10);
-    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)';
+    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.85)';
     ctx.font = `900 16px ${sysFont}`;
     ctx.fillText((stats.subLabel || (stats.hasDistance ? (stats.type === 'Ride' ? "Avg Speed" : "Pace") : "Heart Rate")).toUpperCase(), w / 4, 40);
 
     ctx.restore();
 }
 
-function drawVHSRetro(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
-    const sysFont = "'Space Mono', monospace";
-    const p = stats.dataPoints || [];
-    const main = p[0] || { value: '0.00', label: 'Dist', unit: 'km' };
-
-    const cx = 540;
-    const cy = 1100;
-    const w = 800;
-    const h = 500;
-
-    ctx.save();
-    ctx.translate(cx, cy);
-
-    // 1. RED DOT + REC (Top Left)
-    ctx.beginPath();
-    ctx.arc(-w / 2 + 60, -h / 2 + 60, 15, 0, Math.PI * 2);
-    ctx.fillStyle = '#ff0000'; // Pure bright red for recording
-    ctx.fill();
-
-    ctx.fillStyle = 'white';
-    ctx.font = `700 48px ${sysFont}`;
-    ctx.shadowBlur = 10;
-    ctx.shadowColor = 'black';
-    ctx.fillText("REC", -w / 2 + 100, -h / 2 + 78);
-    ctx.shadowBlur = 0;
-
-    // 2. SP / PLAY (Top Right)
-    ctx.textAlign = 'right';
-    ctx.font = `400 32px ${sysFont}`;
-    ctx.fillText("PLAY ►", w / 2 - 60, -h / 2 + 70);
-    ctx.fillText("SP", w / 2 - 60, -h / 2 + 110);
-
-    // 3. Main Data (Bottom Left)
-    ctx.textAlign = 'left';
-    ctx.font = `700 120px ${sysFont}`;
-    ctx.fillText(main.value, -w / 2 + 60, h / 2 - 120);
-
-    ctx.font = `400 40px ${sysFont}`;
-    ctx.fillText((main.unit || main.label).toUpperCase(), -w / 2 + 60, h / 2 - 70);
-
-    // 4. Date/Time (Bottom Right)
-    ctx.textAlign = 'right';
-    const dateStr = (stats.dayAndNumber || stats.date || '').toUpperCase();
-    ctx.font = `400 32px ${sysFont}`;
-    ctx.fillText(dateStr, w / 2 - 60, h / 2 - 120);
-    ctx.fillText(stats.startTime || "07:08 AM", w / 2 - 60, h / 2 - 70);
-
-    // 5. Tracking Lines (Retro vibe)
-    ctx.globalAlpha = 0.2;
-    ctx.strokeStyle = 'white';
-    ctx.lineWidth = 1;
-    for (let i = 0; i < 3; i++) {
-        const y = h / 2 - 40 - (i * 5);
-        ctx.beginPath(); ctx.moveTo(-w / 2 + 60, y); ctx.lineTo(-w / 2 + 120, y); ctx.stroke();
-    }
-    ctx.globalAlpha = 1.0;
-
-    ctx.restore();
-}
 
 
 function drawAwardBadge(ctx, stats, textColor) {
@@ -1636,7 +1683,7 @@ function drawAwardBadge(ctx, stats, textColor) {
     ctx.font = `italic 900 80px ${sysFont}`;
     ctx.fillText(distText, cx, cy - 10);
 
-    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)';
+    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.85)';
     ctx.font = `900 16px ${sysFont}`;
     ctx.letterSpacing = "2px";
     ctx.fillText(distUnit.toUpperCase(), cx, cy + 55);
@@ -1672,7 +1719,7 @@ function drawStealthBar(ctx: CanvasRenderingContext2D, stats: any, textColor: st
 
         // Unit (Bigger labels as requested)
         ctx.font = `800 24px ${sysFont}`;
-        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        ctx.fillStyle = 'rgba(255,255,255,0.85)';
         if (typeof ctx.letterSpacing !== 'undefined') ctx.letterSpacing = "6px";
         const labelText = (data.unit || data.label).toUpperCase();
         ctx.fillText(labelText, 0, -35);
@@ -2369,17 +2416,17 @@ function drawFrostedMinimal(ctx: CanvasRenderingContext2D, stats: any, textColor
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
-    const isLong = main.value.length > 5;
-    ctx.font = `italic 900 ${isLong ? '70px' : '140px'} ${sysFont}`;
-    const dW = ctx.measureText(main.value).width;
+    const isLongStr = main.value.length > 5;
+    ctx.font = `italic 900 ${isLongStr ? '70px' : '140px'} ${sysFont}`;
+    const dWValue = ctx.measureText(main.value).width;
     ctx.fillText(main.value, cx - w / 2 + 80, cy);
 
     ctx.font = `900 18px ${sysFont}`;
     ctx.globalAlpha = 0.2;
-    ctx.letterSpacing = "8px";
-    const labelMain = (main.unit || main.label).toUpperCase();
-    ctx.fillText(labelMain, cx - w / 2 + 80 + dW + 20, cy + 10);
-    ctx.letterSpacing = "0px";
+    (ctx as any).letterSpacing = "8px";
+    const labelMainStr = (main.unit || main.label).toUpperCase();
+    ctx.fillText(labelMainStr, cx - w / 2 + 80 + dWValue + 20, cy + 10);
+    (ctx as any).letterSpacing = "0px";
     ctx.globalAlpha = 1.0;
 
     // Separator
@@ -2393,11 +2440,12 @@ function drawFrostedMinimal(ctx: CanvasRenderingContext2D, stats: any, textColor
     ctx.fillText(p2.value, cx + 80, cy - 10);
     ctx.font = `900 14px ${sysFont}`;
     ctx.globalAlpha = 0.1;
-    ctx.letterSpacing = "10px";
+    (ctx as any).letterSpacing = "10px";
     ctx.fillText(p2.label.toUpperCase(), cx + 80, cy + 40);
-    ctx.letterSpacing = "0px";
+    (ctx as any).letterSpacing = "0px";
     ctx.globalAlpha = 1.0;
 }
+
 
 // ─── Export ───────────────────────────────────────────────────────────────────
 
@@ -2543,6 +2591,89 @@ function drawNarrativeHighlight(ctx: CanvasRenderingContext2D, stats: any, textC
     currX += drawSegment(l2_p3, currX, l2Y, false);
     if (l2_p4) currX += drawSegment(l2_p4, currX, l2Y, true);
     drawSegment(l2_p5, currX, l2Y, false);
+
+    ctx.restore();
+}
+
+// ─── Condesa Stack Sticker (Industrial Modern) ────────────────────────────────
+/**
+ * A bold, geometric layout inspired by modern event posters.
+ * Uses stacked metrics with high-contrast typography and specific sub-labels.
+ */
+function drawCondesaStack(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const cy = 960;
+    const startX = 150; // Increased for a more "studio" balance
+    const rightCol = 600;
+    
+    // 1. Unified Sizing Constants (v13.0 Solid Unification)
+    const HEADER_SIZE = 90;
+    const DATA_SIZE = 65; // Universal scale for all metrics
+    const UNIT_SIZE = 24;
+    const UNIT_OFFSET = 100;
+    const ROW_GAP = 220;
+    
+    const isDarkStr = textColor === 'white';
+    const baseColor = isDarkStr ? '#FFFFFF' : '#000000'; // 100% Solid
+
+    // 2. Data Intelligence
+    const rawDate = stats.rawDate ? new Date(stats.rawDate) : new Date();
+    const weekday = new Intl.DateTimeFormat('es-ES', { weekday: 'long' }).format(rawDate).toUpperCase();
+    const dayNum = rawDate.getDate().toString().padStart(2, '0');
+    const startTimeResult = (stats.startTime || '10:24 PM').toUpperCase();
+    const distValueResult = stats.distanceVal || '0.00';
+    const distUnitResult = (parseFloat(distValueResult) === 1 ? 'KILOMETER' : 'KILOMETERS');
+    const paceValueResult = (stats.subValue || '').split(' ')[0] || '0:00';
+    const paceUnitResult = (stats.subValue || '').split(' ')[1] || '/KM';
+    const locationNameResult = (stats.location || 'MEXICO').toUpperCase();
+
+    // 3. Rendering Engine
+    ctx.save();
+    
+    // NO SHADOWS, NO TRANSPARENCY - 100% FLAT STICKER LOOK
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+    
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = baseColor;
+
+    function renderSolidItem(text: string, x: number, y: number, size: number, weight = '900', spacing = '-0.05em') {
+        ctx.font = `${weight} ${size}px 'Inter', sans-serif`;
+        (ctx as any).letterSpacing = spacing;
+        ctx.fillText(text, x, y);
+    }
+
+    function renderSolidUnit(text: string, x: number, y: number) {
+        ctx.font = `800 ${UNIT_SIZE}px 'Inter', sans-serif`;
+        (ctx as any).letterSpacing = "0.15em";
+        ctx.fillText(text, x, y);
+    }
+
+    let currY = cy - 500; 
+
+    // A. HEADER: DAY + NUMBER (Solid & Identical)
+    renderSolidItem(weekday, startX, currY, HEADER_SIZE, '800', '-0.06em'); 
+    currY += 90;
+    renderSolidItem(dayNum, startX, currY, HEADER_SIZE, '800', '-0.06em');
+    currY += 240; 
+
+    // B. GRID ROW 1: TIME | DISTANCE
+    renderSolidItem(startTimeResult, startX, currY, DATA_SIZE, '900', '-0.05em');
+    renderSolidUnit("TIME", startX, currY + UNIT_OFFSET);
+
+    renderSolidItem(distValueResult, rightCol, currY, DATA_SIZE, '900', '-0.05em');
+    renderSolidUnit(distUnitResult, rightCol, currY + UNIT_OFFSET);
+    
+    currY += ROW_GAP; 
+
+    // C. GRID ROW 2: PACE | LOCATION
+    renderSolidItem(paceValueResult, startX, currY, DATA_SIZE, '900', '-0.05em');
+    renderSolidUnit(`PACE (${paceUnitResult})`, startX, currY + UNIT_OFFSET);
+
+    renderSolidItem(locationNameResult, rightCol, currY, DATA_SIZE, '900', '-0.05em');
+    renderSolidUnit("LOCATION", rightCol, currY + UNIT_OFFSET);
 
     ctx.restore();
 }
@@ -3866,7 +3997,7 @@ function drawTypewriterMono(ctx: CanvasRenderingContext2D, stats: any, textColor
     // Content
     const tx = 45;
 
-    ctx.globalAlpha = 0.3;
+    ctx.globalAlpha = 0.7;
     ctx.font = "700 24px 'Courier Prime'";
     if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0.4em"; }
     ctx.fillText("OBSERVATION:", tx, 10);
@@ -3878,7 +4009,7 @@ function drawTypewriterMono(ctx: CanvasRenderingContext2D, stats: any, textColor
     ctx.fillText(`"${displayVal} logged."`, tx, 60);
     if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0px"; }
 
-    ctx.globalAlpha = 0.25;
+    ctx.globalAlpha = 0.7;
     ctx.font = "400 22px 'Courier Prime'";
     if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0.2em"; }
     ctx.fillText(`${loc} // ${date}`, tx, 160);
@@ -3914,7 +4045,7 @@ function drawBrutalSlash(ctx: CanvasRenderingContext2D, stats: any, textColor = 
     ctx.fillText(stats.timeStr || '0:00', cx + slashW / 2 - 60, cy + 30);
     if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0px"; }
 
-    ctx.globalAlpha = 0.3;
+    ctx.globalAlpha = 0.8;
     ctx.font = "800 28px 'Plus Jakarta Sans'";
     if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0.45em"; }
     ctx.fillText("DURATION", cx + slashW / 2 - 60, cy + 95);
@@ -4315,3 +4446,236 @@ function drawSciencePro(ctx: CanvasRenderingContext2D, stats: any, textColor: st
     ctx.fillText(tempVal + '°C TRACKED', 540, 1160);
 }
 
+
+// ─── The Final Three Suite ──────────────────────────────────────────────────
+
+/**
+ * 01. CLASSIC STACK (v1.0)
+ * High-fidelity retro typography with hard-shadow "Playfair" depth.
+ */
+function drawClassicStack(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const c = buildColors(textColor);
+    const sysFont = "'Playfair Display', serif";
+    
+    const valText = stats.hasDistance ? (stats.distanceVal || '0.00') : (stats.timeStr || '0:00');
+    const unitText = stats.hasDistance ? 'kilometers' : 'time';
+    const locText = (stats.dataPoints?.find(p => p.label === 'Location')?.value || 'Unknown').toUpperCase();
+
+    const cx = 540;
+    const cy = 960;
+
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    // Hard Shadow Config
+    ctx.shadowColor = textColor === 'black' ? 'rgba(0,0,0,0.15)' : '#b91c1c';
+    ctx.shadowOffsetX = 6;
+    ctx.shadowOffsetY = 6;
+    ctx.shadowBlur = 0;
+
+    // 1. Value (Massive)
+    ctx.font = `italic 900 320px ${sysFont}`;
+    ctx.fillStyle = textColor === 'black' ? 'black' : '#fbbf24';
+    ctx.fillText(valText, cx, cy - 140);
+
+    // 2. Unit
+    ctx.font = `italic 900 140px ${sysFont}`;
+    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.85)' : 'white';
+    ctx.fillText(unitText, cx, cy + 80);
+
+    // 3. Location (Subtitle)
+    ctx.shadowOffsetX = 3;
+    ctx.shadowOffsetY = 3;
+    ctx.font = `italic 900 58px ${sysFont}`;
+    ctx.letterSpacing = "4px";
+    ctx.fillText(locText, cx, cy + 220);
+
+    ctx.restore();
+}
+
+/**
+ * 02. NEON SLANTED (v1.0)
+ * Glassmorphic tilted block with vibrant gradients and "High-Voltage" contrast.
+ */
+function drawNeonSlanted(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const sysFont = "'Playfair Display', serif";
+    const rawType = stats.activityType || 'Workout';
+    const activity = (rawType === 'WeightTraining' ? 'TRAIN' : rawType).toUpperCase();
+    
+    // Back to Kilometers/Time for this specific style (Compositional Choice)
+    const valText = stats.hasDistance ? (stats.distanceVal || '0.00') : (stats.timeStr || '0:00');
+    const unitText = stats.hasDistance ? 'KILOMETERS' : 'TIME';
+    const fullMainText = `${valText} ${unitText}`;
+
+    const cx = 540;
+    const cy = 1000;
+    const w = 780;
+    const h = 480;
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(-5 * Math.PI / 180);
+
+    // 1. Glass Backdrop
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.4)';
+    ctx.shadowBlur = 60;
+    ctx.shadowOffsetY = 30;
+    
+    ctx.beginPath();
+    ctx.roundRect(-w / 2, -h / 2, w, h, 120);
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
+    ctx.fill();
+    
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(34, 211, 238, 0.2)'; // Cyan tint
+    ctx.stroke();
+    ctx.restore();
+
+    // 2. Activity Label (Gradient)
+    const grad = ctx.createLinearGradient(-w / 2, 0, w / 2, 0);
+    grad.addColorStop(0, '#ffffff');
+    grad.addColorStop(0.5, '#22d3ee'); // Cyan
+    grad.addColorStop(1, '#ffffff');
+    
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `italic 900 85px ${sysFont}`;
+    ctx.fillStyle = grad;
+    
+    ctx.shadowColor = 'rgba(22, 78, 99, 0.8)';
+    ctx.shadowOffsetX = 5;
+    ctx.shadowOffsetY = 5;
+    ctx.shadowBlur = 0;
+    ctx.fillText(activity, 0, -60);
+
+    // 3. Values (Width-Aware Fit)
+    let fontSize = 120;
+    ctx.font = `italic 900 ${fontSize}px ${sysFont}`;
+    
+    // Safety check: ensure combined text fits in width
+    while (ctx.measureText(fullMainText).width > w - 100 && fontSize > 40) {
+        fontSize -= 5;
+        ctx.font = `italic 900 ${fontSize}px ${sysFont}`;
+    }
+
+    const valueGrad = ctx.createLinearGradient(-w / 4, 0, w / 4, 0);
+    valueGrad.addColorStop(0, '#67e8f9'); // Cyan 300
+    valueGrad.addColorStop(1, '#3b82f6'); // Blue 500
+    ctx.fillStyle = valueGrad;
+    ctx.shadowColor = '#1e3a8a';
+    ctx.fillText(fullMainText, 0, 80);
+
+    ctx.restore();
+}
+
+/**
+ * 03. AESTHETIC MEDAL (v1.0)
+ * 16-point scalloped seal with gold-rim gradient and typographic inner-core.
+ */
+function drawAestheticMedal(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const sysFont = "'Playfair Display', serif";
+    const paceVal = (stats.subValue || '').split(' ')[0] || '0:00';
+    
+    // Date Logic: Month + Day
+    const rawDate = stats.rawDate ? new Date(stats.rawDate) : new Date();
+    const month = new Intl.DateTimeFormat('en-US', { month: 'short' }).format(rawDate).toUpperCase();
+    const day = rawDate.getDate().toString().padStart(2, '0');
+    const dateFormatted = `${month} ${day}`;
+
+    const cx = 540;
+    const cy = 960;
+    const outerR = 320;
+
+    // Helper: Scalloped Path
+    const drawScalloped = (x, y, radius, points, depth) => {
+        ctx.beginPath();
+        for (let i = 0; i < points * 2; i++) {
+            const r = (i % 2 === 0) ? radius : radius - depth;
+            const a = (Math.PI * i) / points;
+            ctx.lineTo(x + r * Math.sin(a), y + r * Math.cos(a));
+        }
+        ctx.closePath();
+    };
+
+    ctx.save();
+
+    // 1. Scalloped Seal Border
+    ctx.save();
+    drawScalloped(cx, cy, outerR, 16, 25);
+    
+    const gold = ctx.createLinearGradient(cx - outerR, cy - outerR, cx + outerR, cy + outerR);
+    gold.addColorStop(0, '#fbbf24');
+    gold.addColorStop(0.5, '#f59e0b');
+    gold.addColorStop(1, '#d97706');
+    
+    ctx.lineWidth = 14;
+    ctx.strokeStyle = gold;
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(0,0,0,0.6)'; // Glass center
+    ctx.fill();
+    ctx.restore();
+
+    // 2. Inner Rim
+    ctx.beginPath();
+    ctx.arc(cx, cy, outerR - 45, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(251, 191, 36, 0.15)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // 3. Content
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    // Activity-Specific Metric Logic
+    // Fix: Using subLabel and subValue instead of speedVal
+    const label = (stats.hasDistance ? (stats.subLabel || 'PACE') : 'TIME').toUpperCase();
+    const val = (stats.hasDistance ? (stats.subValue || '0.00').split(' ')[0] : (stats.timeStr || '0:00'));
+    let suffix = '';
+
+    if (stats.type === 'Ride') {
+        suffix = ' KM/HR';
+    } else if (stats.hasDistance) {
+        suffix = ' /KM';
+    }
+
+    // Label (Top)
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = "900 24px 'Plus Jakarta Sans'";
+    ctx.letterSpacing = "12px";
+    ctx.fillText(label, cx + 6, cy - 130);
+
+    // Primary Value (Middle)
+    const fullValText = `${val}${suffix}`;
+    ctx.shadowColor = '#b91c1c';
+    ctx.shadowOffsetX = 6;
+    ctx.shadowOffsetY = 6;
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = 'white';
+
+    let fontSize = 130;
+    ctx.font = `italic 900 ${fontSize}px ${sysFont}`;
+    
+    // Width awareness to keep inside the seal core
+    while (ctx.measureText(fullValText).width > 480 && fontSize > 60) {
+        fontSize -= 5;
+        ctx.font = `italic 900 ${fontSize}px ${sysFont}`;
+    }
+
+    ctx.fillText(fullValText, cx, cy - 10);
+
+    // Footer Decoration
+    ctx.shadowBlur = 0; ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0;
+    ctx.fillStyle = 'white';
+    ctx.font = "900 22px 'Plus Jakarta Sans'";
+    ctx.letterSpacing = "6px";
+    
+    // Pill dot
+    ctx.globalAlpha = 0.5;
+    ctx.beginPath(); ctx.arc(cx - 100, cy + 95, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillText(dateFormatted, cx, cy + 100);
+    ctx.beginPath(); ctx.arc(cx + 100, cy + 95, 5, 0, Math.PI * 2); ctx.fill();
+
+    ctx.restore();
+}

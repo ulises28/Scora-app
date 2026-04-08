@@ -448,4 +448,39 @@ test.describe('Scora App UI: Advanced Canvas Verification', () => {
         expect(logStr).toContain('PERFORMANCE');
         expect(logStr).toContain('TRACKED');
     });
+
+    test('Test 12: Condesa Stack - Industrial Modern & Spanish Logic', async ({ page }) => {
+        const feedPage = new FeedPage(page);
+        const editorPage = new EditorPage(page);
+        const api = new MockStravaClient(page);
+
+        await feedPage.injectMockAuth();
+        await api.mockSuccessfulActivities();
+        await feedPage.goto();
+        await feedPage.waitForLoaderToHide();
+
+        await editorPage.injectCanvasInterceptor();
+        await feedPage.openActivityEditor(mockActivities[0].name);
+        await editorPage.selectTemplate('condesa-stack');
+
+        // Allow fonts and stack to render
+        await page.waitForTimeout(1000);
+        
+        await expect(editorPage.canvasWrapper).toHaveScreenshot('condesa-stack-v1.png', {
+            maxDiffPixelRatio: 0.1,
+            threshold: 0.2
+        });
+
+        const logs = await editorPage.getCanvasTextLog();
+        const logStr = logs.join(' ').toUpperCase();
+        
+        // Verify Industrial/Spanish labels from the reference image
+        expect(logStr).toContain('DE CONDESA');
+        expect(logStr).toContain('ARRANQUE');
+        expect(logStr).toContain('MÉTRICA');
+        
+        // Date check (current day in Spanish is expected)
+        const dayName = new Intl.DateTimeFormat('es-ES', { weekday: 'long' }).format(new Date()).toUpperCase();
+        expect(logStr).toContain(dayName);
+    });
 });

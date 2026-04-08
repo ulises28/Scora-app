@@ -36,6 +36,7 @@ export const TEMPLATE_REGISTRY: readonly TemplateConfig[] = [
     { id: 'dual-pill', category: 'all', supportsBlackText: true, compact: true, features: { distance: true, duration: true } },
     { id: 'brutalist-letters', category: 'all', supportsBlackText: true, compact: true, features: { distance: true, duration: true } },
     { id: 'boxed-metric', category: 'distance', supportsBlackText: true, compact: true, features: { distance: true } },
+    { id: 'condesa-stack', category: 'all', supportsBlackText: true, features: { distance: true, duration: true, paceSpeed: true, startTime: true, date: true } },
     { id: 'mono-minimal', category: 'all', supportsBlackText: true, compact: true, features: { distance: true, duration: true } },
     { id: 'split-badge', category: 'all', supportsBlackText: false, compact: true, features: { distance: true, paceSpeed: true } },
     { id: 'stacked-editorial', category: 'distance', supportsBlackText: true, features: { distance: true, paceSpeed: true, map: true } },
@@ -71,6 +72,9 @@ export const TEMPLATE_REGISTRY: readonly TemplateConfig[] = [
     { id: 'vertical-label', category: 'distance', supportsBlackText: false, features: { distance: true, paceSpeed: true, duration: true } },
     { id: 'stats', category: 'distance', supportsBlackText: true, features: { distance: true, paceSpeed: true } },
     { id: 'minimal', category: 'all', supportsBlackText: true, compact: true, features: { distance: true, duration: true } },
+    { id: 'classic-stack', category: 'all', supportsBlackText: true, features: { distance: true, duration: true, date: true } },
+    { id: 'neon-slanted', category: 'all', supportsBlackText: true, features: { distance: true, duration: true } },
+    { id: 'aesthetic-medal', category: 'workout', supportsBlackText: true, features: { distance: true, paceSpeed: true, date: true } },
     // Seasonal artifacts (excluded by default)
     { id: 'scora-stealth', category: 'distance', features: { distance: true, paceSpeed: true, duration: true, heartRate: true, map: true }, seasonal: true },
     { id: 'neon-capsule', category: 'distance', features: { distance: true, paceSpeed: true }, seasonal: true },
