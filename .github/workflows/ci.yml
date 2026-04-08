@@ -71,12 +71,23 @@ jobs:
             scora-e2e \
             npx playwright test ${{ github.event.inputs.update_snapshots == 'true' && '--update-snapshots' || '' }}
 
-      - name: Open Pull Request with Updated Snapshots (Self-Healing)
-        if: github.event.inputs.update_snapshots == 'true'
+      # 🏛️ Smart Self-Healing: Conditional Logic
+      # On master/main: Commit directly for high velocity.
+      # On branches: Open a Pull Request for professional review.
+      
+      - name: Direct Commit Updated Snapshots (Master/Main Only)
+        if: github.event.inputs.update_snapshots == 'true' && (github.ref_name == 'master' || github.ref_name == 'main')
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore(testing): self-healing production snapshots [skip ci]"
+          file_pattern: "tests/e2e/ui/canvas-rendering.spec.ts-snapshots/*.png"
+
+      - name: Open Pull Request with Updated Snapshots (Feature Branches Only)
+        if: github.event.inputs.update_snapshots == 'true' && (github.ref_name != 'master' && github.ref_name != 'main')
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "chore(testing): self-healing linux snapshots [skip ci]"
+          commit-message: "chore(testing): self-healing experimental snapshots [skip ci]"
           branch: ci/self-healing-snapshots
           delete-branch: true
           title: "🤖 CI: Self-Healing Linux Snapshots"
