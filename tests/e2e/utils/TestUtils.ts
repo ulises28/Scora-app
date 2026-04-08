@@ -71,10 +71,17 @@ const DISTANCE_SPORTS = new Set([
 ]);
 
 function formatActivityStats(activity: StravaActivity): StickerStats {
+    // Normalization logic (Matches CanvasPainter.ts "Studio Grade" logic)
+    let displayType = activity.type.toUpperCase();
+    if (/Ride|Bike|Cycle/i.test(activity.type)) displayType = 'BIKE';
+    else if (/Run/i.test(activity.type)) displayType = 'RUN';
+    else if (/Swim/i.test(activity.type)) displayType = 'SWIM';
+    else if (/WeightTraining|Training|Workout|Generic/i.test(activity.type)) displayType = 'TRAIN';
+
     const stats: Partial<StickerStats> = {
         title: activity.name,
         shortTitle: activity.name.length > 22 ? activity.name.slice(0, 22) + '…' : activity.name,
-        type: activity.type,
+        type: displayType,
         hasMap: !!activity.map?.summary_polyline,
         polyline: activity.map?.summary_polyline || '',
         avgHeartrate: activity.average_heartrate ? Math.round(activity.average_heartrate) : null,

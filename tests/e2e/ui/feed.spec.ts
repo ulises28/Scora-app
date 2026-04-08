@@ -23,13 +23,13 @@ test.describe('Scora App UI: Feed (POM)', () => {
         for (const activity of mockActivities) {
             const stats = TestUtils.getExpectedStats(activity);
             
-            // Expected display values:
-            // - Title (truncated if needed, but verify the card has the title)
-            // - Secondary stat: Distance (e.g. "9.64 km") or Duration (e.g. "1h 11m")
             const expectedSecondary = stats.hasDistance ? stats.mainValue : stats.timeStr;
-
             await feedPage.verifyActivityRendered(activity.name, expectedSecondary);
         }
+
+        // Verify that the list is reasonably bounded (Auto-healing robustness)
+        const cardCount = await page.locator('.activity-card').count();
+        expect(cardCount).toBeLessThanOrEqual(50); // Scora design limit
     });
 
 });

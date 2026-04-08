@@ -14,19 +14,19 @@ export default defineConfig({
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
   
-  /* LEAD STRATEGY: Higher retries on CI, but fail fast locally. */
-  retries: process.env.CI ? 2 : 0,
+  /* LEAD STRATEGY: Always use 1 retry locally to catch 'On-First-Retry' traces and videos
+     without bloating storage on passing runs. */
+  retries: 1,
   
   /* SCALE: Dynamic worker allocation based on machine CPU. */
   workers: process.env.CI ? 4 : undefined,
 
-  /* OBSERVABILITY: Use 'blob' for CI merging and 'monocart' for professional local reporting. */
-  reporter: process.env.CI ? [['github'], ['blob']] : [
+  reporter: [
     ['list'],
+    ['html', { open: 'never', outputFolder: 'playwright-report' }],
     ['monocart-reporter', {
       name: 'Scora E2E Test Report',
       outputFile: './test-results/report.html',
-      // Keep attachments external to avoid a massive single HTML file
       attachmentPath: (currentPath, attachmentName) => {
         return `attachments/${attachmentName}`;
       }
@@ -43,13 +43,13 @@ export default defineConfig({
   use: {
     baseURL: process.env.BASE_URL || 'http://localhost:5500',
 
-    /* DEBUGGING: 'retain-on-failure' is better than 'on-first-retry'. 
-       It gives you a trace for EVERY failure, which is vital for RCA. */
-    trace: 'retain-on-failure',
+    /* DEBUGGING: 'on-first-retry' is the professional standard for lean disk usage.
+       It only saves traces and videos if a test fails and needs to be retried. */
+    trace: 'on-first-retry',
     
     /* PRO-LEVEL EVIDENCE: Automatic video and screenshots for failed tests. */
     screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
+    video: 'on-first-retry',
 
     /* HEADLESS: Default to true, but allow override for local debugging. */
     headless: true,

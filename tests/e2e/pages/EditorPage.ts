@@ -26,11 +26,11 @@ export class EditorPage extends BasePage {
         this.titleLabel = page.locator('#selected-activity-name');
         this.nextTemplateButton = page.locator('.template-arrow-next'); // High-end arrows
         this.prevTemplateButton = page.locator('.template-arrow-prev'); // High-end arrows
-        this.textColorToggle = page.locator('#color-toggle');
-        this.logoToggle = page.locator('#logo-toggle');
-        this.downloadButton = page.locator('#btn-download');
+        this.textColorToggle = page.getByTestId('color-toggle');
+        this.logoToggle = page.getByTestId('logo-toggle');
+        this.downloadButton = page.getByTestId('download-btn');
         this.backButton = page.locator('#btn-back');
-        this.canvasWrapper = page.locator('.canvas-wrapper');
+        this.canvasWrapper = page.getByTestId('canvas-main-preview');
     }
 
     @step('Verify Editor Screen is Visible')

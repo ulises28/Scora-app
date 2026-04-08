@@ -169,7 +169,7 @@ test.describe('Scora App UI: Sticker Editor (POM)', () => {
         await editorPage.injectCanvasInterceptor();
 
         // 1. Verify Logo Toggle (Should remove "SCORA" from rendering)
-        const logoToggle = page.locator('#logo-toggle');
+        const logoToggle = editorPage.logoToggle;
 
         // On → Off
         let startCount = await editorPage.getDrawCount();

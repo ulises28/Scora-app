@@ -14,14 +14,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;500;700;800&family=Outfit:wght@300;400;500;700;800&family=Playfair+Display:ital,wght@0,500;1,500;1,900&family=EB+Garamond:ital,wght@0,400;0,500;1,500&family=Inter:wght@400;700;800;900&family=Space+Grotesk:wght@400;700&family=Space+Mono:wght@400;700&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="/src/styles/styles.css">
-    <link rel="icon" href="/scora_favicon.png" type="image/png">
+    <link rel="icon" href="/assets/scora-favicon.png" type="image/png">
 </head>
 
 <body>
     <div id="loader-overlay">
         <picture>
-            <source media="(min-width: 900px)" srcset="/assets/img/track_desktop.jpeg">
-            <img src="/assets/img/track_mobile.jpeg" alt="Scora Welcome" class="loader-image">
+            <source media="(min-width: 900px)" srcset="/assets/track-desktop.jpg">
+            <img src="/assets/track-mobile.jpg" alt="Scora Welcome" class="loader-image">
         </picture>
         <p class="loader-text">Designed to be seen.</p> <!-- Insertar frase motivadora -->
     </div>
@@ -44,8 +44,8 @@
                     <h1>Tus rutas, hechas arte.</h1>
                     <p>Conecta con Strava para importar tus últimos entrenamientos.<br /></p>
                 </div>
-                <button id="btn-login" class="btn-strava">
-                    <img src="/src/assets/img/btn_strava_connect_orange.svg" alt="Conectar con Strava" class="strava-brand-img">
+                <button id="btn-login" class="btn-strava" data-testid="strava-login-btn">
+                    <img src="/assets/strava-connect.svg" alt="Conectar con Strava" class="strava-brand-img">
                 </button>
             </section>
 
@@ -66,7 +66,7 @@
                 <div id="activity-list" class="activity-feed">
                 </div>
                 <div class="strava-attribution-container">
-                    <img src="/src/assets/api_logo_pwrdBy_strava_horiz_white.svg" alt="Powered by Strava" class="strava-attribution">
+                    <img src="/assets/strava-powered-by.svg" alt="Powered by Strava" class="strava-attribution">
                 </div>
             </section>
         </main>
@@ -78,7 +78,7 @@
                     <!-- Arrows — desktop only, hidden on touch screens -->
                     <button class="template-arrow template-arrow-prev" id="btn-template-prev"
                         aria-label="Previous template">&#8249;</button>
-                    <div class="canvas-wrapper transparency-grid" id="canvas-wrapper">
+                    <div class="canvas-wrapper transparency-grid" id="canvas-wrapper" data-testid="canvas-main-preview">
                         <canvas id="storyCanvas"></canvas>
                     </div>
 
@@ -98,7 +98,7 @@
                         <!-- B/W toggle -->
                         <div class="toggle-group">
                             <span class="controls-label">Text</span>
-                            <div class="toggle-pill" id="color-toggle" role="switch" aria-checked="false"
+                            <div class="toggle-pill" id="color-toggle" data-testid="color-toggle" role="switch" aria-checked="false"
                                 title="Toggle text colour">
                                 <span class="toggle-opt active" data-value="white">White</span>
                                 <span class="toggle-opt" data-value="black">Black</span>
@@ -109,7 +109,7 @@
                         <!-- Logo toggle -->
                         <div class="toggle-group">
                             <span class="controls-label">Logo</span>
-                            <div class="toggle-pill" id="logo-toggle" role="switch" aria-checked="true"
+                            <div class="toggle-pill" id="logo-toggle" data-testid="logo-toggle" role="switch" aria-checked="true"
                                 title="Toggle Scora logo">
                                 <span class="toggle-opt active" data-value="on">On</span>
                                 <span class="toggle-opt" data-value="off">Off</span>
@@ -118,7 +118,7 @@
                         </div>
                     </div>
 
-                    <button id="btn-download" class="btn-download">Download sticker</button>
+                    <button id="btn-download" class="btn-download" data-testid="download-btn">Download sticker</button>
                 </aside>
             </div>
         </main>
