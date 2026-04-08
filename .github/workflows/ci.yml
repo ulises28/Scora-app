@@ -1,32 +1,19 @@
 name: Scora QA Automation
 
 on:
-  workflow_dispatch:
-    inputs:
-      update_snapshots:
-        description: 'Set to true to generate and commit missing Linux snapshots'
-        required: false
-        type: boolean
-        default: false
   push:
-    branches: [ "**" ]
+    branches: [ "master", "scora-upgrades-3.0" ]
   pull_request:
-    branches: [ "**" ]
+    branches: [ "master", "scora-upgrades-3.0" ]
 
-# Global environment variables
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
-
-permissions:
-  contents: write
-  pull-requests: write
 
 jobs:
   unit-tests:
     name: Core Logic Tests (Vitest)
     runs-on: ubuntu-24.04
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip-tests') }}
     
     steps:
       - name: Checkout Code
@@ -49,11 +36,7 @@ jobs:
 
   e2e-tests:
     name: Browser Tests (Playwright / Docker)
-    needs: unit-tests # CRITICAL: Only run if unit tests pass
-    if: |
-      always() && 
-      (needs.unit-tests.result == 'success' || needs.unit-tests.result == 'skipped') &&
-      !contains(github.event.pull_request.labels.*.name, 'skip-tests')
+    needs: unit-tests
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout Code
@@ -75,18 +58,11 @@ jobs:
             -v ${{ github.workspace }}/test-results:/app/test-results \
             -v ${{ github.workspace }}/tests:/app/tests \
             scora-e2e \
-            npx playwright test ${{ github.event.inputs.update_snapshots == 'true' && '--update-snapshots' || '' }}
-
-      - name: Auto-commit Updated Snapshots (Self-Healing)
-        if: github.event.inputs.update_snapshots == 'true'
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "chore(testing): self-healing linux snapshots [skip ci]"
-          file_pattern: "tests/e2e/ui/canvas-rendering.spec.ts-snapshots/*.png"
+            npx playwright test
 
       - name: Upload Test Report
         uses: actions/upload-artifact@v6
-        if: always() # Upload report even if tests fail
+        if: always()
         with:
           name: blob-report
           path: blob-report/
@@ -99,4 +75,3 @@ jobs:
           name: test-results
           path: test-results/
           retention-days: 2
-
