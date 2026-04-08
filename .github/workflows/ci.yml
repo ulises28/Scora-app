@@ -1,8 +1,6 @@
 name: Scora QA Automation
 
 on:
-  push:
-    branches: [ "master", "scora-upgrades-3.0" ]
   pull_request:
     branches: [ "master", "scora-upgrades-3.0" ]
 
