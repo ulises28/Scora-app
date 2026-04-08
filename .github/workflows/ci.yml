@@ -5,6 +5,13 @@ on:
     branches: [ "main", "master" ]
   pull_request:
     branches: [ "main", "master" ]
+  workflow_dispatch:
+    inputs:
+      update_snapshots:
+        description: 'Set to true to generate and commit missing Linux snapshots'
+        required: false
+        type: boolean
+        default: false
 
 # Global environment variables
 jobs:
@@ -58,7 +65,16 @@ jobs:
             -e VITE_STRAVA_CLIENT_SECRET=${{ secrets.STRAVA_CLIENT_SECRET }} \
             -v ${{ github.workspace }}/blob-report:/app/blob-report \
             -v ${{ github.workspace }}/test-results:/app/test-results \
-            scora-e2e
+            -v ${{ github.workspace }}/tests:/app/tests \
+            scora-e2e \
+            npx playwright test ${{ github.event.inputs.update_snapshots == 'true' && '--update-snapshots' || '' }}
+
+      - name: Auto-commit Updated Snapshots (Self-Healing)
+        if: github.event.inputs.update_snapshots == 'true'
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore(testing): self-healing linux snapshots [skip ci]"
+          file_pattern: "tests/e2e/ui/canvas-rendering.spec.ts-snapshots/*.png"
 
       - name: Upload Test Report
         uses: actions/upload-artifact@v6
