@@ -1,14 +1,30 @@
 import { vi } from 'vitest';
 
 /**
- * Silent Canvas Mock Suite
+ * Silent Canvas Mock Suite (High-Fidelity)
  * 
  * Satisfies JSDOM's lack of Canvas API during unit tests.
- * Silences 1,000+ lines of 'Not Implemented' errors while 
- * maintaining high-fidelity logic coverage.
+ * Silences 1,000+ lines of 'Not Implemented' errors and resolves
+ * ReferenceErrors for modern Canvas APIs like Path2D.
  */
 
-// Mock getContext to return a basic 2D context object
+// 1. Mock Path2D Global (Used in modern pill/shape rendering)
+class Path2D {
+  addPath = vi.fn();
+  closePath = vi.fn();
+  moveTo = vi.fn();
+  lineTo = vi.fn();
+  bezierCurveTo = vi.fn();
+  quadraticCurveTo = vi.fn();
+  arc = vi.fn();
+  arcTo = vi.fn();
+  ellipse = vi.fn();
+  rect = vi.fn();
+  roundRect = vi.fn();
+}
+vi.stubGlobal('Path2D', Path2D);
+
+// 2. Mock HTMLCanvasElement.prototype.getContext
 HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
   fillStyle: '',
   strokeStyle: '',
@@ -18,6 +34,7 @@ HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
   font: '',
   textAlign: 'start',
   textBaseline: 'alphabetic',
+  globalAlpha: 1,
   
   // Method stubs
   fillRect: vi.fn(),
@@ -28,7 +45,13 @@ HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
   getLineDash: vi.fn(() => []),
   fillText: vi.fn(),
   strokeText: vi.fn(),
-  measureText: vi.fn(() => ({ width: 100, actualBoundingBoxAscent: 10, actualBoundingBoxDescent: 3 })),
+  measureText: vi.fn(() => ({ 
+    width: 100, 
+    actualBoundingBoxAscent: 10, 
+    actualBoundingBoxDescent: 3,
+    fontBoundingBoxAscent: 10,
+    fontBoundingBoxDescent: 3
+  })),
   
   beginPath: vi.fn(),
   closePath: vi.fn(),
@@ -37,6 +60,8 @@ HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
   bezierCurveTo: vi.fn(),
   quadraticCurveTo: vi.fn(),
   arc: vi.fn(),
+  arcTo: vi.fn(),
+  ellipse: vi.fn(),
   rect: vi.fn(),
   fill: vi.fn(),
   stroke: vi.fn(),
@@ -67,6 +92,3 @@ HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
   save: vi.fn(),
   restore: vi.fn()
 })) as any;
-
-// Stub Global Canvas if needed for some environments 
-// vi.stubGlobal('HTMLCanvasElement', HTMLCanvasElement);
