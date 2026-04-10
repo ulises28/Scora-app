@@ -218,6 +218,7 @@ export function drawTemplate(
     textColor = 'white',
     showLogo = true
 ) {
+    (window as any)._scoraIsSettled = false;
     const canvas = document.getElementById(canvasId) as HTMLCanvasElement;
     const ctx = canvas?.getContext('2d');
     if (!ctx) return;
@@ -263,9 +264,14 @@ export function drawTemplate(
         renderer(ctx, stats, textColor);
     }
 
-    // ARCHITECT NOTE: Deterministic synchronization signal for E2E tests
-    (window as any)._scoraDrawCount = ((window as any)._scoraDrawCount || 0) + 1;
     ctx.restore();
+
+    // ARCHITECT NOTE: Deterministic synchronization signal for E2E tests
+    // Using requestAnimationFrame ensures the signal triggers ONLY after the browser paints the pixels.
+    requestAnimationFrame(() => {
+        (window as any)._scoraIsSettled = true;
+        (window as any)._scoraDrawCount = ((window as any)._scoraDrawCount || 0) + 1;
+    });
 }
 
 
@@ -2451,10 +2457,15 @@ function drawFrostedMinimal(ctx: CanvasRenderingContext2D, stats: any, textColor
 
 export function exportCanvas(canvasId: string) {
     const canvas = document.getElementById(canvasId) as HTMLCanvasElement;
-    const link = document.createElement('a');
-    link.download = `scora_${Date.now()}.png`;
+    if (!canvas) return;
+    const dateStr = new Date().toISOString().split('T')[0];
+    const link = document.createElement('a'); 
+    link.download = `scora-sticker-${dateStr}.png`;
     link.href = canvas.toDataURL('image/png');
+    // Anchor to DOM for headless browser reliability
+    document.body.appendChild(link);
     link.click();
+    document.body.removeChild(link);
 }
 // ─── Narrative Highlight Sticker (Precision Replication) ─────────────────────
 

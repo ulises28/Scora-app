@@ -98,27 +98,25 @@ const templateManager = initTemplateManager(async (template, color, showLogo) =>
  * Abre el editor con la actividad seleccionada (Pantalla B)
  */
 function openEditor(stats: any) {
+    // 0. Atomic data priming before any UI/Logic transitions
+    currentStats = stats;
+    currentActivityId = stats.id;
+
     window.history.pushState({ screen: 'screen-editor', stats }, '', '#editor');
     showScreen('screen-editor');
+    
     const nameEl = document.getElementById('selected-activity-name');
     if (nameEl) nameEl.innerText = stats.shortTitle ?? stats.title;
 
-    currentStats = stats;
-    currentActivityId = stats.id; // Activity IDs are preserved in stats or available in formatActivityStats source
-
-    // Reset template completely when opening a new activity to the first one in the list (Social Float)
+    // 1. Synchronous template reset (triggers onChange -> first high-precision draw)
     templateManager.setTemplate(TEMPLATES[0]);
 
-    // Stabilize UI for Test Runner: Hide canvas during the complex drawing phase
+    // 2. Stabilize UI for Test Runner: Brief reveal management
     const canvasEl = document.getElementById('storyCanvas');
-    if (canvasEl) canvasEl.style.opacity = '0';
-
-    drawTemplate('storyCanvas', currentStats, templateManager.template, templateManager.color, templateManager.showLogo);
-
-    // Reveal after DOM settles
-    setTimeout(() => {
-        if (canvasEl) canvasEl.style.opacity = '1';
-    }, 50);
+    if (canvasEl) {
+        canvasEl.style.opacity = '0';
+        setTimeout(() => { canvasEl.style.opacity = '1'; }, 50);
+    }
 }
 
 /**
@@ -501,6 +499,7 @@ if (btnBack) btnBack.addEventListener('click', () => window.history.back());
 if (btnDownload) btnDownload.addEventListener('click', () => exportCanvas('storyCanvas'));
 
 // --- STUDIO PRECISION: Click-to-Copy Feature ---
+let copyFeedbackTimeout: ReturnType<typeof setTimeout> | null = null;
 const canvasWrapper = document.querySelector('.canvas-wrapper');
 if (canvasWrapper) {
     canvasWrapper.addEventListener('click', async () => {
@@ -509,8 +508,12 @@ if (canvasWrapper) {
             if (!canvas) return;
 
             // Immediate Visual Feedback (Studio Precision)
+            if (copyFeedbackTimeout) clearTimeout(copyFeedbackTimeout);
             canvasWrapper.classList.add('copied');
-            setTimeout(() => canvasWrapper.classList.remove('copied'), 1500);
+            copyFeedbackTimeout = setTimeout(() => {
+                canvasWrapper.classList.remove('copied');
+                copyFeedbackTimeout = null;
+            }, 1500);
 
             canvas.toBlob(async (blob) => {
                 if (!blob) return;

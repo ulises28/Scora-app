@@ -27,9 +27,6 @@ export default defineConfig({
     ['monocart-reporter', {
       name: 'Scora E2E Test Report',
       outputFile: './test-results/report.html',
-      attachmentPath: (currentPath, attachmentName) => {
-        return `attachments/${attachmentName}`;
-      }
     }]
   ],
 

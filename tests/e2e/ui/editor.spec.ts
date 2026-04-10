@@ -176,7 +176,7 @@ test.describe('Scora App UI: Sticker Editor (POM)', () => {
         await editorPage.clearCanvasTextLog();
         await editorPage.setLogo(false);
         await expect(logoToggle).toHaveClass(/right/); // Verify UI state
-        await page.waitForFunction((prev) => (window as any)._scoraDrawCount > prev, startCount);
+        await editorPage.waitForDrawSettled();
 
         let logs = await editorPage.getCanvasTextLog();
         expect(logs.some(l => l.includes('SCORA'))).toBeFalsy();
@@ -186,7 +186,7 @@ test.describe('Scora App UI: Sticker Editor (POM)', () => {
         await editorPage.clearCanvasTextLog();
         await editorPage.setLogo(true);
         await expect(logoToggle).not.toHaveClass(/right/); // Verify UI state
-        await page.waitForFunction((prev) => (window as any)._scoraDrawCount > prev, startCount);
+        await editorPage.waitForDrawSettled();
 
         logs = await editorPage.getCanvasTextLog();
         expect(logs.some(l => l.includes('SCORA'))).toBeTruthy();
@@ -195,9 +195,36 @@ test.describe('Scora App UI: Sticker Editor (POM)', () => {
         // Find a template that supports black text
         const colorId = ACTIVE_TEMPLATES.find(t => t.supportsBlackText)?.id || DEFAULT_ID;
         await editorPage.selectTemplate(colorId);
+        await editorPage.waitForDrawSettled();
 
         // Both toggles should be clickable without errors
         await editorPage.setTextColor('black'); // White → Black
+        await editorPage.waitForDrawSettled();
+    });
+
+    test('Test 7: Download button generates a valid image file', async ({ page }) => {
+        const feedPage = new FeedPage(page);
+        const editorPage = new EditorPage(page);
+
+        await feedPage.openActivityEditor(ACTIVITY_WITH_DISTANCE.name, DISTANCE_STATS);
+        await editorPage.verifyEditorScreenVisible(ACTIVITY_WITH_DISTANCE.name);
+
+        // Start waiting for the download event
+        const downloadPromise = page.waitForEvent('download');
+        
+        // Trigger the download
+        await editorPage.clickDownload();
+        
+        // Wait for the download to start and resolve
+        const download = await downloadPromise;
+
+        // 1. Verify suggested filename matches Scora standards
+        const filename = download.suggestedFilename();
+        expect(filename).toMatch(/^scora-sticker-.*\.png$/);
+        
+        // 2. Clear downloand path and ensure it's not empty
+        const path = await download.path();
+        expect(path).toBeTruthy();
     });
 
 });

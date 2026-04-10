@@ -9,6 +9,10 @@ import {
     formatSpeedKmh 
 } from '../../../src/utils/formatters';
 import { calculateMaxPace } from '../../../src/utils/mathUtils';
+import { TEMPLATE_REGISTRY } from '../../../src/features/editor/TemplateManager';
+import capabilities from '../fixtures/sticker-capabilities.json' with { type: 'json' };
+
+const MAX_TITLE_LENGTH = 22;
 
 /**
  * REPLICATED FORMATTING LOGIC
@@ -156,5 +160,66 @@ export const TestUtils = {
      */
     getExpectedStats(activity: StravaActivity): StickerStats {
         return formatActivityStats(activity);
+    },
+
+    /**
+     * Centralized Truncation Logic (Studio Precision 22-char limit)
+     */
+    truncateTitle(title: string): string {
+        return title.length > MAX_TITLE_LENGTH ? title.slice(0, MAX_TITLE_LENGTH) + '...' : title;
+    },
+
+    /**
+     * Fetch the 'Absolute Truth' metadata for a sticker from the Agent JSON.
+     */
+    getStickerTruth(stickerId: string, mode: 'run' | 'bike' | 'workout') {
+        const cap = (capabilities as any)[stickerId];
+        if (!cap) return { metrics: [], labels: [], metadata: [] };
+        
+        const modeTruth = cap.modes[mode];
+        
+        // Final cleaning of any residual agent noise
+        return {
+            metrics: modeTruth.metrics || [],
+            labels: (modeTruth.labels || []).filter((l: string) => l.length < 15 && !l.includes(';')),
+            metadata: (modeTruth.metadata || []).filter((m: string) => m.length < 20 && !m.includes(';'))
+        };
+    },
+
+    /**
+     * NORMALIZATION: Lax but Robust Comparison
+     * Strips all non-alphanumeric chars to ensure "8.02 KM" matches "802"
+     */
+    normalizeForCanvas(str: string): string {
+        return (str || '').toString().toUpperCase().replace(/[^A-Z0-9]/g, '');
+    },
+
+    /**
+     * DYNAMIC DISCOVERY: Returns a curated set of templates for visual regression.
+     * It ensures we test at least one template from every available category
+     * in the registry, up to a total count (default 8).
+     */
+    getSampleTemplates(totalCount: number = 8): string[] {
+        const active = TEMPLATE_REGISTRY.filter(t => !t.seasonal);
+        const categories = new Set(active.map(t => t.category));
+        const sample: string[] = [];
+
+        // 1. Pick the first one from every category to ensure breadth
+        categories.forEach(cat => {
+            const match = active.find(t => t.category === cat);
+            if (match && sample.length < totalCount) {
+                sample.push(match.id);
+            }
+        });
+
+        // 2. Fill the rest from the top of the registry until target count
+        for (const t of active) {
+            if (sample.length >= totalCount) break;
+            if (!sample.includes(t.id)) {
+                sample.push(t.id);
+            }
+        }
+
+        return sample;
     }
 };

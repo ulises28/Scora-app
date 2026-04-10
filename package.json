@@ -16,7 +16,10 @@
     "test:sync-linux": "docker compose -f docker-compose.playwright.yml run --rm playwright npx playwright test --update-snapshots",
     "debug:trace": "playwright show-trace $(find test-results -name 'trace.zip' | head -n 1)",
     "docker:build": "docker build -f Dockerfile.playwright -t scora-e2e .",
-    "docker:test": "docker compose -f docker-compose.playwright.yml up --build --exit-code-from playwright"
+    "docker:test": "docker compose -f docker-compose.playwright.yml up --build --exit-code-from playwright",
+    "test:agent": "bash scripts/qa-agent.sh",
+    "sync:stickers": "npx tsx scripts/sticker-data-agent.ts",
+    "heal": "bash scripts/ai-healer.sh"
   },
   "repository": {
     "type": "git",

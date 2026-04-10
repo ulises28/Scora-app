@@ -15,11 +15,11 @@ export class FeedPage extends BasePage {
 
     constructor(page: Page) {
         super(page);
-        this.authSection = page.locator('#auth-section');
-        this.loginButton = page.getByTestId('strava-login-btn');
-        this.emptyStateMessage = page.locator('#activity-list');
-        this.queueScreen = page.locator('#screen-queue');
-        this.queuePositionText = page.locator('#queue-position-text');
+        this.authSection = page.getByTestId('auth-section');
+        this.loginButton = page.getByTestId('strava-login-btn').or(page.getByRole('button', { name: /Conectar con Strava/i }));
+        this.emptyStateMessage = page.getByTestId('activity-list');
+        this.queueScreen = page.getByTestId('screen-queue');
+        this.queuePositionText = page.getByTestId('queue-position-text');
     }
 
     @step('Verify Auth Screen is Visible')

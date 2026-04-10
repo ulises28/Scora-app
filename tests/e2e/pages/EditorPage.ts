@@ -22,24 +22,31 @@ export class EditorPage extends BasePage {
 
     constructor(page: Page) {
         super(page);
-        this.editorScreen = page.locator('#screen-editor');
-        this.titleLabel = page.locator('#selected-activity-name');
-        this.nextTemplateButton = page.locator('.template-arrow-next'); // High-end arrows
-        this.prevTemplateButton = page.locator('.template-arrow-prev'); // High-end arrows
+        this.editorScreen = page.getByTestId('screen-editor');
+        this.titleLabel = page.getByTestId('activity-title-main');
+        this.nextTemplateButton = page.getByRole('button', { name: /Next template/i }); 
+        this.prevTemplateButton = page.getByRole('button', { name: /Previous template/i }); 
         this.textColorToggle = page.getByTestId('color-toggle');
         this.logoToggle = page.getByTestId('logo-toggle');
-        this.downloadButton = page.getByTestId('download-btn');
-        this.backButton = page.locator('#btn-back');
+        this.downloadButton = page.getByRole('button', { name: /Descargar/i }).or(page.getByTestId('download-btn'));
+        this.backButton = page.getByRole('button', { name: /Back|Atrás/i }).or(page.locator('#btn-back'));
         this.canvasWrapper = page.getByTestId('canvas-main-preview');
     }
 
     @step('Verify Editor Screen is Visible')
     async verifyEditorScreenVisible(expectedTitle: string) {
+        // Wait for removal of 'hidden' first (Studio Grade Transition)
+        await expect(this.editorScreen).not.toHaveClass(/hidden/, { timeout: 10000 });
         await expect(this.editorScreen).toHaveClass(/active/);
-        // The UI truncates long titles with ellipses, so we match the beginning of the string
-        // extracting a safe slice
-        const safeSub = expectedTitle.slice(0, 15);
-        await expect(this.titleLabel).toContainText(safeSub);
+        
+        const nameEl = this.page.locator('#selected-activity-name');
+        
+        // Studio Precision: Handle the 22-char truncation logic used in app.ts
+        const truncatedExpected = expectedTitle.length > 22 
+            ? expectedTitle.slice(0, 22) 
+            : expectedTitle;
+            
+        await expect(nameEl).toContainText(truncatedExpected);
     }
 
     @step('Inject Canvas Text Interceptor')
@@ -48,16 +55,22 @@ export class EditorPage extends BasePage {
             (window as any)._scoraCanvasTextLog = [];
             const originalFillText = CanvasRenderingContext2D.prototype.fillText;
             CanvasRenderingContext2D.prototype.fillText = function (text, x, y, maxWidth) {
-                if (typeof text === 'string') {
-                    (window as any)._scoraCanvasTextLog.push(text);
-                }
+                if (typeof text === 'string') (window as any)._scoraCanvasTextLog.push(text);
                 return originalFillText.call(this, text, x, y, maxWidth);
+            };
+
+            const originalStrokeText = CanvasRenderingContext2D.prototype.strokeText;
+            CanvasRenderingContext2D.prototype.strokeText = function (text, x, y, maxWidth) {
+                if (typeof text === 'string') (window as any)._scoraCanvasTextLog.push(text);
+                return originalStrokeText.call(this, text, x, y, maxWidth);
             };
         });
     }
 
     @step('Get Intercepted Canvas Text')
     async getCanvasTextLog(): Promise<string[]> {
+        // Critical: Allow micro-tasks to settle to ensure fillText captures are flushed
+        await this.page.evaluate(() => new Promise(resolve => setTimeout(resolve, 0)));
         return await this.page.evaluate(() => (window as any)._scoraCanvasTextLog || []);
     }
 
@@ -71,6 +84,11 @@ export class EditorPage extends BasePage {
     @step('Get Canvas Draw Count')
     async getDrawCount(): Promise<number> {
         return await this.page.evaluate(() => (window as any)._scoraDrawCount || 0);
+    }
+
+    @step('Wait for Draw Settled')
+    async waitForDrawSettled() {
+        await this.page.waitForFunction(() => (window as any)._scoraIsSettled === true);
     }
 
     getStickerThumb(templateId: string): Locator {
