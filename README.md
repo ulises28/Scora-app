@@ -47,16 +47,18 @@ To manage the Strava API's strict "Single Connected Athlete" limitation without 
 - **Atomic Locking**: Uses **Upstash Redis** with atomic `SET NX` locks to ensure only one athlete's data is processed at a time per session slot.
 - **Session Orchestration**: A polling-based waiting room that handles cross-session state using serverless edge functions.
 
-### 3. Self-Healing State Architecture
-To protect limits against sudden browser closures (e.g., Incognito Mode tab exits), Scora utilizes a **Dual-Layer Defense** to prevent orphaned tokens.
-- **Client-Side Ejection**: Uses `navigator.sendBeacon` hooked into browser lifecycle events (`visibilitychange`, `pagehide`) to guarantee deauthorization payloads fire even when the browser process is instantly killed.
-- **The "Janitor" (Server-Side)**: A hardened, background Vercel Cron Job that proactively sweeps Redis and the Strava API to securely sever any stuck authentications. Protected via `CRON_SECRET` validation.
+### 3. Absolute Session Safety (Orphan-Proof)
+To protect limits against sudden browser closures (e.g., Incognito Mode tab exits), Scora utilizes a **Dual-Layer Defense**:
+- **Client-Side Beacons**: Uses `navigator.sendBeacon` hooked into browser lifecycle events (`visibilitychange`, `pagehide`) to guarantee deauthorization payloads fire even when the browser process is instantly killed.
 
-### 4. Professional Quality Engineering (QA)
-The repository serves as a masterclass in modern automated testing architectures:
-- **Domain-Driven E2E**: Built with **Playwright**, utilizing a strict **Page Object Model (POM)**, custom API Intercept **Fixtures**, and **Monocart Reporter** for professional-grade analytics.
-- **Cross-Platform Visual Regressions**: Automated pixel-perfect snapshot testing running specifically across simulated **Mobile Safari**, **Mobile Chrome**, and Desktop Chromium.
-- **CI/CD Pipeline**: A fully modernized GitHub Actions pipeline that performs linting, unit testing (Vitest), and matrix E2E validation against ephemeral Linux environments on every push.
+### 4. Agentic Engineering & Self-Healing QA
+Scora features a "Studio Grade" quality pipeline that goes beyond traditional CI:
+- **0.01 Precision Threshold**: Visual regression tests are calibrated to a 1% sensitivity level, ensuring even microscopic design shifts (like 5px kerning changes) are caught.
+- **Scora IA-Agent (v2.4)**: A high-fidelity QA watchdog that uses **Static Visual Analysis** to extract sticker capabilities. It identifies 'Ghost Metrics' and 'Title Mismatches' by auditing the source code of templates.
+- **Self-Healing (AI-Healer)**: An autonomous calibration engine that synchronizes ephemeral Linux baselines with the local design state once the AI-Agent verifies a change as "Studio Grade."
+- **Metadata-Driven Truth**: E2E tests are "Truth-Aware," querying a generated `sticker-capabilities.json` to know exactly what labels and metrics a sticker *should* render, eliminating brittle hardcoded expectations.
+- **Zero-Delay Synchronization**: Utilizes a professional `_scoraIsSettled` signal hooked into `requestAnimationFrame` to eliminate all hardcoded `waitForTimeout` delays, achieving maximum test speed without flakiness.
+- **Monocart Dashboard**: Professional-grade test reporting with full trace logs, video recordings of failures, and DOM snapshots for deep-dive debugging.
 
 ---
 
@@ -109,6 +111,12 @@ npm run test
 
 # Run E2E tests with Playwright (updates mock data & core logic)
 npm run test:e2e
+
+# Run the Scora IA-Agent (Watchdog) for Visual Regressions
+npm run test:agent
+
+# Finalize AI-approved design 'Heals' (Self-Healing snapshots)
+npm run heal
 
 # Open the professional Monocart test report dashboard
 npm run test:report

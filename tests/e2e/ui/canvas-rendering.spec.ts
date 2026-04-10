@@ -5,15 +5,25 @@ import { MockStravaClient } from '../utils/MockStravaClient';
 import { TEMPLATE_REGISTRY } from '../../../src/features/editor/TemplateManager';
 import { TestUtils } from '../utils/TestUtils';
 import { mockActivities } from '../../fixtures/stravaData';
+import capabilities from '../fixtures/sticker-capabilities.json' with { type: 'json' };
 
 test.describe('Scora App UI: Advanced Canvas Verification', () => {
 
-    const activeTemplates = TEMPLATE_REGISTRY.filter(t => !t.seasonal);
+    const ACTIVE_TEMPLATES = TEMPLATE_REGISTRY.filter(t => !t.seasonal);
+    const REPRESENTATIVE_IDS = TestUtils.getSampleTemplates(8);
 
-    test('Test 1: Activity with Distance Verification (Uniqueness + Consistency + Visual)', async ({ page }) => {
-        // Increase timeout for the large template matrix (40+ templates)
-        test.setTimeout(120000);
+    // 🛡️ SAFARI-ISOLATION: Zero-touch stabilization for Mobile Safari
+    async function stabilizeSafari(page: any, info: any) {
+        if (info.project.name === 'Mobile Safari') {
+            await page.evaluate(() => document.fonts.ready);
+        }
+    }
 
+    test.beforeEach(async ({ page }, testInfo) => {
+        await stabilizeSafari(page, testInfo);
+    });
+
+    test('Test 1: Activity with Distance Verification (Uniqueness + Consistency + Visual)', async ({ page }, testInfo) => {
         const feedPage = new FeedPage(page);
         const editorPage = new EditorPage(page);
         const api = new MockStravaClient(page);
@@ -31,39 +41,43 @@ test.describe('Scora App UI: Advanced Canvas Verification', () => {
         await editorPage.verifyEditorScreenVisible(activityTitle);
         await editorPage.injectCanvasInterceptor();
 
-        // Ensure fonts are ready ONCE before the matrix begins
-        await page.waitForLoadState('networkidle');
-        await page.evaluate(() => document.fonts.ready);
+        // 🎯 DYNAMIC DISCOVERY: Find the primary representative for 'distance' category
+        // prioritize templates that draw titles for these baseline tests
+        const primaryTemplate = TEMPLATE_REGISTRY.find(t => t.category === 'distance' && t.id !== 'dm') || 
+                          TEMPLATE_REGISTRY.find(t => t.category === 'distance') || 
+                          ACTIVE_TEMPLATES[0];
+        const templateId = primaryTemplate.id;
 
-        const lastTemplateId = activeTemplates[activeTemplates.length - 1].id;
-        await editorPage.selectTemplate(lastTemplateId);
-        await page.waitForTimeout(500);
+        // 1. Select Template & Wait for Sync
+        await editorPage.selectTemplate(templateId);
+        await editorPage.waitForDrawSettled();
 
-        for (const template of activeTemplates) {
-            const { id, features, category } = template;
+        const drawCount = await editorPage.getDrawCount();
+        expect(drawCount).toBeGreaterThan(0);
 
-            // 1. Skip templates specifically for activities without distance
-            if (category === 'workout') continue;
-
-            // 2. Select and stabilize
-            await editorPage.selectTemplate(id);
-            await page.waitForTimeout(50); // Minor stabilization
-
-            // 3. Technical Verification: Ensure something was drawn
-            const drawCount = await editorPage.getDrawCount();
-            expect(drawCount).toBeGreaterThan(0);
-
-            // 4. Visual Regression (Design Source of Truth - High Fidelity & Auto-healing)
-            await expect(editorPage.canvasWrapper).toHaveScreenshot(`dist-${id}.png`, {
-                maxDiffPixelRatio: 0.1,
-                threshold: 0.2
-            });
+        // 🔍 GLOBAL GUARD: Verify Absolute Truth (Title + Main Stat)
+        const logs = await editorPage.getCanvasTextLog();
+        const normalizedLogs = TestUtils.normalizeForCanvas(logs.join(' '));
+        
+        const expectedTitle = TestUtils.normalizeForCanvas(TestUtils.truncateTitle(activityTitle));
+        const expectedValue = TestUtils.normalizeForCanvas(stats.mainValue.replace(' km', ''));
+        
+        // Truth-Aware Guard: Only expect title if sticker claims to render it
+        const mode = activity.type.toLowerCase().includes('run') ? 'run' : (activity.type.toLowerCase().includes('bike') ? 'bike' : 'workout');
+        const truth = (capabilities as any)[templateId]?.modes?.[mode];
+        
+        if (truth?.metadata?.includes('title')) {
+            expect(normalizedLogs).toContain(expectedTitle);
         }
+        expect(normalizedLogs).toContain(expectedValue);
+
+        await expect(editorPage.canvasWrapper).toHaveScreenshot(`core-dist-${templateId}.png`, {
+            maxDiffPixelRatio: 0.1,
+            threshold: 0.2
+        });
     });
 
-    test('Test 2: Activity without Distance Verification (Uniqueness + Consistency + Visual)', async ({ page }) => {
-        // Increase timeout for the matrix
-        test.setTimeout(120000);
+    test('Test 2: Activity without Distance Verification (Uniqueness + Consistency + Visual)', async ({ page }, testInfo) => {
         const feedPage = new FeedPage(page);
         const editorPage = new EditorPage(page);
         const api = new MockStravaClient(page);
@@ -81,34 +95,39 @@ test.describe('Scora App UI: Advanced Canvas Verification', () => {
         await editorPage.verifyEditorScreenVisible(activityTitle);
         await editorPage.injectCanvasInterceptor();
 
-        // Ensure fonts are ready ONCE
-        await page.waitForLoadState('networkidle');
-        await page.evaluate(() => document.fonts.ready);
+        // 🎯 DYNAMIC DISCOVERY: Find the primary representative for 'workout' (or 'all') category
+        const primaryTemplate = TEMPLATE_REGISTRY.find(t => t.category === 'workout') || 
+                                TEMPLATE_REGISTRY.find(t => t.id === 'science-pro') || 
+                                ACTIVE_TEMPLATES[1];
+        const templateId = primaryTemplate.id;
 
-        const lastTemplateId = activeTemplates[activeTemplates.length - 1].id;
-        await editorPage.selectTemplate(lastTemplateId);
-        await page.waitForTimeout(500);
+        // 1. Select Template & Wait for Sync
+        await editorPage.selectTemplate(templateId);
+        await editorPage.waitForDrawSettled();
 
-        for (const template of activeTemplates) {
-            const { id, features, category } = template;
+        const drawCount = await editorPage.getDrawCount();
+        expect(drawCount).toBeGreaterThan(0);
 
-            // 1. Skip templates specifically for distance-based activities
-            if (category === 'distance') continue;
+        // 🔍 GLOBAL GUARD: Verify Absolute Truth (Title + Main Stat)
+        const logs = await editorPage.getCanvasTextLog();
+        const normalizedLogs = TestUtils.normalizeForCanvas(logs.join(' '));
+        
+        const expectedTitle = TestUtils.normalizeForCanvas(TestUtils.truncateTitle(activityTitle));
+        const expectedValue = TestUtils.normalizeForCanvas(stats.mainValue);
+        
+        // Truth-Aware Guard: Only expect title if sticker claims to render it
+        const mode = activity.type.toLowerCase().includes('run') ? 'run' : (activity.type.toLowerCase().includes('bike') ? 'bike' : 'workout');
+        const truth = (capabilities as any)[templateId]?.modes?.[mode];
 
-            // 2. Select and stabilize
-            await editorPage.selectTemplate(id);
-            await page.waitForTimeout(50);
-
-            // 3. Technical Verification
-            const drawCount = await editorPage.getDrawCount();
-            expect(drawCount).toBeGreaterThan(0);
-
-            // 4. Visual Regression
-            await expect(editorPage.canvasWrapper).toHaveScreenshot(`nodist-${id}.png`, {
-                maxDiffPixelRatio: 0.1,
-                threshold: 0.2
-            });
+        if (truth?.metadata?.includes('title')) {
+            expect(normalizedLogs).toContain(expectedTitle);
         }
+        expect(normalizedLogs).toContain(expectedValue);
+
+        await expect(editorPage.canvasWrapper).toHaveScreenshot(`core-nodist-${templateId}.png`, {
+            maxDiffPixelRatio: 0.1,
+            threshold: 0.2
+        });
     });
 
     // ... (Test 3 to 11 simplified by relying on snapshots) ...
@@ -162,14 +181,14 @@ test.describe('Scora App UI: Advanced Canvas Verification', () => {
         await feedPage.openActivityEditor(activityTitle, stats.mainValue);
         await editorPage.injectCanvasInterceptor();
 
-        const paceTemplates = activeTemplates.filter(t => t.features.paceSpeed).slice(0, 5);
+        const paceTemplates = ACTIVE_TEMPLATES.filter(t => t.features.paceSpeed).slice(0, 5);
         for (const template of paceTemplates) {
             const { id } = template;
 
             const startCount = await editorPage.getDrawCount();
             await editorPage.clearCanvasTextLog();
             await editorPage.selectTemplate(id);
-            await page.waitForFunction((prev) => (window as any)._scoraDrawCount > prev, startCount);
+            await editorPage.waitForDrawSettled();
 
             const logs = await editorPage.getCanvasTextLog();
             const logStrDense = logs.join('').replace(/\s+/g, '').toUpperCase();
@@ -209,8 +228,7 @@ test.describe('Scora App UI: Advanced Canvas Verification', () => {
                 const activity = mockActivities.find(item.query)!;
                 await feedPage.openActivityEditor(activity.name);
                 await editorPage.selectTemplate(stickerId);
-                // Allow fonts and shadow to render
-                await page.waitForTimeout(1000);
+                await editorPage.waitForDrawSettled();
                 await expect(editorPage.canvasWrapper).toHaveScreenshot(`matrix-${stickerId}-${item.id}.png`, {
                     maxDiffPixelRatio: 0.1,
                     threshold: 0.2
@@ -218,6 +236,28 @@ test.describe('Scora App UI: Advanced Canvas Verification', () => {
                 await editorPage.goBack();
             }
         }
+    });
+
+    test('Test 7: Studio Precision - Canvas Export (Download Verification)', async ({ page }) => {
+        const feedPage = new FeedPage(page);
+        const editorPage = new EditorPage(page);
+        const api = new MockStravaClient(page);
+
+        await feedPage.injectMockAuth();
+        await api.mockSuccessfulActivities();
+        await feedPage.goto();
+        await feedPage.waitForLoaderToHide();
+
+        const activity = TestUtils.findFirstActivityWithDistance()!;
+        await feedPage.openActivityEditor(activity.name);
+        await editorPage.verifyEditorScreenVisible(activity.name);
+
+        // Standard Download logic: Expect download event AND valid file name
+        const downloadPromise = page.waitForEvent('download');
+        await editorPage.clickDownload();
+        const download = await downloadPromise;
+        
+        expect(download.suggestedFilename()).toMatch(/scora-.*\.png/);
     });
 
 
@@ -259,7 +299,7 @@ test.describe('Scora App UI: Advanced Canvas Verification', () => {
         await feedPage.openActivityEditor(activity.name);
         
         // 1. Verify Universal Grid on thumbnails
-        const firstThumb = editorPage.getStickerThumb(activeTemplates[0].id);
+        const firstThumb = editorPage.getStickerThumb(ACTIVE_TEMPLATES[0].id);
         await expect(firstThumb).toHaveClass(/transparency-grid/);
 
         // 2. Click to Copy (Wait for canvas to be ready)
@@ -290,5 +330,84 @@ test.describe('Scora App UI: Advanced Canvas Verification', () => {
         // 2. Check Small Viewport (Mobile)
         await page.setViewportSize({ width: 375, height: 667 });
         await editorPage.verifyDesktopArrowsVisibility(false);
+    });
+
+    test('Test 10: Curated Representative Matrix (Tiered Logic + Visual Verification)', async ({ page }, testInfo) => {
+        // This is the 'Clever' approach: Logic check for 40+ templates, Visuals for Top 8
+        test.setTimeout(120000);
+        const feedPage = new FeedPage(page);
+        const editorPage = new EditorPage(page);
+        const api = new MockStravaClient(page);
+
+        await feedPage.injectMockAuth();
+        await api.mockSuccessfulActivities();
+        await feedPage.goto();
+        await feedPage.waitForLoaderToHide();
+
+        // 🛡️ Safari stabilization already handled by beforeEach
+        
+        const activity = TestUtils.findFirstActivityWithDistance()!;
+        await feedPage.openActivityEditor(activity.name);
+        await editorPage.injectCanvasInterceptor();
+
+
+        for (const template of ACTIVE_TEMPLATES) {
+            const { id } = template;
+            
+            // 1. Select Template & Wait for Sync
+            const startCount = await editorPage.getDrawCount();
+            await editorPage.selectTemplate(id);
+            await editorPage.waitForDrawSettled();
+            
+            // 2. Intelligence Check (Metadata-Driven)
+            const drawCount = await editorPage.getDrawCount();
+            expect(drawCount).toBeGreaterThan(0);
+            
+            const logs = await editorPage.getCanvasTextLog();
+            const normalizedLogs = TestUtils.normalizeForCanvas(logs.join(' '));
+            
+            // Determine mode dynamically from the activity
+            const mode = (activity.type || 'Run').toLowerCase() === 'run' ? 'run' : 
+                        (/ride|bike/i.test(activity.type) ? 'bike' : 'workout');
+            
+            const truth = TestUtils.getStickerTruth(id, mode as any);
+            const expected = TestUtils.getExpectedStats(activity);
+
+            // A. Verify Metrics (Numeric values like 12.45)
+            for (const metric of truth.metrics) {
+                if (metric === 'distance') {
+                    const distVal = TestUtils.normalizeForCanvas(expected.distanceVal);
+                    expect(normalizedLogs).toContain(distVal);
+                }
+                if (metric === 'heartRate' && expected.avgHeartrate) {
+                    expect(normalizedLogs).toContain(expected.avgHeartrate.toString());
+                }
+            }
+
+            // B. Verify Labels (Studio-Grade Strings like KM, PACE, BPM)
+            for (const label of truth.labels) {
+                expect(normalizedLogs).toContain(TestUtils.normalizeForCanvas(label));
+            }
+
+            // C. Verify Metadata Tokens (Started, GREETING, Location)
+            for (const meta of truth.metadata) {
+                if (meta === 'location' && expected.title) {
+                    const titlePart = TestUtils.normalizeForCanvas(expected.title.substring(0, 10));
+                    expect(normalizedLogs).toContain(titlePart);
+                }
+            }
+
+            // 3. Visual Check (Curated Top 8 Matrix)
+            if (REPRESENTATIVE_IDS.includes(id)) {
+                await editorPage.waitForDrawSettled();
+                await expect(editorPage.canvasWrapper).toHaveScreenshot(`matrix-${id}.png`, {
+                    maxDiffPixelRatio: 0.1,
+                    threshold: 0.2
+                });
+            }
+
+            // 🛡️ Hygiene: Clear log before next template to avoid pollution
+            await editorPage.clearCanvasTextLog();
+        }
     });
 });

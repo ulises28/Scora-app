@@ -34,12 +34,12 @@
             </div>
             <div id="editor-nav-context" class="hidden">
                 <button id="btn-back" class="btn-text">← Volver</button>
-                <span id="selected-activity-name"></span>
+                <span id="selected-activity-name" data-testid="activity-title-main"></span>
             </div>
         </header>
 
-        <main id="screen-feed" class="screen active">
-            <section id="auth-section" class="hidden">
+        <main id="screen-feed" class="screen active" data-testid="screen-feed">
+            <section id="auth-section" class="hidden" data-testid="auth-section">
                 <div class="intro-section">
                     <h1>Tus rutas, hechas arte.</h1>
                     <p>Conecta con Strava para importar tus últimos entrenamientos.<br /></p>
@@ -63,7 +63,7 @@
                     </div>
                     <p>Selecciona una actividad para crear tu sticker.</p>
                 </div>
-                <div id="activity-list" class="activity-feed">
+                <div id="activity-list" class="activity-feed" data-testid="activity-list">
                 </div>
                 <div class="strava-attribution-container">
                     <img src="/assets/strava-powered-by.svg" alt="Powered by Strava" class="strava-attribution">
@@ -71,7 +71,7 @@
             </section>
         </main>
 
-        <main id="screen-editor" class="screen">
+        <main id="screen-editor" class="screen" data-testid="screen-editor">
             <div class="editor-layout">
 
                 <div class="preview-container">
@@ -123,7 +123,7 @@
             </div>
         </main>
 
-        <main id="screen-queue" class="screen">
+        <main id="screen-queue" class="screen" data-testid="screen-queue">
             <section class="queue-container">
                 <div class="queue-spinner">
                     <svg viewBox="0 0 50 50" class="queue-ring">
@@ -135,7 +135,7 @@
                 <p class="queue-subtitle">Otro atleta está conectando ahora mismo.<br>Espera tu turno, ¡ya casi!</p>
                 <div class="queue-badge">
                     <span class="queue-label">Tu posición en cola</span>
-                    <span id="queue-position-text" class="queue-position">#–</span>
+                    <span id="queue-position-text" class="queue-position" data-testid="queue-position-text">#–</span>
                 </div>
                 <p id="queue-wait-text" class="queue-wait">Calculando tiempo de espera...</p>
                 <div class="queue-dots">

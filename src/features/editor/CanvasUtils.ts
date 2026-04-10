@@ -239,31 +239,82 @@ export function drawMetricBlock(
 }
 
 /**
+ * Normalizes activity types to shorter, layout-safe labels.
+ * Standardizes mapping from raw Strava types to Scora "Studio Precision" labels.
+ */
+export function normalizeSport(type: string): string {
+    if (!type) return 'TRAIN';
+    const lower = type.toLowerCase();
+    
+    // The TRAIN Rule: WeightTraining/Gym/Workout -> TRAIN
+    if (lower.includes('weighttraining') || lower.includes('workout') || lower.includes('gym') || lower.includes('training')) {
+        return 'TRAIN';
+    }
+    // The BIKE Rule: Ride/VirtualRide -> BIKE
+    if (lower.includes('ride') || lower.includes('cycle') || lower.includes('bike')) {
+        return 'BIKE';
+    }
+    // The SKI Rule: NordicSki / AlpineSki -> SKI
+    if (lower.includes('ski') || lower.includes('snowboard')) {
+        return 'SKI';
+    }
+    if (lower.includes('run') || lower.includes('walk') || lower.includes('hike')) {
+        return 'RUN';
+    }
+    if (lower.includes('swim')) {
+        return 'SWIM';
+    }
+    
+    return type.toUpperCase();
+}
+
+/**
  * Extracts and formats the best 2-3 stats for a given activity type.
  * Standardizes mapping from raw stats to display-ready objects.
  */
 export function getDynamicStats(stats: any) {
     const hasDistance = stats.hasDistance || (stats.distanceVal && parseFloat(stats.distanceVal) > 0);
-    const type = stats.type || (hasDistance ? 'Run' : 'Workout');
+    const rawType = stats.type || (hasDistance ? 'Run' : 'Workout');
+    const type = normalizeSport(rawType);
     const hasMap = !!stats.polyline;
 
-    // Standard properties from TemplateManager/TestUtils
+    // 1. Initial Standard Metrics
     const distText = stats.distanceVal || '0.00';
     const paceText = (stats.subValue || '').split(' ')[0] || '0:00';
     const paceLabel = (stats.subLabel || (type === 'Ride' ? 'KM/H' : 'PACE')).toUpperCase();
     const timeText = stats.timeStr || '0:00';
 
-    // Default Running Stats
-    let s1 = { value: distText, label: 'KM' };
-    let s2 = { value: paceText, label: paceLabel };
-    let s3 = { value: timeText, label: 'TIME' };
-
-    if (!hasDistance) {
-        // Gym / Workout / Stationary
-        s1 = { value: timeText, label: 'DURATION' };
-        s2 = { value: stats.avgHeartrate ? `${stats.avgHeartrate}` : (stats.subValue?.split(' ')[0] || '0'), label: 'BPM' };
-        s3 = { value: stats.calories ? `${stats.calories}` : '0', label: 'KCAL' };
+    // 2. The Unique Slot Filler (Studio Precision)
+    // Create a pool of available unique data points to avoid duplication
+    const pool: { value: string; label: string }[] = [];
+    
+    if (hasDistance) {
+        pool.push({ value: distText, label: 'KM' });
+        pool.push({ value: paceText, label: paceLabel });
+        pool.push({ value: timeText, label: 'TIME' });
+    } else {
+        pool.push({ value: timeText, label: 'DURATION' });
+        if (stats.avgHeartrate) pool.push({ value: `${stats.avgHeartrate}`, label: 'BPM' });
+        if (stats.calories && stats.calories !== '0') pool.push({ value: `${stats.calories}`, label: 'KCAL' });
     }
+
+    // Secondary Fallbacks (Metadata) to avoid duplication or '0' values
+    const metaPool = [
+        { value: stats.startTime || '', label: 'START' },
+        { value: stats.date || '', label: 'DATE' },
+        { value: (stats.location && stats.location !== 'Unknown') ? stats.location : '', label: 'LOCATION' }
+    ];
+
+    metaPool.forEach(m => {
+        if (m.value && !pool.some(p => p.value === m.value)) {
+            pool.push(m);
+        }
+    });
+
+    // Final Slot Extraction
+    const s1 = pool[0] || { value: '-', label: '' };
+    const s2 = pool[1] || { value: '-', label: '' };
+    const s3 = pool[2] || { value: '-', label: '' };
 
     return { s1, s2, s3, hasMap, type };
 }
