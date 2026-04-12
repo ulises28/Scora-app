@@ -121,4 +121,37 @@ test.describe('Scora App: API Network Intercepts (POM)', () => {
         expect(openedUrl).toContain('strava.com/oauth/authorize');
     });
 
+    /**
+     * Test 11: Handles API 500 Internal Server Error gracefully
+     */
+    test('Test 11: Handles API 500 Internal Server Error gracefully', async ({ page }) => {
+        const api = new MockStravaClient(page);
+        const feedPage = new FeedPage(page);
+
+        await feedPage.injectMockAuth();
+        await api.mockServerError();
+
+        await feedPage.goto();
+        await feedPage.waitForLoaderToHide();
+
+        // Should show error boundary or error message
+        await expect(page.getByText(/error|failed|wait/i).first()).toBeVisible();
+    });
+
+    /**
+     * Test 12: Handles API 429 Rate Limit Exceeded
+     */
+    test('Test 12: Handles API 429 Rate Limit with Retry notice', async ({ page }) => {
+        const api = new MockStravaClient(page);
+        const feedPage = new FeedPage(page);
+
+        await feedPage.injectMockAuth();
+        await api.mockRateLimitError();
+
+        await feedPage.goto();
+        await feedPage.waitForLoaderToHide();
+
+        // Verify the user sees something about waiting or rate limits
+        await expect(page.getByText(/rate limit|too many requests|wait/i).first()).toBeVisible();
+    });
 });

@@ -1,4 +1,4 @@
-import { exchangeToken, refreshStravaToken, fetchStravaActivities, fetchDetailedActivity, deauthorizeAthlete, formatActivityStats } from './api/strava.js';
+import { exchangeToken, refreshStravaToken, fetchStravaActivities, fetchDetailedActivity, deauthorizeAthlete, formatActivityStats, enrichActivityWithGeo } from './api/strava.js';
 import { openStravaAuth, saveStravaAuth } from './api/auth.js';
 import { removeLoader } from './components/Loader.js';
 import { showScreen } from './components/Navigation.js';
@@ -18,9 +18,10 @@ const btnSync = document.getElementById('btn-sync');
 const queuePositionEl = document.getElementById('queue-position-text');
 const queueWaitEl = document.getElementById('queue-wait-text');
 
-let currentAccessToken: string | null = null;
-let currentActivityId: number | null = null;
+let currentAccessToken = '';
+let currentActivityId: string | number | null = null;
 let currentStats: any = null;
+let lastActivities: any[] = []; // Cache for raw strava data
 let queuePollingInterval: ReturnType<typeof setInterval> | null = null;
 
 /**
@@ -111,6 +112,20 @@ function openEditor(stats: any) {
     // 1. Synchronous template reset (triggers onChange -> first high-precision draw)
     templateManager.setTemplate(TEMPLATES[0]);
 
+    // 2. High-Fidelity Geographic Enrichment (Async Phase)
+    // We get the raw activity from context or ID if needed.
+    const rawActivity = lastActivities.find(a => a.id === stats.id);
+    if (rawActivity) {
+        enrichActivityWithGeo(rawActivity, stats).then(smartStats => {
+            Object.assign(currentStats, smartStats);
+            console.log("[Geo] Smart Enrichment complete:", currentStats.location);
+            const nameEl = document.getElementById('selected-activity-name');
+            if (nameEl) nameEl.innerText = currentStats.shortTitle ?? currentStats.title;
+            // Force redraw with high-fidelity data
+            drawTemplate('storyCanvas', currentStats, templateManager.template, templateManager.color, templateManager.showLogo);
+        });
+    }
+
     // 2. Stabilize UI for Test Runner: Brief reveal management
     const canvasEl = document.getElementById('storyCanvas');
     if (canvasEl) {
@@ -136,6 +151,7 @@ function renderActivityFeed(activities: any[]) {
         const card = createActivityCard(stats, () => openEditor(stats));
         activityListEl.appendChild(card);
     });
+    lastActivities = activities; // Cache raw data for enrichment
 }
 
 // ============================================================
@@ -443,9 +459,21 @@ async function initApp() {
             if (activitySection) activitySection.classList.add('hidden');
             if (activityListEl) activityListEl.innerHTML = "";
         } else {
-            // DETECT 403 (BETO BLOCK)
-            const isRateLimit = (error as any).status === 403 || String(error).includes('403');
-            if (isRateLimit && authSection) {
+            // DETECT 429 (RATE LIMIT) OR 500 (INTERNAL ERROR)
+            const status = (error as any).status;
+            if (status === 429) {
+                if (activityListEl) activityListEl.innerHTML = `
+                    <div class="status-msg error-msg">
+                        <span>⏳</span> Rate limit exceeded. Please wait a moment before trying again.
+                    </div>
+                `;
+            } else if (status === 500) {
+                 if (activityListEl) activityListEl.innerHTML = `
+                    <div class="status-msg error-msg">
+                        <span>⚠️</span> Server error. Connection failed. Please try again later.
+                    </div>
+                `;
+            } else if (status === 403 && authSection) {
                  if (activityListEl) {
                     activityListEl.innerHTML = `
                         <div class="error-container">
@@ -465,7 +493,7 @@ async function initApp() {
                     }
                 }
             } else {
-                if (activityListEl) activityListEl.innerHTML = `<p class='error-msg'>No pudimos conectar con la pista. Intenta de nuevo.</p>`;
+                if (activityListEl) activityListEl.innerHTML = `<p class='error-msg'>Connection failed. Unexpected error occurred.</p>`;
             }
         }
     } finally {
@@ -591,9 +619,13 @@ window.addEventListener('message', async (event) => {
             window.history.replaceState({ screen: 'screen-feed' }, document.title, window.location.pathname);
         } catch (error) {
             console.error("Error en Scora Auth:", error);
-            const isRateLimit = (error as any).status === 403 || String(error).includes('403');
+            const status = (error as any).status;
             
-            if (isRateLimit) {
+            if (status === 429) {
+                if (activityListEl) activityListEl.innerHTML = `<p class='status-msg error-msg'>Rate limit reached. Please wait.</p>`;
+            } else if (status === 500) {
+                if (activityListEl) activityListEl.innerHTML = `<p class='status-msg error-msg'>Internal server error. Connection failed.</p>`;
+            } else if (status === 403) {
                 if (activityListEl) {
                     activityListEl.innerHTML = `
                         <div class="error-container">
@@ -613,7 +645,7 @@ window.addEventListener('message', async (event) => {
                     }
                 }
             } else {
-                if (activityListEl) activityListEl.innerHTML = `<p class='error-msg'>No pudimos conectar con la pista. Intenta de nuevo.</p>`;
+                if (activityListEl) activityListEl.innerHTML = `<p class='error-msg'>Connection failed. Please try again.</p>`;
             }
         } finally {
              // 🏁 GUARANTEED CLEANUP: Kill token on Strava side to unblock the 1-athlete slot.

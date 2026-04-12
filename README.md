@@ -1,10 +1,4 @@
 <div align="center">
-
-  <!-- 
-    TODO: Add a beautiful 16:9 or horizontal split image showcasing 
-    your stickers (e.g., Editorial Strip, Science Pro, V15 Runner).
-    Replace the src below with your actual image path or URL.
-  -->
   <img src="./public/assets/scora-hero-banner.png" alt="Scora Sticker Showcase" width="100%" style="border-radius: 8px; margin-bottom: 24px;" />
 
   <h1>SCORA.</h1>

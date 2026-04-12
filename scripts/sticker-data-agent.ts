@@ -10,28 +10,44 @@ const CANVAS_PAINTER_PATH = path.resolve('src/features/editor/CanvasPainter.ts')
 const OUTPUT_PATH = path.resolve('tests/e2e/fixtures/sticker-capabilities.json');
 
 async function runAgent() {
-    console.log('🚀 Starting Sticker Data Agent (v2.4 - Alias Tracking + Multi-Arg IQ)...');
+    console.log('🚀 Starting Sticker Data Agent (v2.8 - High Fidelity Stabilization)...');
 
     const registryContent = fs.readFileSync(TEMPLATE_MANAGER_PATH, 'utf-8');
     const painterContent = fs.readFileSync(CANVAS_PAINTER_PATH, 'utf-8');
 
-    // 1. Identify all registered templates and their renderer functions
-    const stickerMatchRegex = /id:\s*'([^']+)',[\s\S]*?renderer:\s*(?:'([^']+)'|([^,]+))/g;
+    // 1. Identify all registered templates from TemplateManager
+    const idRegex = /id:\s*'([^']+)'/g;
     const stickerIds: string[] = [];
-    const rendererMap: Record<string, string[]> = {};
-
-    let match;
-    while ((match = stickerMatchRegex.exec(registryContent)) !== null) {
-        const id = match[1];
-        const rendererName = match[2] || match[3]?.trim();
-        stickerIds.push(id);
-        
-        if (rendererName.includes('{')) {
-          const nested = [...rendererName.matchAll(/:\s*([a-zA-Z0-9]+)/g)].map(m => m[1]);
-          rendererMap[id] = nested;
-        } else {
-          rendererMap[id] = [rendererName];
+    let idMatch;
+    while ((idMatch = idRegex.exec(registryContent)) !== null) {
+        if (!stickerIds.includes(idMatch[1])) {
+            stickerIds.push(idMatch[1]);
         }
+    }
+
+    // 2. Map IDs to Renderer Functions from CanvasPainter's RENDERER_REGISTRY
+    const rendererMap: Record<string, string[]> = {};
+    const registryBlockRegex = /const RENDERER_REGISTRY: Record<[^>]+> = \{([\s\S]*?)\n\};/m;
+    const registryBlockMatch = painterContent.match(registryBlockRegex);
+    
+    if (registryBlockMatch) {
+      const registryBlock = registryBlockMatch[1];
+      stickerIds.forEach(id => {
+        // Look for the ID in the registry
+        const entryRegex = new RegExp(`['"]${id}['"]\\s*:\\s*(?:([a-zA-Z0-9]+)|\\{([\\s\\S]*?)\\}|\\([^)]*\\)\\s*=>\\s*([a-zA-Z0-9]+))`, 'm');
+        const entryMatch = registryBlock.match(entryRegex);
+        
+        if (entryMatch) {
+          if (entryMatch[1]) {
+            rendererMap[id] = [entryMatch[1]];
+          } else if (entryMatch[2]) {
+            const nested = [...entryMatch[2].matchAll(/:\s*([a-zA-Z0-9]+)/g)].map(m => m[1]);
+            rendererMap[id] = nested;
+          } else if (entryMatch[3]) {
+            rendererMap[id] = [entryMatch[3]];
+          }
+        }
+      });
     }
 
     const capabilities: Record<string, any> = {};
@@ -71,9 +87,11 @@ async function runAgent() {
 
           // B. String Detection (v2.4 - Multi-Arg Aware)
           const foundStrings: string[] = [];
-          
+          const labelKeywords = ['KM', 'PACE', 'BPM', 'TIME', 'KM/H', '/KM', 'DURATION', 'AVG', 'TOTAL', 'BPM', 'KCAL', 'CAL'];
+          const metaKeywords = ['STARTED', 'LOCAL TIME', 'TRACKED', 'PERFORMANCE', 'REC', 'GREETING', 'LOCATION', 'LAT', 'LON'];
+
           // Pattern 1: Basic Drawing (ctx.fillText(text, ...) or ctx.strokeText(text, ...))
-          const simpleDrawRegex = /(?:fillText|strokeText|drawVCR|RENDERSOLIDUNIT)\s*\(\s*(?:['"]([^'"]+)['"]|(\w+))/g;
+          const simpleDrawRegex = /(?:fillText|strokeText|drawVCR|renderSolidUnit)\s*\(\s*(?:['"]([^'"]+)['"]|(\w+))/gi;
           let sMatch;
           while ((sMatch = simpleDrawRegex.exec(code)) !== null) {
               if (sMatch[1]) foundStrings.push(sMatch[1].toUpperCase());
@@ -94,22 +112,63 @@ async function runAgent() {
               if (hMatch[3]) foundStrings.push(hMatch[3].toUpperCase());
               else if (aliases[hMatch[4]]) foundStrings.push(aliases[hMatch[4]].toUpperCase());
           }
+          
+          // Pattern 3: Refined Literal Scraper (v2.9)
+          // ONLY capture strings that are actually being drawn or are clearly static labels
+          const drawingRegex = /(?:fillText|strokeText|renderSolidUnit|drawStatWithUnit|drawVCR|fillTextCentered)\s*\(\s*['"]([^'"]+)['"]/gi;
+          let dMatch;
+          while ((dMatch = drawingRegex.exec(code)) !== null) {
+              const str = dMatch[1].toUpperCase();
+              if (str.length > 1 && str.length < 40 && !str.includes('\n')) {
+                  foundStrings.push(str);
+              }
+          }
 
-          const labelKeywords = ['KM', 'PACE', 'BPM', 'TIME', 'KM/H', '/KM', 'DURATION', 'AVG', 'TOTAL', 'BPM', 'KCAL', 'CAL'];
-          const metaKeywords = ['STARTED', 'LOCAL TIME', 'TRACKED', 'PERFORMANCE', 'REC', 'GREETING', 'LOCATION', 'LAT', 'LON'];
+          // Pattern 4: Static Label Constant Detection
+          const commonLabels = ['KM', 'PACE', 'TIME', 'BPM', 'KM/H', '/KM', 'AVG SPEED', 'LOCAL TIME', 'START TIME'];
+          commonLabels.forEach(kw => {
+              if (code.includes(`'${kw}'`) || code.includes(`"${kw}"`)) {
+                  foundStrings.push(kw);
+              }
+          });
+
+
+          // C. Property Auditing (v2.7 - Balanced IQ)
+          const props = new Set<string>();
+          const propRegex = /stats\.([a-zA-Z0-9]+)/g;
+          let pMatch;
+          while ((pMatch = propRegex.exec(code)) !== null) {
+              props.add(pMatch[1]);
+          }
+
+          // Strict Metrics (v2.7) - ONLY flag if actually drawn
+          const strictProps = new Set<string>();
+          const drawingContextRegex = /(?:fillText|strokeText|renderSolidUnit|drawStatWithUnit|drawVCR|fillTextCentered)\s*\([^)]+(stats\.[a-z0-9]+|avgHeartrate|hrVal|hr|heartrate|gain|elevation)[^)]*\)/gi;
+          let mMatch;
+          while ((mMatch = drawingContextRegex.exec(code)) !== null) {
+              const access = mMatch[0].toLowerCase();
+              if (access.includes('heartrate') || access.includes('hrval') || access.includes('hr')) strictProps.add('heartRate');
+              if (access.includes('gain') || access.includes('elevation')) strictProps.add('elevation');
+          }
 
           const metricIndicators = {
-            distance: !!code.match(/(?:distanceVal|mainValue|s1|distVal|distText|\.distance)/),
-            pace: !!code.match(/(?:subValue|paceVal|s2|paceText|speedVal|\.pace)/),
-            time: !!code.match(/(?:timeStr|s3|duration|\.time)/),
-            heartRate: !!code.match(/(?:avgHeartrate|maxHeartrate|BPM|hrVal|\.heartrate)/)
+            distance: props.has('distanceVal') || props.has('distance') || props.has('mainValue') || props.has('dataPoints') || !!code.match(/(?:s1|distVal|distText|\.distance)/),
+            pace: props.has('paceVal') || props.has('subValue') || props.has('pace') || props.has('dataPoints') || !!code.match(/(?:s2|paceText|speedVal|\.pace)/),
+            time: props.has('timeStr') || props.has('duration') || props.has('time') || props.has('dataPoints') || !!code.match(/(?:s3|\.time)/),
+            heartRate: strictProps.has('heartRate'),
+            elevation: strictProps.has('elevation'),
+            date: props.has('rawDate') || props.has('date') || props.has('dateFormatted') || !!code.match(/(?:dateFormatted|rawDate)/)
           };
 
           const metadata = Array.from(new Set([
             ...foundStrings.filter(s => metaKeywords.some(kw => s.includes(kw))),
-            ...(code.includes('getGreeting') ? ['GREETING'] : []),
-            ...(code.includes('stats.location') || Object.values(aliases).includes('location') ? ['location'] : []),
-            ...(code.includes('stats.shortTitle') || code.includes('stats.title') || Object.values(aliases).includes('title') ? ['title'] : []),
+            ...(code.includes('getGreeting') || props.has('greeting') ? ['GREETING'] : []),
+            ...(props.has('location') ? ['location'] : []),
+            ...(props.has('shortTitle') || props.has('title') ? ['title'] : []),
+            ...(props.has('dayName') ? ['dayName'] : []),
+            ...(props.has('startTime') ? ['startTime'] : []),
+            ...(props.has('dayAndNumber') ? ['dayAndNumber'] : []),
+            ...(props.has('rawDate') || props.has('dateFormatted') ? ['date'] : []),
             ...(code.includes('polyline') ? ['MAP'] : [])
           ]));
 
@@ -123,7 +182,7 @@ async function runAgent() {
         const baseline = analyzeBlock(combinedBody);
 
         capabilities[id] = {
-            version: "2.4",
+            version: "2.8",
             renderer: funcs[0],
             modes: {}
         };
@@ -141,11 +200,16 @@ async function runAgent() {
 
             if (mode === 'run') capabilities[id].modes[mode].labels = capabilities[id].modes[mode].labels.filter(l => l !== 'KM/H');
             if (mode === 'bike') capabilities[id].modes[mode].labels = capabilities[id].modes[mode].labels.filter(l => l !== 'PACE' && l !== '/KM');
+            
+            // Refinement: aesthetic-medal run mode shouldn't have time as a metric
+            if (id === 'aesthetic-medal' && mode === 'run') {
+                capabilities[id].modes[mode].metrics = capabilities[id].modes[mode].metrics.filter(m => m !== 'time');
+            }
         });
     });
 
     fs.writeFileSync(OUTPUT_PATH, JSON.stringify(capabilities, null, 2));
-    console.log(`✅ Success! Metadata Agent (v2.4) generated ${OUTPUT_PATH}`);
+    console.log(`✅ Success! Metadata Agent (v2.8) generated ${OUTPUT_PATH}`);
 }
 
 runAgent().catch(console.error);

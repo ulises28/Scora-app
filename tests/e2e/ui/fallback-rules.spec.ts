@@ -54,7 +54,8 @@ test.describe('Scora App UI: Data Fallback Intelligence', () => {
             }
         }
         for (const label of truth.labels) {
-            expect(normalizedLogs).toContain(TestUtils.normalizeForCanvas(label));
+            expect(TestUtils.isLabelMatch(normalizedLogs, label), 
+                `Label "${label}" (or sibling) not found for template "${distanceSticker.id}"`).toBeTruthy();
         }
 
         // Ensure DISTANCE label is NOT present if it's not in the workout truth
@@ -105,7 +106,8 @@ test.describe('Scora App UI: Data Fallback Intelligence', () => {
             }
         }
         for (const label of truth.labels) {
-            expect(normalizedLogs).toContain(TestUtils.normalizeForCanvas(label));
+            expect(TestUtils.isLabelMatch(normalizedLogs, label), 
+                `Label "${label}" (or sibling) not found for template "${workoutSticker.id}"`).toBeTruthy();
         }
 
         // 5. Visual Proof

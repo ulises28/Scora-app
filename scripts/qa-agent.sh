@@ -35,7 +35,7 @@ if [ $TEST_EXIT_CODE -eq 0 ]; then
 fi
 
 # 4. Keyword Audit (Filter 2: Design Language Check)
-KEYWORDS="fontSize|margin|fontFamily|normalizeSport|TRAIN|Ride|BIKE|SKI"
+KEYWORDS="fontSize|margin|fontFamily|normalizeSport|Workout|Ride|Run|SWIM|SKI"
 if [ $DIFF_SIZE -eq 0 ]; then
     DIAGNOSIS="INFRASTRUCTURE_FAILURE_OR_TIMEOUT"
     CONFIDENCE="HIGH"

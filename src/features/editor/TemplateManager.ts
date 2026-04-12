@@ -21,15 +21,16 @@ interface TemplateConfig {
     compact?: boolean;
     seasonal?: boolean;
     note?: string;
+    preferredCase?: 'uppercase' | 'lowercase' | 'title';
 }
 
 export const TEMPLATE_REGISTRY: readonly TemplateConfig[] = [
     { id: 'editorial-strip', category: 'all', supportsBlackText: false, compact: true, features: { distance: true, duration: true, date: true } },
     { id: 'science-pro', category: 'all', supportsBlackText: false, features: { distance: true, paceSpeed: true, heartRate: true, date: true } },
-    { id: 'narrative-highlight', category: 'all', supportsBlackText: true, features: { distance: true, duration: true, paceSpeed: true, date: true } },
-    { id: 'location-pill', category: 'all', supportsBlackText: true, compact: true, features: { distance: true, duration: true } },
+    { id: 'narrative-highlight', category: 'all', supportsBlackText: true, preferredCase: 'lowercase', features: { distance: true, duration: true, paceSpeed: true, date: true } },
+    { id: 'location-pill', category: 'all', supportsBlackText: true, compact: true, preferredCase: 'title', features: { distance: true, duration: true } },
     { id: 'dm', category: 'distance', supportsBlackText: false, features: { distance: true, paceSpeed: true, startTime: true } },
-    { id: 'tiny-gps', category: 'all', supportsBlackText: true, compact: true, features: { distance: true, duration: true } },
+    { id: 'tiny-gps', category: 'all', supportsBlackText: true, compact: true, preferredCase: 'title', features: { distance: true, duration: true } },
     { id: 'pulse-row', category: 'all', supportsBlackText: false, features: { heartRate: true } },
     { id: 'thin-path', category: 'distance', supportsBlackText: true, features: { distance: true, paceSpeed: true, map: true } },
     { id: 'step-master', category: 'all', supportsBlackText: true, compact: true, features: { distance: true, duration: true } },
@@ -58,8 +59,8 @@ export const TEMPLATE_REGISTRY: readonly TemplateConfig[] = [
     { id: 'mono-split', category: 'distance', supportsBlackText: false, features: { distance: true, paceSpeed: true } },
     { id: 'essential-italic', category: 'distance', supportsBlackText: true, features: { distance: true, paceSpeed: true } },
     { id: 'obsidian-bar', category: 'distance', supportsBlackText: false, features: { distance: true, paceSpeed: true } },
-    { id: 'data', category: 'distance', supportsBlackText: true, features: { distance: true, paceSpeed: true, duration: true } },
-    { id: 'modern-pill', category: 'distance', supportsBlackText: false, features: { distance: true, paceSpeed: true } },
+
+    { id: 'modern-pill', category: 'distance', supportsBlackText: false, preferredCase: 'title', features: { distance: true, paceSpeed: true } },
     { id: 'editorial-archive', category: 'distance', supportsBlackText: false, features: { distance: true, paceSpeed: true, duration: true, date: true } },
     { id: 'info-glass', category: 'all', supportsBlackText: false, features: { distance: true, paceSpeed: true, duration: true } },
     { id: 'workout-receipt', category: 'distance', supportsBlackText: false, features: { distance: true, paceSpeed: true, duration: true, date: true } },
@@ -71,10 +72,10 @@ export const TEMPLATE_REGISTRY: readonly TemplateConfig[] = [
     { id: 'metric-thin', category: 'distance', supportsBlackText: true, features: { distance: true, paceSpeed: true } },
     { id: 'vertical-label', category: 'distance', supportsBlackText: false, features: { distance: true, paceSpeed: true, duration: true } },
     { id: 'stats', category: 'distance', supportsBlackText: true, features: { distance: true, paceSpeed: true } },
-    { id: 'minimal', category: 'all', supportsBlackText: true, compact: true, features: { distance: true, duration: true } },
+    { id: 'minimal', category: 'all', supportsBlackText: true, compact: true, preferredCase: 'title', features: { distance: true, duration: true } },
     { id: 'classic-stack', category: 'all', supportsBlackText: true, features: { distance: true, duration: true, date: true } },
     { id: 'neon-slanted', category: 'all', supportsBlackText: true, features: { distance: true, duration: true } },
-    { id: 'aesthetic-medal', category: 'workout', supportsBlackText: true, features: { distance: true, paceSpeed: true, date: true } },
+    { id: 'aesthetic-medal', category: 'workout', supportsBlackText: true, features: { distance: false, paceSpeed: true, date: true } },
     // Seasonal artifacts (excluded by default)
     { id: 'scora-stealth', category: 'distance', features: { distance: true, paceSpeed: true, duration: true, heartRate: true, map: true }, seasonal: true },
     { id: 'neon-capsule', category: 'distance', features: { distance: true, paceSpeed: true }, seasonal: true },

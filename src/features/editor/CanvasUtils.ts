@@ -243,29 +243,34 @@ export function drawMetricBlock(
  * Standardizes mapping from raw Strava types to Scora "Studio Precision" labels.
  */
 export function normalizeSport(type: string): string {
-    if (!type) return 'TRAIN';
+    if (!type) return 'Workout';
     const lower = type.toLowerCase();
     
-    // The TRAIN Rule: WeightTraining/Gym/Workout -> TRAIN
-    if (lower.includes('weighttraining') || lower.includes('workout') || lower.includes('gym') || lower.includes('training')) {
-        return 'TRAIN';
+    // 1. WORKOUT (HIIT, Gym, Crossfit, etc.)
+    if (lower.includes('weight') || lower.includes('workout') || lower.includes('gym') || 
+        lower.includes('training') || lower.includes('crossfit') || lower.includes('hiit') || 
+        lower.includes('yoga') || lower.includes('pilates')) {
+        return 'Workout';
     }
-    // The BIKE Rule: Ride/VirtualRide -> BIKE
+    // 2. RIDE (The "Action" word for all Cycling)
     if (lower.includes('ride') || lower.includes('cycle') || lower.includes('bike')) {
-        return 'BIKE';
+        return 'Ride';
     }
-    // The SKI Rule: NordicSki / AlpineSki -> SKI
-    if (lower.includes('ski') || lower.includes('snowboard')) {
-        return 'SKI';
-    }
+    // 3. RUN (Trail, Virtual, etc.)
     if (lower.includes('run') || lower.includes('walk') || lower.includes('hike')) {
-        return 'RUN';
+        return 'Run';
     }
+    // 4. SWIM
     if (lower.includes('swim')) {
-        return 'SWIM';
+        return 'Swim';
+    }
+    // 5. SKI
+    if (lower.includes('ski') || lower.includes('snowboard')) {
+        return 'Ski';
     }
     
-    return type.toUpperCase();
+    // Fallback to Title Case
+    return type.charAt(0).toUpperCase() + type.slice(1).toLowerCase();
 }
 
 /**

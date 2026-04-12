@@ -9,11 +9,25 @@
  *  - showLogo:  controls whether the SCORA. branding is drawn
  */
 
-import { getThemeColors, drawStatWithUnit, setLetterSpacing, drawRoutePath, decodePolyline, getDynamicStats, drawMetricBlock, parseDurationParts, drawDurationSequence } from './CanvasUtils';
+import { getThemeColors, drawStatWithUnit, setLetterSpacing, drawRoutePath, decodePolyline, getDynamicStats, drawMetricBlock, parseDurationParts, drawDurationSequence, normalizeSport } from './CanvasUtils';
 import { StickerStats } from '../../api/strava';
+import { TEMPLATE_REGISTRY } from './TemplateManager';
 
 
 // ─── Shared colour helpers ───────────────────────────────────────────────────
+
+/**
+ * Applies the design-compliant casing to an activity label based on template metadata.
+ */
+function applyActivityCasing(label: string, templateId?: string): string {
+    const config = TEMPLATE_REGISTRY.find(t => t.id === templateId);
+    const casing = config?.preferredCase || 'uppercase'; // Default to Studio Bold
+
+    if (casing === 'uppercase') return label.toUpperCase();
+    if (casing === 'lowercase') return label.toLowerCase();
+    if (casing === 'title') return label.charAt(0).toUpperCase() + label.slice(1).toLowerCase();
+    return label;
+}
 
 function buildColors(textColor: string) {
     const alphaValue = 0.85;
@@ -27,7 +41,7 @@ function buildColors(textColor: string) {
 }
 
 /**
- * Draws the Scora Activity Icons (Run, Bike, Train) using Canvas Paths.
+ * Draws the Scora Activity Icons (Run, Bike, Workout) using Canvas Paths.
  * Optimized for high-fidelity rendering within stickers.
  */
 function drawScoraActivityIcon(ctx: CanvasRenderingContext2D, type: string, size = 24, color = "white", x?: number, y?: number) {
@@ -1483,7 +1497,7 @@ function drawVHSRetro(ctx: CanvasRenderingContext2D, stats: any, textColor: stri
 
     // 1. Data Processing
     const rawType = stats.activityType || 'RUN';
-    const activity = (rawType === 'WeightTraining' ? 'TRAIN' : rawType).toUpperCase();
+    const activity = applyActivityCasing(normalizeSport(stats.activityType || 'RUN'), 'vhs-retro');
     const distanceVal = stats.distanceVal || '0.00';
     
     const rawDate = stats.rawDate ? new Date(stats.rawDate) : new Date();
@@ -2480,8 +2494,8 @@ function drawNarrativeHighlight(ctx: CanvasRenderingContext2D, stats: any, textC
 
     // ─── Data Extraction & Sport Logic ───────────────────────────────────────
     const distNum = parseFloat(stats.distanceVal);
-    const activityType = stats.activityType || 'Run';
-    const activityLower = activityType.toLowerCase();
+    const baseActivity = normalizeSport(stats.activityType || 'Run');
+    const activityLower = baseActivity.toLowerCase();
     
     // 1. Determine Units & Labels
     let unit = 'kilometers';
@@ -2522,7 +2536,7 @@ function drawNarrativeHighlight(ctx: CanvasRenderingContext2D, stats: any, textC
 
     if (isWorkout) {
         l1_p1 = `${duration}`;
-        l1_p2 = ` ${activityLower} ${location ? 'in ' + location : ''},`;
+        l1_p2 = ` ${applyActivityCasing(baseActivity, 'narrative-highlight')} ${location ? 'in ' + location : ''},`;
         l2_p1 = region ? `${region} at ` : 'At ';
         l2_p2 = stats.avgHeartrate ? `${stats.avgHeartrate} bpm` : 'steady';
         l2_p3 = ` effort · ${dateStr}`;
@@ -2530,7 +2544,7 @@ function drawNarrativeHighlight(ctx: CanvasRenderingContext2D, stats: any, textC
         l2_p5 = "";
     } else {
         l1_p1 = `${mainMetric} ${unit}`;
-        l1_p2 = ` ${activityLower} ${activityAction} ${location || 'the world'},`;
+        l1_p2 = ` ${applyActivityCasing(baseActivity, 'narrative-highlight')} ${activityAction} ${location || 'the world'},`;
         l2_p1 = region ? `${region} in ` : 'In ';
         l2_p2 = `${duration}`;
         l2_p3 = `, at `;
@@ -2613,8 +2627,8 @@ function drawNarrativeHighlight(ctx: CanvasRenderingContext2D, stats: any, textC
  */
 function drawCondesaStack(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
     const cy = 960;
-    const startX = 150; // Increased for a more "studio" balance
-    const rightCol = 600;
+    const startX = 110; // Studio Standard Left Alignment
+    const rightCol = 580;
     
     // 1. Unified Sizing Constants (v13.0 Solid Unification)
     const HEADER_SIZE = 90;
@@ -2634,7 +2648,8 @@ function drawCondesaStack(ctx: CanvasRenderingContext2D, stats: any, textColor: 
     const distValueResult = stats.distanceVal || '0.00';
     const distUnitResult = (parseFloat(distValueResult) === 1 ? 'KILOMETER' : 'KILOMETERS');
     const paceValueResult = (stats.subValue || '').split(' ')[0] || '0:00';
-    const paceUnitResult = (stats.subValue || '').split(' ')[1] || '/KM';
+    const paceUnitResult = (stats.subValue || '').split(' ')[1] || (stats.type === 'Ride' ? 'KM/H' : '/KM');
+    const paceLabelResult = (stats.subLabel || (stats.type === 'Ride' ? 'Avg Speed' : 'Pace')).toUpperCase();
     const locationNameResult = (stats.location || 'MEXICO').toUpperCase();
 
     // 3. Rendering Engine
@@ -2672,7 +2687,7 @@ function drawCondesaStack(ctx: CanvasRenderingContext2D, stats: any, textColor: 
 
     // B. GRID ROW 1: TIME | DISTANCE
     renderSolidItem(startTimeResult, startX, currY, DATA_SIZE, '900', '-0.05em');
-    renderSolidUnit("TIME", startX, currY + UNIT_OFFSET);
+    renderSolidUnit("LOCAL TIME", startX, currY + UNIT_OFFSET);
 
     renderSolidItem(distValueResult, rightCol, currY, DATA_SIZE, '900', '-0.05em');
     renderSolidUnit(distUnitResult, rightCol, currY + UNIT_OFFSET);
@@ -2681,7 +2696,7 @@ function drawCondesaStack(ctx: CanvasRenderingContext2D, stats: any, textColor: 
 
     // C. GRID ROW 2: PACE | LOCATION
     renderSolidItem(paceValueResult, startX, currY, DATA_SIZE, '900', '-0.05em');
-    renderSolidUnit(`PACE (${paceUnitResult})`, startX, currY + UNIT_OFFSET);
+    renderSolidUnit(`${paceLabelResult} (${paceUnitResult})`, startX, currY + UNIT_OFFSET);
 
     renderSolidItem(locationNameResult, rightCol, currY, DATA_SIZE, '900', '-0.05em');
     renderSolidUnit("LOCATION", rightCol, currY + UNIT_OFFSET);
@@ -3470,15 +3485,9 @@ function drawBrutalistLetters(ctx: CanvasRenderingContext2D, stats: any, textCol
     const rawVal = stats.mainValue || stats.distanceVal || '0.00';
     const displayVal = String(rawVal).trim();
 
-    let type = stats.type || 'Run';
-    const lowerType = type.toLowerCase();
-    if (lowerType.includes('bike') || lowerType.includes('ride') || lowerType.includes('cycling')) {
-        type = 'RIDE';
-    } else if (lowerType.includes('run')) {
-        type = 'RUN';
-    } else {
-        type = 'TRAIN';
-    }
+    let type = stats.type || stats.activityType || 'Run';
+    const baseActivity = normalizeSport(type);
+    type = applyActivityCasing(baseActivity, 'brutalist-letters');
 
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -3486,8 +3495,19 @@ function drawBrutalistLetters(ctx: CanvasRenderingContext2D, stats: any, textCol
     // Giant Background Type
     ctx.globalAlpha = 0.5;
     ctx.fillStyle = cSolid;
-    ctx.font = "900 380px 'Plus Jakarta Sans'";
+    
+    // Dynamic Scale for large labels (WORKOUT is longer than RUN)
+    let fontSize = 380;
+    ctx.font = `900 ${fontSize}px 'Plus Jakarta Sans'`;
     if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "-0.05em"; }
+    let textWidth = ctx.measureText(type).width;
+    const maxW = 980; // 1080 - 100 margin
+    
+    if (textWidth > maxW) {
+        fontSize = Math.floor(fontSize * (maxW / textWidth));
+        ctx.font = `900 ${fontSize}px 'Plus Jakarta Sans'`;
+    }
+    
     ctx.fillText(type, 540, 960);
     if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0px"; }
     ctx.globalAlpha = 1.0;
@@ -4090,15 +4110,8 @@ function drawMonoMinimal(ctx: CanvasRenderingContext2D, stats: any, textColor = 
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    let type = stats.type || 'Workout';
-    const lowerType = type.toLowerCase();
-    if (lowerType.includes('bike') || lowerType.includes('ride') || lowerType.includes('cycling')) {
-        type = 'RIDE';
-    } else if (lowerType.includes('run')) {
-        type = 'RUN';
-    } else {
-        type = 'TRAIN';
-    }
+    let type = stats.type || stats.activityType || 'Run';
+    type = applyActivityCasing(normalizeSport(type), 'mono-minimal');
 
     // Text
     ctx.fillStyle = cSolid;
@@ -4127,10 +4140,7 @@ function drawSwissMinimal(ctx: CanvasRenderingContext2D, stats: any, textColor =
     const displayVal = String(rawVal).trim();
 
     const hasDistance = stats.hasDistance || (stats.distanceVal && parseFloat(stats.distanceVal) > 0);
-    let type = stats.type || (hasDistance ? 'Run' : 'Workout');
-    if (type.toLowerCase() === 'weighttraining') {
-        type = 'Training';
-    }
+    let type = applyActivityCasing(normalizeSport(stats.type || (hasDistance ? 'Run' : 'Workout')), 'swiss-minimal');
     const mainUnit = stats.mainValue ? stats.mainValue.replace(/[0-9.]/g, '').trim() || 'KM' : 'KM';
 
     const cx = 540;
@@ -4512,7 +4522,7 @@ function drawClassicStack(ctx: CanvasRenderingContext2D, stats: any, textColor: 
 function drawNeonSlanted(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
     const sysFont = "'Playfair Display', serif";
     const rawType = stats.activityType || 'Workout';
-    const activity = (rawType === 'WeightTraining' ? 'TRAIN' : rawType).toUpperCase();
+    const activity = applyActivityCasing(normalizeSport(rawType), 'neon-slanted');
     
     // Back to Kilometers/Time for this specific style (Compositional Choice)
     const valText = stats.hasDistance ? (stats.distanceVal || '0.00') : (stats.timeStr || '0:00');
