@@ -43,8 +43,7 @@ test.describe('Scora App UI: Advanced Canvas Verification', () => {
 
         // 🎯 DYNAMIC DISCOVERY: Find the primary representative for 'distance' category
         // prioritize templates that draw titles for these baseline tests
-        const primaryTemplate = TEMPLATE_REGISTRY.find(t => t.category === 'distance' && t.id !== 'dm') || 
-                          TEMPLATE_REGISTRY.find(t => t.category === 'distance') || 
+        const primaryTemplate = TEMPLATE_REGISTRY.find(t => t.category === 'distance') || 
                           ACTIVE_TEMPLATES[0];
         const templateId = primaryTemplate.id;
 
@@ -372,21 +371,34 @@ test.describe('Scora App UI: Advanced Canvas Verification', () => {
             const truth = TestUtils.getStickerTruth(id, mode as any);
             const expected = TestUtils.getExpectedStats(activity);
 
-            // A. Verify Metrics (Numeric values like 12.45)
+            // A. Verify Metrics (Absolute Data Integrity: 9.6, 4:30, etc.)
             for (const metric of truth.metrics) {
                 if (metric === 'distance') {
-                    const distVal = TestUtils.normalizeForCanvas(expected.distanceVal);
-                    expect(normalizedLogs).toContain(distVal);
+                    // Extract numeric part only (e.g., 802 from 8.02 KM)
+                    const distVal = TestUtils.normalizeForCanvas(expected.distanceVal).replace(/[A-Z]/g, '');
+                    const altDistVal = TestUtils.normalizeForCanvas(parseFloat(expected.distanceVal).toString()).replace(/[A-Z]/g, '');
+                    expect(normalizedLogs, `Distance "${distVal}" not found in ${id}`).toMatch(new RegExp(`${distVal}|${altDistVal}`));
                 }
                 if (metric === 'heartRate' && expected.avgHeartrate) {
-                    expect(normalizedLogs).toContain(expected.avgHeartrate.toString());
+                    expect(normalizedLogs, `BPM "${expected.avgHeartrate}" not found in ${id}`).toContain(expected.avgHeartrate.toString());
+                }
+                if (metric === 'pace') {
+                    // Extract numeric part only (e.g., 427 from 4:27 /km)
+                    const paceVal = TestUtils.normalizeForCanvas(expected.subValue).replace(/[A-Z]/g, '');
+                    expect(normalizedLogs, `Pace/Speed numeric "${paceVal}" not found in ${id}`).toContain(paceVal);
+                }
+                if (metric === 'time') {
+                    const timeVal = TestUtils.normalizeForCanvas(expected.timeStr);
+                    expect(normalizedLogs, `Time "${timeVal}" not found in ${id}`).toContain(timeVal);
                 }
             }
 
             // B. Verify Labels (Indestructible Protocol: Only Units are strictly asserted)
-            const STABLE_UNITS = ['KM', 'BPM', 'PACE', 'KM/H', '/KM', 'CAL', 'KCAL', 'M'];
+            const STABLE_UNITS = ['KM', 'BPM', 'PACE', 'KM/H', '/KM', 'CAL', 'KCAL'];
             for (const label of truth.labels) {
-                const isUnit = STABLE_UNITS.some(u => label.toUpperCase().includes(u));
+                const normalizedTarget = TestUtils.normalizeForCanvas(label);
+                const isUnit = STABLE_UNITS.includes(normalizedTarget);
+                
                 if (isUnit) {
                     expect(TestUtils.isLabelMatch(normalizedLogs, label), 
                         `Unit "${label}" not found for template "${template.id}"`).toBeTruthy();

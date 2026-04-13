@@ -1345,7 +1345,8 @@ function drawBrutalistBold(ctx: CanvasRenderingContext2D, stats: any, textColor:
     ctx.fillText(p2.value, w / 2 - 50, -20);
 
     ctx.font = `800 24px ${sysFont}`;
-    ctx.fillText(p2.label.toUpperCase(), w / 2 - 50, 45);
+    const fullPaceLabel = `${p2.label}${p2.unit ? ` (${p2.unit})` : ''}`.toUpperCase();
+    ctx.fillText(fullPaceLabel, w / 2 - 50, 45);
 
     ctx.restore();
 }
@@ -1639,25 +1640,43 @@ function drawGlassSlice(ctx, stats, textColor) {
     // Reset skew for text rendering cleanly inside it?
     // Prototype skews text too, so we keep transform!
 
-    // Left Unit
+    // Left Unit (Data + KM)
     ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
     ctx.font = `italic 900 70px ${sysFont}`;
-    ctx.fillText(distText, -w / 4, -10);
-    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.85)';
+    ctx.fillText(distText, -w / 4, -15);
+    
+    // KM Unit (Next to value)
+    const distW = ctx.measureText(distText).width;
+    ctx.font = `italic 800 24px ${sysFont}`;
+    ctx.fillText(distUnit, -w / 4 + distW / 2 + 25, -15);
+
+    // DISTANCE Label (Below)
+    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.6)';
     ctx.font = `900 16px ${sysFont}`;
-    ctx.fillText(distUnit, -w / 4, 40);
+    if ((ctx as any).letterSpacing !== undefined) (ctx as any).letterSpacing = "0.2em";
+    ctx.fillText("DISTANCE", -w / 4, 35);
+    if ((ctx as any).letterSpacing !== undefined) (ctx as any).letterSpacing = "0px";
 
     // Divider
     ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.2)';
     ctx.fillRect(0, -40, 2, 80);
 
-    // Right Unit
+    // Right Unit (Data + /KM)
     ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
-    ctx.font = `italic 900 40px ${sysFont}`;
-    ctx.fillText(paceText, w / 4, -10);
-    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.85)';
+    ctx.font = `italic 900 45px ${sysFont}`;
+    ctx.fillText(paceText, w / 4, -15);
+    
+    // /KM Unit (Next to value)
+    const paceW = ctx.measureText(paceText).width;
+    ctx.font = `italic 800 20px ${sysFont}`;
+    ctx.fillText(paceUnit, w / 4 + paceW / 2 + 20, -15);
+
+    // PACE Label (Below)
+    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.6)';
     ctx.font = `900 16px ${sysFont}`;
-    ctx.fillText((stats.subLabel || (stats.hasDistance ? (stats.type === 'Ride' ? "Avg Speed" : "Pace") : "Heart Rate")).toUpperCase(), w / 4, 40);
+    if ((ctx as any).letterSpacing !== undefined) (ctx as any).letterSpacing = "0.2em";
+    ctx.fillText((stats.subLabel || (stats.hasDistance ? (stats.type === 'Ride' ? "Avg Speed" : "Pace") : "Heart Rate")).toUpperCase(), w / 4, 35);
+    if ((ctx as any).letterSpacing !== undefined) (ctx as any).letterSpacing = "0px";
 
     ctx.restore();
 }

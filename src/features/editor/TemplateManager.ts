@@ -130,10 +130,13 @@ export function initTemplateManager(onChange: OnChangeCallback) {
             thumb.appendChild(canvas);
 
 
-            const label = document.createElement('span');
-            label.className = 'sticker-label';
-            label.innerText = id.replace(/-/g, ' ');
-            thumb.appendChild(label);
+            // 🛡️ DEV-ONLY: Debug IDs (localhost only)
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                const label = document.createElement('span');
+                label.className = 'sticker-label';
+                label.innerText = id;
+                thumb.appendChild(label);
+            }
 
             thumb.onclick = () => setTemplate(id);
             galleryContainer.appendChild(thumb);

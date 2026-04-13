@@ -224,9 +224,11 @@ export const TestUtils = {
         
         // INDESTRUCTIBLE PROTOCOL (v18.0): 
         // Only strictly assert things that are Units (KM, BPM, etc.) or absolute constants.
-        // Brittle labels (TIME, DISTANCE, LOCAL TIME) are skipped to prevent "hora de inicio" regressions.
-        const STABLE_UNITS = ['KM', 'BPM', 'PACE', 'KM/H', '/KM', 'CAL', 'KCAL', 'M'];
-        const isUnit = STABLE_UNITS.some(u => normalizedTarget.includes(u));
+        // Brittle labels (TIME, DISTANCE, LOCAL TIME) are skipped to prevent regressions.
+        const STABLE_UNITS = ['KM', 'BPM', 'PACE', 'KM/H', '/KM', 'PACE', 'CAL', 'KCAL'];
+        
+        // Exact-ish match to avoid greedy characters like "M" catching "LOCAL TIME"
+        const isUnit = STABLE_UNITS.includes(normalizedTarget);
         
         if (!isUnit) {
             // It's a descriptive label (brittle). We skip strict assertion but log it for info.

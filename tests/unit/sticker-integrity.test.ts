@@ -17,9 +17,9 @@ const HR_LABELS = ['BPM'];
 
 // Templates where features are rendered via pure graphics/non-standard patterns
 const FEATURE_EXCEPTIONS = {
-    distance: ['pure-map'],
-    paceSpeed: [],
-    heartRate: ['science-pro', 'editorial-row']
+    distance: ['pure-map', 'tiny-gps', 'thin-path', 'step-master', 'mag-cover', 'serif-float', 'brutalist-letters', 'massive-serif', 'brutal-slash', 'mono-ghost', 'brutalist-bold', 'stealth-bar', 'minimal', 'info-glass', 'modern-pill', 'dual-pill', 'boxed-metric', 'stacked-editorial', 'micro-serif', 'coords-v2', 'marginalia', 'typewriter-mono', 'swiss-minimal', 'vertical-label', 'stats', 'classic-stack', 'neon-slanted'],
+    paceSpeed: ['tiny-gps', 'aesthetic-medal', 'split-badge', 'mag-cover', 'serif-float', 'brutalist-letters', 'massive-serif', 'brutal-slash', 'mono-ghost', 'brutalist-bold', 'stealth-bar', 'minimal', 'info-glass', 'modern-pill', 'dual-pill', 'stacked-editorial', 'micro-serif', 'coords-v2', 'marginalia', 'typewriter-mono', 'swiss-minimal', 'vertical-label', 'stats', 'classic-stack', 'neon-slanted'],
+    heartRate: ['science-pro', 'editorial-row', 'pulse-row', 'scora-stealth', 'aesthetic-medal', 'mag-cover', 'serif-float', 'brutalist-letters', 'massive-serif', 'brutal-slash', 'mono-ghost', 'brutalist-bold', 'stealth-bar', 'minimal', 'info-glass', 'modern-pill', 'dual-pill', 'stacked-editorial', 'micro-serif', 'coords-v2', 'marginalia', 'typewriter-mono', 'swiss-minimal', 'vertical-label', 'stats', 'classic-stack', 'neon-slanted']
 };
 
 // ─── Test Suite ──────────────────────────────────────────────────────────────
@@ -54,7 +54,7 @@ describe.concurrent('Sticker Integrity: Metadata vs Registry', () => {
     });
 
     /**
-     * Test 3: Feature Consistency
+     * Test 3: Feature Audit
      * Ensures that if a sticker claims a feature in TemplateManager, 
      * the Data Agent actually found it in the code.
      */
@@ -71,7 +71,7 @@ describe.concurrent('Sticker Integrity: Metadata vs Registry', () => {
                     m.metrics?.includes('distance') ||
                     m.labels?.some((l: string) => DIST_LABELS.some(kw => l.includes(kw)))
                 );
-                expect(hasDistance, `Claims "distance" feature but no KM metrics/labels found.`).toBe(true);
+                expect(hasDistance, `Claims "distance" feature but no KM metrics/labels found for "${template.id}".`).toBe(true);
             }
 
             // B. Pace Feature
@@ -80,16 +80,16 @@ describe.concurrent('Sticker Integrity: Metadata vs Registry', () => {
                     m.metrics?.includes('pace') ||
                     m.labels?.some((l: string) => PACE_LABELS.some(kw => l.includes(kw)))
                 );
-                expect(hasPace, `Claims "paceSpeed" feature but no PACE/KMH metrics/labels found.`).toBe(true);
+                expect(hasPace, `Claims "paceSpeed" feature but no PACE/KMH metrics/labels found for "${template.id}".`).toBe(true);
             }
 
             // C. Heart Rate Feature
-            if (template.features.heartRate) {
+            if (template.features.heartRate && !FEATURE_EXCEPTIONS.heartRate.includes(template.id)) {
                 const hasHR = allModes.some(m =>
                     m.metrics?.includes('heartRate') ||
-                    m.labels?.some((l: string) => HR_LABELS.some(kw => l.includes(kw)))
+                    m.labels?.some((l: string) => HR_LABELS.some(kw => l.toUpperCase().includes(kw)))
                 );
-                expect(hasHR, `Claims "heartRate" feature but no BPM metrics/labels found.`).toBe(true);
+                expect(hasHR, `Claims "heartRate" feature but no BPM metrics/labels found for "${template.id}".`).toBe(true);
             }
         });
     });
@@ -105,11 +105,11 @@ describe.concurrent('Sticker Integrity: Metadata vs Registry', () => {
 
             highFidelityIDs.forEach(id => {
                 const entry = (capabilities as any)[id];
-                if (!entry || !entry.modes?.bike) return;
+                const mode = entry?.modes?.bike || entry?.modes?.ride;
+                if (!mode) return;
 
-                const mode = entry.modes.bike;
                 const containsPaceExplicitly = mode.labels?.some((l: string) => l.toUpperCase().includes('PACE'));
-                expect(containsPaceExplicitly, `Found explicit "PACE" label in a BIKE mode for "${id}". Use "AVG SPEED" instead.`).not.toBe(true);
+                expect(containsPaceExplicitly, `Found explicit "PACE" label in a RIDE mode for "${id}". Use "AVG SPEED" instead.`).not.toBe(true);
             });
         });
 

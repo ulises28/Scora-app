@@ -1,153 +1,95 @@
 {
   "editorial-strip": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawEditorialStrip",
     "modes": {
       "run": {
         "metrics": [
           "distance"
         ],
-        "labels": [
-          "LOCAL TIME",
-          "TIME",
-          "KM"
-        ],
+        "labels": [],
         "metadata": [
-          "LOCAL TIME",
-          "GREETING",
-          "location",
-          "dayName",
-          "startTime"
+          "location"
         ]
       },
       "bike": {
         "metrics": [
           "distance"
         ],
-        "labels": [
-          "LOCAL TIME",
-          "TIME",
-          "KM"
-        ],
+        "labels": [],
         "metadata": [
-          "LOCAL TIME",
-          "GREETING",
-          "location",
-          "dayName",
-          "startTime"
+          "location"
         ]
       },
       "workout": {
-        "metrics": [
-          "distance"
-        ],
-        "labels": [
-          "LOCAL TIME",
-          "TIME",
-          "KM"
-        ],
+        "metrics": [],
+        "labels": [],
         "metadata": [
-          "LOCAL TIME",
-          "GREETING",
-          "location",
-          "dayName",
-          "startTime"
+          "location"
         ]
       }
     }
   },
   "science-pro": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawSciencePro",
     "modes": {
       "run": {
         "metrics": [
-          "distance",
-          "pace"
+          "pace",
+          "heartRate"
         ],
         "labels": [],
-        "metadata": [
-          "PERFORMANCE",
-          "location",
-          "title"
-        ]
+        "metadata": []
       },
       "bike": {
         "metrics": [
-          "distance",
-          "pace"
+          "pace",
+          "heartRate"
         ],
         "labels": [],
-        "metadata": [
-          "PERFORMANCE",
-          "location",
-          "title"
-        ]
+        "metadata": []
       },
       "workout": {
         "metrics": [
-          "distance",
-          "pace"
+          "heartRate"
         ],
         "labels": [],
-        "metadata": [
-          "PERFORMANCE",
-          "location",
-          "title"
-        ]
+        "metadata": []
       }
     }
   },
   "narrative-highlight": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawNarrativeHighlight",
     "modes": {
       "run": {
         "metrics": [
-          "distance",
-          "pace",
-          "time",
-          "date"
+          "distance"
         ],
         "labels": [],
-        "metadata": [
-          "location"
-        ]
+        "metadata": []
       },
       "bike": {
         "metrics": [
-          "distance",
-          "pace",
-          "time",
-          "date"
+          "distance"
         ],
         "labels": [],
-        "metadata": [
-          "location"
-        ]
+        "metadata": []
       },
       "workout": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time",
-          "date"
-        ],
+        "metrics": [],
         "labels": [],
-        "metadata": [
-          "location"
-        ]
+        "metadata": []
       }
     }
   },
   "location-pill": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawLocationPill",
     "modes": {
       "run": {
         "metrics": [
-          "distance",
-          "pace",
           "time"
         ],
         "labels": [],
@@ -155,8 +97,6 @@
       },
       "bike": {
         "metrics": [
-          "distance",
-          "pace",
           "time"
         ],
         "labels": [],
@@ -164,8 +104,6 @@
       },
       "workout": {
         "metrics": [
-          "distance",
-          "pace",
           "time"
         ],
         "labels": [],
@@ -174,199 +112,144 @@
     }
   },
   "dm": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawDMBubble",
     "modes": {
       "run": {
-        "metrics": [
-          "distance",
-          "pace"
-        ],
+        "metrics": [],
         "labels": [],
-        "metadata": [
-          "startTime"
-        ]
+        "metadata": []
       },
       "bike": {
-        "metrics": [
-          "distance",
-          "pace"
-        ],
+        "metrics": [],
         "labels": [],
-        "metadata": [
-          "startTime"
-        ]
+        "metadata": []
       },
       "workout": {
-        "metrics": [
-          "distance",
-          "pace"
-        ],
+        "metrics": [],
         "labels": [],
-        "metadata": [
-          "startTime"
-        ]
+        "metadata": []
       }
     }
   },
   "tiny-gps": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawTinyGPS",
     "modes": {
       "run": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
-        "metadata": [
-          "MAP"
-        ]
+        "metadata": []
       },
       "bike": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
-        "metadata": [
-          "MAP"
-        ]
+        "metadata": []
       },
       "workout": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
-        "metadata": [
-          "MAP"
-        ]
+        "metadata": []
       }
     }
   },
   "pulse-row": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawPulseRow",
     "modes": {
       "run": {
-        "metrics": [],
+        "metrics": [
+          "heartRate"
+        ],
         "labels": [],
         "metadata": []
       },
       "bike": {
-        "metrics": [],
+        "metrics": [
+          "heartRate"
+        ],
         "labels": [],
         "metadata": []
       },
       "workout": {
-        "metrics": [],
+        "metrics": [
+          "heartRate"
+        ],
         "labels": [],
         "metadata": []
       }
     }
   },
   "thin-path": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawThinPath",
     "modes": {
       "run": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
-        "metadata": [
-          "title",
-          "MAP"
-        ]
+        "metadata": []
       },
       "bike": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
-        "metadata": [
-          "title",
-          "MAP"
-        ]
+        "metadata": []
       },
       "workout": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
-        "metadata": [
-          "title",
-          "MAP"
-        ]
+        "metadata": []
       }
     }
   },
   "step-master": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawStepMaster",
     "modes": {
       "run": {
-        "metrics": [
-          "distance",
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       },
       "bike": {
-        "metrics": [
-          "distance",
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       },
       "workout": {
-        "metrics": [
-          "distance",
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       }
     }
   },
   "dual-pill": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawDualPill",
     "modes": {
       "run": {
         "metrics": [
           "distance",
-          "pace",
-          "time"
+          "pace"
         ],
-        "labels": [],
+        "labels": [
+          "KM",
+          "PACE"
+        ],
         "metadata": []
       },
       "bike": {
         "metrics": [
           "distance",
-          "pace",
-          "time"
+          "pace"
         ],
-        "labels": [],
+        "labels": [
+          "KM",
+          "KM/H"
+        ],
         "metadata": []
       },
       "workout": {
         "metrics": [
-          "distance",
-          "pace",
           "time"
         ],
         "labels": [],
@@ -375,417 +258,272 @@
     }
   },
   "brutalist-letters": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawBrutalistLetters",
     "modes": {
       "run": {
-        "metrics": [
-          "distance"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       },
       "bike": {
-        "metrics": [
-          "distance"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       },
       "workout": {
-        "metrics": [
-          "distance"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       }
     }
   },
   "boxed-metric": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawBoxedMetric",
     "modes": {
       "run": {
-        "metrics": [
-          "distance"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       },
       "bike": {
-        "metrics": [
-          "distance"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       },
       "workout": {
-        "metrics": [
-          "distance"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       }
     }
   },
   "condesa-stack": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawCondesaStack",
     "modes": {
       "run": {
         "metrics": [
           "distance",
-          "pace",
-          "date"
+          "time",
+          "pace"
         ],
-        "labels": [
-          "LOCAL TIME",
-          "/KM"
-        ],
+        "labels": [],
         "metadata": [
-          "LOCAL TIME",
-          "LOCATION",
-          "location",
-          "startTime",
-          "date"
+          "location"
         ]
       },
       "bike": {
         "metrics": [
           "distance",
-          "pace",
-          "date"
+          "time",
+          "pace"
         ],
-        "labels": [
-          "LOCAL TIME",
-          "KM/H"
-        ],
+        "labels": [],
         "metadata": [
-          "LOCAL TIME",
-          "LOCATION",
-          "location",
-          "startTime",
-          "date"
+          "location"
         ]
       },
       "workout": {
         "metrics": [
-          "distance",
-          "pace",
-          "date"
+          "time"
         ],
-        "labels": [
-          "LOCAL TIME",
-          "KM/H",
-          "/KM"
-        ],
+        "labels": [],
         "metadata": [
-          "LOCAL TIME",
-          "LOCATION",
-          "location",
-          "startTime",
-          "date"
+          "location"
         ]
       }
     }
   },
   "mono-minimal": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawMonoMinimal",
     "modes": {
       "run": {
-        "metrics": [
-          "distance"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       },
       "bike": {
-        "metrics": [
-          "distance"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       },
       "workout": {
-        "metrics": [
-          "distance"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       }
     }
   },
   "split-badge": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawSplitBadge",
     "modes": {
       "run": {
         "metrics": [
-          "distance",
           "pace",
-          "time"
+          "distance"
         ],
-        "labels": [
-          "BPM",
-          "/KM"
-        ],
+        "labels": [],
         "metadata": []
       },
       "bike": {
         "metrics": [
-          "distance",
           "pace",
-          "time"
+          "distance"
         ],
-        "labels": [
-          "BPM"
-        ],
+        "labels": [],
         "metadata": []
       },
       "workout": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
-        "labels": [
-          "BPM",
-          "/KM"
-        ],
+        "metrics": [],
+        "labels": [],
         "metadata": []
       }
     }
   },
   "stacked-editorial": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawStackedEditorial",
     "modes": {
       "run": {
-        "metrics": [
-          "distance",
-          "pace"
-        ],
-        "labels": [
-          "BPM",
-          "AVG SPEED"
-        ],
-        "metadata": [
-          "title",
-          "MAP"
-        ]
+        "metrics": [],
+        "labels": [],
+        "metadata": []
       },
       "bike": {
-        "metrics": [
-          "distance",
-          "pace"
-        ],
-        "labels": [
-          "BPM",
-          "KM/H",
-          "AVG SPEED"
-        ],
-        "metadata": [
-          "title",
-          "MAP"
-        ]
+        "metrics": [],
+        "labels": [],
+        "metadata": []
       },
       "workout": {
-        "metrics": [
-          "distance",
-          "pace"
-        ],
-        "labels": [
-          "BPM",
-          "KM/H",
-          "AVG SPEED"
-        ],
-        "metadata": [
-          "title",
-          "MAP"
-        ]
+        "metrics": [],
+        "labels": [],
+        "metadata": []
       }
     }
   },
   "micro-serif": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawMicroSerif",
     "modes": {
       "run": {
         "metrics": [
-          "distance",
           "pace"
         ],
-        "labels": [
-          "TIME",
-          "BPM"
-        ],
-        "metadata": [
-          "MAP"
-        ]
+        "labels": [],
+        "metadata": []
       },
       "bike": {
         "metrics": [
-          "distance",
           "pace"
         ],
-        "labels": [
-          "TIME",
-          "BPM",
-          "KM/H"
-        ],
-        "metadata": [
-          "MAP"
-        ]
+        "labels": [],
+        "metadata": []
       },
       "workout": {
-        "metrics": [
-          "distance",
-          "pace"
-        ],
-        "labels": [
-          "TIME",
-          "BPM",
-          "KM/H"
-        ],
-        "metadata": [
-          "MAP"
-        ]
+        "metrics": [],
+        "labels": [],
+        "metadata": []
       }
     }
   },
   "vhs-retro": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawVHSRetro",
     "modes": {
       "run": {
         "metrics": [
-          "distance",
-          "pace",
-          "date"
+          "time"
         ],
         "labels": [],
-        "metadata": [
-          "REC",
-          "date"
-        ]
+        "metadata": []
       },
       "bike": {
         "metrics": [
-          "distance",
-          "pace",
-          "date"
+          "time"
         ],
         "labels": [],
-        "metadata": [
-          "REC",
-          "date"
-        ]
+        "metadata": []
       },
       "workout": {
         "metrics": [
-          "distance",
-          "pace",
-          "date"
+          "time"
         ],
         "labels": [],
-        "metadata": [
-          "REC",
-          "date"
-        ]
+        "metadata": []
       }
     }
   },
   "serif-float": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawSerifFloat",
     "modes": {
       "run": {
-        "metrics": [
-          "distance"
+        "metrics": [],
+        "labels": [
+          "KM"
         ],
-        "labels": [],
         "metadata": []
       },
       "bike": {
-        "metrics": [
-          "distance"
+        "metrics": [],
+        "labels": [
+          "KM"
         ],
-        "labels": [],
         "metadata": []
       },
       "workout": {
-        "metrics": [
-          "distance"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       }
     }
   },
   "statement": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawStatement",
     "modes": {
       "run": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
-        "metadata": [
-          "title",
-          "dayAndNumber"
-        ]
+        "metadata": []
       },
       "bike": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
-        "metadata": [
-          "title",
-          "dayAndNumber"
-        ]
+        "metadata": []
       },
       "workout": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
-        "metadata": [
-          "title",
-          "dayAndNumber"
-        ]
+        "metadata": []
       }
     }
   },
   "massive-serif": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawMassiveSerif",
     "modes": {
       "run": {
         "metrics": [
-          "distance"
+          "time"
         ],
         "labels": [],
         "metadata": []
       },
       "bike": {
         "metrics": [
-          "distance"
+          "time"
         ],
         "labels": [],
         "metadata": []
       },
       "workout": {
         "metrics": [
-          "distance"
+          "time"
         ],
         "labels": [],
         "metadata": []
@@ -793,205 +531,136 @@
     }
   },
   "mag-cover": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawMagCover",
     "modes": {
       "run": {
         "metrics": [],
         "labels": [],
-        "metadata": [
-          "title",
-          "dayAndNumber"
-        ]
+        "metadata": []
       },
       "bike": {
         "metrics": [],
         "labels": [],
-        "metadata": [
-          "title",
-          "dayAndNumber"
-        ]
+        "metadata": []
       },
       "workout": {
         "metrics": [],
         "labels": [],
-        "metadata": [
-          "title",
-          "dayAndNumber"
-        ]
+        "metadata": []
       }
     }
   },
   "mono-ghost": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawMonoGhost",
     "modes": {
       "run": {
         "metrics": [
-          "distance",
-          "pace",
           "time"
         ],
         "labels": [],
-        "metadata": [
-          "dayAndNumber"
-        ]
+        "metadata": []
       },
       "bike": {
         "metrics": [
-          "distance",
-          "pace",
           "time"
         ],
         "labels": [],
-        "metadata": [
-          "dayAndNumber"
-        ]
+        "metadata": []
       },
       "workout": {
         "metrics": [
-          "distance",
-          "pace",
           "time"
         ],
         "labels": [],
-        "metadata": [
-          "dayAndNumber"
-        ]
+        "metadata": []
       }
     }
   },
   "coords-v2": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawCoordsV2",
     "modes": {
       "run": {
-        "metrics": [
-          "distance"
-        ],
+        "metrics": [],
         "labels": [],
-        "metadata": [
-          "MAP"
-        ]
+        "metadata": []
       },
       "bike": {
-        "metrics": [
-          "distance"
-        ],
+        "metrics": [],
         "labels": [],
-        "metadata": [
-          "MAP"
-        ]
+        "metadata": []
       },
       "workout": {
-        "metrics": [
-          "distance"
-        ],
+        "metrics": [],
         "labels": [],
-        "metadata": [
-          "MAP"
-        ]
+        "metadata": []
       }
     }
   },
   "marginalia": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawMarginalia",
     "modes": {
       "run": {
-        "metrics": [
-          "distance"
-        ],
+        "metrics": [],
         "labels": [],
-        "metadata": [
-          "title"
-        ]
+        "metadata": []
       },
       "bike": {
-        "metrics": [
-          "distance"
-        ],
+        "metrics": [],
         "labels": [],
-        "metadata": [
-          "title"
-        ]
+        "metadata": []
       },
       "workout": {
-        "metrics": [
-          "distance"
-        ],
+        "metrics": [],
         "labels": [],
-        "metadata": [
-          "title"
-        ]
+        "metadata": []
       }
     }
   },
   "typewriter-mono": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawTypewriterMono",
     "modes": {
       "run": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
-        "metadata": [
-          "dayAndNumber"
-        ]
+        "metadata": []
       },
       "bike": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
-        "metadata": [
-          "dayAndNumber"
-        ]
+        "metadata": []
       },
       "workout": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
-        "metadata": [
-          "dayAndNumber"
-        ]
+        "metadata": []
       }
     }
   },
   "brutal-slash": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawBrutalSlash",
     "modes": {
       "run": {
-        "metrics": [
-          "time"
-        ],
+        "metrics": [],
         "labels": [
           "DURATION"
         ],
         "metadata": []
       },
       "bike": {
-        "metrics": [
-          "time"
-        ],
+        "metrics": [],
         "labels": [
           "DURATION"
         ],
         "metadata": []
       },
       "workout": {
-        "metrics": [
-          "time"
-        ],
+        "metrics": [],
         "labels": [
           "DURATION"
         ],
@@ -1000,253 +669,163 @@
     }
   },
   "swiss-minimal": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawSwissMinimal",
     "modes": {
       "run": {
-        "metrics": [
-          "distance"
-        ],
-        "labels": [
-          "KM"
-        ],
+        "metrics": [],
+        "labels": [],
         "metadata": []
       },
       "bike": {
-        "metrics": [
-          "distance"
-        ],
-        "labels": [
-          "KM"
-        ],
+        "metrics": [],
+        "labels": [],
         "metadata": []
       },
       "workout": {
-        "metrics": [
-          "distance"
-        ],
-        "labels": [
-          "KM"
-        ],
+        "metrics": [],
+        "labels": [],
         "metadata": []
       }
     }
   },
   "editorial-row": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawEditorialRow",
     "modes": {
       "run": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
-        "labels": [
-          "TIME"
-        ],
+        "metrics": [],
+        "labels": [],
         "metadata": []
       },
       "bike": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
-        "labels": [
-          "TIME"
-        ],
+        "metrics": [],
+        "labels": [],
         "metadata": []
       },
       "workout": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
-        "labels": [
-          "TIME"
-        ],
+        "metrics": [],
+        "labels": [],
         "metadata": []
       }
     }
   },
   "pure-map": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawPureMap",
     "modes": {
       "run": {
         "metrics": [],
         "labels": [],
-        "metadata": [
-          "MAP"
-        ]
+        "metadata": []
       },
       "bike": {
         "metrics": [],
         "labels": [],
-        "metadata": [
-          "MAP"
-        ]
+        "metadata": []
       },
       "workout": {
         "metrics": [],
         "labels": [],
-        "metadata": [
-          "MAP"
-        ]
+        "metadata": []
       }
     }
   },
   "pro-vertical": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawProVertical",
     "modes": {
       "run": {
-        "metrics": [
-          "distance",
-          "pace"
-        ],
+        "metrics": [],
         "labels": [],
-        "metadata": [
-          "startTime"
-        ]
+        "metadata": []
       },
       "bike": {
-        "metrics": [
-          "distance",
-          "pace"
-        ],
+        "metrics": [],
         "labels": [],
-        "metadata": [
-          "startTime"
-        ]
+        "metadata": []
       },
       "workout": {
-        "metrics": [
-          "distance",
-          "pace"
-        ],
+        "metrics": [],
         "labels": [],
-        "metadata": [
-          "startTime"
-        ]
+        "metadata": []
       }
     }
   },
   "mono-split": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawMonoSplit",
     "modes": {
       "run": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       },
       "bike": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       },
       "workout": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       }
     }
   },
   "essential-italic": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawEssentialItalic",
     "modes": {
       "run": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time",
-          "date"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       },
       "bike": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time",
-          "date"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       },
       "workout": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time",
-          "date"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       }
     }
   },
   "obsidian-bar": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawObsidianBar",
     "modes": {
       "run": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       },
       "bike": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       },
       "workout": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       }
     }
   },
   "modern-pill": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawModernPill",
     "modes": {
       "run": {
         "metrics": [
           "distance",
-          "pace",
-          "time"
+          "pace"
         ],
         "labels": [
+          "KM",
           "PACE"
         ],
         "metadata": []
@@ -1254,687 +833,506 @@
       "bike": {
         "metrics": [
           "distance",
-          "pace",
-          "time"
+          "pace"
         ],
-        "labels": [],
+        "labels": [
+          "KM",
+          "KM/H"
+        ],
         "metadata": []
       },
       "workout": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
-        "labels": [
-          "PACE"
-        ],
+        "metrics": [],
+        "labels": [],
         "metadata": []
       }
     }
   },
   "editorial-archive": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawEditorialArchive",
     "modes": {
       "run": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time",
-          "date"
-        ],
+        "metrics": [],
         "labels": [
-          "TIME",
-          "KM",
-          "PACE"
+          "TIME"
         ],
         "metadata": []
       },
       "bike": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time",
-          "date"
-        ],
+        "metrics": [],
         "labels": [
-          "TIME",
-          "KM"
+          "TIME"
         ],
         "metadata": []
       },
       "workout": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time",
-          "date"
-        ],
+        "metrics": [],
         "labels": [
-          "TIME",
-          "KM",
-          "PACE"
+          "TIME"
         ],
         "metadata": []
       }
     }
   },
   "info-glass": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawInfoGlass",
     "modes": {
       "run": {
         "metrics": [
           "distance",
-          "pace",
-          "time"
+          "pace"
         ],
-        "labels": [],
+        "labels": [
+          "KM",
+          "PACE"
+        ],
         "metadata": []
       },
       "bike": {
         "metrics": [
           "distance",
-          "pace",
-          "time"
+          "pace"
         ],
-        "labels": [],
+        "labels": [
+          "KM",
+          "KM/H"
+        ],
         "metadata": []
       },
       "workout": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       }
     }
   },
   "workout-receipt": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawWorkoutReceipt",
     "modes": {
       "run": {
         "metrics": [
-          "distance",
-          "pace",
-          "time",
-          "date"
+          "time"
         ],
         "labels": [
+          "DISTANCE",
           "DURATION"
         ],
-        "metadata": [
-          "title",
-          "dayAndNumber"
-        ]
+        "metadata": []
       },
       "bike": {
         "metrics": [
-          "distance",
-          "pace",
-          "time",
-          "date"
+          "time"
         ],
         "labels": [
+          "DISTANCE",
           "DURATION"
         ],
-        "metadata": [
-          "title",
-          "dayAndNumber"
-        ]
+        "metadata": []
       },
       "workout": {
         "metrics": [
-          "distance",
-          "pace",
-          "time",
-          "date"
+          "time"
         ],
         "labels": [
+          "DISTANCE",
           "DURATION"
         ],
-        "metadata": [
-          "title",
-          "dayAndNumber"
-        ]
+        "metadata": []
       }
     }
   },
   "brutalist-bold": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawBrutalistBold",
     "modes": {
       "run": {
         "metrics": [
           "distance",
-          "pace",
-          "time"
+          "pace"
         ],
-        "labels": [],
+        "labels": [
+          "KM",
+          "PACE"
+        ],
         "metadata": []
       },
       "bike": {
         "metrics": [
           "distance",
-          "pace",
-          "time"
+          "pace"
         ],
-        "labels": [],
+        "labels": [
+          "KM",
+          "KM/H"
+        ],
         "metadata": []
       },
       "workout": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       }
     }
   },
   "data-modular": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawDataModular",
     "modes": {
       "run": {
         "metrics": [
-          "distance",
           "pace",
-          "time"
+          "distance"
         ],
-        "labels": [
-          "BPM",
-          "/KM"
-        ],
-        "metadata": [
-          "SCORA PERFORMANCE LOG"
-        ]
+        "labels": [],
+        "metadata": []
       },
       "bike": {
         "metrics": [
-          "distance",
           "pace",
-          "time"
+          "distance"
         ],
-        "labels": [
-          "BPM",
-          "KM/H"
-        ],
-        "metadata": [
-          "SCORA PERFORMANCE LOG"
-        ]
+        "labels": [],
+        "metadata": []
       },
       "workout": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
-        "labels": [
-          "BPM",
-          "KM/H",
-          "/KM"
-        ],
-        "metadata": [
-          "SCORA PERFORMANCE LOG"
-        ]
+        "metrics": [],
+        "labels": [],
+        "metadata": []
       }
     }
   },
   "glass-slice": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawGlassSlice",
     "modes": {
       "run": {
         "metrics": [
           "distance",
-          "pace",
-          "time"
+          "pace"
         ],
         "labels": [
           "KM",
-          "BPM",
-          "/KM"
+          "PACE",
+          "DISTANCE"
         ],
         "metadata": []
       },
       "bike": {
         "metrics": [
           "distance",
-          "pace",
-          "time"
+          "pace"
         ],
         "labels": [
           "KM",
-          "BPM"
+          "KM/H",
+          "DISTANCE"
         ],
         "metadata": []
       },
       "workout": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
+        "metrics": [],
         "labels": [
-          "KM",
-          "BPM",
-          "/KM"
+          "DISTANCE"
         ],
         "metadata": []
       }
     }
   },
   "stealth-bar": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawStealthBar",
     "modes": {
       "run": {
         "metrics": [
           "distance",
-          "pace",
-          "time"
+          "pace"
         ],
-        "labels": [],
+        "labels": [
+          "KM",
+          "PACE"
+        ],
         "metadata": []
       },
       "bike": {
         "metrics": [
           "distance",
-          "pace",
-          "time"
+          "pace"
         ],
-        "labels": [],
+        "labels": [
+          "KM",
+          "KM/H"
+        ],
         "metadata": []
       },
       "workout": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       }
     }
   },
   "track-record": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawTrackRecord",
     "modes": {
       "run": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       },
       "bike": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       },
       "workout": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       }
     }
   },
   "metric-thin": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawMetricThin",
     "modes": {
       "run": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       },
       "bike": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       },
       "workout": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       }
     }
   },
   "vertical-label": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawVerticalLabel",
     "modes": {
       "run": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       },
       "bike": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       },
       "workout": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       }
     }
   },
   "stats": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawStatsTemplate",
     "modes": {
       "run": {
         "metrics": [
           "distance",
           "pace",
-          "time",
           "heartRate"
         ],
         "labels": [
           "BPM",
           "DURATION"
         ],
-        "metadata": [
-          "title"
-        ]
+        "metadata": []
       },
       "bike": {
         "metrics": [
           "distance",
           "pace",
-          "time",
           "heartRate"
         ],
         "labels": [
           "BPM",
           "DURATION"
         ],
-        "metadata": [
-          "title"
-        ]
+        "metadata": []
       },
       "workout": {
         "metrics": [
-          "distance",
-          "pace",
-          "time",
           "heartRate"
         ],
         "labels": [
           "BPM",
           "DURATION"
         ],
-        "metadata": [
-          "title"
-        ]
+        "metadata": []
       }
     }
   },
   "minimal": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawRunningMinimal",
     "modes": {
       "run": {
         "metrics": [
-          "distance"
+          "distance",
+          "pace"
         ],
-        "labels": [],
-        "metadata": [
-          "title"
-        ]
+        "labels": [
+          "KM",
+          "PACE"
+        ],
+        "metadata": []
       },
       "bike": {
         "metrics": [
-          "distance"
+          "distance",
+          "pace"
         ],
-        "labels": [],
-        "metadata": [
-          "title"
-        ]
+        "labels": [
+          "KM",
+          "KM/H"
+        ],
+        "metadata": []
       },
       "workout": {
-        "metrics": [
-          "distance"
-        ],
+        "metrics": [],
         "labels": [],
-        "metadata": [
-          "title"
-        ]
+        "metadata": []
       }
     }
   },
   "classic-stack": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawClassicStack",
     "modes": {
       "run": {
         "metrics": [
-          "distance",
-          "pace",
-          "time"
+          "distance"
         ],
         "labels": [],
         "metadata": []
       },
       "bike": {
         "metrics": [
-          "distance",
-          "pace",
-          "time"
+          "distance"
         ],
         "labels": [],
         "metadata": []
       },
       "workout": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       }
     }
   },
   "neon-slanted": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawNeonSlanted",
     "modes": {
       "run": {
-        "metrics": [
-          "distance",
-          "time"
-        ],
-        "labels": [
-          "TIME"
-        ],
+        "metrics": [],
+        "labels": [],
         "metadata": []
       },
       "bike": {
-        "metrics": [
-          "distance",
-          "time"
-        ],
-        "labels": [
-          "TIME"
-        ],
+        "metrics": [],
+        "labels": [],
         "metadata": []
       },
       "workout": {
-        "metrics": [
-          "distance",
-          "time"
-        ],
-        "labels": [
-          "TIME"
-        ],
+        "metrics": [],
+        "labels": [],
         "metadata": []
       }
     }
   },
   "aesthetic-medal": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawAestheticMedal",
     "modes": {
       "run": {
-        "metrics": [
-          "pace",
-          "date"
-        ],
-        "labels": [
-          "TIME",
-          "PACE"
-        ],
-        "metadata": [
-          "date"
-        ]
+        "metrics": [],
+        "labels": [],
+        "metadata": []
       },
       "bike": {
-        "metrics": [
-          "pace",
-          "time",
-          "date"
-        ],
-        "labels": [
-          "TIME"
-        ],
-        "metadata": [
-          "date"
-        ]
+        "metrics": [],
+        "labels": [],
+        "metadata": []
       },
       "workout": {
-        "metrics": [
-          "pace",
-          "time",
-          "date"
-        ],
-        "labels": [
-          "TIME",
-          "PACE"
-        ],
-        "metadata": [
-          "date"
-        ]
+        "metrics": [],
+        "labels": [],
+        "metadata": []
       }
     }
   },
   "scora-stealth": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawScoraStealth",
     "modes": {
       "run": {
         "metrics": [
-          "distance",
           "pace",
-          "time"
+          "distance"
         ],
         "labels": [],
         "metadata": []
       },
       "bike": {
         "metrics": [
-          "distance",
           "pace",
-          "time"
+          "distance"
         ],
         "labels": [],
         "metadata": []
       },
       "workout": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       }
     }
   },
   "neon-capsule": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawNeonCapsule",
     "modes": {
       "run": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       },
       "bike": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       },
       "workout": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       }
     }
   },
   "tech-hud": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawTechHUD",
     "modes": {
       "run": {
         "metrics": [
           "distance",
-          "time"
+          "heartRate"
         ],
         "labels": [],
         "metadata": []
@@ -1942,15 +1340,14 @@
       "bike": {
         "metrics": [
           "distance",
-          "time"
+          "heartRate"
         ],
         "labels": [],
         "metadata": []
       },
       "workout": {
         "metrics": [
-          "distance",
-          "time"
+          "heartRate"
         ],
         "labels": [],
         "metadata": []
@@ -1958,110 +1355,79 @@
     }
   },
   "award-badge": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawAwardBadge",
     "modes": {
       "run": {
         "metrics": [
-          "distance",
-          "time"
+          "distance"
         ],
         "labels": [],
         "metadata": []
       },
       "bike": {
         "metrics": [
-          "distance",
-          "time"
+          "distance"
         ],
         "labels": [],
         "metadata": []
       },
       "workout": {
-        "metrics": [
-          "distance",
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       }
     }
   },
   "data-matrix": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawDataMatrix",
     "modes": {
       "run": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       },
       "bike": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       },
       "workout": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       }
     }
   },
   "frosted-minimal": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawFrostedMinimal",
     "modes": {
       "run": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       },
       "bike": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       },
       "workout": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       }
     }
   },
   "performance-bars": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "drawPerformanceBars",
     "modes": {
       "run": {
         "metrics": [
-          "distance",
-          "pace",
-          "time"
+          "pace"
         ],
         "labels": [
           "PACE",
@@ -2073,26 +1439,19 @@
       },
       "bike": {
         "metrics": [
-          "distance",
-          "pace",
-          "time"
-        ],
-        "labels": [
-          "KM",
-          "TIME"
-        ],
-        "metadata": []
-      },
-      "workout": {
-        "metrics": [
-          "distance",
-          "pace",
-          "time"
+          "pace"
         ],
         "labels": [
           "PACE",
           "KM",
           "/KM",
+          "TIME"
+        ],
+        "metadata": []
+      },
+      "workout": {
+        "metrics": [],
+        "labels": [
           "TIME"
         ],
         "metadata": []
@@ -2100,7 +1459,8 @@
     }
   },
   "minimal-vertical": {
-    "version": "2.8",
+    "version": "3.0",
+    "renderer": "Unknown",
     "modes": {
       "run": {
         "metrics": [],
@@ -2120,53 +1480,42 @@
     }
   },
   "8m2": {
-    "version": "2.8",
+    "version": "3.0",
     "renderer": "draw8MTemplate",
     "modes": {
       "run": {
         "metrics": [
           "distance",
-          "pace",
           "time",
-          "heartRate"
+          "pace"
         ],
         "labels": [
           "TIME",
           "DURATION"
         ],
-        "metadata": [
-          "MAP"
-        ]
+        "metadata": []
       },
       "bike": {
         "metrics": [
           "distance",
-          "pace",
           "time",
-          "heartRate"
+          "pace"
         ],
         "labels": [
           "TIME",
           "DURATION"
         ],
-        "metadata": [
-          "MAP"
-        ]
+        "metadata": []
       },
       "workout": {
         "metrics": [
-          "distance",
-          "pace",
-          "time",
-          "heartRate"
+          "time"
         ],
         "labels": [
           "TIME",
           "DURATION"
         ],
-        "metadata": [
-          "MAP"
-        ]
+        "metadata": []
       }
     }
   }
