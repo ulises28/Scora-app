@@ -985,7 +985,7 @@ export function drawIOSBubble(ctx, x: number, y: number, width: number, height: 
 export function drawDMBubble(ctx, stats) {
     let subStr = stats.subValue ? stats.subValue.replace(' /', '/') : '';
     const msgText = `${stats.mainValue}, ${subStr}`;
-    const captionText = `Started ${stats.startTime || '7:08 am'}`;
+    const captionText = stats.startTime ? `Started ${stats.startTime}` : '';
 
     const sysFont = "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
 
