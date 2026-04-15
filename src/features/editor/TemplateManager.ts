@@ -2,95 +2,12 @@ import { drawTemplate } from './CanvasPainter';
 import { MOCK_ACTIVITIES } from '../../api/mocks';
 import { formatActivityStats } from '../../api/strava';
 
+import { STICKER_LIST } from './StickerRegistry';
+import { TemplateFeatures } from './types';
+
 // ─── Template Registry — single source of truth ──────────────────────────────
-export interface TemplateFeatures {
-    distance?: boolean;
-    paceSpeed?: boolean;
-    duration?: boolean;
-    heartRate?: boolean;
-    date?: boolean;
-    startTime?: boolean;
-    map?: boolean;
-}
-
-interface TemplateConfig {
-    id: string;
-    features: TemplateFeatures;
-    category: 'distance' | 'workout' | 'all';
-    supportsBlackText?: boolean;
-    compact?: boolean;
-    seasonal?: boolean;
-    note?: string;
-}
-
-export const TEMPLATE_REGISTRY: readonly TemplateConfig[] = [
-    { id: 'editorial-strip', category: 'all', supportsBlackText: false, compact: true, features: { distance: true, duration: true, date: true } },
-    { id: 'science-pro', category: 'all', supportsBlackText: false, features: { distance: true, paceSpeed: true, heartRate: true, date: true } },
-    { id: 'narrative-highlight', category: 'all', supportsBlackText: true, features: { distance: true, duration: true, paceSpeed: true, date: true } },
-    { id: 'location-pill', category: 'all', supportsBlackText: true, compact: true, features: { distance: true, duration: true } },
-    { id: 'dm', category: 'distance', supportsBlackText: false, features: { distance: true, paceSpeed: true, startTime: true } },
-    { id: 'tiny-gps', category: 'all', supportsBlackText: true, compact: true, features: { distance: true, duration: true } },
-    { id: 'pulse-row', category: 'all', supportsBlackText: false, features: { heartRate: true } },
-    { id: 'thin-path', category: 'distance', supportsBlackText: true, features: { distance: true, paceSpeed: true, map: true } },
-    { id: 'step-master', category: 'all', supportsBlackText: true, compact: true, features: { distance: true, duration: true } },
-    { id: 'dual-pill', category: 'all', supportsBlackText: true, compact: true, features: { distance: true, duration: true } },
-    { id: 'brutalist-letters', category: 'all', supportsBlackText: true, compact: true, features: { distance: true, duration: true } },
-    { id: 'boxed-metric', category: 'distance', supportsBlackText: true, compact: true, features: { distance: true } },
-    { id: 'condesa-stack', category: 'all', supportsBlackText: true, features: { distance: true, duration: true, paceSpeed: true, startTime: true, date: true } },
-    { id: 'mono-minimal', category: 'all', supportsBlackText: true, compact: true, features: { distance: true, duration: true } },
-    { id: 'split-badge', category: 'all', supportsBlackText: false, compact: true, features: { distance: true, paceSpeed: true } },
-    { id: 'stacked-editorial', category: 'distance', supportsBlackText: true, features: { distance: true, paceSpeed: true, map: true } },
-    { id: 'micro-serif', category: 'distance', supportsBlackText: true, features: { distance: true, paceSpeed: true, map: true } },
-    { id: 'vhs-retro', category: 'distance', supportsBlackText: false, features: { distance: true, date: true, startTime: true } },
-    { id: 'serif-float', category: 'distance', supportsBlackText: true, compact: true, features: { distance: true, duration: true } },
-    { id: 'statement', category: 'distance', supportsBlackText: true, compact: true, features: { distance: true, duration: true, date: true } },
-    { id: 'massive-serif', category: 'all', supportsBlackText: true, compact: true, features: { distance: true, duration: true } },
-    { id: 'mag-cover', category: 'all', supportsBlackText: true, features: { date: true } },
-    { id: 'mono-ghost', category: 'all', supportsBlackText: true, features: { duration: true, date: true } },
-    { id: 'coords-v2', category: 'distance', supportsBlackText: true, compact: true, features: { distance: true, duration: true } },
-    { id: 'marginalia', category: 'all', supportsBlackText: true, compact: true, features: { distance: true, duration: true } },
-    { id: 'typewriter-mono', category: 'all', supportsBlackText: true, compact: true, features: { distance: true, duration: true, date: true } },
-    { id: 'brutal-slash', category: 'all', supportsBlackText: true, features: { duration: true } },
-    { id: 'swiss-minimal', category: 'distance', supportsBlackText: true, compact: true, features: { distance: true, duration: true } },
-    { id: 'editorial-row', category: 'all', supportsBlackText: true, features: { distance: true, paceSpeed: true, heartRate: true } },
-    { id: 'pure-map', category: 'distance', supportsBlackText: true, features: { map: true } },
-    { id: 'pro-vertical', category: 'all', supportsBlackText: true, features: { distance: true, paceSpeed: true, startTime: true } },
-    { id: 'mono-split', category: 'distance', supportsBlackText: false, features: { distance: true, paceSpeed: true } },
-    { id: 'essential-italic', category: 'distance', supportsBlackText: true, features: { distance: true, paceSpeed: true } },
-    { id: 'obsidian-bar', category: 'distance', supportsBlackText: false, features: { distance: true, paceSpeed: true } },
-    { id: 'data', category: 'distance', supportsBlackText: true, features: { distance: true, paceSpeed: true, duration: true } },
-    { id: 'modern-pill', category: 'distance', supportsBlackText: false, features: { distance: true, paceSpeed: true } },
-    { id: 'editorial-archive', category: 'distance', supportsBlackText: false, features: { distance: true, paceSpeed: true, duration: true, date: true } },
-    { id: 'info-glass', category: 'all', supportsBlackText: false, features: { distance: true, paceSpeed: true, duration: true } },
-    { id: 'workout-receipt', category: 'distance', supportsBlackText: false, features: { distance: true, paceSpeed: true, duration: true, date: true } },
-    { id: 'brutalist-bold', category: 'distance', supportsBlackText: false, features: { distance: true, paceSpeed: true } },
-    { id: 'data-modular', category: 'distance', supportsBlackText: false, features: { distance: true, paceSpeed: true } },
-    { id: 'glass-slice', category: 'distance', supportsBlackText: false, features: { distance: true, paceSpeed: true } },
-    { id: 'stealth-bar', category: 'distance', supportsBlackText: false, features: { distance: true, paceSpeed: true } },
-    { id: 'track-record', category: 'distance', supportsBlackText: true, features: { distance: true } },
-    { id: 'metric-thin', category: 'distance', supportsBlackText: true, features: { distance: true, paceSpeed: true } },
-    { id: 'vertical-label', category: 'distance', supportsBlackText: false, features: { distance: true, paceSpeed: true, duration: true } },
-    { id: 'stats', category: 'distance', supportsBlackText: true, features: { distance: true, paceSpeed: true } },
-    { id: 'minimal', category: 'all', supportsBlackText: true, compact: true, features: { distance: true, duration: true } },
-    { id: 'classic-stack', category: 'all', supportsBlackText: true, features: { distance: true, duration: true, date: true } },
-    { id: 'neon-slanted', category: 'all', supportsBlackText: true, features: { distance: true, duration: true } },
-    { id: 'aesthetic-medal', category: 'workout', supportsBlackText: true, features: { distance: true, paceSpeed: true, date: true } },
-    // Seasonal artifacts (excluded by default)
-    { id: 'scora-stealth', category: 'distance', features: { distance: true, paceSpeed: true, duration: true, heartRate: true, map: true }, seasonal: true },
-    { id: 'neon-capsule', category: 'distance', features: { distance: true, paceSpeed: true }, seasonal: true },
-    { id: 'tech-hud', category: 'distance', features: { distance: true, paceSpeed: true, duration: true }, seasonal: true },
-    { id: 'award-badge', category: 'workout', features: { distance: true, duration: true }, seasonal: true },
-    { id: 'data-matrix', category: 'distance', features: { distance: true, paceSpeed: true, duration: true }, seasonal: true },
-    { id: 'frosted-minimal', category: 'workout', features: { duration: true }, seasonal: true },
-    { id: 'pure-map', category: 'distance', features: { map: true }, seasonal: true },
-    { id: 'mag-cover', category: 'workout', features: { date: true }, seasonal: true },
-    { id: 'mono-ghost', category: 'workout', features: { date: true }, seasonal: true },
-    { id: 'typewriter-mono', category: 'all', features: { distance: true, duration: true, date: true }, seasonal: true },
-    { id: 'brutal-slash', category: 'workout', features: { duration: true }, seasonal: true },
-    { id: 'performance-bars', category: 'distance', supportsBlackText: true, features: { distance: true, paceSpeed: true, duration: true }, seasonal: true },
-    { id: 'minimal-vertical', category: 'distance', features: { distance: true, paceSpeed: true, map: true }, seasonal: true },
-    { id: '8m2', category: 'distance', features: { distance: true, paceSpeed: true, duration: true, map: true }, seasonal: true },
-];
+// Now imported from StickerRegistry.ts to prevent drift.
+export const TEMPLATE_REGISTRY = STICKER_LIST;
 
 export const TEMPLATES = TEMPLATE_REGISTRY.filter(t => !t.seasonal).map(t => t.id);
 
@@ -129,10 +46,13 @@ export function initTemplateManager(onChange: OnChangeCallback) {
             thumb.appendChild(canvas);
 
 
-            const label = document.createElement('span');
-            label.className = 'sticker-label';
-            label.innerText = id.replace(/-/g, ' ');
-            thumb.appendChild(label);
+            // 🛡️ DEV-ONLY: Debug IDs (localhost only)
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                const label = document.createElement('span');
+                label.className = 'sticker-label';
+                label.innerText = id;
+                thumb.appendChild(label);
+            }
 
             thumb.onclick = () => setTemplate(id);
             galleryContainer.appendChild(thumb);

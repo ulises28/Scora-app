@@ -2,6 +2,7 @@
 // (Este archivo config.js no se subirá a GitHub)
 import { STRAVA_CONFIG } from '../config.js';
 import { calculateMaxPace } from '../utils/mathUtils';
+import { getAdministrativeLocation } from '../utils/geoUtils';
 
 // Usamos las variables importadas
 const CLIENT_ID = STRAVA_CONFIG.CLIENT_ID;
@@ -91,6 +92,7 @@ export interface StickerStats {
     location?: string;
     region?: string;
     activityType: string;
+    rawDate?: string;
 }
 
 // 1. Construye el link al que enviaremos al usuario
@@ -109,7 +111,9 @@ export async function exchangeToken(code: string, sessionId: string = 'fallback'
     });
 
     if (!response.ok) {
-        throw new Error(`Token exchange failed: ${response.status}`);
+        const err = new Error(`Token exchange failed: ${response.status}`) as any;
+        err.status = response.status;
+        throw err;
     }
 
     const data = await response.json();
@@ -128,7 +132,9 @@ export async function refreshStravaToken(refreshToken) {
     });
     const data = await response.json();
     if (!response.ok) {
-        throw new Error(`Token refresh failed: ${data.message || response.statusText}`);
+        const err = new Error(`Token refresh failed: ${data.message || response.statusText}`) as any;
+        err.status = response.status;
+        throw err;
     }
     return data; // Return the new token payload
 }
@@ -175,10 +181,12 @@ export async function fetchStravaActivities(token: string) {
     });
 
     if (!response.ok) {
+        const err = new Error(`Strava API error: ${response.status}`) as any;
+        err.status = response.status;
         if (response.status === 401) {
-            throw new Error('Unauthorized');
+            err.message = 'Unauthorized';
         }
-        throw new Error(`Strava API error: ${response.status}`);
+        throw err;
     }
 
     const { activities: data } = await response.json();
@@ -218,7 +226,9 @@ export async function fetchDetailedActivity(token: string, activityId: number) {
     });
 
     if (!response.ok) {
-        throw new Error(`Detailed Strava API error: ${response.status}`);
+        const err = new Error(`Detailed Strava API error: ${response.status}`) as any;
+        err.status = response.status;
+        throw err;
     }
 
     const { activity } = await response.json();
@@ -288,24 +298,24 @@ export function formatActivityStats(activity: StravaActivity): StickerStats {
         date: formatDateNarrative(activity.start_date_local || activity.start_date),
         dayName: formatDayName(activity.start_date_local || activity.start_date),
         dayAndNumber: formatDayAndNumber(activity.start_date_local || activity.start_date),
+        rawDate: activity.start_date_local || activity.start_date,
         avgTemp: (activity.average_temp !== undefined && activity.average_temp !== null) ? String(Math.round(activity.average_temp)) : null,
         hasDistance: DISTANCE_SPORTS.has(activity.type) && activity.distance > 0,
         activityType: activity.type,
     };
 
-    // Location extraction logic
+    // Location extraction logic (Stage 1: Metadata & Timezone)
     let city = activity.location_city || '';
     let state = activity.location_state || '';
 
     if (!city && activity.timezone) {
-        // Fallback: Parse timezone (e.g. "America/Mexico_City" -> "Mexico City")
         const tzMatch = activity.timezone.match(/\/(.*)$/);
         if (tzMatch) {
             city = tzMatch[1].replace(/_/g, ' ');
         }
     }
 
-    stats.location = city || 'Unknown';
+    stats.location = city || activity.name || 'MEXICO CITY'; 
     stats.region = state || (city ? '' : 'World');
 
     stats.timeStr = formatDuration(activity.moving_time);
@@ -449,4 +459,29 @@ export function formatActivityStats(activity: StravaActivity): StickerStats {
     }
 
     return stats as StickerStats;
+}
+
+/**
+ * Enhances an activity with high-fidelity geographic and intensity data.
+ * Inspired by 'Fidelidad Total' Python logic.
+ */
+export async function enrichActivityWithGeo(activity: StravaActivity, stats: StickerStats): Promise<Partial<StickerStats>> {
+    const latLng = (activity as any).start_latlng || [];
+    let scoraLocation = null;
+
+    if (latLng && latLng.length === 2) {
+        scoraLocation = await getAdministrativeLocation(latLng[0], latLng[1]);
+    }
+
+    const smartData = {
+        location_label: scoraLocation?.alcaldia_district || stats.location,
+        geo_summary: scoraLocation,
+        is_personal_record: (activity.pr_count || 0) > 0,
+        intensity_index: (activity.average_heartrate || 0) > 160 ? "High" : "Normal"
+    };
+
+    return {
+        location: smartData.location_label,
+        region: scoraLocation?.state || stats.region,
+    };
 }

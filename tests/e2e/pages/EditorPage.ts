@@ -55,13 +55,15 @@ export class EditorPage extends BasePage {
             (window as any)._scoraCanvasTextLog = [];
             const originalFillText = CanvasRenderingContext2D.prototype.fillText;
             CanvasRenderingContext2D.prototype.fillText = function (text, x, y, maxWidth) {
-                if (typeof text === 'string') (window as any)._scoraCanvasTextLog.push(text);
+                const textStr = String(text);
+                if (textStr) (window as any)._scoraCanvasTextLog.push(textStr);
                 return originalFillText.call(this, text, x, y, maxWidth);
             };
 
             const originalStrokeText = CanvasRenderingContext2D.prototype.strokeText;
             CanvasRenderingContext2D.prototype.strokeText = function (text, x, y, maxWidth) {
-                if (typeof text === 'string') (window as any)._scoraCanvasTextLog.push(text);
+                const textStr = String(text);
+                if (textStr) (window as any)._scoraCanvasTextLog.push(textStr);
                 return originalStrokeText.call(this, text, x, y, maxWidth);
             };
         });
