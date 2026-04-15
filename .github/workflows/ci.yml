@@ -69,21 +69,21 @@ jobs:
             -v ${{ github.workspace }}/test-results:/app/test-results \
             -v ${{ github.workspace }}/tests:/app/tests \
             scora-e2e \
-            npx playwright test ${{ github.event.inputs.update_snapshots == 'true' && '--update-snapshots' || '' }}
+            npx playwright test ${{ github.event.inputs.update_snapshots == true && '--update-snapshots' || '' }}
 
       # 🏛️ Smart Self-Healing: Conditional Logic
       # On master/main: Commit directly for high velocity.
       # On branches: Open a Pull Request for professional review.
       
       - name: Direct Commit Updated Snapshots (Master/Main Only)
-        if: github.event.inputs.update_snapshots == 'true' && (github.ref_name == 'master' || github.ref_name == 'main')
+        if: github.event.inputs.update_snapshots == true && (github.ref_name == 'master' || github.ref_name == 'main')
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "chore(testing): self-healing production snapshots [skip ci]"
-          file_pattern: "tests/e2e/ui/canvas-rendering.spec.ts-snapshots/*.png"
+          file_pattern: "tests/**/*.png tests/e2e/fixtures/sticker-capabilities.json"
 
       - name: Open Pull Request with Updated Snapshots (Feature Branches Only)
-        if: github.event.inputs.update_snapshots == 'true' && (github.ref_name != 'master' && github.ref_name != 'main')
+        if: github.event.inputs.update_snapshots == true && (github.ref_name != 'master' && github.ref_name != 'main')
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -97,7 +97,8 @@ jobs:
             It contains calibrated **Linux snapshots** for the Sticker Rendering Matrix. 
             Merging this PR will resolve visual regression failures on the current branch.
           add-paths: |
-            tests/e2e/ui/canvas-rendering.spec.ts-snapshots/*.png
+            tests/**/*.png
+            tests/e2e/fixtures/sticker-capabilities.json
 
 
       - name: Upload Test Report
