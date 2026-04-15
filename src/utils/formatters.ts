@@ -51,7 +51,7 @@ export function formatTime(rawDate: string): string {
         if (!hours || !minutes) return '';
         
         let h = parseInt(hours, 10);
-        const ampm = h >= 12 ? 'PM' : 'AM';
+        const ampm = h >= 12 ? 'pm' : 'am';
         h = h % 12 || 12;
         return `${h}:${minutes} ${ampm}`;
     } catch (e) {

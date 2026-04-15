@@ -985,7 +985,7 @@ export function drawIOSBubble(ctx, x: number, y: number, width: number, height: 
 export function drawDMBubble(ctx, stats) {
     let subStr = stats.subValue ? stats.subValue.replace(' /', '/') : '';
     const msgText = `${stats.mainValue}, ${subStr}`;
-    const captionText = `Started ${stats.startTime || '7:08 AM'}`;
+    const captionText = `Started ${stats.startTime || '7:08 am'}`;
 
     const sysFont = "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
 
@@ -1016,7 +1016,7 @@ export function drawDMBubble(ctx, stats) {
     ctx.textAlign = 'right';
     ctx.font = `500 35px ${sysFont}`;
     ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
-    ctx.fillText(`${captionText} | DIST & PACE`, bubX + bubW - 5, centerY + bubH / 2 + 40);
+    ctx.fillText(captionText, bubX + bubW - 5, centerY + bubH / 2 + 40);
 }
 
 // ─── New Overlay Templates ────────────────────────────────────────────────────
@@ -2850,13 +2850,24 @@ export function drawThinPath(ctx: CanvasRenderingContext2D, stats: any, textColo
         ctx.globalAlpha = 1.0;
     }
 
-    // 3. Hero Value
+    // 3. Hero Value - Dynamic scaling for large distances (Studio Precision)
+    let vFontSize = 480;
+    ctx.font = `italic 500 ${vFontSize}px ${serifFont}`;
+    const vWidth = ctx.measureText(s1.value).width;
+    ctx.font = `italic 700 80px ${serifFont}`;
+    const uWidth = ctx.measureText(s1.label).width;
+    const totalW = vWidth + 30 + uWidth;
+
+    if (totalW > 960) {
+        vFontSize = Math.floor(vFontSize * (960 / totalW));
+    }
+
     drawStatWithUnit(ctx, cx, cy, s1.value, s1.label, {
-        valueFont: `italic 500 480px ${serifFont}`,
-        unitFont: `italic 700 80px ${serifFont}`,
+        valueFont: `italic 500 ${vFontSize}px ${serifFont}`,
+        unitFont: `italic 700 ${Math.max(40, Math.floor(vFontSize * 0.16))}px ${serifFont}`,
         valueColor: colors.solid,
         unitColor: colors.trans,
-        gap: 30,
+        gap: Math.max(10, Math.floor(vFontSize * 0.06)),
         align: 'center'
     });
 
