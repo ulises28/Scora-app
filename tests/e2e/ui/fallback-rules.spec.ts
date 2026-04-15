@@ -7,8 +7,16 @@ import { TestUtils } from '../utils/TestUtils';
 import capabilities from '../fixtures/sticker-capabilities.json' with { type: 'json' };
 
 test.describe('Scora App UI: Data Fallback Intelligence', () => {
+    
+    // 🛡️ SAFARI-ISOLATION: Zero-touch stabilization for Mobile Safari
+    async function stabilizeSafari(page: any, info: any) {
+        if (info.project.name === 'Mobile Safari') {
+            await page.evaluate(() => document.fonts.ready);
+        }
+    }
 
-    test.beforeEach(async ({ page }) => {
+    test.beforeEach(async ({ page }, testInfo) => {
+        await stabilizeSafari(page, testInfo);
         const feedPage = new FeedPage(page);
         const api = new MockStravaClient(page);
 

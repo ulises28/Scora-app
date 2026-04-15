@@ -18,7 +18,7 @@
     "docker:build": "docker build -f Dockerfile.playwright -t scora-e2e .",
     "docker:test": "docker compose -f docker-compose.playwright.yml up --build --exit-code-from playwright",
     "test:agent": "bash scripts/qa-agent.sh",
-    "sync:stickers": "npx tsx scripts/sticker-data-agent.ts",
+    "sync:stickers": "npx tsx scripts/sticker-sync.ts",
     "heal": "bash scripts/ai-healer.sh"
   },
   "repository": {

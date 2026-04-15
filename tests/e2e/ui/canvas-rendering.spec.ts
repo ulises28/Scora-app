@@ -379,8 +379,12 @@ test.describe('Scora App UI: Advanced Canvas Verification', () => {
                     const altDistVal = TestUtils.normalizeForCanvas(parseFloat(expected.distanceVal).toString()).replace(/[A-Z]/g, '');
                     expect(normalizedLogs, `Distance "${distVal}" not found in ${id}`).toMatch(new RegExp(`${distVal}|${altDistVal}`));
                 }
-                if (metric === 'heartRate' && expected.avgHeartrate) {
-                    expect(normalizedLogs, `BPM "${expected.avgHeartrate}" not found in ${id}`).toContain(expected.avgHeartrate.toString());
+                if (metric === 'heartRate') {
+                    const isMax = truth.metadata.includes('MAX_HR');
+                    const targetHR = isMax ? expected.maxHeartrate : expected.avgHeartrate;
+                    if (targetHR) {
+                        expect(normalizedLogs, `${isMax ? 'MAX' : 'AVG'} BPM "${targetHR}" not found in ${id}`).toContain(targetHR.toString());
+                    }
                 }
                 if (metric === 'pace') {
                     // Extract numeric part only (e.g., 427 from 4:27 /km)

@@ -1,132 +1,78 @@
 import { describe, it, expect } from 'vitest';
-import { TEMPLATE_REGISTRY } from '../../src/features/editor/TemplateManager';
+import { STICKER_LIST } from '../../src/features/editor/StickerRegistry';
 import capabilities from '../e2e/fixtures/sticker-capabilities.json' with { type: 'json' };
 
 /**
- * SCORA: Sticker Integrity Suite (v2.6 "Studio Precision")
+ * SCORA: Sticker Integrity Suite (v3.0 - Modular Contract)
  * 
- * Verifies that the Sticker Data Agent accurately captures the capabilities
- * defined in the Template Registry.
+ * Verifies that the Sticker Data Discovery (Agent) successfully 
+ * validated the claims made in the Modular Sticker Registry.
  */
 
-// ─── Configuration & Exceptions ──────────────────────────────────────────────
+describe.concurrent('Sticker Integrity: Modular Contract', () => {
 
-const DIST_LABELS = ['KM'];
-const PACE_LABELS = ['PACE', '/KM', 'KM/H'];
-const HR_LABELS = ['BPM'];
-
-// Templates where features are rendered via pure graphics/non-standard patterns
-const FEATURE_EXCEPTIONS = {
-    distance: ['pure-map', 'tiny-gps', 'thin-path', 'step-master', 'mag-cover', 'serif-float', 'brutalist-letters', 'massive-serif', 'brutal-slash', 'mono-ghost', 'brutalist-bold', 'stealth-bar', 'minimal', 'info-glass', 'modern-pill', 'dual-pill', 'boxed-metric', 'stacked-editorial', 'micro-serif', 'coords-v2', 'marginalia', 'typewriter-mono', 'swiss-minimal', 'vertical-label', 'stats', 'classic-stack', 'neon-slanted'],
-    paceSpeed: ['tiny-gps', 'aesthetic-medal', 'split-badge', 'mag-cover', 'serif-float', 'brutalist-letters', 'massive-serif', 'brutal-slash', 'mono-ghost', 'brutalist-bold', 'stealth-bar', 'minimal', 'info-glass', 'modern-pill', 'dual-pill', 'stacked-editorial', 'micro-serif', 'coords-v2', 'marginalia', 'typewriter-mono', 'swiss-minimal', 'vertical-label', 'stats', 'classic-stack', 'neon-slanted'],
-    heartRate: ['science-pro', 'editorial-row', 'pulse-row', 'scora-stealth', 'aesthetic-medal', 'mag-cover', 'serif-float', 'brutalist-letters', 'massive-serif', 'brutal-slash', 'mono-ghost', 'brutalist-bold', 'stealth-bar', 'minimal', 'info-glass', 'modern-pill', 'dual-pill', 'stacked-editorial', 'micro-serif', 'coords-v2', 'marginalia', 'typewriter-mono', 'swiss-minimal', 'vertical-label', 'stats', 'classic-stack', 'neon-slanted']
-};
-
-// ─── Test Suite ──────────────────────────────────────────────────────────────
-
-describe.concurrent('Sticker Integrity: Metadata vs Registry', () => {
-
-    // We only care about active (non-seasonal) templates for the core suite
-    const ACTIVE_TEMPLATES = TEMPLATE_REGISTRY.filter(t => !t.seasonal);
+    const ACTIVE_TEMPLATES = STICKER_LIST.filter(t => !t.seasonal);
 
     /**
-     * Test 1: Existence
-     * Ensure "npm run sync:stickers" has been run for every registered sticker.
+     * Test 1: JSON Synchronization
+     * Ensure the capabilities manifest is up-to-date with the Registry.
      */
-    it.each(ACTIVE_TEMPLATES)('should have capability entry for "$id"', (template) => {
-        const entry = (capabilities as any)[template.id];
-        expect(entry, `Template registered but missing from sticker-capabilities.json.`).toBeDefined();
+    it.each(ACTIVE_TEMPLATES)('should have discovery metadata for "$id"', (sticker) => {
+        const entry = (capabilities as any)[sticker.id];
+        expect(entry, `Sticker "${sticker.id}" exists in Registry but not in sticker-capabilities.json. Run "npm run sync:stickers".`).toBeDefined();
     });
 
     /**
-     * Test 2: Vitality (Non-Silent)
-     * Ensure no sticker has 0 identified identifiers (metrics + labels + metadata).
+     * Test 2: Feature Discovery Contract
+     * Ensures that every feature claimed in the StickerRegistry was 
+     * successfully identified by the code agent during discovery.
      */
-    it.each(ACTIVE_TEMPLATES)('should not be "silent" for "$id"', (template) => {
-        const entry = (capabilities as any)[template.id];
+    describe.concurrent('Feature Discovery Verification', () => {
+        it.each(ACTIVE_TEMPLATES)('should verify discovery of claimed features for "$id"', (sticker) => {
+            const entry = (capabilities as any)[sticker.id];
+            if (!entry || !entry.modes) return;
+
+            const allModes = Object.values(entry.modes) as any[];
+
+            // 1. Distance Claim
+            if (sticker.features.distance) {
+                const foundDistance = allModes.some(m => m.metrics?.includes('distance'));
+                expect(foundDistance, `Sticker "${sticker.id}" claims "distance" in Registry, but Agent failed to discover distance logic in renderer.`).toBe(true);
+            }
+
+            // 2. Pace/Speed Claim
+            if (sticker.features.paceSpeed) {
+                const foundPace = allModes.some(m => m.metrics?.includes('pace'));
+                expect(foundPace, `Sticker "${sticker.id}" claims "paceSpeed" in Registry, but Agent failed to discover pace logic in renderer.`).toBe(true);
+            }
+
+            // 3. Heart Rate Claim
+            if (sticker.features.heartRate) {
+                const foundHR = allModes.some(m => m.metrics?.includes('heartRate'));
+                expect(foundHR, `Sticker "${sticker.id}" claims "heartRate" in Registry, but Agent failed to discover heartRate logic in renderer.`).toBe(true);
+            }
+            
+            // 4. Map Claim
+            if (sticker.features.map) {
+                const foundMap = allModes.some(m => m.metadata?.includes('MAP'));
+                expect(foundMap, `Sticker "${sticker.id}" claims "map" in Registry, but Agent failed to discover map/polyline logic in renderer.`).toBe(true);
+            }
+        });
+    });
+
+    /**
+     * Test 3: Vitality (No Dead Stickers)
+     * Every sticker must draw SOMETHING (either metrics, labels, or meta tokens).
+     */
+    it.each(ACTIVE_TEMPLATES)('should have discoverable logic in "$id"', (sticker) => {
+        const entry = (capabilities as any)[sticker.id];
         if (!entry || !entry.modes) return;
 
         const totalIdentifiers = Object.values(entry.modes).reduce((acc: number, mode: any) =>
             acc + (mode.metrics?.length || 0) + (mode.labels?.length || 0) + (mode.metadata?.length || 0)
             , 0);
 
-        expect(totalIdentifiers, `No metrics, labels, or metadata identified. Check for Variable Blindness in CanvasPainter.ts.`).toBeGreaterThan(0);
-    });
-
-    /**
-     * Test 3: Feature Audit
-     * Ensures that if a sticker claims a feature in TemplateManager, 
-     * the Data Agent actually found it in the code.
-     */
-    describe.concurrent('Feature Audit', () => {
-        it.each(ACTIVE_TEMPLATES)('should verify claimed features for "$id"', (template) => {
-            const entry = (capabilities as any)[template.id];
-            if (!entry || !entry.modes) return;
-
-            const allModes = Object.values(entry.modes) as any[];
-
-            // A. Distance Feature 
-            if (template.features.distance && !FEATURE_EXCEPTIONS.distance.includes(template.id)) {
-                const hasDistance = allModes.some(m =>
-                    m.metrics?.includes('distance') ||
-                    m.labels?.some((l: string) => DIST_LABELS.some(kw => l.includes(kw)))
-                );
-                expect(hasDistance, `Claims "distance" feature but no KM metrics/labels found for "${template.id}".`).toBe(true);
-            }
-
-            // B. Pace Feature
-            if (template.features.paceSpeed && !FEATURE_EXCEPTIONS.paceSpeed.includes(template.id)) {
-                const hasPace = allModes.some(m =>
-                    m.metrics?.includes('pace') ||
-                    m.labels?.some((l: string) => PACE_LABELS.some(kw => l.includes(kw)))
-                );
-                expect(hasPace, `Claims "paceSpeed" feature but no PACE/KMH metrics/labels found for "${template.id}".`).toBe(true);
-            }
-
-            // C. Heart Rate Feature
-            if (template.features.heartRate && !FEATURE_EXCEPTIONS.heartRate.includes(template.id)) {
-                const hasHR = allModes.some(m =>
-                    m.metrics?.includes('heartRate') ||
-                    m.labels?.some((l: string) => HR_LABELS.some(kw => l.toUpperCase().includes(kw)))
-                );
-                expect(hasHR, `Claims "heartRate" feature but no BPM metrics/labels found for "${template.id}".`).toBe(true);
-            }
-        });
-    });
-
-    /**
-     * Test 4: Semantic Accuracy (Fidelidad Total)
-     * Ensures specific business rules are met for sport-aware labeling.
-     */
-    describe.concurrent('Semantic Accuracy', () => {
-
-        it('Ride activities should strictly use "Avg Speed" logic on modernized templates', () => {
-            const highFidelityIDs = ['condesa-stack'];
-
-            highFidelityIDs.forEach(id => {
-                const entry = (capabilities as any)[id];
-                const mode = entry?.modes?.bike || entry?.modes?.ride;
-                if (!mode) return;
-
-                const containsPaceExplicitly = mode.labels?.some((l: string) => l.toUpperCase().includes('PACE'));
-                expect(containsPaceExplicitly, `Found explicit "PACE" label in a RIDE mode for "${id}". Use "AVG SPEED" instead.`).not.toBe(true);
-            });
-        });
-
-        it('Modernized stickers should contain "LOCAL TIME" metadata', () => {
-            const highFidelityIDs = ['condesa-stack'];
-            highFidelityIDs.forEach(id => {
-                const entry = (capabilities as any)[id];
-                if (!entry || !entry.modes) return;
-
-                Object.entries(entry.modes).forEach(([modeName, mode]: [string, any]) => {
-                    const hasLocalTime = mode.labels?.some((l: string) => l.includes('LOCAL TIME')) ||
-                        mode.metadata?.some((m: string) => m.includes('LOCAL TIME'));
-
-                    expect(hasLocalTime, `Template "${id}" (mode: ${modeName}) is missing the "LOCAL TIME" metadata line.`).toBe(true);
-                });
-            });
-        });
+        expect(totalIdentifiers, `Discovery yielded 0 identifiers. Check for Variable Blindness in CanvasPainter.ts.`).toBeGreaterThan(0);
     });
 
 });

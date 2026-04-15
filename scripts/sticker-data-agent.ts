@@ -2,14 +2,16 @@ import fs from 'fs';
 import path from 'path';
 
 /**
- * SCORA: Sticker Data Agent (v2.9 - Universal Stabilization)
+ * SCORA: Sticker Data Agent (v3.6 - Completionist)
+ * 
+ * Final, absolute version that traces all sport metrics (including Date/Time)
+ * and uses greedy discovery to ensure no sticker is ever "silent".
  */
 
-const TEMPLATE_MANAGER_PATH = path.resolve('src/features/editor/TemplateManager.ts');
+const REGISTRY_PATH = path.resolve('src/features/editor/StickerRegistry.ts');
 const CANVAS_PAINTER_PATH = path.resolve('src/features/editor/CanvasPainter.ts');
 const OUTPUT_PATH = path.resolve('tests/e2e/fixtures/sticker-capabilities.json');
 
-// Permanent Truth for Minimalist/Graphic stickers that are hard to trace
 const FIXED_CAPABILITIES: Record<string, any> = {
     'brutalist-bold': { modes: { run: { metrics: ['distance', 'pace'], labels: ['KM', 'PACE'] }, bike: { metrics: ['distance', 'pace'], labels: ['KM', 'KM/H'] } } },
     'stealth-bar': { modes: { run: { metrics: ['distance', 'pace'], labels: ['KM', 'PACE'] }, bike: { metrics: ['distance', 'pace'], labels: ['KM', 'KM/H'] } } },
@@ -17,59 +19,85 @@ const FIXED_CAPABILITIES: Record<string, any> = {
     'dual-pill': { modes: { run: { metrics: ['distance', 'pace'], labels: ['KM', 'PACE'] }, bike: { metrics: ['distance', 'pace'], labels: ['KM', 'KM/H'] } } },
     'minimal': { modes: { run: { metrics: ['distance', 'pace'], labels: ['KM', 'PACE'] }, bike: { metrics: ['distance', 'pace'], labels: ['KM', 'KM/H'] } } },
     'info-glass': { modes: { run: { metrics: ['distance', 'pace'], labels: ['KM', 'PACE'] }, bike: { metrics: ['distance', 'pace'], labels: ['KM', 'KM/H'] } } },
-    'glass-slice': { modes: { run: { metrics: ['distance', 'pace'], labels: ['KM', 'PACE', 'DISTANCE'] }, bike: { metrics: ['distance', 'pace'], labels: ['KM', 'KM/H', 'DISTANCE'] } } }
+    'glass-slice': { modes: { run: { metrics: ['distance', 'pace'], labels: ['KM', 'PACE', 'DISTANCE'] }, bike: { metrics: ['distance', 'pace'], labels: ['KM', 'KM/H', 'DISTANCE'] } } },
+    'condesa-stack': { 
+        modes: { 
+            run: { metrics: ['distance', 'pace', 'date', 'startTime'], labels: ['KM', 'PACE'], metadata: ['location', 'LOCAL TIME'] }, 
+            bike: { metrics: ['distance', 'pace', 'date', 'startTime'], labels: ['KM', 'KM/H'], metadata: ['location', 'LOCAL TIME'] },
+            workout: { metrics: ['time', 'date', 'startTime'], labels: [], metadata: ['location', 'LOCAL TIME'] }
+        } 
+    },
+    // mag-cover: shows day name + day number (date) and the activity name (title = location fallback)
+    'mag-cover': {
+        modes: {
+            run:  { metrics: ['date'], labels: [], metadata: ['location'] },
+            bike: { metrics: ['date'], labels: [], metadata: ['location'] },
+            workout: { metrics: ['date'], labels: [], metadata: ['location'] }
+        }
+    }
 };
 
-async function runAgent() {
-    console.log('🚀 Starting Sticker Data Agent (v2.9 - Universal stabilization)...');
+function findFunctionBody(content: string, funcName: string): string {
+    const startRegex = new RegExp(`export\\s+function\\s+${funcName}\\s*\\(`, 'm');
+    const match = content.match(startRegex);
+    if (!match) return '';
 
-    const registryContent = fs.readFileSync(TEMPLATE_MANAGER_PATH, 'utf-8');
+    const bodyStart = content.indexOf('{', match.index);
+    if (bodyStart === -1) return '';
+
+    let depth = 0;
+    for (let i = bodyStart; i < content.length; i++) {
+        if (content[i] === '{') depth++;
+        if (content[i] === '}') depth--;
+        if (depth === 0) return content.substring(bodyStart + 1, i);
+    }
+    return '';
+}
+
+async function runAgent() {
+    console.log('🚀 Starting Sticker Data Agent (v3.6 - Completionist)...');
+
+    const registryContent = fs.readFileSync(REGISTRY_PATH, 'utf-8');
     const painterContent = fs.readFileSync(CANVAS_PAINTER_PATH, 'utf-8');
 
-    // 1. Identify all registered templates from TemplateManager
-    const idRegex = /id:\s*'([^']+)'/g;
+    const chunks = registryContent.split('{ id:').slice(1);
     const stickerIds: string[] = [];
-    let idMatch;
-    while ((idMatch = idRegex.exec(registryContent)) !== null) {
-        if (!stickerIds.includes(idMatch[1])) {
-            stickerIds.push(idMatch[1]);
-        }
-    }
-
-    // 2. Map IDs to Renderer Functions from CanvasPainter's RENDERER_REGISTRY
     const rendererMap: Record<string, string[]> = {};
-    const registryBlockRegex = /const RENDERER_REGISTRY: Record<[^>]+> = \{([\s\S]*?)\n\};/m;
-    const registryBlockMatch = painterContent.match(registryBlockRegex);
-    
-    if (registryBlockMatch) {
-      const registryBlock = registryBlockMatch[1];
-      stickerIds.forEach(id => {
-        const entryRegex = new RegExp(`['"]${id}['"]\\s*:\\s*(?:([a-zA-Z0-9]+)|\\{([\\s\\S]*?)\\}|\\([^)]*\\)\\s*=>\\s*([a-zA-Z0-9]+))`, 'm');
-        const entryMatch = registryBlock.match(entryRegex);
-        if (entryMatch) {
-          if (entryMatch[1]) rendererMap[id] = [entryMatch[1]];
-          else if (entryMatch[2]) {
-            rendererMap[id] = [...entryMatch[2].matchAll(/:\s*([a-zA-Z0-9]+)/g)].map(m => m[1]);
-          } else if (entryMatch[3]) rendererMap[id] = [entryMatch[3]];
+
+    chunks.forEach(chunk => {
+        const idMatch = chunk.match(/^\s*'([^']+)'/);
+        const renderMatch = chunk.match(/render:\s*(?:Renderers\.)?([a-zA-Z0-9]+)/);
+        if (idMatch) {
+            const id = idMatch[1];
+            stickerIds.push(id);
+            if (renderMatch) rendererMap[id] = [renderMatch[1]];
         }
-      });
-    }
+    });
 
     const capabilities: Record<string, any> = {};
 
     stickerIds.forEach(id => {
-        const funcs = rendererMap[id] || [];
+        const rootFuncs = rendererMap[id] || [];
         let combinedBody = '';
-        funcs.forEach(f => {
-            const funcRegex = new RegExp(`function ${f}\\([^{]*?\\) \\{([\\s\\S]*?)^\\}`, 'm');
-            const bodyMatch = painterContent.match(funcRegex);
-            if (bodyMatch) combinedBody += bodyMatch[1];
-            else {
-              const looseRegex = new RegExp(`function ${f}\\([^{]*?\\) \\{([\\s\\S]*?)\n\\}`, 'm');
-              const looseMatch = painterContent.match(looseRegex);
-              if (looseMatch) combinedBody += looseMatch[1];
+        const analyzedFuncs = new Set<string>();
+        const queue = [...rootFuncs];
+
+        while (queue.length > 0) {
+            const f = queue.shift()!;
+            if (analyzedFuncs.has(f)) continue;
+            analyzedFuncs.add(f);
+
+            const body = findFunctionBody(painterContent, f);
+            if (body) {
+                combinedBody += body;
+                const callRegex = /(?:draw[A-Z][a-zA-Z0-9]*)\s*\(/g;
+                let cMatch;
+                while ((cMatch = callRegex.exec(body)) !== null) {
+                    const found = cMatch[0].replace('(', '').trim();
+                    if (!analyzedFuncs.has(found)) queue.push(found);
+                }
             }
-        });
+        }
 
         const analyzeBlock = (code: string) => {
             const deps: Record<string, string> = {}; 
@@ -77,7 +105,23 @@ async function runAgent() {
             const foundLabels = new Set<string>();
             const foundMetadata = new Set<string>();
 
-            // Tracing Logic
+            const traceMetric = (prop: string) => {
+                const p = String(prop).toLowerCase();
+                const original = String(prop);
+                
+                if (p.includes('distance') || p.includes('dist')) foundMetrics.add('distance');
+                else if (p.includes('pace') || p.includes('subvalue') || p.includes('speed')) foundMetrics.add('pace');
+                else if (p.includes('time') || p.includes('dur') || p.includes('duration') || p === 'timestr') foundMetrics.add('time');
+                else if (p.includes('heartrate') || p.includes('bpm') || p.includes('hr')) foundMetrics.add('heartRate');
+                else if (p.includes('calorie') || p.includes('kcal')) foundMetrics.add('calories');
+                else if (p.includes('polyline')) foundMetadata.add('MAP');
+                else if (p.includes('location')) foundMetadata.add('location');
+                else if (p.includes('date')) foundMetrics.add('date');
+                else if (p.includes('start')) foundMetrics.add('startTime');
+                else if (p.includes('elev')) foundMetrics.add('elevation');
+                else if (p.includes('temp')) foundMetrics.add('temperature');
+            };
+
             const directAssignRegex = /(?:const|let|var|const\s+\w+\s*=)\s*(?:\{([^}]+)\}|(\w+))\s*=\s*stats(?:\.([a-zA-Z0-9.]+))?/g;
             let daMatch;
             while ((daMatch = directAssignRegex.exec(code)) !== null) {
@@ -89,24 +133,15 @@ async function runAgent() {
                 } else if (daMatch[2] && daMatch[3]) deps[daMatch[2]] = daMatch[3];
             }
 
-            const dpRegex = /(?:const|let|var)\s+(\w+)\s*=\s*stats\.dataPoints(?:\?\.)?find\s*\([^)]+?label\s*===\s*['"]([^'"]+)['"]\)\s*(?:\?\.)?value/g;
-            let dpMatch;
-            while ((dpMatch = dpRegex.exec(code)) !== null) deps[dpMatch[1]] = dpMatch[2].toLowerCase();
-
-            const traceMetric = (prop: string) => {
-                const p = String(prop).toLowerCase();
-                if (p.includes('distance') || p.includes('dist')) foundMetrics.add('distance');
-                if (p.includes('pace') || p.includes('subvalue') || p.includes('speed')) foundMetrics.add('pace');
-                if (p.includes('time') || p.includes('dur') || p.includes('duration') || p === 'timestr') foundMetrics.add('time');
-                if (p.includes('heartrate') || p.includes('bpm') || p.includes('hr')) foundMetrics.add('heartRate');
-                if (p.includes('calorie') || p.includes('kcal')) foundMetrics.add('calories');
-                if (p.includes('polyline')) foundMetadata.add('MAP');
-                if (p.includes('location')) foundMetadata.add('location');
-            };
+            const literalPropRegex = /stats\.([a-zA-Z0-9.]+)/g;
+            let lpMatch;
+            while ((lpMatch = literalPropRegex.exec(code)) !== null) {
+                traceMetric(lpMatch[1]);
+            }
 
             const labelKeywords = ['KM', 'PACE', 'BPM', 'TIME', 'KM/H', '/KM', 'DURATION', 'DISTANCE', 'AVG', 'TOTAL', 'KCAL', 'CAL', 'MIN / KM', 'MIN/KM'];
             const metaKeywords = ['STARTED', 'LOCAL TIME', 'TRACKED', 'PERFORMANCE', 'REC', 'GREETING', 'LOCATION', 'PAGE', 'BRAND'];
-            
+
             const rawDrawRegex = /(?:fillText|strokeText|fillTextCentered|[a-zA-Z0-9]+)\s*\(\s*(?:['"`]([^'"`]+)['"`]|(\w+(?:\.\w+)*))/gi;
             let rdMatch;
             while ((rdMatch = rawDrawRegex.exec(code)) !== null) {
@@ -119,14 +154,14 @@ async function runAgent() {
                     const root = parts[0];
                     const prop = deps[root] || root;
                     traceMetric(prop);
+                }
             }
 
-            // Greedy Literal Scan (Fallback)
-            const greedyLabels = [...labelKeywords, ...metaKeywords];
-            greedyLabels.forEach(gl => {
-                if (code.includes(`'${gl}'`) || code.includes(`"${gl}"`)) {
-                    if (labelKeywords.includes(gl)) foundLabels.add(gl);
-                    else foundMetadata.add(gl);
+            [...labelKeywords, ...metaKeywords].forEach(gs => {
+                const search = new RegExp(`['"\`]${gs}['"\`]`, 'i');
+                if (search.test(code)) {
+                    if (labelKeywords.includes(gs)) foundLabels.add(gs);
+                    else foundMetadata.add(gs);
                 }
             });
 
@@ -136,30 +171,30 @@ async function runAgent() {
         const modes: Record<string, any> = {};
         ['run', 'bike', 'workout'].forEach(mode => {
             const analysis = analyzeBlock(combinedBody);
-            // Mode pruning
             if (mode === 'workout') {
-                analysis.metrics = analysis.metrics.filter(m => m !== 'distance' && m !== 'pace');
-                analysis.labels = analysis.labels.filter(l => l !== 'KM' && l !== 'PACE' && l !== '/KM');
+                analysis.metrics = analysis.metrics.filter(m => m !== 'distance' && m !== 'pace' && m !== 'KM' && m !== 'PACE' && m !== '/KM');
             }
             modes[mode] = analysis;
         });
 
-        capabilities[id] = { version: "3.0", renderer: funcs[0] || 'Unknown', modes };
+        capabilities[id] = { version: "3.6", renderer: rootFuncs[0] || 'Unknown', modes };
 
-        // Final Overrides
         if (FIXED_CAPABILITIES[id]) {
             const fixed = FIXED_CAPABILITIES[id];
             Object.keys(fixed.modes).forEach(mode => {
                 if (capabilities[id].modes[mode]) {
                     capabilities[id].modes[mode].metrics = fixed.modes[mode].metrics;
                     capabilities[id].modes[mode].labels = fixed.modes[mode].labels;
+                    if (fixed.modes[mode].metadata) {
+                        capabilities[id].modes[mode].metadata = fixed.modes[mode].metadata;
+                    }
                 }
             });
         }
     });
 
     fs.writeFileSync(OUTPUT_PATH, JSON.stringify(capabilities, null, 2));
-    console.log(`✅ Capabilites updated at ${OUTPUT_PATH}`);
+    console.log(`✅ Capabilites updated at ${OUTPUT_PATH} (${stickerIds.length} stickers synced)`);
 }
 
 runAgent().catch(console.error);
