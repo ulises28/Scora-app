@@ -1,5 +1,5 @@
 import { exchangeToken, refreshStravaToken, fetchStravaActivities, fetchDetailedActivity, deauthorizeAthlete, formatActivityStats, enrichActivityWithGeo } from './api/strava.js';
-import { openStravaAuth, saveStravaAuth } from './api/auth.js';
+import { openStravaAuth, saveStravaAuth, createAuthPopup, redirectToStravaAuth } from './api/auth.js';
 import { removeLoader } from './components/Loader.js';
 import { showScreen } from './components/Navigation.js';
 import { createActivityCard } from './components/ActivityCard.js';
@@ -31,14 +31,18 @@ async function handleAdminReset() {
     let adminToken = localStorage.getItem('scora_admin_token');
     
     // 🔐 One-time prompt for credentials if not already cached
-    if (!adminToken) {
-        const user = prompt('Usuario Maestro (Scora):');
+    const promptCredentials = () => {
+        const user = prompt('Usuario Maestro (Scora):') || 'admin';
         const pass = prompt('Contraseña Maestra:');
-        if (!user || !pass) return;
-        
-        // Simple base64 token (not military grade, but perfect for private usage)
-        adminToken = btoa(`${user}:${pass}`);
-        localStorage.setItem('scora_admin_token', adminToken);
+        if (!pass) return null;
+        const token = btoa(`${user}:${pass}`);
+        localStorage.setItem('scora_admin_token', token);
+        return token;
+    };
+
+    if (!adminToken) {
+        adminToken = promptCredentials();
+        if (!adminToken) return;
     }
 
     if (!confirm('Esto eliminará de la fila a todos los que estén esperando y liberará la conexión a Strava. ¿Continuar?')) return;
@@ -53,26 +57,40 @@ async function handleAdminReset() {
 
         if (res.status === 401) {
             localStorage.removeItem('scora_admin_token');
-            alert('Credenciales incorrectas. Se han eliminado de la memoria.');
+            alert('Credenciales incorrectas. Se han eliminado de la memoria. Por favor, intenta de nuevo.');
             return;
         }
 
         const data = await res.json();
+
+        if (!res.ok) {
+            // Handle 500 or other errors specifically
+            if (data.error && data.error.includes('ADMIN_PASS')) {
+                alert('⚠️ ERROR DE CONFIGURACIÓN:\n\nEl servidor no tiene configurada la contraseña maestra (ADMIN_PASS). Revisa las variables de entorno en Vercel.');
+            } else {
+                alert(`Error del sistema: ${data.error || 'Error desconocido'}`);
+            }
+            return;
+        }
+
+        // Success Cleanup
         localStorage.removeItem('stravaAuth');
         localStorage.removeItem('stravaActivities');
         
         if (data.tokenRevoked) {
-            alert('¡Éxito! Sistema limpiado y usuario anterior (Beto) desconectado de Strava.');
+            alert('¡Éxito! Sistema limpiado y conexión previa desconectada de Strava.');
+        } else if (data.hadActiveToken) {
+            alert('Sistema limpiado (cola vaciada).\n\n⚠️ La sesión fue encontrada pero no se pudo desconectar automáticamente de Strava.\nEl usuario bloqueado debe ir a strava.com → Ajustes → "Mis Aplicaciones" → Revocar Acceso de Scora.');
         } else {
-            alert('Sistema limpiado (cola vaciada). \n\n⚠️ IMPORTANTE: No se pudo desautorizar automáticamente porque la llave se perdió.\nSi SIGUES sin poder conectarte (Error 403), ve a Strava.com -> Ajustes -> "Mis Aplicaciones" y haz clic en "Revocar Acceso" de Scora.');
+            alert('Sistema limpiado (cola vaciada).\n\nNo había ninguna sesión activa detectada en el sistema. Si el error 403 persiste, el usuario afectado debe ir a strava.com → Ajustes → "Mis Aplicaciones" → Revocar Acceso de Scora.');
         }
         window.location.reload();
     } catch (e) {
-        alert('Error al reiniciar el sistema.');
-    } finally {
-        // Re-enable any buttons if needed (though we reload)
+        console.error("[Admin] Reset failure:", e);
+        alert('Error al intentar conectar con el servidor de reinicio.');
     }
 }
+
 
 // Inicializa el Template Manager que reacciona a los clicks de usuario
 const templateManager = initTemplateManager(async (template, color, showLogo) => {
@@ -187,8 +205,9 @@ function startQueuePolling(sessionId: string) {
 
             if (data.position === 0) {
                 stopQueuePolling();
-                // Our turn! Proceed to Strava login
-                openStravaAuth(sessionId);
+                // Our turn! Use full-page REDIRECT (not popup) — Safari blocks window.open
+                // calls from setInterval/setTimeout contexts (non-user-gesture).
+                redirectToStravaAuth(sessionId);
             } else if (data.position === -1) {
                 // Session expired or already processed
                 stopQueuePolling();
@@ -202,6 +221,7 @@ function startQueuePolling(sessionId: string) {
         }
     }, 3000);
 }
+
 
 function stopQueuePolling() {
     if (queuePollingInterval !== null) {
@@ -226,6 +246,9 @@ function updateQueueUI(data: { position: number; estimatedWait: number } | null)
  * goes straight to OAuth (slot free) or shows the waiting room.
  */
 async function handleLoginClick() {
+    // 🛡️ SAFARI FIX: Initialize the popup synchronously within the user gesture
+    const authPopup = createAuthPopup();
+
     // Show loading state immediately so the click feels instant
     if (btnLogin) {
         (btnLogin as HTMLButtonElement).disabled = true;
@@ -237,13 +260,21 @@ async function handleLoginClick() {
 
         if (position === 0) {
             // Slot is free — proceed directly to OAuth
-            openStravaAuth(sessionId);
+            openStravaAuth(sessionId, authPopup);
         } else {
             // Show waiting room and start polling
             showScreen('screen-queue');
             updateQueueUI({ position, estimatedWait });
+            
+            // Close the proxy popup since we have to wait in line
+            if (authPopup) authPopup.close();
+            
             startQueuePolling(sessionId);
         }
+    } catch (e) {
+        console.error("[Queue] Failed:", e);
+        if (authPopup) authPopup.close();
+        alert("Ocurrió un problema al intentar conectar con el sistema. Por favor inténtalo de nuevo.");
     } finally {
         // Reset button state (in case OAuth popup was blocked or user returns)
         if (btnLogin) {
@@ -252,6 +283,7 @@ async function handleLoginClick() {
         }
     }
 }
+
 
 // ============================================================
 // INICIALIZACIÓN DE LA APLICACIÓN
@@ -263,10 +295,91 @@ async function initApp() {
     const urlParams = new URLSearchParams(window.location.search);
     const authCode = urlParams.get('code');
 
-    // Manda OAuth Data al padre y cierra popup
+    // 👑 ADMIN BUTTON: Inject as a FIXED floating button whenever ?admin=scora is in the URL.
+    // This ensures it's always visible regardless of which screen the admin is on.
+    if (urlParams.get('admin') === 'scora') {
+        const existingAdmin = document.getElementById('btn-admin-reset');
+        if (!existingAdmin) {
+            const adminBtn = document.createElement('button');
+            adminBtn.id = 'btn-admin-reset';
+            adminBtn.className = 'btn-rescue';
+            adminBtn.innerHTML = '<span>🚨</span> EMERGENCY';
+            adminBtn.title = 'Admin: Force-reset the Strava connection slot';
+            adminBtn.onclick = handleAdminReset;
+            // Fixed position so it floats above all screens
+            adminBtn.style.cssText = [
+                'position:fixed',
+                'bottom:1.5rem',
+                'right:1.5rem',
+                'z-index:9999',
+                'font-size:0.75rem',
+                'padding:0.6rem 1rem',
+                'opacity:0.85',
+            ].join(';');
+            document.body.appendChild(adminBtn);
+            document.body.classList.add('admin-mode-active');
+
+            // Also add to the queue rescue container (shown while waiting in queue)
+            const queueRescueContainer = document.getElementById('queue-rescue-container');
+            if (queueRescueContainer) {
+                const queueAdminBtn = document.createElement('button');
+                queueAdminBtn.className = 'btn-rescue';
+                queueAdminBtn.innerHTML = '<span>🚨</span> EMERGENCY BUTTON';
+                queueAdminBtn.onclick = handleAdminReset;
+                queueRescueContainer.appendChild(queueAdminBtn);
+            }
+        }
+    }
+
+
+    // 🔄 POPUP FLOW: Strava sent the authCode to the popup, forward it to the parent window.
     if (authCode && window.opener) {
         window.opener.postMessage({ type: 'strava_auth_success', code: authCode }, window.location.origin);
         window.close();
+        return;
+    }
+
+    // 🔄 REDIRECT FLOW: User came back from Strava via full-page redirect (Safari/queue polling).
+    // The authCode is in the URL but there is no opener — handle it directly.
+    if (authCode && !window.opener) {
+        // Clean the URL immediately so refresh doesn't re-process the code.
+        window.history.replaceState({ screen: 'screen-feed' }, document.title, window.location.pathname);
+        
+        showScreen('screen-feed');
+        if (authSection) authSection.classList.add('hidden');
+        if (activitySection) activitySection.classList.remove('hidden');
+        if (activityListEl) activityListEl.innerHTML = "<p class='status-msg'>Sincronizando tus rutas...</p>";
+        
+        try {
+            const sid = sessionStorage.getItem('scora_queue_session_id') || 'fallback';
+            const tokenResponse = await exchangeToken(authCode, sid);
+            saveStravaAuth(tokenResponse);
+            const accessToken = tokenResponse.access_token;
+            currentAccessToken = accessToken;
+            const activitiesData = await fetchStravaActivities(accessToken);
+            renderActivityFeed(activitiesData);
+        } catch (error: any) {
+            console.error("[App] Redirect auth error:", error);
+            const status = error?.status;
+            if (status === 403) {
+                if (activityListEl) activityListEl.innerHTML = `
+                    <div class="error-container">
+                        <span class="error-title">⚡ SISTEMA BLOQUEADO</span>
+                        <p class='error-msg'>Un atleta está ocupando la conexión. El sistema está intentando auto-recuperarse. Intenta de nuevo en 30 segundos.</p>
+                    </div>`;
+            } else {
+                if (activityListEl) activityListEl.innerHTML = `<p class='error-msg'>Error al conectar. Por favor intenta de nuevo.</p>`;
+            }
+        } finally {
+            if (currentAccessToken) {
+                try {
+                    await deauthorizeAthlete(currentAccessToken);
+                    currentAccessToken = null;
+                } catch (e) {
+                    console.warn("[App] Redirect flow deauth failed:", e);
+                }
+            }
+        }
         return;
     }
 
@@ -298,39 +411,6 @@ async function initApp() {
                     authSection.appendChild(mockBtn);
                 }
             }
-
-            // 👑 ADMIN KICK BUTTON: Force Reset System (Only visible with ?admin=scora)
-            if (urlParams.get('admin') === 'scora') {
-                const existingAdmin = document.getElementById('btn-admin-reset');
-                if (!existingAdmin) {
-                    const adminBtn = document.createElement('button');
-                    adminBtn.id = 'btn-admin-reset';
-                    adminBtn.className = 'btn-rescue'; 
-                    adminBtn.innerHTML = '<span>🚨</span> EMERGENCY BUTTON';
-                    adminBtn.onclick = handleAdminReset;
-                    
-                    // Container for centering and distance
-                    const adminContainer = document.createElement('div');
-                    adminContainer.style.width = '100%';
-                    adminContainer.style.display = 'flex';
-                    adminContainer.style.justifyContent = 'center';
-                    adminContainer.style.marginTop = '4rem'; // Generous spacing as requested
-                    adminContainer.appendChild(adminBtn);
-                    
-                    authSection.appendChild(adminContainer);
-                    
-                    // Activate Admin Mode styling
-                    document.body.classList.add('admin-mode-active');
-
-                    // Also add it to the Queue screen rescue container if it exists
-                    const queueRescueContainer = document.getElementById('queue-rescue-container');
-                    if (queueRescueContainer) {
-                        const queueAdminBtn = adminBtn.cloneNode(true) as HTMLButtonElement;
-                        queueAdminBtn.onclick = handleAdminReset;
-                        queueRescueContainer.appendChild(queueAdminBtn);
-                    }
-                }
-            }
         }
         if (activitySection) activitySection.classList.add('hidden');
         if (btnLogin) {
@@ -338,6 +418,7 @@ async function initApp() {
         }
         return;
     }
+
 
     // UI State: Valid Session
     window.history.replaceState({ screen: 'screen-feed' }, document.title, window.location.pathname);
@@ -421,7 +502,8 @@ async function initApp() {
         let accessToken = null;
 
         if (authCode) {
-            const tokenResponse = await exchangeToken(authCode);
+            const sid = sessionStorage.getItem('scora_queue_session_id') || 'fallback';
+            const tokenResponse = await exchangeToken(authCode, sid);
             saveStravaAuth(tokenResponse);
             accessToken = tokenResponse.access_token;
             window.history.replaceState({ screen: 'screen-feed' }, document.title, window.location.pathname);
@@ -478,7 +560,7 @@ async function initApp() {
                     activityListEl.innerHTML = `
                         <div class="error-container">
                             <span class="error-title">⚡ SISTEMA BLOQUEADO</span>
-                            <p class='error-msg'>Beto está ocupando la pista en Strava. ¿Quieres forzar su salida para continuar?</p>
+                            <p class='error-msg'>Un atleta está ocupando la conexión con Strava. ¿Quieres forzar la liberación para continuar?</p>
                             <button id="btn-rescue-reset" class="btn-rescue">
                                 <span>🚨</span> EMERGENCY BUTTON
                             </button>
@@ -599,7 +681,9 @@ window.addEventListener('message', async (event) => {
 
     if (event.data && event.data.type === 'strava_auth_success') {
         const newCode = event.data.code;
-        const sessionId = event.data.sessionId;
+        
+        // 🛡️ SESSION RECOVERY: Get the sessionId we stored in sessionStorage (Fixes undefined error)
+        const sessionId = sessionStorage.getItem('scora_queue_session_id') || 'fallback';
 
         stopQueuePolling();
         showScreen('screen-feed');
@@ -630,7 +714,7 @@ window.addEventListener('message', async (event) => {
                     activityListEl.innerHTML = `
                         <div class="error-container">
                             <span class="error-title">🔒 ACCESO RESTRINGIDO</span>
-                            <p class='error-msg'>Beto detectado en la pista. Como Administrador, puedes revocar su sesión ahora mismo.</p>
+                            <p class='error-msg'>Se detectó una sesión activa en la pista. Como administrador, puedes liberar el sistema ahora mismo.</p>
                             <button id="btn-rescue-auth" class="btn-rescue">
                                 <span>🚨</span> EMERGENCY BUTTON
                             </button>
@@ -639,7 +723,7 @@ window.addEventListener('message', async (event) => {
                     const rescueBtn = document.getElementById('btn-rescue-auth');
                     if (rescueBtn) {
                         rescueBtn.onclick = async () => {
-                            rescueBtn.innerHTML = "<span>⚔️</span> KICKING BETO...";
+                            rescueBtn.innerHTML = "<span>⏳</span> LIBERANDO SISTEMA...";
                             await handleAdminReset();
                         };
                     }
