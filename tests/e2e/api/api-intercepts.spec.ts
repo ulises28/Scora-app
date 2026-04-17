@@ -105,9 +105,9 @@ test.describe('Scora App: API Network Intercepts (POM)', () => {
                 closed: false
             };
             (window as any).__lastPopup = popupMock;
-            window.open = (url?: string) => {
+            window.open = (url?: string | URL, target?: string, features?: string): any => {
                 // When app calls window.open('about:blank') first, and later sets href
-                (window as any).__lastPopup.location.href = url || 'about:blank';
+                (window as any).__lastPopup.location.href = url ? url.toString() : 'about:blank';
                 return (window as any).__lastPopup;
             };
         });
