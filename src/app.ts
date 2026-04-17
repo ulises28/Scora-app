@@ -295,39 +295,21 @@ async function initApp() {
     const urlParams = new URLSearchParams(window.location.search);
     const authCode = urlParams.get('code');
 
-    // 👑 ADMIN BUTTON: Inject as a FIXED floating button whenever ?admin=scora is in the URL.
-    // This ensures it's always visible regardless of which screen the admin is on.
+    // 👑 ADMIN BUTTON: Inject below the Strava login button whenever ?admin=scora is in the URL.
     if (urlParams.get('admin') === 'scora') {
         const existingAdmin = document.getElementById('btn-admin-reset');
-        if (!existingAdmin) {
+        if (!existingAdmin && authSection) {
             const adminBtn = document.createElement('button');
             adminBtn.id = 'btn-admin-reset';
             adminBtn.className = 'btn-rescue';
-            adminBtn.innerHTML = '<span>🚨</span> EMERGENCY';
+            adminBtn.innerHTML = '<span>🚨</span> ADMIN: FORCE RESET';
             adminBtn.title = 'Admin: Force-reset the Strava connection slot';
             adminBtn.onclick = handleAdminReset;
-            // Fixed position so it floats above all screens
-            adminBtn.style.cssText = [
-                'position:fixed',
-                'bottom:1.5rem',
-                'right:1.5rem',
-                'z-index:9999',
-                'font-size:0.75rem',
-                'padding:0.6rem 1rem',
-                'opacity:0.85',
-            ].join(';');
-            document.body.appendChild(adminBtn);
+            adminBtn.style.marginTop = '1rem';
+            adminBtn.style.padding = '0.6rem 1rem';
+            
+            authSection.appendChild(adminBtn);
             document.body.classList.add('admin-mode-active');
-
-            // Also add to the queue rescue container (shown while waiting in queue)
-            const queueRescueContainer = document.getElementById('queue-rescue-container');
-            if (queueRescueContainer) {
-                const queueAdminBtn = document.createElement('button');
-                queueAdminBtn.className = 'btn-rescue';
-                queueAdminBtn.innerHTML = '<span>🚨</span> EMERGENCY BUTTON';
-                queueAdminBtn.onclick = handleAdminReset;
-                queueRescueContainer.appendChild(queueAdminBtn);
-            }
         }
     }
 

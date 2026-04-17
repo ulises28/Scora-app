@@ -284,5 +284,22 @@ export const TestUtils = {
         }
 
         return sample;
+    },
+
+    /**
+     * Polling helper for OAuth popups that start with about:blank.
+     * Uses a retry loop via page.evaluate to reliably check window.__lastPopup.location.href
+     */
+    async waitForPopupUrl(page: any, substring: string, timeout = 5000) {
+        const startTime = Date.now();
+        while (Date.now() - startTime < timeout) {
+            const href: string = await page.evaluate(() => {
+                const popup = (window as any).__lastPopup;
+                return popup && popup.location ? popup.location.href : '';
+            });
+            if (href.includes(substring)) return;
+            await page.waitForTimeout(100);
+        }
+        throw new Error(`waitForPopupUrl: Timed out waiting for popup URL to contain "${substring}"`);
     }
 };
