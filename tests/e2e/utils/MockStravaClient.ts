@@ -16,6 +16,23 @@ export class MockStravaClient {
         this.page.route('**/api/strava-deauth', async route => {
             await route.fulfill({ status: 200, body: JSON.stringify({ success: true }) });
         });
+
+        this.page.route('**/api/admin-reset', async route => {
+            await route.fulfill({ status: 200, body: JSON.stringify({ success: true, message: 'System reset effective' }) });
+        });
+    }
+
+    /**
+     * Mocks a failed 403 token exchange (Concurrency conflict)
+     */
+    async mockStravaToken403() {
+        await this.page.route('**/api/strava-token', async route => {
+            await route.fulfill({
+                status: 403,
+                contentType: 'application/json',
+                body: JSON.stringify({ error: 'Concurrency error: Another session is active.' })
+            });
+        });
     }
 
     /**
@@ -175,6 +192,33 @@ export class MockStravaClient {
                     body: JSON.stringify({ activities: mockActivities })
                 });
             }
+        });
+    }
+
+    /**
+     * Mocks an Internal Server Error (500)
+     */
+    async mockServerError() {
+        await this.page.route('**/api/strava-activities', async route => {
+            await route.fulfill({
+                status: 500,
+                contentType: 'application/json',
+                body: JSON.stringify({ error: 'Internal Server Error' })
+            });
+        });
+    }
+
+    /**
+     * Mocks a Rate Limit error (429)
+     */
+    async mockRateLimitError() {
+        await this.page.route('**/api/strava-activities', async route => {
+            await route.fulfill({
+                status: 429,
+                contentType: 'application/json',
+                headers: { 'Retry-After': '60' },
+                body: JSON.stringify({ error: 'Rate limit exceeded. Try again in 60 seconds.' })
+            });
         });
     }
 }

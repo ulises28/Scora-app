@@ -3,7 +3,7 @@ import { randomUUID } from 'crypto';
 
 const LOCK_KEY = 'strava:slot:lock';
 const QUEUE_KEY = 'strava:slot:queue';
-const LOCK_TTL_SECONDS = 30;
+const LOCK_TTL_SECONDS = 120; // Safari OAuth can take 30-60s; 120s gives a safe margin.
 
 // Check if Redis is configured at module load time
 const REDIS_CONFIGURED = !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);

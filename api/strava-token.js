@@ -19,10 +19,14 @@ export default async function handler(req, res) {
                     token: process.env.UPSTASH_REDIS_REST_TOKEN
                 });
                 const lockHolder = await redis.get(LOCK_KEY);
+                
+                console.log(`[Queue Gate] Request session: ${sessionId} | Lock holder: ${lockHolder}`);
+
                 if (lockHolder !== sessionId) {
                     return res.status(503).json({
                         error: 'SlotBusy',
-                        message: 'Another athlete is currently connecting. Please wait in the queue.'
+                        message: `Another athlete is currently connecting (Holder: ${lockHolder}). Please wait in the queue.`,
+                        lockHolder
                     });
                 }
             } catch (kvError) {
@@ -48,35 +52,52 @@ export default async function handler(req, res) {
 
         // Si Strava devuelve un error, lo enviamos al frontend
         if (!stravaResponse.ok) {
-            // 🚨 SPECIAL CASE: If we hit the 1-athlete limit, clear the lock immediately
-            // so the next attempt (or next user) can try to clear it.
+            // 🚨 SPECIAL CASE: If we hit the 1-athlete limit (403), immediately try to
+            // deauth the orphaned token to clear the blockage on Strava's side.
             if (stravaResponse.status === 403 && REDIS_CONFIGURED) {
                 try {
                     const redis = new Redis({
                         url: process.env.UPSTASH_REDIS_REST_URL,
                         token: process.env.UPSTASH_REDIS_REST_TOKEN
                     });
+                    const orphanedToken = await redis.get('strava:active_token');
+                    if (orphanedToken) {
+                        console.log('[Queue] 403 Hit: Found orphaned token, attempting deauth on Strava...');
+                        await fetch('https://www.strava.com/oauth/deauthorize', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ access_token: orphanedToken })
+                        });
+                        await redis.del('strava:active_token');
+                        console.log('[Queue] 403 Recovery: Orphaned token deauthorized.');
+                    }
+                    // Always clear the lock so the next user can try immediately.
                     await redis.del(LOCK_KEY);
-                    console.log('[Queue] 403 Limit Hit: Cleared lock to allow recovery.');
-                } catch (e) { }
+                    console.log('[Queue] 403 Recovery: Lock cleared.');
+                } catch (e) {
+                    console.error('[Queue] 403 recovery cleanup failed:', e);
+                }
             }
             return res.status(stravaResponse.status).json(data);
         }
 
-        // Éxito: Le devolvemos el payload al frontend (que contiene el access_token)
-        // 🚨 CRITICAL: Save the active token for dead man's switch/kick logic IMMEDIATELY.
+        // ✅ SUCCESS: Save the active token AND refresh the lock TTL so it outlives the data-fetching phase.
         if (REDIS_CONFIGURED && data.access_token) {
             try {
                 const redis = new Redis({
                     url: process.env.UPSTASH_REDIS_REST_URL,
                     token: process.env.UPSTASH_REDIS_REST_TOKEN
                 });
-                // Set the active token with a 10-minute safety expiry (TTL)
-                // This ensures Beto can't block the slot indefinitely if deauth fails.
+                // Save the active token with a 10-minute safety expiry (TTL)
                 await redis.set('strava:active_token', data.access_token, { ex: 600 });
+                // 🔑 Refresh the lock TTL to 120s so it doesn't expire during the fetch phase.
+                if (sessionId && sessionId !== 'fallback') {
+                    await redis.set(LOCK_KEY, sessionId, { ex: 120 });
+                    console.log('[Queue] Lock TTL refreshed to 120s after successful token exchange.');
+                }
                 console.log('[Queue] Saved active token to Redis with 10m TTL');
             } catch (kvError) {
-                console.warn('[Queue] Failed to save active token:', kvError.message);
+                console.warn('[Queue] Failed to save active token or refresh lock:', kvError.message);
             }
         }
 
@@ -87,3 +108,4 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: 'Internal Server Error' });
     }
 }
+

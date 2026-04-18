@@ -7,8 +7,16 @@ import { TestUtils } from '../utils/TestUtils';
 import capabilities from '../fixtures/sticker-capabilities.json' with { type: 'json' };
 
 test.describe('Scora App UI: Data Fallback Intelligence', () => {
+    
+    // 🛡️ SAFARI-ISOLATION: Zero-touch stabilization for Mobile Safari
+    async function stabilizeSafari(page: any, info: any) {
+        if (info.project.name === 'Mobile Safari') {
+            await page.evaluate(() => document.fonts.ready);
+        }
+    }
 
-    test.beforeEach(async ({ page }) => {
+    test.beforeEach(async ({ page }, testInfo) => {
+        await stabilizeSafari(page, testInfo);
         const feedPage = new FeedPage(page);
         const api = new MockStravaClient(page);
 
@@ -54,7 +62,8 @@ test.describe('Scora App UI: Data Fallback Intelligence', () => {
             }
         }
         for (const label of truth.labels) {
-            expect(normalizedLogs).toContain(TestUtils.normalizeForCanvas(label));
+            expect(TestUtils.isLabelMatch(normalizedLogs, label), 
+                `Label "${label}" (or sibling) not found for template "${distanceSticker.id}"`).toBeTruthy();
         }
 
         // Ensure DISTANCE label is NOT present if it's not in the workout truth
@@ -105,7 +114,8 @@ test.describe('Scora App UI: Data Fallback Intelligence', () => {
             }
         }
         for (const label of truth.labels) {
-            expect(normalizedLogs).toContain(TestUtils.normalizeForCanvas(label));
+            expect(TestUtils.isLabelMatch(normalizedLogs, label), 
+                `Label "${label}" (or sibling) not found for template "${workoutSticker.id}"`).toBeTruthy();
         }
 
         // 5. Visual Proof

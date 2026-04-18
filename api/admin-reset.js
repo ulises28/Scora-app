@@ -43,23 +43,26 @@ export default async function handler(req, res) {
         const activeToken = await redis.get(ACTIVE_TOKEN_KEY);
         let tokenRevoked = false;
 
-        // Intentar revocar si hay un active token atrapado en Redis
+        // Try to revoke the active token on Strava's side if we have it.
         if (activeToken) {
             console.log('[Admin] Found orphaned token in Redis. Attempting to deauthorize...');
             try {
-                await fetch('https://www.strava.com/oauth/deauthorize', {
+                const stravaRes = await fetch('https://www.strava.com/oauth/deauthorize', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ access_token: activeToken })
                 });
-                tokenRevoked = true;
-                console.log('[Admin] Orphaned token successfully deauthorized on Strava.');
+                tokenRevoked = stravaRes.ok;
+                console.log(`[Admin] Strava deauth response: ${stravaRes.status}`);
             } catch (cleanupErr) {
                 console.error('[Admin] Failed to deauthorize orphaned token on Strava:', cleanupErr);
             }
+        } else {
+            console.log('[Admin] No active token in Redis — lock may have expired naturally. Clearing queue...');
         }
 
-        // Limpiar todas las claves de control
+        // 🔑 ALWAYS clear all control keys, regardless of whether Strava deauth succeeded.
+        // Clearing the lock is the #1 priority — Strava's side is secondary.
         await redis.del(LOCK_KEY);
         await redis.del(QUEUE_KEY);
         await redis.del(ACTIVE_TOKEN_KEY);
@@ -69,6 +72,7 @@ export default async function handler(req, res) {
         return res.status(200).json({ 
             message: 'System reset successful.',
             tokenRevoked: tokenRevoked,
+            hadActiveToken: !!activeToken,
             details: 'The queue, locks, and any stored active tokens were purged.'
         });
 
@@ -77,3 +81,4 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: 'Internal Server Error' });
     }
 }
+
