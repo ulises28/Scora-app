@@ -13,6 +13,11 @@ import { getThemeColors, drawStatWithUnit, setLetterSpacing, drawRoutePath, deco
 import { StickerStats } from '../../api/strava';
 import { STICKER_REGISTRY } from './StickerRegistry';
 
+// ─── Asset Pre-loading (Node-safe) ──────────────────────────────────────────
+// We check for 'Image' existence to prevent crashes during Node-based analysis/tests.
+const paperTexture = typeof Image !== 'undefined' ? new Image() : null;
+if (paperTexture) paperTexture.src = '/assets/paper-texture.jpg';
+
 
 // ─── Shared colour helpers ───────────────────────────────────────────────────
 
@@ -232,8 +237,7 @@ export function drawTemplate(
         ctx.fill();
 
         ctx.font = "700 42px 'Plus Jakarta Sans'";
-        const isDark = isColorDark(textColor.startsWith('#') ? textColor : (textColor === 'black' ? '#000000' : '#ffffff'));
-        ctx.fillStyle = isDark ? 'white' : 'black';
+        ctx.fillStyle = textColor; // Direct match to user preference
         ctx.fillText('SCORA.', 110, 115);
     }
 
@@ -2485,9 +2489,11 @@ export function drawFrostedMinimal(ctx: CanvasRenderingContext2D, stats: any, te
 export function exportCanvas(canvasId: string) {
     const canvas = document.getElementById(canvasId) as HTMLCanvasElement;
     if (!canvas) return;
-    const dateStr = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    const timeStr = `${now.getHours()}${now.getMinutes()}${now.getSeconds()}`;
     const link = document.createElement('a');
-    link.download = `scora-sticker-${dateStr}.png`;
+    link.download = `scora-${dateStr}-${timeStr}.png`;
     link.href = canvas.toDataURL('image/png');
     // Anchor to DOM for headless browser reliability
     document.body.appendChild(link);
@@ -2497,9 +2503,9 @@ export function exportCanvas(canvasId: string) {
 // ─── Narrative Highlight Sticker (Precision Replication) ─────────────────────
 
 export function drawNarrativeHighlight(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
-    const serifFont = "'EB Garamond', serif";
-    const highlightColor = "#FFD644";
-    const bgColor = "#f2f2f2";
+    const serifFont = "'Libertinus Math', serif";
+    const highlightColor = "#FFD644"; 
+    const bgColor = "#fbf9f4"; // Tactile off-white
     const textCol = "#1a1a1a";
 
     const cx = 540;
@@ -2567,10 +2573,10 @@ export function drawNarrativeHighlight(ctx: CanvasRenderingContext2D, stats: any
 
     // 3. Text Content Setup (Pre-measure for scaling)
     ctx.save();
-    let baseFontSize = 64;
+    let baseFontSize = 82; 
     ctx.font = `600 ${baseFontSize}px ${serifFont}`;
 
-    const maxTextW = 900;
+    const maxTextW = 920;
     const w1 = ctx.measureText(l1_p1 + l1_p2).width;
     const w2 = ctx.measureText(l2_p1 + l2_p2 + l2_p3 + l2_p4 + l2_p5).width;
     const maxW = Math.max(w1, w2);
@@ -2580,27 +2586,57 @@ export function drawNarrativeHighlight(ctx: CanvasRenderingContext2D, stats: any
         ctx.font = `600 ${baseFontSize}px ${serifFont}`;
     }
 
-    const cardW = 1060; // Increased from 1040
-    const cardH = 260; // Reduced from 300 for an ultra-tight look
+    const cardW = 1080;
+    const cardH = 280; // Reduced from 320 for a tighter, symmetrical look
 
-    // 4. Card Background
+    // 4. Card Background & Enhanced Paper Physics
     ctx.save();
+    
+    // Deeper, more realistic paper shadow
+    ctx.shadowColor = 'rgba(0,0,0,0.18)';
+    ctx.shadowBlur = 50;
+    ctx.shadowOffsetY = 20;
+    
+    // Draw Base Card
     ctx.fillStyle = bgColor;
-    ctx.shadowColor = 'rgba(0,0,0,0.12)';
-    ctx.shadowBlur = 40;
-    ctx.shadowOffsetY = 15;
+    const xIdx = cx - cardW / 2;
+    const yIdx = cy - cardH / 2;
     ctx.beginPath();
-    ctx.roundRect(cx - cardW / 2, cy - cardH / 2, cardW, cardH, 4);
+    ctx.roundRect(xIdx, yIdx, cardW, cardH, 2); 
     ctx.fill();
+    ctx.restore();
+
+    // --- High-Fidelity Paper Engine (v5.0 Photographic Physics) ---
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(xIdx, yIdx, cardW, cardH, 2);
+    ctx.clip(); 
+    
+    // Draw Crinkled Texture if loaded
+    if (paperTexture.complete && paperTexture.naturalWidth !== 0) {
+        ctx.globalCompositeOperation = 'multiply';
+        ctx.globalAlpha = 0.85;
+        // Use a slightly larger crop to ensure full coverage without edge artifacts
+        ctx.drawImage(paperTexture, xIdx - 10, yIdx - 10, cardW + 20, cardH + 20);
+    } else {
+        // Fallback to procedural grain if asset is still loading
+        ctx.globalCompositeOperation = 'multiply';
+        for (let i = 0; i < 4000; i++) {
+            const px = xIdx + Math.random() * cardW;
+            const py = yIdx + Math.random() * cardH;
+            ctx.fillStyle = `rgba(0,0,0,${Math.random() * 0.08})`;
+            ctx.fillRect(px, py, 1, 1);
+        }
+    }
     ctx.restore();
 
     // 5. Draw Text
     ctx.textBaseline = 'middle';
     ctx.textAlign = 'left';
 
-    const gap = baseFontSize * 1.5;
-    const l1Y = cy - gap / 2.2;
-    const l2Y = cy + gap / 2.2;
+    const gap = baseFontSize * 1.4; 
+    const l1Y = cy - 55; // Mathematically centered for 280px card
+    const l2Y = cy + 55; 
     const startX = cx - cardW / 2 + 70;
 
     function drawSegment(text: string, x: number, y: number, highlight: boolean) {
@@ -2608,8 +2644,9 @@ export function drawNarrativeHighlight(ctx: CanvasRenderingContext2D, stats: any
         if (highlight) {
             ctx.save();
             ctx.fillStyle = highlightColor;
-            const hH = baseFontSize * 1.1;
-            ctx.fillRect(x - 6, y - hH / 2 + 3, width + 12, hH);
+            const hH = baseFontSize * 1.05; // Thicker highlight
+            // Slightly irregular highlight for "marker" feel
+            ctx.fillRect(x - 8, y - hH / 2 + 5, width + 16, hH);
             ctx.restore();
         }
         ctx.fillStyle = textCol;
@@ -3654,21 +3691,25 @@ export function drawTinyGPS(ctx: CanvasRenderingContext2D, stats: any, textColor
         }
     }
 
-    ctx.globalAlpha = 0.6;
+    // High Density Cinematic Look
+    ctx.globalAlpha = 0.9; // Requested 90%
     ctx.fillStyle = cSolid;
-    ctx.font = "300 30px 'JetBrains Mono'";
-    if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0.3em"; }
-    ctx.fillText(coordStr, 540, 900);
+    
+    // Coords (Cinzel 400 - Larger)
+    ctx.font = "400 42px 'Cinzel'";
+    if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0.4em"; }
+    ctx.fillText(coordStr.toUpperCase(), 540, 880);
     if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0px"; }
 
-    // Tiny line
-    ctx.globalAlpha = 0.2;
-    ctx.fillRect(490, 930, 100, 2);
+    // Tiny Accent Line
+    ctx.globalAlpha = 0.3;
+    ctx.fillRect(440, 930, 200, 2);
 
-    ctx.globalAlpha = 0.6;
-    ctx.font = "bold 55px 'JetBrains Mono'";
-    if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "-0.05em"; }
-    ctx.fillText(`${loc.toUpperCase()} · ${displayVal}`, 540, 980);
+    // Primary Metadata (Cinzel 900 - Massive Readability)
+    ctx.globalAlpha = 0.9;
+    ctx.font = "900 75px 'Cinzel'"; // Increased from 55px
+    if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0.05em"; }
+    ctx.fillText(`${loc.toUpperCase()} · ${displayVal}`, 540, 995);
     if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0px"; }
 }
 
@@ -5034,14 +5075,14 @@ export function drawFinishLine(ctx: CanvasRenderingContext2D, stats: any, textCo
     let timeFontSize = timeVal.length > 7 ? 160 : 230;
     const safeW = 820; // Internal padding safety
     
-    // Width-Aware scaling loop for dot-matrix integrity
-    ctx.font = `900 ${timeFontSize}px 'Doto'`;
-    (ctx as any).letterSpacing = "20px";
+    // Width-Aware scaling loop for handwriting integrity
+    ctx.font = `400 ${timeFontSize}px 'Bitcount Single'`;
+    (ctx as any).letterSpacing = "0px"; // Bitcount Single doesn't need wide tracking
     let measuredW = ctx.measureText(timeVal).width;
     
     while (measuredW > safeW && timeFontSize > 60) {
         timeFontSize -= 4;
-        ctx.font = `900 ${timeFontSize}px 'Doto'`;
+        ctx.font = `400 ${timeFontSize}px 'Bitcount Single'`;
         measuredW = ctx.measureText(timeVal).width;
     }
 
@@ -5072,7 +5113,7 @@ export function drawFinishLine(ctx: CanvasRenderingContext2D, stats: any, textCo
         ctx.fillStyle = lineColor;
         
         // Value
-        ctx.font = "900 90px 'Doto'";
+        ctx.font = "400 90px 'Bitcount Single'";
         ctx.textBaseline = 'bottom'; // Lock numbers to the bottom
         (ctx as any).letterSpacing = "10px";
         ctx.fillText(val, 0, 0);

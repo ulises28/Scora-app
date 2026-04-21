@@ -221,8 +221,9 @@ export function initTemplateManager(onChange: OnChangeCallback) {
             renderGallery();
             updateDots();
             
-            // Re-sync current template. If it was filtered out, setTemplate handles the fallback.
-            setTemplate(currentTemplate);
+            // Always reset to the FIRST sticker in the list when switching activities.
+            // This ensures a fresh "Studio Gallery" experience.
+            setTemplate(currentTemplates[0] || 'minimal');
         }
     };
 }

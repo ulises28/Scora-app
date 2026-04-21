@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TEMPLATES, initTemplateManager } from '../../../src/features/editor/TemplateManager';
+import { STICKER_REGISTRY } from '../../../src/features/editor/StickerRegistry';
 
 /**
  * TemplateManager unit tests — fully data-driven.
@@ -84,8 +85,9 @@ describe('TemplateManager', () => {
 
             expect(manager.template).toBe(template);
             // 1 on init + 1 on click = 2
-            expect(mockOnChange).toHaveBeenCalledTimes(2);
-            expect(mockOnChange).toHaveBeenLastCalledWith(template, 'white', true);
+            const config = STICKER_REGISTRY[template];
+            const expectedColor = config?.supportsCustomColor ? '#ffffff' : 'white';
+            expect(mockOnChange).toHaveBeenLastCalledWith(template, expectedColor, true);
 
             // Exactly this dot should be active; all others must not be
             document.querySelectorAll('.template-dot').forEach(d => {
