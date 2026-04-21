@@ -2,7 +2,7 @@ import { drawTemplate } from './CanvasPainter';
 import { MOCK_ACTIVITIES } from '../../api/mocks';
 import { formatActivityStats } from '../../api/strava';
 
-import { STICKER_LIST } from './StickerRegistry';
+import { STICKER_LIST, STICKER_REGISTRY } from './StickerRegistry';
 import { TemplateFeatures } from './types';
 
 // ─── Template Registry — single source of truth ──────────────────────────────
@@ -22,6 +22,7 @@ type OnChangeCallback = (template: string, color: string, showLogo: boolean) => 
 export function initTemplateManager(onChange: OnChangeCallback) {
     let currentTemplate = TEMPLATES[0] || 'minimal';
     let currentTextColor = 'white';
+    let currentMapColor = '#ffffff';
     let currentShowLogo = true;
 
     const galleryContainer = document.getElementById('sticker-gallery');
@@ -104,7 +105,21 @@ export function initTemplateManager(onChange: OnChangeCallback) {
             activeThumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
         }
 
-        onChange(currentTemplate, currentTextColor, currentShowLogo);
+        // Show/Hide Color Controls (Sticker supports hex picker?)
+        const config = STICKER_REGISTRY[id];
+        const colorToggleGroup = document.getElementById('color-toggle')?.parentElement;
+        const mapColorGroup = document.getElementById('map-color-group');
+
+        if (config?.supportsCustomColor) {
+            colorToggleGroup?.classList.add('hidden');
+            mapColorGroup?.classList.remove('hidden');
+        } else {
+            colorToggleGroup?.classList.remove('hidden');
+            mapColorGroup?.classList.add('hidden');
+        }
+
+        const activeColor = config?.supportsCustomColor ? currentMapColor : currentTextColor;
+        onChange(currentTemplate, activeColor, currentShowLogo);
     }
 
     function initToggle(id: string, onToggle: (isRight: boolean) => void) {
@@ -162,7 +177,18 @@ export function initTemplateManager(onChange: OnChangeCallback) {
 
     initToggle('logo-toggle', (isOff) => {
         currentShowLogo = !isOff;
-        onChange(currentTemplate, currentTextColor, currentShowLogo);
+        const config = STICKER_REGISTRY[currentTemplate];
+        const activeColor = config?.supportsCustomColor ? currentMapColor : currentTextColor;
+        onChange(currentTemplate, activeColor, currentShowLogo);
+    });
+
+    const mapColorPicker = document.getElementById('map-color-picker') as HTMLInputElement | null;
+    mapColorPicker?.addEventListener('input', (e) => {
+        currentMapColor = (e.target as HTMLInputElement).value;
+        const config = STICKER_REGISTRY[currentTemplate];
+        if (config?.supportsCustomColor) {
+            onChange(currentTemplate, currentMapColor, currentShowLogo);
+        }
     });
 
     // Initial State
