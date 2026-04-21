@@ -1,6 +1,7 @@
 import { drawTemplate } from './CanvasPainter';
 import { MOCK_ACTIVITIES } from '../../api/mocks';
 import { formatActivityStats } from '../../api/strava';
+import { normalizeSport } from './CanvasUtils';
 
 import { STICKER_LIST, STICKER_REGISTRY } from './StickerRegistry';
 import { TemplateFeatures } from './types';
@@ -206,15 +207,21 @@ export function initTemplateManager(onChange: OnChangeCallback) {
         get showLogo() { return currentShowLogo; },
         setTemplate,
         filterByActivity: (stats: any) => {
-            const hasMap = !!stats.polyline;
+            const sport = normalizeSport(stats.type);
+            const isTraining = sport === 'Training';
+            
             currentTemplates = TEMPLATES.filter(id => {
                 const config = STICKER_REGISTRY[id];
-                if (config?.features?.map && !hasMap) return false;
+                // Only hide map stickers for pure Training (Workout/Gym)
+                // For other sports, we show them even if GPS is missing (e.g. private run)
+                if (config?.features?.map && isTraining) return false;
                 return true;
             });
+
             renderGallery();
             updateDots();
-            // Re-sync current template if it was filtered out
+            
+            // Re-sync current template. If it was filtered out, setTemplate handles the fallback.
             setTemplate(currentTemplate);
         }
     };
