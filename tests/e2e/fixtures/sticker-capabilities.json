@@ -139,6 +139,32 @@
       }
     }
   },
+  "graffiti-expo": {
+    "version": "4.1",
+    "modes": {
+      "run": {
+        "metrics": [],
+        "labels": [],
+        "metadata": [
+          "MAP"
+        ]
+      },
+      "bike": {
+        "metrics": [],
+        "labels": [],
+        "metadata": [
+          "MAP"
+        ]
+      },
+      "workout": {
+        "metrics": [],
+        "labels": [],
+        "metadata": [
+          "MAP"
+        ]
+      }
+    }
+  },
   "dm": {
     "version": "4.1",
     "modes": {
@@ -169,6 +195,82 @@
       "workout": {
         "metrics": [
           "startTime",
+          "time"
+        ],
+        "labels": [],
+        "metadata": []
+      }
+    }
+  },
+  "journal-grid": {
+    "version": "4.1",
+    "modes": {
+      "run": {
+        "metrics": [
+          "distance",
+          "heartRate"
+        ],
+        "labels": [
+          "KM",
+          "BPM"
+        ],
+        "metadata": [
+          "MAP"
+        ]
+      },
+      "bike": {
+        "metrics": [
+          "distance",
+          "heartRate"
+        ],
+        "labels": [
+          "KM",
+          "BPM"
+        ],
+        "metadata": [
+          "MAP"
+        ]
+      },
+      "workout": {
+        "metrics": [
+          "heartRate"
+        ],
+        "labels": [
+          "BPM"
+        ],
+        "metadata": [
+          "MAP"
+        ]
+      }
+    }
+  },
+  "finish-line": {
+    "version": "4.1",
+    "modes": {
+      "run": {
+        "metrics": [
+          "distance",
+          "pace"
+        ],
+        "labels": [
+          "KM",
+          "/KM"
+        ],
+        "metadata": []
+      },
+      "bike": {
+        "metrics": [
+          "distance",
+          "pace"
+        ],
+        "labels": [
+          "KM",
+          "KM/H"
+        ],
+        "metadata": []
+      },
+      "workout": {
+        "metrics": [
           "time"
         ],
         "labels": [],
@@ -280,66 +382,6 @@
         "metadata": [
           "MAP"
         ]
-      }
-    }
-  },
-  "step-master": {
-    "version": "4.1",
-    "modes": {
-      "run": {
-        "metrics": [
-          "distance"
-        ],
-        "labels": [
-          "KM"
-        ],
-        "metadata": []
-      },
-      "bike": {
-        "metrics": [
-          "distance"
-        ],
-        "labels": [
-          "KM"
-        ],
-        "metadata": []
-      },
-      "workout": {
-        "metrics": [
-          "time"
-        ],
-        "labels": [],
-        "metadata": []
-      }
-    }
-  },
-  "dual-pill": {
-    "version": "4.1",
-    "modes": {
-      "run": {
-        "metrics": [
-          "distance"
-        ],
-        "labels": [
-          "KM"
-        ],
-        "metadata": []
-      },
-      "bike": {
-        "metrics": [
-          "distance"
-        ],
-        "labels": [
-          "KM"
-        ],
-        "metadata": []
-      },
-      "workout": {
-        "metrics": [
-          "time"
-        ],
-        "labels": [],
-        "metadata": []
       }
     }
   },
@@ -631,36 +673,6 @@
       }
     }
   },
-  "serif-float": {
-    "version": "4.1",
-    "modes": {
-      "run": {
-        "metrics": [
-          "distance"
-        ],
-        "labels": [
-          "KM"
-        ],
-        "metadata": []
-      },
-      "bike": {
-        "metrics": [
-          "distance"
-        ],
-        "labels": [
-          "KM"
-        ],
-        "metadata": []
-      },
-      "workout": {
-        "metrics": [
-          "time"
-        ],
-        "labels": [],
-        "metadata": []
-      }
-    }
-  },
   "statement": {
     "version": "4.1",
     "modes": {
@@ -700,134 +712,6 @@
       }
     }
   },
-  "massive-serif": {
-    "version": "4.1",
-    "modes": {
-      "run": {
-        "metrics": [
-          "distance"
-        ],
-        "labels": [
-          "KM"
-        ],
-        "metadata": []
-      },
-      "bike": {
-        "metrics": [
-          "distance"
-        ],
-        "labels": [
-          "KM"
-        ],
-        "metadata": []
-      },
-      "workout": {
-        "metrics": [
-          "time"
-        ],
-        "labels": [],
-        "metadata": []
-      }
-    }
-  },
-  "mag-cover": {
-    "version": "4.1",
-    "modes": {
-      "run": {
-        "metrics": [
-          "date"
-        ],
-        "labels": [],
-        "metadata": [
-          "location"
-        ]
-      },
-      "bike": {
-        "metrics": [
-          "date"
-        ],
-        "labels": [],
-        "metadata": [
-          "location"
-        ]
-      },
-      "workout": {
-        "metrics": [
-          "date",
-          "time"
-        ],
-        "labels": [],
-        "metadata": [
-          "location"
-        ]
-      }
-    }
-  },
-  "mono-ghost": {
-    "version": "4.1",
-    "modes": {
-      "run": {
-        "metrics": [
-          "time",
-          "date"
-        ],
-        "labels": [],
-        "metadata": [
-          "location"
-        ]
-      },
-      "bike": {
-        "metrics": [
-          "time",
-          "date"
-        ],
-        "labels": [],
-        "metadata": [
-          "location"
-        ]
-      },
-      "workout": {
-        "metrics": [
-          "time",
-          "date"
-        ],
-        "labels": [],
-        "metadata": [
-          "location"
-        ]
-      }
-    }
-  },
-  "coords-v2": {
-    "version": "4.1",
-    "modes": {
-      "run": {
-        "metrics": [
-          "distance"
-        ],
-        "labels": [
-          "KM"
-        ],
-        "metadata": []
-      },
-      "bike": {
-        "metrics": [
-          "distance"
-        ],
-        "labels": [
-          "KM"
-        ],
-        "metadata": []
-      },
-      "workout": {
-        "metrics": [
-          "time"
-        ],
-        "labels": [],
-        "metadata": []
-      }
-    }
-  },
   "marginalia": {
     "version": "4.1",
     "modes": {
@@ -861,95 +745,6 @@
         "metadata": [
           "location"
         ]
-      }
-    }
-  },
-  "typewriter-mono": {
-    "version": "4.1",
-    "modes": {
-      "run": {
-        "metrics": [
-          "distance",
-          "date"
-        ],
-        "labels": [
-          "KM"
-        ],
-        "metadata": []
-      },
-      "bike": {
-        "metrics": [
-          "distance",
-          "date"
-        ],
-        "labels": [
-          "KM"
-        ],
-        "metadata": []
-      },
-      "workout": {
-        "metrics": [
-          "date",
-          "time"
-        ],
-        "labels": [],
-        "metadata": []
-      }
-    }
-  },
-  "brutal-slash": {
-    "version": "4.1",
-    "modes": {
-      "run": {
-        "metrics": [
-          "time"
-        ],
-        "labels": [],
-        "metadata": []
-      },
-      "bike": {
-        "metrics": [
-          "time"
-        ],
-        "labels": [],
-        "metadata": []
-      },
-      "workout": {
-        "metrics": [
-          "time"
-        ],
-        "labels": [],
-        "metadata": []
-      }
-    }
-  },
-  "swiss-minimal": {
-    "version": "4.1",
-    "modes": {
-      "run": {
-        "metrics": [
-          "distance"
-        ],
-        "labels": [
-          "KM"
-        ],
-        "metadata": []
-      },
-      "bike": {
-        "metrics": [
-          "distance"
-        ],
-        "labels": [
-          "KM"
-        ],
-        "metadata": []
-      },
-      "workout": {
-        "metrics": [
-          "time"
-        ],
-        "labels": [],
-        "metadata": []
       }
     }
   },
@@ -991,32 +786,6 @@
           "BPM"
         ],
         "metadata": []
-      }
-    }
-  },
-  "pure-map": {
-    "version": "4.1",
-    "modes": {
-      "run": {
-        "metrics": [],
-        "labels": [],
-        "metadata": [
-          "MAP"
-        ]
-      },
-      "bike": {
-        "metrics": [],
-        "labels": [],
-        "metadata": [
-          "MAP"
-        ]
-      },
-      "workout": {
-        "metrics": [],
-        "labels": [],
-        "metadata": [
-          "MAP"
-        ]
       }
     }
   },
@@ -1437,105 +1206,7 @@
       }
     }
   },
-  "track-record": {
-    "version": "4.1",
-    "modes": {
-      "run": {
-        "metrics": [
-          "distance"
-        ],
-        "labels": [
-          "KM"
-        ],
-        "metadata": []
-      },
-      "bike": {
-        "metrics": [
-          "distance"
-        ],
-        "labels": [
-          "KM"
-        ],
-        "metadata": []
-      },
-      "workout": {
-        "metrics": [
-          "time"
-        ],
-        "labels": [],
-        "metadata": []
-      }
-    }
-  },
-  "metric-thin": {
-    "version": "4.1",
-    "modes": {
-      "run": {
-        "metrics": [
-          "distance",
-          "pace"
-        ],
-        "labels": [
-          "KM",
-          "/KM"
-        ],
-        "metadata": []
-      },
-      "bike": {
-        "metrics": [
-          "distance",
-          "pace"
-        ],
-        "labels": [
-          "KM",
-          "KM/H"
-        ],
-        "metadata": []
-      },
-      "workout": {
-        "metrics": [
-          "time"
-        ],
-        "labels": [],
-        "metadata": []
-      }
-    }
-  },
   "vertical-label": {
-    "version": "4.1",
-    "modes": {
-      "run": {
-        "metrics": [
-          "distance",
-          "pace"
-        ],
-        "labels": [
-          "KM",
-          "/KM"
-        ],
-        "metadata": []
-      },
-      "bike": {
-        "metrics": [
-          "distance",
-          "pace"
-        ],
-        "labels": [
-          "KM",
-          "KM/H"
-        ],
-        "metadata": []
-      },
-      "workout": {
-        "metrics": [
-          "time"
-        ],
-        "labels": [],
-        "metadata": []
-      }
-    }
-  },
-  "stats": {
     "version": "4.1",
     "modes": {
       "run": {
@@ -1629,409 +1300,6 @@
         ],
         "labels": [],
         "metadata": []
-      }
-    }
-  },
-  "neon-slanted": {
-    "version": "4.1",
-    "modes": {
-      "run": {
-        "metrics": [
-          "distance"
-        ],
-        "labels": [
-          "KM"
-        ],
-        "metadata": []
-      },
-      "bike": {
-        "metrics": [
-          "distance"
-        ],
-        "labels": [
-          "KM"
-        ],
-        "metadata": []
-      },
-      "workout": {
-        "metrics": [
-          "time"
-        ],
-        "labels": [],
-        "metadata": []
-      }
-    }
-  },
-  "aesthetic-medal": {
-    "version": "4.1",
-    "modes": {
-      "run": {
-        "metrics": [
-          "pace",
-          "date"
-        ],
-        "labels": [
-          "/KM"
-        ],
-        "metadata": []
-      },
-      "bike": {
-        "metrics": [
-          "pace",
-          "date"
-        ],
-        "labels": [
-          "KM/H"
-        ],
-        "metadata": []
-      },
-      "workout": {
-        "metrics": [
-          "date",
-          "time"
-        ],
-        "labels": [],
-        "metadata": []
-      }
-    }
-  },
-  "scora-stealth": {
-    "version": "4.1",
-    "modes": {
-      "run": {
-        "metrics": [
-          "distance",
-          "pace",
-          "heartRate"
-        ],
-        "labels": [
-          "KM",
-          "/KM",
-          "BPM"
-        ],
-        "metadata": [
-          "MAP"
-        ]
-      },
-      "bike": {
-        "metrics": [
-          "distance",
-          "pace",
-          "heartRate"
-        ],
-        "labels": [
-          "KM",
-          "KM/H",
-          "BPM"
-        ],
-        "metadata": [
-          "MAP"
-        ]
-      },
-      "workout": {
-        "metrics": [
-          "heartRate"
-        ],
-        "labels": [
-          "BPM"
-        ],
-        "metadata": [
-          "MAP"
-        ]
-      }
-    }
-  },
-  "neon-capsule": {
-    "version": "4.1",
-    "modes": {
-      "run": {
-        "metrics": [
-          "distance",
-          "pace"
-        ],
-        "labels": [
-          "KM",
-          "/KM"
-        ],
-        "metadata": []
-      },
-      "bike": {
-        "metrics": [
-          "distance",
-          "pace"
-        ],
-        "labels": [
-          "KM",
-          "KM/H"
-        ],
-        "metadata": []
-      },
-      "workout": {
-        "metrics": [
-          "time"
-        ],
-        "labels": [],
-        "metadata": []
-      }
-    }
-  },
-  "tech-hud": {
-    "version": "4.1",
-    "modes": {
-      "run": {
-        "metrics": [
-          "distance",
-          "pace"
-        ],
-        "labels": [
-          "KM",
-          "/KM"
-        ],
-        "metadata": []
-      },
-      "bike": {
-        "metrics": [
-          "distance",
-          "pace"
-        ],
-        "labels": [
-          "KM",
-          "KM/H"
-        ],
-        "metadata": []
-      },
-      "workout": {
-        "metrics": [
-          "time"
-        ],
-        "labels": [],
-        "metadata": []
-      }
-    }
-  },
-  "award-badge": {
-    "version": "4.1",
-    "modes": {
-      "run": {
-        "metrics": [
-          "distance"
-        ],
-        "labels": [
-          "KM"
-        ],
-        "metadata": []
-      },
-      "bike": {
-        "metrics": [
-          "distance"
-        ],
-        "labels": [
-          "KM"
-        ],
-        "metadata": []
-      },
-      "workout": {
-        "metrics": [
-          "time"
-        ],
-        "labels": [],
-        "metadata": []
-      }
-    }
-  },
-  "data-matrix": {
-    "version": "4.1",
-    "modes": {
-      "run": {
-        "metrics": [
-          "distance",
-          "pace"
-        ],
-        "labels": [
-          "KM",
-          "/KM"
-        ],
-        "metadata": []
-      },
-      "bike": {
-        "metrics": [
-          "distance",
-          "pace"
-        ],
-        "labels": [
-          "KM",
-          "KM/H"
-        ],
-        "metadata": []
-      },
-      "workout": {
-        "metrics": [
-          "time"
-        ],
-        "labels": [],
-        "metadata": []
-      }
-    }
-  },
-  "frosted-minimal": {
-    "version": "4.1",
-    "modes": {
-      "run": {
-        "metrics": [
-          "time"
-        ],
-        "labels": [],
-        "metadata": []
-      },
-      "bike": {
-        "metrics": [
-          "time"
-        ],
-        "labels": [],
-        "metadata": []
-      },
-      "workout": {
-        "metrics": [
-          "time"
-        ],
-        "labels": [],
-        "metadata": []
-      }
-    }
-  },
-  "performance-bars": {
-    "version": "4.1",
-    "modes": {
-      "run": {
-        "metrics": [
-          "distance",
-          "pace"
-        ],
-        "labels": [
-          "KM",
-          "/KM"
-        ],
-        "metadata": []
-      },
-      "bike": {
-        "metrics": [
-          "distance",
-          "pace"
-        ],
-        "labels": [
-          "KM",
-          "KM/H"
-        ],
-        "metadata": []
-      },
-      "workout": {
-        "metrics": [
-          "time"
-        ],
-        "labels": [],
-        "metadata": []
-      }
-    }
-  },
-  "8m2": {
-    "version": "4.1",
-    "modes": {
-      "run": {
-        "metrics": [
-          "distance",
-          "pace"
-        ],
-        "labels": [
-          "KM",
-          "/KM"
-        ],
-        "metadata": [
-          "MAP"
-        ]
-      },
-      "bike": {
-        "metrics": [
-          "distance",
-          "pace"
-        ],
-        "labels": [
-          "KM",
-          "KM/H"
-        ],
-        "metadata": [
-          "MAP"
-        ]
-      },
-      "workout": {
-        "metrics": [],
-        "labels": [],
-        "metadata": [
-          "MAP"
-        ]
-      }
-    }
-  },
-  "8m": {
-    "version": "4.1",
-    "modes": {
-      "run": {
-        "metrics": [
-          "distance",
-          "pace"
-        ],
-        "labels": [
-          "KM",
-          "/KM"
-        ],
-        "metadata": [
-          "MAP"
-        ]
-      },
-      "bike": {
-        "metrics": [
-          "distance",
-          "pace"
-        ],
-        "labels": [
-          "KM",
-          "KM/H"
-        ],
-        "metadata": [
-          "MAP"
-        ]
-      },
-      "workout": {
-        "metrics": [],
-        "labels": [],
-        "metadata": [
-          "MAP"
-        ]
-      }
-    }
-  },
-  "route": {
-    "version": "4.1",
-    "modes": {
-      "run": {
-        "metrics": [],
-        "labels": [],
-        "metadata": [
-          "MAP"
-        ]
-      },
-      "bike": {
-        "metrics": [],
-        "labels": [],
-        "metadata": [
-          "MAP"
-        ]
-      },
-      "workout": {
-        "metrics": [],
-        "labels": [],
-        "metadata": [
-          "MAP"
-        ]
       }
     }
   }
