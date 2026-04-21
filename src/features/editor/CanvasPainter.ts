@@ -1175,7 +1175,7 @@ export function drawInfoGlass(ctx, stats, textColor) {
     ctx.fillText(distLabel, col1, centerY - 25);
     ctx.font = `900 60px ${sysFont}`;
     ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
-    
+
     // Add Units to main value
     const distWithUnit = stats.hasDistance ? `${distText} KM` : distText;
     ctx.fillText(distWithUnit, col1, centerY + 30);
@@ -1193,7 +1193,7 @@ export function drawInfoGlass(ctx, stats, textColor) {
     ctx.fillText(paceLabel, col2, centerY - 25);
     ctx.font = `900 60px ${sysFont}`;
     ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
-    
+
     // Add Units to pace/HR value
     const paceUnit = stats.hasDistance ? (stats.type === 'Ride' ? 'KM/H' : '/KM') : 'BPM';
     const paceWithUnit = `${paceText} ${paceUnit}`;
@@ -1204,7 +1204,7 @@ export function drawInfoGlass(ctx, stats, textColor) {
     ctx.fillText(timeLabel, col3, centerY - 25);
     ctx.font = `900 60px ${sysFont}`;
     ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
-    
+
     // Time/Max HR unit logic
     const timeUnit = stats.hasDistance ? '' : 'BPM';
     const timeWithUnit = timeUnit ? `${timeText} ${timeUnit}` : timeText;
@@ -1474,13 +1474,17 @@ export function drawVHSRetro(ctx: CanvasRenderingContext2D, stats: any, textColo
     const rawType = stats.activityType || 'RUN';
     const activity = applyActivityCasing(normalizeSport(stats.activityType || 'RUN'), 'vhs-retro');
     const distanceVal = stats.distanceVal || '0.00';
-    
-    const rawDate = stats.rawDate ? new Date(stats.rawDate) : new Date();
+
+    // 🛡️ Timezone Fix: Treat the date string as literal local time 
+    // to prevent 6-hour shifts in Mexico City / CST.
+    const dateStrRaw = stats.rawDate || '';
+    const rawDate = dateStrRaw ? new Date(dateStrRaw.replace('Z', '')) : new Date();
+
     const hours = rawDate.getHours();
     const mins = rawDate.getMinutes().toString().padStart(2, '0');
     const ampm = hours >= 12 ? 'PM' : 'AM';
     const timeStr = `${ampm}  ${hours % 12 || 12}:${mins}`;
-    
+
     const month = new Intl.DateTimeFormat('en-US', { month: 'short' }).format(rawDate).toUpperCase();
     const day = rawDate.getDate().toString().padStart(2, '0');
     const year = rawDate.getFullYear();
@@ -1493,23 +1497,23 @@ export function drawVHSRetro(ctx: CanvasRenderingContext2D, stats: any, textColo
         ctx.textAlign = align;
         ctx.textBaseline = baseline;
         ctx.translate(x, y);
-        
+
         ctx.shadowColor = 'rgba(0,0,0,0.9)';
         ctx.shadowOffsetX = 4;
         ctx.shadowOffsetY = 4;
         ctx.shadowBlur = 0; // Hardware-sharp shadows
-        
-        ctx.fillStyle = 'white'; 
+
+        ctx.fillStyle = 'white';
         ctx.font = `${size}px 'Press Start 2P'`;
         (ctx as any).letterSpacing = "0.02em";
-        
+
         ctx.fillText(text, 0, 0);
         ctx.restore();
     };
 
     // 2. Rendering
     ctx.save();
-    
+
     // Reset and protect coordinate space
     const baseTransform = ctx.getTransform();
     ctx.setTransform(baseTransform.a, 0, 0, baseTransform.d, baseTransform.e, baseTransform.f);
@@ -1523,7 +1527,7 @@ export function drawVHSRetro(ctx: CanvasRenderingContext2D, stats: any, textColo
     ctx.shadowBlur = 15;
     ctx.fill();
     ctx.restore();
-    
+
     drawVCR("REC", margin + 75, osdY, 'left', 'top', 40);
     drawVCR(activity, margin, osdY + 90, 'left', 'top', 40);
 
@@ -1533,7 +1537,7 @@ export function drawVHSRetro(ctx: CanvasRenderingContext2D, stats: any, textColo
 
     // Line 1: PLAY + Triangle
     drawVCR("PLAY", trX - 60, trY, 'right', 'top', 40);
-    
+
     ctx.save();
     ctx.translate(trX, trY);
     ctx.fillStyle = 'white';
@@ -1541,9 +1545,9 @@ export function drawVHSRetro(ctx: CanvasRenderingContext2D, stats: any, textColo
     ctx.shadowOffsetX = 4;
     ctx.shadowOffsetY = 4;
     ctx.beginPath();
-    ctx.moveTo(-45, 5);     
-    ctx.lineTo(-45, 35);    
-    ctx.lineTo(-20, 20);   
+    ctx.moveTo(-45, 5);
+    ctx.lineTo(-45, 35);
+    ctx.lineTo(-20, 20);
     ctx.closePath();
     ctx.fill();
     ctx.restore();
@@ -1615,20 +1619,20 @@ export function drawGlassSlice(ctx, stats, textColor) {
 
     // Left Section (Hero Value + Unit)
     ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
-    
+
     // Strategy: Render Value, then Unit with a safer gap to avoid 'destruction'
     ctx.font = `italic 900 84px ${sysFont}`; // Increased slightly for punch
     const distValStr = String(distText);
     const valWidth = ctx.measureText(distValStr).width;
-    
+
     // Centered but shifted left to make room for unit
-    const startXVal = -w/4 - 20;
+    const startXVal = -w / 4 - 20;
     ctx.fillText(distValStr, startXVal, -15);
-    
+
     // Unit (KM) - Studio Grade Alignment
     ctx.font = `italic 800 28px ${sysFont}`;
     ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.7)';
-    ctx.fillText(distUnit, startXVal + valWidth/2 + 35, -15);
+    ctx.fillText(distUnit, startXVal + valWidth / 2 + 35, -15);
 
     // DISTANCE Label (Below)
     ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.6)';
@@ -1643,15 +1647,15 @@ export function drawGlassSlice(ctx, stats, textColor) {
     ctx.fillRect(0, -40, 2, 80);
 
     // Right Unit (Data + /KM) - Studio Grade Alignment
-    const startXR = w/4 + 20;
+    const startXR = w / 4 + 20;
     ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
     ctx.font = `italic 900 84px ${sysFont}`; // Increased to match Left
     ctx.fillText(paceText, startXR, -15);
-    
+
     const paceWidth = ctx.measureText(paceText).width;
     ctx.font = `italic 800 28px ${sysFont}`;
     ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.7)';
-    ctx.fillText(paceUnit, startXR + paceWidth/2 + 35, -15);
+    ctx.fillText(paceUnit, startXR + paceWidth / 2 + 35, -15);
 
     // PACE Label (Below)
     ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.6)';
@@ -2482,7 +2486,7 @@ export function exportCanvas(canvasId: string) {
     const canvas = document.getElementById(canvasId) as HTMLCanvasElement;
     if (!canvas) return;
     const dateStr = new Date().toISOString().split('T')[0];
-    const link = document.createElement('a'); 
+    const link = document.createElement('a');
     link.download = `scora-sticker-${dateStr}.png`;
     link.href = canvas.toDataURL('image/png');
     // Anchor to DOM for headless browser reliability
@@ -2499,19 +2503,19 @@ export function drawNarrativeHighlight(ctx: CanvasRenderingContext2D, stats: any
     const textCol = "#1a1a1a";
 
     const cx = 540;
-    const cy = 960; 
+    const cy = 960;
 
     // ─── Data Extraction & Sport Logic ───────────────────────────────────────
     const distNum = parseFloat(stats.distanceVal);
     const baseActivity = normalizeSport(stats.activityType || 'Run');
     const activityLower = baseActivity.toLowerCase();
-    
+
     // 1. Determine Units & Labels
     let unit = 'kilometers';
     let metricLabel = 'pace';
     let activityAction = 'through';
     let mainMetric = stats.distanceVal;
-    
+
     if (activityLower === 'ride' || activityLower.includes('cycle')) {
         unit = distNum === 1 ? 'kilometer' : 'kilometers';
         metricLabel = 'speed';
@@ -2563,10 +2567,10 @@ export function drawNarrativeHighlight(ctx: CanvasRenderingContext2D, stats: any
 
     // 3. Text Content Setup (Pre-measure for scaling)
     ctx.save();
-    let baseFontSize = 64; 
+    let baseFontSize = 64;
     ctx.font = `600 ${baseFontSize}px ${serifFont}`;
-    
-    const maxTextW = 900; 
+
+    const maxTextW = 900;
     const w1 = ctx.measureText(l1_p1 + l1_p2).width;
     const w2 = ctx.measureText(l2_p1 + l2_p2 + l2_p3 + l2_p4 + l2_p5).width;
     const maxW = Math.max(w1, w2);
@@ -2597,14 +2601,14 @@ export function drawNarrativeHighlight(ctx: CanvasRenderingContext2D, stats: any
     const gap = baseFontSize * 1.5;
     const l1Y = cy - gap / 2.2;
     const l2Y = cy + gap / 2.2;
-    const startX = cx - cardW / 2 + 70; 
+    const startX = cx - cardW / 2 + 70;
 
     function drawSegment(text: string, x: number, y: number, highlight: boolean) {
         const width = ctx.measureText(text).width;
         if (highlight) {
             ctx.save();
             ctx.fillStyle = highlightColor;
-            const hH = baseFontSize * 1.1; 
+            const hH = baseFontSize * 1.1;
             ctx.fillRect(x - 6, y - hH / 2 + 3, width + 12, hH);
             ctx.restore();
         }
@@ -2638,14 +2642,14 @@ export function drawCondesaStack(ctx: CanvasRenderingContext2D, stats: any, text
     const cy = 960;
     const startX = 110; // Studio Standard Left Alignment
     const rightCol = 580;
-    
+
     // 1. Unified Sizing Constants (v13.0 Solid Unification)
     const HEADER_SIZE = 90;
     const DATA_SIZE = 65; // Universal scale for all metrics
     const UNIT_SIZE = 24;
     const UNIT_OFFSET = 100;
     const ROW_GAP = 220;
-    
+
     const isDarkStr = textColor === 'white';
     const baseColor = isDarkStr ? '#FFFFFF' : '#000000'; // 100% Solid
 
@@ -2664,13 +2668,13 @@ export function drawCondesaStack(ctx: CanvasRenderingContext2D, stats: any, text
 
     // 3. Rendering Engine
     ctx.save();
-    
+
     // NO SHADOWS, NO TRANSPARENCY - 100% FLAT STICKER LOOK
     ctx.shadowColor = 'transparent';
     ctx.shadowBlur = 0;
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 0;
-    
+
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
     ctx.fillStyle = baseColor;
@@ -2687,13 +2691,13 @@ export function drawCondesaStack(ctx: CanvasRenderingContext2D, stats: any, text
         ctx.fillText(text, x, y);
     }
 
-    let currY = cy - 500; 
+    let currY = cy - 500;
 
     // A. HEADER: DAY + NUMBER (Solid & Identical)
-    renderSolidItem(weekday, startX, currY, HEADER_SIZE, '800', '-0.06em'); 
+    renderSolidItem(weekday, startX, currY, HEADER_SIZE, '800', '-0.06em');
     currY += 90;
     renderSolidItem(dayNum, startX, currY, HEADER_SIZE, '800', '-0.06em');
-    currY += 240; 
+    currY += 240;
 
     // B. GRID ROW 1: TIME | DISTANCE
     renderSolidItem(startTimeResult, startX, currY, DATA_SIZE, '900', '-0.05em');
@@ -2701,8 +2705,8 @@ export function drawCondesaStack(ctx: CanvasRenderingContext2D, stats: any, text
 
     renderSolidItem(distValueResult, rightCol, currY, DATA_SIZE, '900', '-0.05em');
     renderSolidUnit(distUnitResult, rightCol, currY + UNIT_OFFSET);
-    
-    currY += ROW_GAP; 
+
+    currY += ROW_GAP;
 
     // C. GRID ROW 2: PACE | LOCATION
     renderSolidItem(paceValueResult, startX, currY, DATA_SIZE, '900', '-0.05em');
@@ -3275,7 +3279,7 @@ function drawSprayPath(ctx: CanvasRenderingContext2D, coords: [number, number][]
             const { x, y } = getXY(p);
             const dripLen = 30 + (i % 80);
             const dripWidth = 6 + (i % 4);
-            
+
             ctx.lineWidth = dripWidth;
             ctx.beginPath();
             ctx.moveTo(x, y);
@@ -3595,19 +3599,19 @@ export function drawBrutalistLetters(ctx: CanvasRenderingContext2D, stats: any, 
     // Giant Background Type
     ctx.globalAlpha = 0.5;
     ctx.fillStyle = cSolid;
-    
+
     // Dynamic Scale for large labels (WORKOUT is longer than RUN)
     let fontSize = 380;
     ctx.font = `900 ${fontSize}px 'Plus Jakarta Sans'`;
     if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "-0.05em"; }
     let textWidth = ctx.measureText(type).width;
     const maxW = 980; // 1080 - 100 margin
-    
+
     if (textWidth > maxW) {
         fontSize = Math.floor(fontSize * (maxW / textWidth));
         ctx.font = `900 ${fontSize}px 'Plus Jakarta Sans'`;
     }
-    
+
     ctx.fillText(type, 540, 960);
     if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0px"; }
     ctx.globalAlpha = 1.0;
@@ -4506,7 +4510,7 @@ export function drawSciencePro(ctx: CanvasRenderingContext2D, stats: any, textCo
     const startX = 320;
 
     ctx.beginPath(); ctx.roundRect(startX, iconY - 35, pillWidth, 70, 35); ctx.stroke();
-    
+
     // Label
     ctx.font = "900 18px 'Space Grotesk'";
     ctx.fillStyle = accent;
@@ -4587,7 +4591,7 @@ export function drawSciencePro(ctx: CanvasRenderingContext2D, stats: any, textCo
 export function drawClassicStack(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
     const c = buildColors(textColor);
     const sysFont = "'Playfair Display', serif";
-    
+
     const valText = stats.hasDistance ? (stats.distanceVal || '0.00') : (stats.timeStr || '0:00');
     const unitText = stats.hasDistance ? 'kilometers' : 'time';
     const locText = (stats.dataPoints?.find(p => p.label === 'Location')?.value || 'Unknown').toUpperCase();
@@ -4598,7 +4602,7 @@ export function drawClassicStack(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.save();
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    
+
     // Hard Shadow Config
     ctx.shadowColor = textColor === 'black' ? 'rgba(0,0,0,0.15)' : '#b91c1c';
     ctx.shadowOffsetX = 6;
@@ -4633,7 +4637,7 @@ export function drawNeonSlanted(ctx: CanvasRenderingContext2D, stats: any, textC
     const sysFont = "'Playfair Display', serif";
     const rawType = stats.activityType || 'Workout';
     const activity = applyActivityCasing(normalizeSport(rawType), 'neon-slanted');
-    
+
     // Back to Kilometers/Time for this specific style (Compositional Choice)
     const valText = stats.hasDistance ? (stats.distanceVal || '0.00') : (stats.timeStr || '0:00');
     const unitText = stats.hasDistance ? 'KILOMETERS' : 'TIME';
@@ -4653,12 +4657,12 @@ export function drawNeonSlanted(ctx: CanvasRenderingContext2D, stats: any, textC
     ctx.shadowColor = 'rgba(0,0,0,0.4)';
     ctx.shadowBlur = 60;
     ctx.shadowOffsetY = 30;
-    
+
     ctx.beginPath();
     ctx.roundRect(-w / 2, -h / 2, w, h, 120);
     ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
     ctx.fill();
-    
+
     ctx.lineWidth = 2;
     ctx.strokeStyle = 'rgba(34, 211, 238, 0.2)'; // Cyan tint
     ctx.stroke();
@@ -4669,12 +4673,12 @@ export function drawNeonSlanted(ctx: CanvasRenderingContext2D, stats: any, textC
     grad.addColorStop(0, '#ffffff');
     grad.addColorStop(0.5, '#22d3ee'); // Cyan
     grad.addColorStop(1, '#ffffff');
-    
+
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.font = `italic 900 85px ${sysFont}`;
     ctx.fillStyle = grad;
-    
+
     ctx.shadowColor = 'rgba(22, 78, 99, 0.8)';
     ctx.shadowOffsetX = 5;
     ctx.shadowOffsetY = 5;
@@ -4684,7 +4688,7 @@ export function drawNeonSlanted(ctx: CanvasRenderingContext2D, stats: any, textC
     // 3. Values (Width-Aware Fit)
     let fontSize = 120;
     ctx.font = `italic 900 ${fontSize}px ${sysFont}`;
-    
+
     // Safety check: ensure combined text fits in width
     while (ctx.measureText(fullMainText).width > w - 100 && fontSize > 40) {
         fontSize -= 5;
@@ -4708,7 +4712,7 @@ export function drawNeonSlanted(ctx: CanvasRenderingContext2D, stats: any, textC
 export function drawAestheticMedal(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
     const sysFont = "'Playfair Display', serif";
     const paceVal = (stats.subValue || '').split(' ')[0] || '0:00';
-    
+
     // Date Logic: Month + Day
     const rawDate = stats.rawDate ? new Date(stats.rawDate) : new Date();
     const month = new Intl.DateTimeFormat('en-US', { month: 'short' }).format(rawDate).toUpperCase();
@@ -4735,12 +4739,12 @@ export function drawAestheticMedal(ctx: CanvasRenderingContext2D, stats: any, te
     // 1. Scalloped Seal Border
     ctx.save();
     drawScalloped(cx, cy, outerR, 16, 25);
-    
+
     const gold = ctx.createLinearGradient(cx - outerR, cy - outerR, cx + outerR, cy + outerR);
     gold.addColorStop(0, '#fbbf24');
     gold.addColorStop(0.5, '#f59e0b');
     gold.addColorStop(1, '#d97706');
-    
+
     ctx.lineWidth = 14;
     ctx.strokeStyle = gold;
     ctx.stroke();
@@ -4758,7 +4762,7 @@ export function drawAestheticMedal(ctx: CanvasRenderingContext2D, stats: any, te
     // 3. Content
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    
+
     // Activity-Specific Metric Logic
     // Fix: Using subLabel and subValue instead of speedVal
     const label = (stats.hasDistance ? (stats.subLabel || 'PACE') : 'TIME').toUpperCase();
@@ -4787,7 +4791,7 @@ export function drawAestheticMedal(ctx: CanvasRenderingContext2D, stats: any, te
 
     let fontSize = 130;
     ctx.font = `italic 900 ${fontSize}px ${sysFont}`;
-    
+
     // Width awareness to keep inside the seal core
     while (ctx.measureText(fullValText).width > 480 && fontSize > 60) {
         fontSize -= 5;
@@ -4801,7 +4805,7 @@ export function drawAestheticMedal(ctx: CanvasRenderingContext2D, stats: any, te
     ctx.fillStyle = 'white';
     ctx.font = "900 22px 'Plus Jakarta Sans'";
     ctx.letterSpacing = "6px";
-    
+
     // Pill dot
     ctx.globalAlpha = 0.5;
     ctx.beginPath(); ctx.arc(cx - 100, cy + 95, 5, 0, Math.PI * 2); ctx.fill();
@@ -4821,7 +4825,7 @@ export function drawGraffitiExpo(ctx: CanvasRenderingContext2D, stats: any, text
         const coords = decodePolyline(stats.polyline);
         if (coords && coords.length > 0) {
             const mapBox = { x: 100, y: 150, w: 880, h: 1050 };
-            
+
             let minLat = coords[0][0], maxLat = minLat, minLng = coords[0][1], maxLng = minLng;
             coords.forEach((p: any) => {
                 if (p[0] < minLat) minLat = p[0]; if (p[0] > maxLat) maxLat = p[0];
@@ -4846,7 +4850,7 @@ export function drawGraffitiExpo(ctx: CanvasRenderingContext2D, stats: any, text
     // 2. Aesthetic Typography (Bottom)
     ctx.textAlign = 'center';
     ctx.textBaseline = 'alphabetic';
-    
+
     // Custom color from map
     const customColor = lineColor;
     const sport = normalizeSport(stats.type);
@@ -4880,7 +4884,7 @@ export function drawGraffitiExpo(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.font = "800 24px 'Plus Jakarta Sans'";
     ctx.fillStyle = customColor;
     if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "8px";
-    
+
     const paceLabel = sport === 'Ride' ? 'AVG. SPEED' : 'PACE';
     ctx.fillText(paceLabel, 310, 1765);
     ctx.fillText("TOTAL DURATION", 770, 1765);
@@ -4896,10 +4900,10 @@ export function drawJournalGrid(ctx: CanvasRenderingContext2D, stats: any, textC
     const lineColor = textColor.startsWith('#') ? textColor : (textColor === 'black' ? '#000000' : '#ffffff');
     const isDark = isColorDark(lineColor);
     const sport = normalizeSport(stats.type);
-    
+
     ctx.save();
     ctx.globalAlpha = 0.9;
-    
+
     // Apply Readability Shadow
     ctx.shadowColor = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.6)';
     ctx.shadowBlur = 12;
@@ -4909,12 +4913,12 @@ export function drawJournalGrid(ctx: CanvasRenderingContext2D, stats: any, textC
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
     ctx.fillStyle = lineColor;
-    
+
     // Day Name (e.g., TUESDAY) under logo
     const dayLabel = (stats.dayName || "ACTIVITY").toUpperCase();
     ctx.font = "800 52px 'Merriweather'";
     ctx.fillText(dayLabel, 60, 190);
-    
+
     // Month Day (e.g., 24) under Day Name
     const monthDay = stats.rawDate ? new Date(stats.rawDate).getDate() : "1";
     ctx.font = "900 170px 'Merriweather'";
@@ -4925,21 +4929,21 @@ export function drawJournalGrid(ctx: CanvasRenderingContext2D, stats: any, textC
     const gridY = 80;
     const col2X = 810;
     const rowHeight = 90;
-    
+
     ctx.textAlign = 'left';
-    
+
     const drawGridItem = (x: number, y: number, label: string, value: string, unit: string) => {
         // Label
         ctx.font = "700 22px 'Plus Jakarta Sans'"; // Labels stay clean sans-serif for contrast
         ctx.globalAlpha = 0.6;
         ctx.fillText(label.toUpperCase(), x, y);
-        
+
         // Value
         ctx.globalAlpha = 0.9;
         ctx.font = "bold 42px 'Merriweather'";
         const valWidth = ctx.measureText(value).width;
         ctx.fillText(value, x, y + 30);
-        
+
         // Unit
         if (unit) {
             ctx.font = "700 20px 'Plus Jakarta Sans'";
@@ -4966,21 +4970,125 @@ export function drawJournalGrid(ctx: CanvasRenderingContext2D, stats: any, textC
     drawGridItem(gridX, gridY + rowHeight * 2, "LOCATION", locationStr || "Scora", "");
     drawGridItem(col2X, gridY + rowHeight * 2, "HEART RATE", hrPoint.value, "bpm");
 
-    // 3. Map (Center/Bottom)
+    // 3. Map (Top-Right Pocket - under stats)
     if (stats.polyline) {
         ctx.shadowBlur = 0; // Disable shadow for map to keep it clean
         ctx.shadowOffsetY = 0;
-        
-        const mapSize = 750;
-        const mapX = 540;
-        const mapY = 1000;
-        
+
+        const mapSize = 450;
+        const mapX = 780;
+        const mapY = 650;
+
         // Draw map with slightly thicker stroke
         drawRoutePath(ctx, stats.polyline, mapX, mapY, mapSize, {
             color: lineColor,
             strokeWidth: 9
         });
     }
+
+    ctx.restore();
+}
+
+// ─── Race Day / Finish Line Sticker (Studio Precision v3.0) ──────────────────
+
+export function drawFinishLine(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const canvasW = 1080;
+    const canvasH = 1920;
+    const cx = canvasW / 2;
+    const cy = canvasH / 2;
+
+    const lineColor = textColor === 'black' ? '#000000' : '#ffffff';
+    const isDark = textColor === 'black';
+
+    ctx.save();
+
+    // 1. Clock Backplate (Industrial feel)
+    const boxW = 920;
+    const boxH = 420;
+    const boxY = cy - 100;
+
+    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowBlur = 40;
+    ctx.fillStyle = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.4)'; // More transparent (40% vs 70%)
+    ctx.beginPath();
+    ctx.roundRect(cx - boxW / 2, boxY - boxH / 2, boxW, boxH, 210); // Full pill shape (boxH / 2)
+    ctx.fill();
+
+    // Gloss/Bevel effect
+    ctx.strokeStyle = isDark ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // 2. The Time (LED/Dot Matrix)
+    const timeVal = stats.timeStr || "0:00:00";
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = lineColor;
+
+    // Apply Neon Glow for 'Next Level' aesthetic
+    ctx.shadowColor = lineColor;
+    ctx.shadowBlur = isDark ? 0 : 25;
+
+    let timeFontSize = timeVal.length > 7 ? 160 : 230;
+    const safeW = 820; // Internal padding safety
+    
+    // Width-Aware scaling loop for dot-matrix integrity
+    ctx.font = `900 ${timeFontSize}px 'Doto'`;
+    (ctx as any).letterSpacing = "20px";
+    let measuredW = ctx.measureText(timeVal).width;
+    
+    while (measuredW > safeW && timeFontSize > 60) {
+        timeFontSize -= 4;
+        ctx.font = `900 ${timeFontSize}px 'Doto'`;
+        measuredW = ctx.measureText(timeVal).width;
+    }
+
+    ctx.fillText(timeVal, cx, boxY);
+    (ctx as any).letterSpacing = "0px";
+
+    ctx.shadowBlur = 0; // Disable glow for secondary text
+    
+    // 3. Labels (Studio Precision Branding)
+    ctx.save();
+    ctx.font = "900 28px 'Plus Jakarta Sans'"; // Bolder and larger for emphasis
+    ctx.globalAlpha = 0.85; // Brighter for impact
+    ctx.letterSpacing = "15px"; // Wide cinematic tracking
+    ctx.fillText("FINISH TIME", cx, boxY - (boxH / 2) + 55);
+    ctx.restore();
+
+    // 4. Secondary Metrics (Distance & Pace)
+    const metricsY = boxY + (boxH / 2) + 120;
+    const distVal = stats.distanceVal || "0.00";
+    const paceVal = (stats.subValue || "").split(' ')[0] || "0:00";
+    const paceUnit = normalizeSport(stats.type) === 'Ride' ? 'km/h' : '/km';
+
+    const drawSubMetric = (val: string, label: string, offset: number) => {
+        ctx.save();
+        ctx.translate(cx + offset, metricsY);
+        
+        ctx.textAlign = 'center';
+        ctx.fillStyle = lineColor;
+        
+        // Value
+        ctx.font = "900 90px 'Doto'";
+        ctx.textBaseline = 'bottom'; // Lock numbers to the bottom
+        (ctx as any).letterSpacing = "10px";
+        ctx.fillText(val, 0, 0);
+        (ctx as any).letterSpacing = "0px";
+        
+        // Label
+        ctx.font = "700 22px 'Plus Jakarta Sans'";
+        ctx.textBaseline = 'top'; // Push label down from the number's baseline
+        ctx.globalAlpha = 0.6;
+        ctx.letterSpacing = "6px";
+        ctx.fillText(label.toUpperCase(), 0, 20); // 20px buffer from the bottom of the number
+        
+        ctx.restore();
+    };
+
+    drawSubMetric(distVal, "DISTANCE (KM)", -240);
+    drawSubMetric(paceVal, `AVG. ${normalizeSport(stats.type) === 'Ride' ? 'SPEED' : 'PACE'}`, 240);
 
     ctx.restore();
 }
