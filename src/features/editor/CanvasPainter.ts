@@ -4859,35 +4859,36 @@ export function drawGraffitiExpo(ctx: CanvasRenderingContext2D, stats: any, text
     const distNum = stats.distanceVal || '0.00';
     ctx.save();
     ctx.globalAlpha = 0.8;
-    ctx.font = "italic 700 210px 'Playfair Display'";
+    ctx.font = "900 140px 'BBH Bartle'";
     ctx.fillStyle = customColor;
-    ctx.fillText(distNum, 540, 1480);
+    ctx.fillText(distNum, 540, 1460);
     ctx.restore();
 
     // Units (Solid - 100% Opacity)
-    ctx.font = "800 38px 'Plus Jakarta Sans'";
+    ctx.font = "800 24px 'Plus Jakarta Sans'"; // Reverted for legibility
     ctx.fillStyle = customColor;
-    if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "12px";
-    ctx.fillText("KILOMETERS", 540, 1545);
+    if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "15px";
+    ctx.fillText("KILOMETERS", 540, 1515);
     if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "0px";
 
     // Secondary Stats (Split View - 80% Opacity)
     ctx.save();
     ctx.globalAlpha = 0.8;
-    ctx.font = "italic 600 85px 'Playfair Display'";
+    ctx.font = "900 55px 'BBH Bartle'"; // Reduced size for air
     ctx.fillStyle = customColor;
-    ctx.fillText(stats.subValue || '0:00 /km', 310, 1720);
-    ctx.fillText(stats.timeStr || '0h 00m', 770, 1720);
+    ctx.fillText(stats.subValue || '0:00 /km', 310, 1700);
+    ctx.fillText(stats.timeStr || '0h 00m', 770, 1700);
     ctx.restore();
 
     // Labels (Solid - 100% Opacity)
-    ctx.font = "800 24px 'Plus Jakarta Sans'";
+    ctx.font = "800 18px 'Plus Jakarta Sans'"; // Reverted for legibility
     ctx.fillStyle = customColor;
-    if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "8px";
+    if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "10px";
+    ctx.globalAlpha = 0.4; // Keeping labels subtle
 
     const paceLabel = sport === 'Ride' ? 'AVG. SPEED' : 'PACE';
-    ctx.fillText(paceLabel, 310, 1765);
-    ctx.fillText("TOTAL DURATION", 770, 1765);
+    ctx.fillText(paceLabel, 310, 1740);
+    ctx.fillText("TOTAL DURATION", 770, 1740);
     if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "0px";
 }
 
