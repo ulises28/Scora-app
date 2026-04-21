@@ -1,0 +1,36 @@
+[MR] clean output dir ...
+Error: No tests found.
+Make sure that arguments are regular expressions matching test files.
+You may need to escape symbols like "$" or "*" and quote the arguments.
+
+[MR] generating report data ...
+[MR] generating test report ...
+[MR] Scora E2E Test Report
+┌─────────────┬───────────────────────┐
+│ Tests       │ 0                     │
+│ ├ Failed    │ 0 (0.0%)              │
+│ ├ Flaky     │ 0 (0.0%)              │
+│ ├ Skipped   │ 0 (0.0%)              │
+│ └ Passed    │ 0 (0.0%)              │
+│ Steps       │ 0                     │
+│ Suites      │ 0                     │
+│ ├ Projects  │ 0                     │
+│ ├ Files     │ 0                     │
+│ ├ Describes │ 0                     │
+│ └ Shards    │ 0                     │
+│ Errors      │ 0                     │
+│ Retries     │ 0                     │
+│ Logs        │ 0                     │
+│ Attachments │ 0                     │
+│ Artifacts   │ 0                     │
+│ Playwright  │ v1.58.2               │
+│ Date        │ 4/21/2026, 5:41:13 PM │
+│ Duration    │ 644ms                 │
+└─────────────┴───────────────────────┘
+[MR] json: test-results/report.json
+[MR] view report: npx monocart show-report test-results/report.html
+
+To open last HTML report run:
+
+  npx playwright show-report
+

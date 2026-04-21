@@ -15,7 +15,7 @@ export const ACTIVE_STICKER_LIST: StickerDefinition[] = [
     { id: 'science-pro', category: 'all', supportsBlackText: false, features: { distance: true, heartRate: true, date: true, paceSpeed: false }, render: Renderers.drawSciencePro },
     { id: 'narrative-highlight', category: 'all', supportsBlackText: true, preferredCase: 'lowercase', features: { distance: true, duration: true, paceSpeed: true, date: true }, render: Renderers.drawNarrativeHighlight },
     { id: 'location-pill', category: 'all', supportsBlackText: true, compact: true, preferredCase: 'title', features: { distance: true }, render: Renderers.drawLocationPill },
-    { id: 'graffiti-expo', category: 'distance', supportsCustomColor: true, supportsBlackText: true, features: { map: true }, render: Renderers.drawGraffitiExpo },
+    { id: 'graffiti-expo', category: 'map', supportsCustomColor: true, supportsBlackText: true, features: { map: true }, render: Renderers.drawGraffitiExpo },
     { id: 'dm', category: 'distance', features: { distance: true, paceSpeed: true, startTime: true }, render: Renderers.drawDMModular },
     { id: 'journal-grid', category: 'distance', supportsCustomColor: true, supportsBlackText: true, features: { distance: true, duration: true, map: true, heartRate: true }, render: Renderers.drawJournalGrid },
     { id: 'finish-line', category: 'distance', supportsBlackText: false, features: { distance: true, duration: true, paceSpeed: true }, render: Renderers.drawFinishLine },
