@@ -1488,12 +1488,11 @@ export function drawVHSRetro(ctx: CanvasRenderingContext2D, stats: any, textColo
     const paceVal = (stats.subValue || '').split(' ')[0] || '0:00';
 
     // Helper for absolute scoped rendering
-    const drawVCR = (text: string, x: number, y: number, align: CanvasTextAlign = 'left', baseline: CanvasTextBaseline = 'top', size = 58) => {
+    const drawVCR = (text: string, x: number, y: number, align: CanvasTextAlign = 'left', baseline: CanvasTextBaseline = 'top', size = 32) => {
         ctx.save();
         ctx.textAlign = align;
         ctx.textBaseline = baseline;
         ctx.translate(x, y);
-        ctx.scale(0.85, 1.15); // Stretched retro look
         
         ctx.shadowColor = 'rgba(0,0,0,0.9)';
         ctx.shadowOffsetX = 4;
@@ -1501,8 +1500,8 @@ export function drawVHSRetro(ctx: CanvasRenderingContext2D, stats: any, textColo
         ctx.shadowBlur = 0; // Hardware-sharp shadows
         
         ctx.fillStyle = 'white'; 
-        ctx.font = `400 ${size}px 'VT323', monospace`;
-        (ctx as any).letterSpacing = "0.05em";
+        ctx.font = `${size}px 'Press Start 2P'`;
+        (ctx as any).letterSpacing = "0.02em";
         
         ctx.fillText(text, 0, 0);
         ctx.restore();
@@ -1525,44 +1524,43 @@ export function drawVHSRetro(ctx: CanvasRenderingContext2D, stats: any, textColo
     ctx.fill();
     ctx.restore();
     
-    drawVCR("REC", margin + 65, osdY, 'left', 'top', 64);
-    drawVCR(activity, margin, osdY + 100, 'left', 'top', 64);
+    drawVCR("REC", margin + 75, osdY, 'left', 'top', 40);
+    drawVCR(activity, margin, osdY + 90, 'left', 'top', 40);
 
     // --- TOP RIGHT: PLAY Block (v26.0 Isolated Stack) ---
     const trX = canvasW - margin;
     const trY = osdY;
 
     // Line 1: PLAY + Triangle
-    drawVCR("PLAY", trX - 60, trY, 'right', 'top', 64);
+    drawVCR("PLAY", trX - 60, trY, 'right', 'top', 40);
     
     ctx.save();
     ctx.translate(trX, trY);
-    ctx.scale(0.85, 1.15);
     ctx.fillStyle = 'white';
     ctx.shadowColor = 'rgba(0,0,0,0.9)';
     ctx.shadowOffsetX = 4;
     ctx.shadowOffsetY = 4;
     ctx.beginPath();
-    ctx.moveTo(-45, 10);     
-    ctx.lineTo(-45, 50);    
-    ctx.lineTo(-10, 30);   
+    ctx.moveTo(-45, 5);     
+    ctx.lineTo(-45, 35);    
+    ctx.lineTo(-20, 20);   
     ctx.closePath();
     ctx.fill();
     ctx.restore();
 
     // Line 2: SP
-    drawVCR("SP", trX, trY + 65, 'right', 'top', 48);
+    drawVCR("SP", trX, trY + 60, 'right', 'top', 28);
 
     // Line 3: Distance
-    drawVCR(`${distanceVal} KM`, trX, trY + 135, 'right', 'top', 64);
+    drawVCR(`${distanceVal} KM`, trX, trY + 110, 'right', 'top', 40);
 
     // --- BOTTOM LEFT: Timestamps ---
-    drawVCR(timeStr, margin, canvasH - margin - 85, 'left', 'bottom', 58);
-    drawVCR(dateStr, margin, canvasH - margin, 'left', 'bottom', 58);
+    drawVCR(timeStr, margin, canvasH - margin - 65, 'left', 'bottom', 36);
+    drawVCR(dateStr, margin, canvasH - margin, 'left', 'bottom', 36);
 
     // --- BOTTOM RIGHT: Data ---
-    drawVCR(`${paceVal} /KM`, canvasW - margin, canvasH - margin - 85, 'right', 'bottom', 58);
-    drawVCR("TRACKING", canvasW - margin, canvasH - margin, 'right', 'bottom', 58);
+    drawVCR(`${paceVal} /KM`, canvasW - margin, canvasH - margin - 65, 'right', 'bottom', 36);
+    drawVCR("TRACKING", canvasW - margin, canvasH - margin, 'right', 'bottom', 36);
 
     ctx.restore();
 }
@@ -4851,6 +4849,7 @@ export function drawGraffitiExpo(ctx: CanvasRenderingContext2D, stats: any, text
     
     // Custom color from map
     const customColor = lineColor;
+    const sport = normalizeSport(stats.type);
 
     // Distance (Data - 80% Opacity)
     const distNum = stats.distanceVal || '0.00';
@@ -4865,7 +4864,7 @@ export function drawGraffitiExpo(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.font = "800 38px 'Plus Jakarta Sans'";
     ctx.fillStyle = customColor;
     if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "12px";
-    ctx.fillText("KILOMETROS", 540, 1545);
+    ctx.fillText("KILOMETERS", 540, 1545);
     if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "0px";
 
     // Secondary Stats (Split View - 80% Opacity)
@@ -4881,7 +4880,107 @@ export function drawGraffitiExpo(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.font = "800 24px 'Plus Jakarta Sans'";
     ctx.fillStyle = customColor;
     if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "8px";
-    ctx.fillText("RITMO PROMEDIO", 310, 1765);
-    ctx.fillText("TIEMPO TOTAL", 770, 1765);
+    
+    const paceLabel = sport === 'Ride' ? 'AVG. SPEED' : 'PACE';
+    ctx.fillText(paceLabel, 310, 1765);
+    ctx.fillText("TOTAL DURATION", 770, 1765);
     if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "0px";
+}
+
+/**
+ * Renders the "Journal Grid" sticker.
+ * A high-fidelity, data-dense variant with top-aligned stats and a large Day indicator.
+ */
+export function drawJournalGrid(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const c = buildColors(textColor);
+    const lineColor = textColor.startsWith('#') ? textColor : (textColor === 'black' ? '#000000' : '#ffffff');
+    const isDark = isColorDark(lineColor);
+    const sport = normalizeSport(stats.type);
+    
+    ctx.save();
+    ctx.globalAlpha = 0.9;
+    
+    // Apply Readability Shadow
+    ctx.shadowColor = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.6)';
+    ctx.shadowBlur = 12;
+    ctx.shadowOffsetY = 4;
+
+    // 1. DAY Indicator (Top Left) - Moved down to sit under default logo
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = lineColor;
+    
+    // Day Name (e.g., TUESDAY) under logo
+    const dayLabel = (stats.dayName || "ACTIVITY").toUpperCase();
+    ctx.font = "800 52px 'Merriweather'";
+    ctx.fillText(dayLabel, 60, 190);
+    
+    // Month Day (e.g., 24) under Day Name
+    const monthDay = stats.rawDate ? new Date(stats.rawDate).getDate() : "1";
+    ctx.font = "900 170px 'Merriweather'";
+    ctx.fillText(String(monthDay), 60, 240);
+
+    // 2. Stats Grid (Top Right)
+    const gridX = 540;
+    const gridY = 80;
+    const col2X = 810;
+    const rowHeight = 90;
+    
+    ctx.textAlign = 'left';
+    
+    const drawGridItem = (x: number, y: number, label: string, value: string, unit: string) => {
+        // Label
+        ctx.font = "700 22px 'Plus Jakarta Sans'"; // Labels stay clean sans-serif for contrast
+        ctx.globalAlpha = 0.6;
+        ctx.fillText(label.toUpperCase(), x, y);
+        
+        // Value
+        ctx.globalAlpha = 0.9;
+        ctx.font = "bold 42px 'Merriweather'";
+        const valWidth = ctx.measureText(value).width;
+        ctx.fillText(value, x, y + 30);
+        
+        // Unit
+        if (unit) {
+            ctx.font = "700 20px 'Plus Jakarta Sans'";
+            ctx.fillText(unit, x + valWidth + 8, y + 45);
+        }
+    };
+
+    // Find Elevation in dataPoints
+    const elevPoint = stats.dataPoints?.find(p => p.label.includes('Elevation')) || { value: '0', unit: 'm' };
+    const hrPoint = stats.dataPoints?.find(p => p.label.includes('HR')) || { value: stats.avgHeartrate || '-', unit: 'bpm' };
+    const paceLabel = sport === 'Ride' ? 'AVG. SPEED' : 'PACE';
+    const paceUnit = sport === 'Ride' ? 'km/h' : '/km';
+
+    // Row 1: Distance | Pace
+    drawGridItem(gridX, gridY, "DISTANCE", stats.distanceVal || "0.00", "km");
+    drawGridItem(col2X, gridY, paceLabel, (stats.subValue || "").split(' ')[0] || "0:00", paceUnit);
+
+    // Row 2: Moving Time | Elevation
+    drawGridItem(gridX, gridY + rowHeight, "TIME", stats.timeStr || "0:00", "");
+    drawGridItem(col2X, gridY + rowHeight, "ELEVATION", elevPoint.value, "m");
+
+    // Row 3: Location | bpm
+    const locationStr = stats.location?.length > 15 ? stats.location.slice(0, 15) + "…" : stats.location;
+    drawGridItem(gridX, gridY + rowHeight * 2, "LOCATION", locationStr || "Scora", "");
+    drawGridItem(col2X, gridY + rowHeight * 2, "HEART RATE", hrPoint.value, "bpm");
+
+    // 3. Map (Center/Bottom)
+    if (stats.polyline) {
+        ctx.shadowBlur = 0; // Disable shadow for map to keep it clean
+        ctx.shadowOffsetY = 0;
+        
+        const mapSize = 750;
+        const mapX = 540;
+        const mapY = 1000;
+        
+        // Draw map with slightly thicker stroke
+        drawRoutePath(ctx, stats.polyline, mapX, mapY, mapSize, {
+            color: lineColor,
+            strokeWidth: 9
+        });
+    }
+
+    ctx.restore();
 }

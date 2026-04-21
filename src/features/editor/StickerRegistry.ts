@@ -9,6 +9,7 @@ import * as Renderers from './CanvasPainter';
  */
 
 export const STICKER_LIST: StickerDefinition[] = [
+    { id: 'journal-grid', category: 'distance', supportsCustomColor: true, supportsBlackText: true, features: { distance: true, duration: true, map: true, heartRate: true }, render: Renderers.drawJournalGrid },
     { id: 'editorial-strip', category: 'all', supportsBlackText: false, compact: true, features: { distance: true, duration: true, date: true }, render: Renderers.drawEditorialStrip },
     { id: 'science-pro', category: 'all', supportsBlackText: false, features: { distance: true, heartRate: true, date: true, paceSpeed: false }, render: Renderers.drawSciencePro },
     { id: 'narrative-highlight', category: 'all', supportsBlackText: true, preferredCase: 'lowercase', features: { distance: true, duration: true, paceSpeed: true, date: true }, render: Renderers.drawNarrativeHighlight },
