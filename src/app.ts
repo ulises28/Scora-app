@@ -118,6 +118,9 @@ const templateManager = initTemplateManager(async (template, color, showLogo) =>
  */
 function openEditor(stats: any) {
     // 0. Atomic data priming before any UI/Logic transitions
+    const actIndex = lastActivities.findIndex(a => a.id === stats.id);
+    stats.dayNumber = actIndex !== -1 ? (lastActivities.length - actIndex) : 1;
+    
     currentStats = stats;
     currentActivityId = stats.id;
 
@@ -128,7 +131,8 @@ function openEditor(stats: any) {
     if (nameEl) nameEl.innerText = stats.shortTitle ?? stats.title;
 
     // 1. Synchronous template reset (triggers onChange -> first high-precision draw)
-    templateManager.setTemplate(TEMPLATES[0]);
+    templateManager.filterByActivity(stats);
+    templateManager.setTemplate(templateManager.template);
 
     // 2. High-Fidelity Geographic Enrichment (Async Phase)
     // We get the raw activity from context or ID if needed.

@@ -243,14 +243,14 @@ export function drawMetricBlock(
  * Standardizes mapping from raw Strava types to Scora "Studio Precision" labels.
  */
 export function normalizeSport(type: string): string {
-    if (!type) return 'Workout';
+    if (!type) return 'Training';
     const lower = type.toLowerCase();
     
-    // 1. WORKOUT (HIIT, Gym, Crossfit, etc.)
+    // 1. TRAINING (HIIT, Gym, Crossfit, etc.)
     if (lower.includes('weight') || lower.includes('workout') || lower.includes('gym') || 
         lower.includes('training') || lower.includes('crossfit') || lower.includes('hiit') || 
         lower.includes('yoga') || lower.includes('pilates')) {
-        return 'Workout';
+        return 'Training';
     }
     // 2. RIDE (The "Action" word for all Cycling)
     if (lower.includes('ride') || lower.includes('cycle') || lower.includes('bike')) {

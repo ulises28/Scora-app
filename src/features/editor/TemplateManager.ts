@@ -20,7 +20,8 @@ type OnChangeCallback = (template: string, color: string, showLogo: boolean) => 
  * Handle visual sticker selection and synchronized navigation.
  */
 export function initTemplateManager(onChange: OnChangeCallback) {
-    let currentTemplate = TEMPLATES[0] || 'minimal';
+    let currentTemplates = [...TEMPLATES];
+    let currentTemplate = currentTemplates[0] || 'minimal';
     let currentTextColor = 'white';
     let currentMapColor = '#ffffff';
     let currentShowLogo = true;
@@ -34,7 +35,7 @@ export function initTemplateManager(onChange: OnChangeCallback) {
         if (!galleryContainer) return;
         galleryContainer.innerHTML = '';
 
-        TEMPLATES.forEach((id, i) => {
+        currentTemplates.forEach((id, i) => {
             const thumb = document.createElement('div');
             thumb.className = `sticker-thumb transparency-grid ${id === currentTemplate ? 'active' : ''}`;
             thumb.dataset.template = id;
@@ -71,7 +72,7 @@ export function initTemplateManager(onChange: OnChangeCallback) {
     function updateDots() {
         if (!dotsContainer) return;
         dotsContainer.innerHTML = '';
-        TEMPLATES.forEach(id => {
+        currentTemplates.forEach(id => {
             const dot = document.createElement('span');
             dot.className = `template-dot ${id === currentTemplate ? 'active' : ''}`;
             dot.dataset.template = id;
@@ -81,7 +82,10 @@ export function initTemplateManager(onChange: OnChangeCallback) {
     }
 
     function setTemplate(id: string) {
-        if (!TEMPLATES.includes(id)) return;
+        if (!currentTemplates.includes(id)) {
+            // Fallback to first available if not found in current filtered set
+            id = currentTemplates[0] || 'minimal';
+        }
         currentTemplate = id;
 
         // Sync Gallery Active State
@@ -95,9 +99,9 @@ export function initTemplateManager(onChange: OnChangeCallback) {
         });
 
         // Sync Arrows
-        const idx = TEMPLATES.indexOf(id);
-        if (btnPrev) btnPrev.disabled = idx === 0;
-        if (btnNext) btnNext.disabled = idx === TEMPLATES.length - 1;
+        const idx = currentTemplates.indexOf(id);
+        if (btnPrev) btnPrev.disabled = idx <= 0;
+        if (btnNext) btnNext.disabled = idx === currentTemplates.length - 1 || idx === -1;
 
         // Auto-scroll gallery
         const activeThumb = galleryContainer?.querySelector(`.sticker-thumb[data-template="${id}"]`);
@@ -137,22 +141,22 @@ export function initTemplateManager(onChange: OnChangeCallback) {
 
     // Navigation Listeners
     btnPrev?.addEventListener('click', () => {
-        const idx = TEMPLATES.indexOf(currentTemplate);
-        if (idx > 0) setTemplate(TEMPLATES[idx - 1]);
+        const idx = currentTemplates.indexOf(currentTemplate);
+        if (idx > 0) setTemplate(currentTemplates[idx - 1]);
     });
     btnNext?.addEventListener('click', () => {
-        const idx = TEMPLATES.indexOf(currentTemplate);
-        if (idx < TEMPLATES.length - 1) setTemplate(TEMPLATES[idx + 1]);
+        const idx = currentTemplates.indexOf(currentTemplate);
+        if (idx < currentTemplates.length - 1 && idx !== -1) setTemplate(currentTemplates[idx + 1]);
     });
 
     window.addEventListener('keydown', (e) => {
         if (e.key === 'ArrowRight') {
-            const idx = TEMPLATES.indexOf(currentTemplate);
-            if (idx < TEMPLATES.length - 1) setTemplate(TEMPLATES[idx + 1]);
+            const idx = currentTemplates.indexOf(currentTemplate);
+            if (idx < currentTemplates.length - 1 && idx !== -1) setTemplate(currentTemplates[idx + 1]);
         }
         if (e.key === 'ArrowLeft') {
-            const idx = TEMPLATES.indexOf(currentTemplate);
-            if (idx > 0) setTemplate(TEMPLATES[idx - 1]);
+            const idx = currentTemplates.indexOf(currentTemplate);
+            if (idx > 0) setTemplate(currentTemplates[idx - 1]);
         }
     });
 
@@ -164,9 +168,9 @@ export function initTemplateManager(onChange: OnChangeCallback) {
         wrapper.addEventListener('touchend', (e) => {
             const delta = e.changedTouches[0].clientX - startX;
             if (Math.abs(delta) < 50) return;
-            const idx = TEMPLATES.indexOf(currentTemplate);
-            if (delta < 0 && idx < TEMPLATES.length - 1) setTemplate(TEMPLATES[idx + 1]);
-            else if (delta > 0 && idx > 0) setTemplate(TEMPLATES[idx - 1]);
+            const idx = currentTemplates.indexOf(currentTemplate);
+            if (delta < 0 && idx < currentTemplates.length - 1 && idx !== -1) setTemplate(currentTemplates[idx + 1]);
+            else if (delta > 0 && idx > 0) setTemplate(currentTemplates[idx - 1]);
         }, { passive: true });
     }
 
@@ -200,6 +204,18 @@ export function initTemplateManager(onChange: OnChangeCallback) {
         get template() { return currentTemplate; },
         get color() { return currentTextColor; },
         get showLogo() { return currentShowLogo; },
-        setTemplate
+        setTemplate,
+        filterByActivity: (stats: any) => {
+            const hasMap = !!stats.polyline;
+            currentTemplates = TEMPLATES.filter(id => {
+                const config = STICKER_REGISTRY[id];
+                if (config?.features?.map && !hasMap) return false;
+                return true;
+            });
+            renderGallery();
+            updateDots();
+            // Re-sync current template if it was filtered out
+            setTemplate(currentTemplate);
+        }
     };
 }
