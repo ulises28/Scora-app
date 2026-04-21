@@ -53,6 +53,7 @@ Scora features a "Studio Grade" quality pipeline that goes beyond traditional CI
 - **Metadata-Driven Truth**: E2E tests are "Truth-Aware," querying a generated `sticker-capabilities.json` to know exactly what labels and metrics a sticker *should* render, eliminating brittle hardcoded expectations.
 - **Zero-Delay Synchronization**: Utilizes a professional `_scoraIsSettled` signal hooked into `requestAnimationFrame` to eliminate all hardcoded `waitForTimeout` delays, achieving maximum test speed without flakiness.
 - **Monocart Dashboard**: Professional-grade test reporting with full trace logs, video recordings of failures, and DOM snapshots for deep-dive debugging.
+- **Agent Intelligence**: Powered by [AutoSkills](https://www.autoskills.sh/), enabling high-fidelity automated skill management and execution.
 
 ---
 
@@ -109,6 +110,9 @@ npm run test:e2e
 # Run the Scora IA-Agent (Watchdog) for Visual Regressions
 npm run test:agent
 
+# Update and synchronize latest agent skills
+npx autoskills
+
 # Finalize AI-approved design 'Heals' (Self-Healing snapshots)
 npm run heal
 
@@ -118,6 +122,14 @@ npm run test:report
 # Update visual regression snapshots (if changing Sticker templates)
 npm run test:e2e -- --update-snapshots
 ```
+
+---
+
+---
+
+## 🤝 Acknowledgments
+
+Special thanks to the [AutoSkills](https://www.autoskills.sh/) team for the high-fidelity agentic framework that powers Scora's automated intelligence and QA systems.
 
 ---
 

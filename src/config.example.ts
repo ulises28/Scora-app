@@ -9,8 +9,8 @@ const meta = import.meta;
 export const STRAVA_CONFIG = {
     // Obtén estos datos en: https://www.strava.com/settings/api
     // Vite usará las variables de entorno si existen (ej. en GitHub Actions), si no, usa el texto por defecto.
-    CLIENT_ID: (typeof process !== 'undefined' && process.env?.VITE_STRAVA_CLIENT_ID) || (meta.env?.VITE_STRAVA_CLIENT_ID) || '203757',
-    CLIENT_SECRET: (typeof process !== 'undefined' && process.env?.VITE_STRAVA_CLIENT_SECRET) || (meta.env?.VITE_STRAVA_CLIENT_SECRET) || 'PROTECTED_BY_BACKEND',
+    CLIENT_ID: (typeof process !== 'undefined' && process.env?.VITE_STRAVA_CLIENT_ID) || (meta.env?.VITE_STRAVA_CLIENT_ID) || 'YOUR_STRAVA_CLIENT_ID',
+    CLIENT_SECRET: (typeof process !== 'undefined' && process.env?.VITE_STRAVA_CLIENT_SECRET) || (meta.env?.VITE_STRAVA_CLIENT_SECRET) || 'YOUR_STRAVA_CLIENT_SECRET',
 
     // Esta URL se generará dinámicamente según dónde estés ejecutando la app
     REDIRECT_URI: typeof window !== 'undefined' ? window.location.origin + window.location.pathname.replace(/\/$/, '') : 'http://localhost:5500'

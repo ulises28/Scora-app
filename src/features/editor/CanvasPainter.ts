@@ -29,16 +29,36 @@ function applyActivityCasing(label: string, templateId?: string): string {
     return label;
 }
 
+function hexToRgb(hex: string) {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '255, 255, 255';
+}
+
+function isColorDark(hex: string) {
+    if (!hex.startsWith('#')) return hex === 'black';
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b; // ITU-R BT.709
+    return luma < 128;
+}
+
 function buildColors(textColor: string) {
     const alphaValue = 0.85;
-    const base = textColor === 'black' ? '0, 0, 0' : '255, 255, 255';
+    let base = '255, 255, 255';
+    if (textColor === 'black') base = '0, 0, 0';
+    else if (textColor.startsWith('#')) base = hexToRgb(textColor);
+
+    const isDark = isColorDark(textColor.startsWith('#') ? textColor : (textColor === 'black' ? '#000000' : '#ffffff'));
+
     return {
         solid: `rgb(${base})`,
         trans: `rgba(${base}, ${alphaValue})`,
-        label: textColor === 'black' ? 'rgba(0,0,0,0.75)' : 'rgba(255,255,255,0.75)',
+        label: isDark ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.75)',
         accent: '#80cbc4',
     };
 }
+
 
 /**
  * Draws the Scora Activity Icons (Run, Bike, Workout) using Canvas Paths.
@@ -212,7 +232,8 @@ export function drawTemplate(
         ctx.fill();
 
         ctx.font = "700 42px 'Plus Jakarta Sans'";
-        ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
+        const isDark = isColorDark(textColor.startsWith('#') ? textColor : (textColor === 'black' ? '#000000' : '#ffffff'));
+        ctx.fillStyle = isDark ? 'white' : 'black';
         ctx.fillText('SCORA.', 110, 115);
     }
 
@@ -3186,21 +3207,102 @@ export function drawLocationPill(ctx: CanvasRenderingContext2D, stats: any, text
         });
     }
 }
+function drawSprayPath(ctx: CanvasRenderingContext2D, coords: [number, number][], getXY: (p: [number, number]) => { x: number, y: number }, color: string) {
+    if (!coords || coords.length === 0) return;
+
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = color;
+
+    // 1. UNDERGLOW (Large, soft spray area)
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 45;
+    ctx.lineWidth = 35;
+    ctx.globalAlpha = 0.3;
+    ctx.beginPath();
+    coords.forEach((p, i) => {
+        const { x, y } = getXY(p);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    // 2. MAIN BODY (Stronger center)
+    ctx.shadowBlur = 15;
+    ctx.lineWidth = 22;
+    ctx.globalAlpha = 0.6;
+    ctx.stroke();
+
+    // 3. CORE (Solid center with jitter)
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 0.9;
+    [12, 6].forEach((w, pass) => {
+        ctx.lineWidth = w;
+        ctx.beginPath();
+        coords.forEach((p, i) => {
+            const { x, y } = getXY(p);
+            const jitter = pass === 0 ? 4 : 2;
+            const jX = x + Math.sin(i * 0.8 + pass) * jitter;
+            const jY = y + Math.cos(i * 0.7 - pass) * jitter;
+            if (i === 0) ctx.moveTo(jX, jY); else ctx.lineTo(jX, jY);
+        });
+        ctx.stroke();
+    });
+
+    // 4. SPLATTER (Spray particles)
+    ctx.fillStyle = color;
+    coords.forEach((p, i) => {
+        if (i % 8 === 0) { // Every few points
+            const { x, y } = getXY(p);
+            const particles = 4;
+            for (let j = 0; j < particles; j++) {
+                const angle = (i + j) * 137.5; // Golden angle for distribution
+                const dist = 10 + (i * j % 25);
+                const px = x + Math.cos(angle) * dist;
+                const py = y + Math.sin(angle) * dist;
+                const size = 1 + (i % 3);
+                ctx.globalAlpha = 0.2 + (j * 0.1);
+                ctx.beginPath();
+                ctx.arc(px, py, size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+    });
+
+    // 5. DRIPS (Paint gravity)
+    ctx.globalAlpha = 0.7;
+    coords.forEach((p, i) => {
+        // Create drips on local peaks or every 60 points
+        if (i > 0 && i < coords.length - 1 && i % 80 === 0) {
+            const { x, y } = getXY(p);
+            const dripLen = 30 + (i % 80);
+            const dripWidth = 6 + (i % 4);
+            
+            ctx.lineWidth = dripWidth;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x, y + dripLen);
+            ctx.stroke();
+
+            // Drip head (bulb)
+            ctx.beginPath();
+            ctx.arc(x, y + dripLen, dripWidth * 0.8, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    });
+
+    ctx.restore();
+}
+
 export function drawPureMap(ctx: CanvasRenderingContext2D, stats: any, textColor = 'white') {
     if (!stats.polyline) return;
 
-    const isDark = textColor === 'white';
-    const cSolid = isDark ? '#ffffff' : '#000000';
-
+    const lineColor = textColor.startsWith('#') ? textColor : (textColor === 'black' ? '#000000' : '#ffffff');
     const coords = decodePolyline(stats.polyline);
     if (!coords || coords.length === 0) return;
 
-    const lineColor = cSolid;
-
-    // Bounding Box in center
     const mapBox = { x: 140, y: 560, w: 800, h: 800 };
 
-    // Find min/max to scale
     let minLat = coords[0][0], maxLat = minLat, minLng = coords[0][1], maxLng = minLng;
     coords.forEach((p: any) => {
         if (p[0] < minLat) minLat = p[0]; if (p[0] > maxLat) maxLat = p[0];
@@ -3209,29 +3311,19 @@ export function drawPureMap(ctx: CanvasRenderingContext2D, stats: any, textColor
 
     const scale = Math.min(mapBox.w / (maxLng - minLng), mapBox.h / (maxLat - minLat));
 
-    ctx.beginPath();
-    ctx.strokeStyle = lineColor;
-    ctx.lineWidth = 14;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-
-    // Shadow for visibility
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
-    ctx.shadowBlur = 30;
-    ctx.shadowOffsetY = 10;
-
-    coords.forEach((p: any, i: number) => {
+    const getXY = (p: [number, number]) => {
         const x = mapBox.x + (p[1] - minLng) * scale + (mapBox.w - ((maxLng - minLng) * scale)) / 2;
         const y = mapBox.y + mapBox.h - ((p[0] - minLat) * scale) - (mapBox.h - ((maxLat - minLat) * scale)) / 2;
-        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-    });
-    ctx.stroke();
+        return { x: x, y: y };
+    };
 
-    // Reset shadow
-    ctx.shadowBlur = 0;
-    ctx.shadowOffsetY = 0;
-    ctx.shadowColor = 'transparent';
+    ctx.save();
+    ctx.globalAlpha = 0.8;
+    drawSprayPath(ctx, coords, getXY, lineColor);
+    ctx.restore();
 }
+
+
 
 export function drawProVertical(ctx: CanvasRenderingContext2D, stats: any, textColor = 'white') {
     const c = buildColors(textColor);
@@ -4719,4 +4811,77 @@ export function drawAestheticMedal(ctx: CanvasRenderingContext2D, stats: any, te
     ctx.beginPath(); ctx.arc(cx + 100, cy + 95, 5, 0, Math.PI * 2); ctx.fill();
 
     ctx.restore();
+}
+
+export function drawGraffitiExpo(ctx: CanvasRenderingContext2D, stats: any, textColor = 'white') {
+    const isDark = isColorDark(textColor.startsWith('#') ? textColor : (textColor === 'black' ? '#000000' : '#ffffff'));
+    const lineColor = textColor.startsWith('#') ? textColor : (textColor === 'black' ? '#000000' : '#ffffff');
+    const c = buildColors(textColor);
+
+    // 1. Enhanced Spray Map (Higher, leave space for text)
+    if (stats.polyline) {
+        const coords = decodePolyline(stats.polyline);
+        if (coords && coords.length > 0) {
+            const mapBox = { x: 100, y: 150, w: 880, h: 1050 };
+            
+            let minLat = coords[0][0], maxLat = minLat, minLng = coords[0][1], maxLng = minLng;
+            coords.forEach((p: any) => {
+                if (p[0] < minLat) minLat = p[0]; if (p[0] > maxLat) maxLat = p[0];
+                if (p[1] < minLng) minLng = p[1]; if (p[1] > maxLng) maxLng = p[1];
+            });
+
+            const scale = Math.min(mapBox.w / (maxLng - minLng), mapBox.h / (maxLat - minLat));
+
+            const getXY = (p: [number, number]) => {
+                const x = mapBox.x + (p[1] - minLng) * scale + (mapBox.w - ((maxLng - minLng) * scale)) / 2;
+                const y = mapBox.y + mapBox.h - ((p[0] - minLat) * scale) - (mapBox.h - ((maxLat - minLat) * scale)) / 2;
+                return { x, y };
+            };
+
+            ctx.save();
+            ctx.globalAlpha = 0.85;
+            drawSprayPath(ctx, coords, getXY, lineColor);
+            ctx.restore();
+        }
+    }
+
+    // 2. Aesthetic Typography (Bottom)
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
+    
+    // Custom color from map
+    const customColor = lineColor;
+
+    // Distance (Data - 80% Opacity)
+    const distNum = stats.distanceVal || '0.00';
+    ctx.save();
+    ctx.globalAlpha = 0.8;
+    ctx.font = "italic 700 210px 'Playfair Display'";
+    ctx.fillStyle = customColor;
+    ctx.fillText(distNum, 540, 1480);
+    ctx.restore();
+
+    // Units (Solid - 100% Opacity)
+    ctx.font = "800 38px 'Plus Jakarta Sans'";
+    ctx.fillStyle = customColor;
+    if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "12px";
+    ctx.fillText("KILOMETROS", 540, 1545);
+    if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "0px";
+
+    // Secondary Stats (Split View - 80% Opacity)
+    ctx.save();
+    ctx.globalAlpha = 0.8;
+    ctx.font = "italic 600 85px 'Playfair Display'";
+    ctx.fillStyle = customColor;
+    ctx.fillText(stats.subValue || '0:00 /km', 310, 1720);
+    ctx.fillText(stats.timeStr || '0h 00m', 770, 1720);
+    ctx.restore();
+
+    // Labels (Solid - 100% Opacity)
+    ctx.font = "800 24px 'Plus Jakarta Sans'";
+    ctx.fillStyle = customColor;
+    if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "8px";
+    ctx.fillText("RITMO PROMEDIO", 310, 1765);
+    ctx.fillText("TIEMPO TOTAL", 770, 1765);
+    if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "0px";
 }

@@ -9,9 +9,9 @@ on:
         type: boolean
         default: false
   push:
-    branches: [ "master", "main" ]
+    branches: [ "master" ]
   pull_request:
-    branches: [ "**" ]
+    branches: [ "master" ]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -76,14 +76,14 @@ jobs:
       # On branches: Open a Pull Request for professional review.
       
       - name: Direct Commit Updated Snapshots (Master/Main Only)
-        if: github.event.inputs.update_snapshots == true && (github.ref_name == 'master' || github.ref_name == 'main')
+        if: github.event.inputs.update_snapshots == true && github.ref_name == 'master'
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "chore(testing): self-healing production snapshots [skip ci]"
           file_pattern: "tests/**/*.png tests/e2e/fixtures/sticker-capabilities.json"
 
       - name: Open Pull Request with Updated Snapshots (Feature Branches Only)
-        if: github.event.inputs.update_snapshots == true && (github.ref_name != 'master' && github.ref_name != 'main')
+        if: github.event.inputs.update_snapshots == true && github.ref_name != 'master'
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}

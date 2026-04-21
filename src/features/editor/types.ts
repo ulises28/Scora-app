@@ -22,6 +22,7 @@ export interface StickerDefinition {
     features: TemplateFeatures;
     category: StickerCategory;
     supportsBlackText?: boolean;
+    supportsCustomColor?: boolean;
     compact?: boolean;
     seasonal?: boolean;
     note?: string;
