@@ -15,7 +15,7 @@ export interface TemplateFeatures {
     title?: boolean;
 }
 
-export type StickerCategory = 'distance' | 'workout' | 'all';
+export type StickerCategory = 'distance' | 'workout' | 'all' | 'map';
 
 export interface StickerDefinition {
     id: string;
