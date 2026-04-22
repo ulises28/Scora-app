@@ -118,6 +118,7 @@ export function initTemplateManager(onChange: OnChangeCallback) {
         if (config?.supportsCustomColor) {
             colorToggleGroup?.classList.add('hidden');
             mapColorGroup?.classList.remove('hidden');
+            updateMapColorUI(currentMapColor);
         } else {
             colorToggleGroup?.classList.remove('hidden');
             mapColorGroup?.classList.add('hidden');
@@ -188,12 +189,23 @@ export function initTemplateManager(onChange: OnChangeCallback) {
     });
 
     const mapColorPicker = document.getElementById('map-color-picker') as HTMLInputElement | null;
-    mapColorPicker?.addEventListener('input', (e) => {
-        currentMapColor = (e.target as HTMLInputElement).value;
+    const mapColorSwatch = document.getElementById('map-color-swatch');
+    const mapColorValue = document.getElementById('map-color-value');
+
+    function updateMapColorUI(color: string) {
+        currentMapColor = color;
+        if (mapColorSwatch) mapColorSwatch.style.background = color;
+        if (mapColorValue) mapColorValue.innerText = color.toUpperCase();
+        if (mapColorPicker) mapColorPicker.value = color;
+
         const config = STICKER_REGISTRY[currentTemplate];
         if (config?.supportsCustomColor) {
             onChange(currentTemplate, currentMapColor, currentShowLogo);
         }
+    }
+
+    mapColorPicker?.addEventListener('input', (e) => {
+        updateMapColorUI((e.target as HTMLInputElement).value);
     });
 
     // Initial State

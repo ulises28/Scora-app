@@ -56,11 +56,13 @@ function buildColors(textColor: string) {
 
     const isDark = isColorDark(textColor.startsWith('#') ? textColor : (textColor === 'black' ? '#000000' : '#ffffff'));
 
+    const accent = textColor.startsWith('#') ? textColor : (textColor === 'black' ? '#000000' : '#ffffff');
+
     return {
         solid: `rgb(${base})`,
         trans: `rgba(${base}, ${alphaValue})`,
         label: isDark ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.75)',
-        accent: '#80cbc4',
+        accent: accent,
     };
 }
 
@@ -2504,7 +2506,7 @@ export function exportCanvas(canvasId: string) {
 
 export function drawNarrativeHighlight(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
     const serifFont = "'Libertinus Math', serif";
-    const highlightColor = "#FFD644"; 
+    const highlightColor = "#FFD644";
     const bgColor = "#fbf9f4"; // Tactile off-white
     const textCol = "#1a1a1a";
 
@@ -2573,7 +2575,7 @@ export function drawNarrativeHighlight(ctx: CanvasRenderingContext2D, stats: any
 
     // 3. Text Content Setup (Pre-measure for scaling)
     ctx.save();
-    let baseFontSize = 82; 
+    let baseFontSize = 82;
     ctx.font = `600 ${baseFontSize}px ${serifFont}`;
 
     const maxTextW = 920;
@@ -2591,18 +2593,18 @@ export function drawNarrativeHighlight(ctx: CanvasRenderingContext2D, stats: any
 
     // 4. Card Background & Enhanced Paper Physics
     ctx.save();
-    
+
     // Deeper, more realistic paper shadow
     ctx.shadowColor = 'rgba(0,0,0,0.18)';
     ctx.shadowBlur = 50;
     ctx.shadowOffsetY = 20;
-    
+
     // Draw Base Card
     ctx.fillStyle = bgColor;
     const xIdx = cx - cardW / 2;
     const yIdx = cy - cardH / 2;
     ctx.beginPath();
-    ctx.roundRect(xIdx, yIdx, cardW, cardH, 2); 
+    ctx.roundRect(xIdx, yIdx, cardW, cardH, 2);
     ctx.fill();
     ctx.restore();
 
@@ -2610,8 +2612,8 @@ export function drawNarrativeHighlight(ctx: CanvasRenderingContext2D, stats: any
     ctx.save();
     ctx.beginPath();
     ctx.roundRect(xIdx, yIdx, cardW, cardH, 2);
-    ctx.clip(); 
-    
+    ctx.clip();
+
     // Draw Crinkled Texture if loaded
     if (paperTexture.complete && paperTexture.naturalWidth !== 0) {
         ctx.globalCompositeOperation = 'multiply';
@@ -2634,9 +2636,9 @@ export function drawNarrativeHighlight(ctx: CanvasRenderingContext2D, stats: any
     ctx.textBaseline = 'middle';
     ctx.textAlign = 'left';
 
-    const gap = baseFontSize * 1.4; 
+    const gap = baseFontSize * 1.4;
     const l1Y = cy - 55; // Mathematically centered for 280px card
-    const l2Y = cy + 55; 
+    const l2Y = cy + 55;
     const startX = cx - cardW / 2 + 70;
 
     function drawSegment(text: string, x: number, y: number, highlight: boolean) {
@@ -3694,7 +3696,7 @@ export function drawTinyGPS(ctx: CanvasRenderingContext2D, stats: any, textColor
     // High Density Cinematic Look
     ctx.globalAlpha = 0.9; // Requested 90%
     ctx.fillStyle = cSolid;
-    
+
     // Coords (Cinzel 400 - Larger)
     ctx.font = "400 42px 'Cinzel'";
     if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0.4em"; }
@@ -4528,11 +4530,11 @@ export function drawSciencePro(ctx: CanvasRenderingContext2D, stats: any, textCo
 
     // 1. Header (Ultra-Compact)
     const title = (stats.title || stats.type || 'Activity').toUpperCase();
-    ctx.font = "400 82px 'Space Grotesk'";
+    ctx.font = "400 82px 'Michroma'";
     ctx.fillStyle = accent;
     ctx.fillText(title, 540, 700); // Moved up from 720
 
-    ctx.font = "400 32px 'Space Grotesk'";
+    ctx.font = "400 32px 'Michroma'";
     const meta = `${(stats.location || 'MEXICO CITY').toUpperCase()} — ${stats.distanceVal || stats.mainValue || '0.00'} KM`;
     ctx.globalAlpha = 0.8;
     setLetterSpacing(ctx, '4px');
@@ -4855,11 +4857,13 @@ export function drawAestheticMedal(ctx: CanvasRenderingContext2D, stats: any, te
 
     ctx.restore();
 }
+export function drawGraffitiExpo(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const { solid, trans, label: labelColor, accent: accentColor } = buildColors(textColor);
 
-export function drawGraffitiExpo(ctx: CanvasRenderingContext2D, stats: any, textColor = 'white') {
-    const isDark = isColorDark(textColor.startsWith('#') ? textColor : (textColor === 'black' ? '#000000' : '#ffffff'));
     const lineColor = textColor.startsWith('#') ? textColor : (textColor === 'black' ? '#000000' : '#ffffff');
-    const c = buildColors(textColor);
+    const secondaryColor = textColor === 'black' ? '#000000' : '#ffffff';
+    const isDarkAccent = isColorDark(accentColor);
+    const isDarkSecondary = isColorDark(secondaryColor);
 
     // 1. Enhanced Spray Map (Higher, leave space for text)
     if (stats.polyline) {
@@ -4899,6 +4903,9 @@ export function drawGraffitiExpo(ctx: CanvasRenderingContext2D, stats: any, text
     // Distance (Data - 85% Opacity)
     const distNum = stats.distanceVal || '0.00';
     ctx.save();
+    ctx.shadowColor = isDarkAccent ? 'rgba(255, 255, 255, 0.45)' : 'rgba(0, 0, 0, 0.6)';
+    ctx.shadowBlur = 18;
+    ctx.shadowOffsetY = 4;
     ctx.globalAlpha = 0.85;
     ctx.font = "900 140px 'BBH Bartle'";
     ctx.fillStyle = customColor;
@@ -4906,15 +4913,23 @@ export function drawGraffitiExpo(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.restore();
 
     // Units (Solid - 100% Opacity)
-    ctx.font = "800 32px 'Plus Jakarta Sans'"; // Increased for legibility
-    ctx.fillStyle = customColor;
-    ctx.globalAlpha = 1.0; // Force solid
+    ctx.save();
+    ctx.font = "800 32px 'Plus Jakarta Sans'";
+    ctx.fillStyle = secondaryColor;
+    ctx.globalAlpha = 1.0;
+    ctx.shadowColor = isDarkSecondary ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.6)';
+    ctx.shadowBlur = 12;
+    ctx.shadowOffsetY = 2;
     if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "15px";
     ctx.fillText("KILOMETERS", 540, 1515);
     if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "0px";
+    ctx.restore();
 
     // Secondary Data (Pace & Time - 85% Opacity)
     ctx.save();
+    ctx.shadowColor = isDarkAccent ? 'rgba(255, 255, 255, 0.45)' : 'rgba(0, 0, 0, 0.6)';
+    ctx.shadowBlur = 12;
+    ctx.shadowOffsetY = 3;
     ctx.globalAlpha = 0.85;
     ctx.font = "900 55px 'BBH Bartle'";
     ctx.fillStyle = customColor;
@@ -4923,15 +4938,119 @@ export function drawGraffitiExpo(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.restore();
 
     // Labels (Solid - 100% Opacity)
-    ctx.font = "800 24px 'Plus Jakarta Sans'"; // Increased for legibility
-    ctx.fillStyle = customColor;
-    ctx.globalAlpha = 1.0; // Force solid
+    ctx.save();
+    ctx.font = "800 24px 'Plus Jakarta Sans'";
+    ctx.fillStyle = secondaryColor;
+    ctx.globalAlpha = 1.0;
+    ctx.shadowColor = isDarkSecondary ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.6)';
+    ctx.shadowBlur = 10;
+    ctx.shadowOffsetY = 2;
     if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "10px";
 
     const paceLabel = sport === 'Ride' ? 'AVG. SPEED' : 'PACE';
     ctx.fillText(paceLabel, 310, 1740);
     ctx.fillText("TOTAL DURATION", 770, 1740);
     if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "0px";
+    ctx.restore();
+}
+
+/**
+ * GRAFFITI BRAND — Grid Centered Edition.
+ * Surgical centering within an imagined 1x2 layout grid.
+ */
+export function drawGraffitiBrand(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const { accent: accentColor } = buildColors(textColor);
+    const isDarkAccent = isColorDark(accentColor);
+
+    // Canvas Constants
+    const midX = 540; 
+    const colX1 = 270; // Center of Left Box (540/2)
+    const colX2 = 810; // Center of Right Box (540 + 270)
+    
+    // Vertical Box Targets
+    let heroY = 280; 
+    let row2Y = 580;
+
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
+
+    const applyDeepShadow = (blur = 30) => {
+        ctx.shadowColor = isDarkAccent ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.9)';
+        ctx.shadowBlur = blur;
+        ctx.shadowOffsetY = 6;
+    };
+
+    // 1. Hero Distance (BOX 1 - Centered)
+    const distNum = (stats.distanceVal || '0.00').toUpperCase();
+    ctx.save();
+    applyDeepShadow(35);
+    ctx.globalAlpha = 1.0; 
+    ctx.font = "900 135px 'BBH Bartle'"; 
+    ctx.fillStyle = accentColor; 
+    ctx.fillText(distNum, midX, heroY);
+    ctx.restore();
+
+    // 2. Main Unit (BOX 1 - Sub label)
+    ctx.save();
+    applyDeepShadow(15);
+    ctx.font = "800 32px 'Michroma'"; 
+    ctx.fillStyle = accentColor;
+    ctx.globalAlpha = 1.0; 
+    if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "15px";
+    ctx.fillText("KILOMETERS", midX, heroY + 65);
+    ctx.restore();
+
+    // 3. Activity Statistics (Data Prep)
+    const isWorkout = stats.type === 'Workout' || stats.type === 'WeightTraining';
+    const isRide = stats.type === 'Ride' || stats.type === 'EBikeRide';
+
+    let m1Value = ''; let m1Label = '';
+    let m2Value = ''; let m2Label = '';
+
+    if (isWorkout) {
+        m1Value = stats.avgHeartrate ? `${stats.avgHeartrate} BPM` : (stats.calories ? `${stats.calories} KCAL` : 'WORKOUT');
+        m1Label = stats.avgHeartrate ? 'AVG HEART RATE' : (stats.calories ? 'CALORIES' : 'SESSION');
+        m2Value = (stats.timeStr || '0M').toUpperCase();
+        m2Label = 'TOTAL DURATION';
+    } else {
+        m1Value = (stats.subValue || '0:00 /KM').toUpperCase();
+        m1Label = isRide ? 'AVG. SPEED' : 'PACE';
+        m2Value = (stats.timeStr || '0M').toUpperCase();
+        m2Label = 'TOTAL DURATION';
+    }
+
+    // 4. Sub-Metrics (BOX 2 & 3 - Column Centering)
+    const maxSubW = 500; // Allow slightly more width since we are centered perfectly
+
+    const drawGridMetric = (val: string, label: string, x: number, y: number) => {
+        // Value
+        ctx.save();
+        applyDeepShadow();
+        ctx.fillStyle = accentColor;
+        ctx.globalAlpha = 1.0;
+        
+        let subFontSize = 85; 
+        ctx.font = `900 ${subFontSize}px 'BBH Bartle'`;
+        // Safety Auto-Scaling
+        while (ctx.measureText(val).width > maxSubW && subFontSize > 40) {
+            subFontSize -= 2;
+            ctx.font = `900 ${subFontSize}px 'BBH Bartle'`;
+        }
+        ctx.fillText(val, x, y);
+        ctx.restore();
+
+        // Label
+        ctx.save();
+        applyDeepShadow(10);
+        ctx.font = "800 24px 'Michroma'";
+        ctx.fillStyle = accentColor;
+        ctx.globalAlpha = 1.0;
+        ctx.fillText(label, x, y + 55);
+        ctx.restore();
+    };
+
+    drawGridMetric(m1Value, m1Label, colX1, row2Y);
+    drawGridMetric(m2Value, m2Label, colX2, row2Y);
 }
 
 /**
@@ -4947,9 +5066,10 @@ export function drawJournalGrid(ctx: CanvasRenderingContext2D, stats: any, textC
     ctx.save();
     ctx.globalAlpha = 0.9;
 
-    // Apply Readability Shadow
-    ctx.shadowColor = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.6)';
-    ctx.shadowBlur = 12;
+    // Apply Bi-Directional Readability Shadow (Anti-Ghosting)
+    ctx.save();
+    ctx.shadowColor = isDark ? 'rgba(255, 255, 255, 0.45)' : 'rgba(0, 0, 0, 0.6)';
+    ctx.shadowBlur = 20;
     ctx.shadowOffsetY = 4;
 
     // 1. DAY Indicator (Top Left) - Moved down to sit under default logo
@@ -5075,12 +5195,12 @@ export function drawFinishLine(ctx: CanvasRenderingContext2D, stats: any, textCo
 
     let timeFontSize = timeVal.length > 7 ? 160 : 230;
     const safeW = 820; // Internal padding safety
-    
+
     // Width-Aware scaling loop for handwriting integrity
     ctx.font = `400 ${timeFontSize}px 'Bitcount Single'`;
     (ctx as any).letterSpacing = "0px"; // Bitcount Single doesn't need wide tracking
     let measuredW = ctx.measureText(timeVal).width;
-    
+
     while (measuredW > safeW && timeFontSize > 60) {
         timeFontSize -= 4;
         ctx.font = `400 ${timeFontSize}px 'Bitcount Single'`;
@@ -5091,7 +5211,7 @@ export function drawFinishLine(ctx: CanvasRenderingContext2D, stats: any, textCo
     (ctx as any).letterSpacing = "0px";
 
     ctx.shadowBlur = 0; // Disable glow for secondary text
-    
+
     // 3. Labels (Studio Precision Branding)
     ctx.save();
     ctx.font = "900 28px 'Plus Jakarta Sans'"; // Bolder and larger for emphasis
@@ -5109,24 +5229,24 @@ export function drawFinishLine(ctx: CanvasRenderingContext2D, stats: any, textCo
     const drawSubMetric = (val: string, label: string, offset: number) => {
         ctx.save();
         ctx.translate(cx + offset, metricsY);
-        
+
         ctx.textAlign = 'center';
         ctx.fillStyle = lineColor;
-        
+
         // Value
         ctx.font = "400 90px 'Bitcount Single'";
         ctx.textBaseline = 'bottom'; // Lock numbers to the bottom
         (ctx as any).letterSpacing = "10px";
         ctx.fillText(val, 0, 0);
         (ctx as any).letterSpacing = "0px";
-        
+
         // Label
         ctx.font = "700 22px 'Plus Jakarta Sans'";
         ctx.textBaseline = 'top'; // Push label down from the number's baseline
         ctx.globalAlpha = 0.6;
         ctx.letterSpacing = "6px";
         ctx.fillText(label.toUpperCase(), 0, 20); // 20px buffer from the bottom of the number
-        
+
         ctx.restore();
     };
 
@@ -5141,20 +5261,18 @@ export function drawFinishLine(ctx: CanvasRenderingContext2D, stats: any, textCo
  * Inspired by the "vibrant minimalist" aesthetic.
  */
 export function drawUltraDetail(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
-    const c = buildColors(textColor);
-    
-    // Support Custom Colors - if textColor is a hex (map color), use it as accent.
-    // If it's a standard white, use the high-fidelity lime default.
-    const accentColor = textColor.startsWith('#') ? textColor : (textColor === 'black' ? '#000000' : '#ffffff');
+    const { solid, trans, label: labelColor, accent: accentColor } = buildColors(textColor);
+
     const secondaryColor = textColor === 'black' ? '#000000' : '#ffffff';
-    const labelColor = secondaryColor; // Make labels solid white/black
+    const isDarkAccent = isColorDark(accentColor);
+    const isDarkSecondary = isColorDark(secondaryColor);
 
     ctx.save();
     ctx.textBaseline = 'alphabetic';
     ctx.textAlign = 'left';
 
-    const startX = 80;
-    let currentY = 320; // Starting Y position for the stack
+    const startX = 70; // Shifted left for more gutter
+    let currentY = 320;
 
     const isWorkout = stats.type === 'Workout' || stats.type === 'WeightTraining';
     const isRide = stats.type === 'Ride' || stats.type === 'EBikeRide';
@@ -5169,22 +5287,30 @@ export function drawUltraDetail(ctx: CanvasRenderingContext2D, stats: any, textC
     }
 
     // Hero Data (Distance/Duration - 85% Opacity)
-    let heroFontSize = 240;
-    if (heroValue.length > 5) heroFontSize = 180;
-    if (heroValue.length > 8) heroFontSize = 140;
+    let heroFontSize = 210; // Reduced from 240
+    if (heroValue.length > 4) heroFontSize = 170; // Earlier trigger for 99.99
+    if (heroValue.length > 6) heroFontSize = 130;
+    if (heroValue.length > 8) heroFontSize = 110;
 
     ctx.save();
+    ctx.shadowColor = isDarkAccent ? 'rgba(255, 255, 255, 0.45)' : 'rgba(0, 0, 0, 0.6)';
+    ctx.shadowBlur = 20;
+    ctx.shadowOffsetY = 4;
     ctx.globalAlpha = 0.85;
-    ctx.font = `800 ${heroFontSize}px 'Ultra'`;
+    ctx.font = `800 ${heroFontSize}px 'Russo One'`;
     ctx.fillStyle = accentColor;
     ctx.fillText(heroValue, startX, currentY);
     ctx.restore();
 
     // Hero Unit (Medium, Ultra)
     currentY += 80;
-    ctx.font = "800 75px 'Ultra'"; // Slightly larger for legibility
+    ctx.save();
+    ctx.font = "800 65px 'Russo One'";
     ctx.fillStyle = secondaryColor;
-    ctx.globalAlpha = 1.0; 
+    ctx.globalAlpha = 1.0;
+    ctx.shadowColor = isDarkSecondary ? 'rgba(255, 255, 255, 0.45)' : 'rgba(0, 0, 0, 0.6)';
+    ctx.shadowBlur = 15;
+    ctx.shadowOffsetY = 3;
     if (typeof (ctx as any).letterSpacing !== 'undefined') {
         (ctx as any).letterSpacing = "4px";
     }
@@ -5192,10 +5318,11 @@ export function drawUltraDetail(ctx: CanvasRenderingContext2D, stats: any, textC
     if (typeof (ctx as any).letterSpacing !== 'undefined') {
         (ctx as any).letterSpacing = "0px";
     }
+    ctx.restore();
 
     // ── 2. Grid Row (Level 3) ────────────────────────────────────────────────
     // Side-by-side metrics row starting below the Hero block
-    currentY += 180; 
+    currentY += 180;
 
     // Metric 1: Pace/Speed or HR
     let m1Value = '';
@@ -5214,8 +5341,11 @@ export function drawUltraDetail(ctx: CanvasRenderingContext2D, stats: any, textC
 
     // Value 1 (Data - 85% Opacity)
     ctx.save();
+    ctx.shadowColor = isDarkAccent ? 'rgba(255, 255, 255, 0.45)' : 'rgba(0, 0, 0, 0.6)';
+    ctx.shadowBlur = 18;
+    ctx.shadowOffsetY = 4;
     ctx.globalAlpha = 0.85;
-    ctx.font = "800 110px 'Ultra'";
+    ctx.font = "800 100px 'Russo One'";
     ctx.fillStyle = accentColor;
     ctx.fillText(m1Value.toUpperCase(), startX, currentY);
     const m1ValW = ctx.measureText(m1Value.toUpperCase()).width;
@@ -5223,39 +5353,66 @@ export function drawUltraDetail(ctx: CanvasRenderingContext2D, stats: any, textC
 
     // Unit 1
     if (m1Unit) {
-        ctx.font = "800 52px 'Ultra'"; // Increased from 45px
+        ctx.save();
+        ctx.font = "800 48px 'Russo One'";
         ctx.fillStyle = secondaryColor;
         ctx.globalAlpha = 1.0;
+        ctx.shadowColor = isDarkSecondary ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.6)';
+        ctx.shadowBlur = 15;
+        ctx.shadowOffsetY = 3;
         ctx.fillText(m1Unit.toUpperCase(), startX + m1ValW + 15, currentY);
+        ctx.restore();
     }
 
     // Label 1
-    ctx.font = "800 28px 'Ultra'"; // Increased from 24px
-    ctx.fillStyle = labelColor;
-    ctx.globalAlpha = 1.0; // Make labels solid
+    ctx.save();
+    ctx.font = "800 26px 'Russo One'";
+    ctx.fillStyle = secondaryColor;
+    ctx.globalAlpha = 1.0;
+    ctx.shadowColor = isDarkSecondary ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.6)';
+    ctx.shadowBlur = 15;
+    ctx.shadowOffsetY = 3;
     if (typeof (ctx as any).letterSpacing !== 'undefined') {
         (ctx as any).letterSpacing = "2px";
     }
     ctx.fillText(m1Label, startX, currentY + 45);
+    if (typeof (ctx as any).letterSpacing !== 'undefined') {
+        (ctx as any).letterSpacing = "0px";
+    }
+    ctx.restore();
 
     // Metric 2: Duration or meta (Shift horizontally)
-    const midX = 540; // Midpoint of 1080 canvas
-    
-    let m2Value = isWorkout ? (stats.calories ? String(stats.calories) : stats.date) : (stats.timeStr || '0m');
-    let m2Unit = isWorkout && stats.calories ? 'KCAL' : '';
-    let m2Label = isWorkout ? (stats.calories ? 'CALORIES' : 'DATE') : 'TOTAL DURATION';
+    const midX = 570; // Shifted right for more gutter
 
-    // Pivot for workout case if calories were already in m1
-    if (isWorkout && !stats.avgHeartrate && stats.calories) {
-        m2Value = stats.date || 'TODAY';
-        m2Unit = '';
-        m2Label = 'DATE';
+    let m2Value = '';
+    let m2Unit = '';
+    let m2Label = '';
+
+    if (isWorkout) {
+        m2Value = stats.calories ? String(stats.calories) : (stats.date || 'TODAY');
+        m2Unit = stats.calories ? 'KCAL' : '';
+        m2Label = stats.calories ? 'CALORIES' : 'DATE';
+    } else {
+        const fullTime = stats.timeStr || '0m';
+        if (fullTime.includes('h')) {
+            // Complex duration like "1h 30m" -> Keep as one string in Value
+            m2Value = fullTime.toUpperCase();
+            m2Unit = '';
+        } else {
+            // Simple duration like "42m" -> "42" and "M"
+            m2Value = fullTime.replace(/[a-zA-Z]+$/, '').trim();
+            m2Unit = (fullTime.match(/[a-zA-Z]+$/)?.[0] || 'm').toUpperCase();
+        }
+        m2Label = 'TOTAL DURATION';
     }
 
     // Value 2 (Data - 85% Opacity)
     ctx.save();
+    ctx.shadowColor = isDarkAccent ? 'rgba(255, 255, 255, 0.45)' : 'rgba(0, 0, 0, 0.6)';
+    ctx.shadowBlur = 18;
+    ctx.shadowOffsetY = 4;
     ctx.globalAlpha = 0.85;
-    ctx.font = "800 110px 'Ultra'";
+    ctx.font = "800 100px 'Russo One'";
     ctx.fillStyle = accentColor;
     ctx.fillText(m2Value.toUpperCase(), midX, currentY);
     const m2ValW = ctx.measureText(m2Value.toUpperCase()).width;
@@ -5263,21 +5420,33 @@ export function drawUltraDetail(ctx: CanvasRenderingContext2D, stats: any, textC
 
     // Unit 2
     if (m2Unit) {
-        ctx.font = "800 52px 'Ultra'"; // Increased from 45px
+        ctx.save();
+        ctx.font = "800 48px 'Russo One'";
         ctx.fillStyle = secondaryColor;
         ctx.globalAlpha = 1.0;
+        ctx.shadowColor = isDarkSecondary ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.6)';
+        ctx.shadowBlur = 15;
+        ctx.shadowOffsetY = 3;
         ctx.fillText(m2Unit.toUpperCase(), midX + m2ValW + 15, currentY);
+        ctx.restore();
     }
 
     // Label 2
-    ctx.font = "800 28px 'Ultra'"; // Increased from 24px
-    ctx.fillStyle = labelColor;
-    ctx.globalAlpha = 1.0; // Make labels solid as requested (unit names/labels)
+    ctx.save();
+    ctx.font = "800 26px 'Russo One'";
+    ctx.fillStyle = secondaryColor;
+    ctx.globalAlpha = 1.0;
+    ctx.shadowColor = isDarkSecondary ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.6)';
+    ctx.shadowBlur = 15;
+    ctx.shadowOffsetY = 3;
+    if (typeof (ctx as any).letterSpacing !== 'undefined') {
+        (ctx as any).letterSpacing = "2px";
+    }
     ctx.fillText(m2Label, midX, currentY + 45);
-
     if (typeof (ctx as any).letterSpacing !== 'undefined') {
         (ctx as any).letterSpacing = "0px";
     }
+    ctx.restore();
 
     ctx.restore();
 }
