@@ -4896,36 +4896,37 @@ export function drawGraffitiExpo(ctx: CanvasRenderingContext2D, stats: any, text
     const customColor = lineColor;
     const sport = normalizeSport(stats.type);
 
-    // Distance (Data - 80% Opacity)
+    // Distance (Data - 85% Opacity)
     const distNum = stats.distanceVal || '0.00';
     ctx.save();
-    ctx.globalAlpha = 0.8;
+    ctx.globalAlpha = 0.85;
     ctx.font = "900 140px 'BBH Bartle'";
     ctx.fillStyle = customColor;
     ctx.fillText(distNum, 540, 1460);
     ctx.restore();
 
     // Units (Solid - 100% Opacity)
-    ctx.font = "800 24px 'Plus Jakarta Sans'"; // Reverted for legibility
+    ctx.font = "800 32px 'Plus Jakarta Sans'"; // Increased for legibility
     ctx.fillStyle = customColor;
+    ctx.globalAlpha = 1.0; // Force solid
     if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "15px";
     ctx.fillText("KILOMETERS", 540, 1515);
     if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "0px";
 
-    // Secondary Stats (Split View - 80% Opacity)
+    // Secondary Data (Pace & Time - 85% Opacity)
     ctx.save();
-    ctx.globalAlpha = 0.8;
-    ctx.font = "900 55px 'BBH Bartle'"; // Reduced size for air
+    ctx.globalAlpha = 0.85;
+    ctx.font = "900 55px 'BBH Bartle'";
     ctx.fillStyle = customColor;
     ctx.fillText(stats.subValue || '0:00 /km', 310, 1700);
     ctx.fillText(stats.timeStr || '0h 00m', 770, 1700);
     ctx.restore();
 
     // Labels (Solid - 100% Opacity)
-    ctx.font = "800 18px 'Plus Jakarta Sans'"; // Reverted for legibility
+    ctx.font = "800 24px 'Plus Jakarta Sans'"; // Increased for legibility
     ctx.fillStyle = customColor;
+    ctx.globalAlpha = 1.0; // Force solid
     if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "10px";
-    ctx.globalAlpha = 0.4; // Keeping labels subtle
 
     const paceLabel = sport === 'Ride' ? 'AVG. SPEED' : 'PACE';
     ctx.fillText(paceLabel, 310, 1740);
@@ -5131,6 +5132,152 @@ export function drawFinishLine(ctx: CanvasRenderingContext2D, stats: any, textCo
 
     drawSubMetric(distVal, "DISTANCE (KM)", -240);
     drawSubMetric(paceVal, `AVG. ${normalizeSport(stats.type) === 'Ride' ? 'SPEED' : 'PACE'}`, 240);
+
+    ctx.restore();
+}
+
+/**
+ * ULTRA DETAIL — Clean, mapless design with details stacked under the Scora logo.
+ * Inspired by the "vibrant minimalist" aesthetic.
+ */
+export function drawUltraDetail(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const c = buildColors(textColor);
+    
+    // Support Custom Colors - if textColor is a hex (map color), use it as accent.
+    // If it's a standard white, use the high-fidelity lime default.
+    const accentColor = textColor.startsWith('#') ? textColor : (textColor === 'black' ? '#000000' : '#ffffff');
+    const secondaryColor = textColor === 'black' ? '#000000' : '#ffffff';
+    const labelColor = secondaryColor; // Make labels solid white/black
+
+    ctx.save();
+    ctx.textBaseline = 'alphabetic';
+    ctx.textAlign = 'left';
+
+    const startX = 80;
+    let currentY = 320; // Starting Y position for the stack
+
+    const isWorkout = stats.type === 'Workout' || stats.type === 'WeightTraining';
+    const isRide = stats.type === 'Ride' || stats.type === 'EBikeRide';
+
+    // ── 1. Hero Block (Level 2) ──────────────────────────────────────────────
+    let heroValue = stats.distanceVal || '0.00';
+    let heroUnit = (stats.distanceUnit || 'kilometers').toUpperCase();
+
+    if (isWorkout) {
+        heroValue = stats.timeStr || '0m';
+        heroUnit = 'DURATION';
+    }
+
+    // Hero Data (Distance/Duration - 85% Opacity)
+    let heroFontSize = 240;
+    if (heroValue.length > 5) heroFontSize = 180;
+    if (heroValue.length > 8) heroFontSize = 140;
+
+    ctx.save();
+    ctx.globalAlpha = 0.85;
+    ctx.font = `800 ${heroFontSize}px 'Ultra'`;
+    ctx.fillStyle = accentColor;
+    ctx.fillText(heroValue, startX, currentY);
+    ctx.restore();
+
+    // Hero Unit (Medium, Ultra)
+    currentY += 80;
+    ctx.font = "800 75px 'Ultra'"; // Slightly larger for legibility
+    ctx.fillStyle = secondaryColor;
+    ctx.globalAlpha = 1.0; 
+    if (typeof (ctx as any).letterSpacing !== 'undefined') {
+        (ctx as any).letterSpacing = "4px";
+    }
+    ctx.fillText(heroUnit, startX, currentY);
+    if (typeof (ctx as any).letterSpacing !== 'undefined') {
+        (ctx as any).letterSpacing = "0px";
+    }
+
+    // ── 2. Grid Row (Level 3) ────────────────────────────────────────────────
+    // Side-by-side metrics row starting below the Hero block
+    currentY += 180; 
+
+    // Metric 1: Pace/Speed or HR
+    let m1Value = '';
+    let m1Unit = '';
+    let m1Label = '';
+
+    if (isWorkout) {
+        m1Value = stats.avgHeartrate ? String(stats.avgHeartrate) : (stats.calories || '0');
+        m1Unit = stats.avgHeartrate ? 'BPM' : 'KCAL';
+        m1Label = stats.avgHeartrate ? 'AVG HEART RATE' : 'CALORIES';
+    } else {
+        m1Value = (stats.subValue || '').split(' ')[0] || '0:00';
+        m1Unit = isRide ? 'KM/H' : '/KM';
+        m1Label = isRide ? 'AVG. SPEED' : 'PACE';
+    }
+
+    // Value 1 (Data - 85% Opacity)
+    ctx.save();
+    ctx.globalAlpha = 0.85;
+    ctx.font = "800 110px 'Ultra'";
+    ctx.fillStyle = accentColor;
+    ctx.fillText(m1Value.toUpperCase(), startX, currentY);
+    const m1ValW = ctx.measureText(m1Value.toUpperCase()).width;
+    ctx.restore();
+
+    // Unit 1
+    if (m1Unit) {
+        ctx.font = "800 52px 'Ultra'"; // Increased from 45px
+        ctx.fillStyle = secondaryColor;
+        ctx.globalAlpha = 1.0;
+        ctx.fillText(m1Unit.toUpperCase(), startX + m1ValW + 15, currentY);
+    }
+
+    // Label 1
+    ctx.font = "800 28px 'Ultra'"; // Increased from 24px
+    ctx.fillStyle = labelColor;
+    ctx.globalAlpha = 1.0; // Make labels solid
+    if (typeof (ctx as any).letterSpacing !== 'undefined') {
+        (ctx as any).letterSpacing = "2px";
+    }
+    ctx.fillText(m1Label, startX, currentY + 45);
+
+    // Metric 2: Duration or meta (Shift horizontally)
+    const midX = 540; // Midpoint of 1080 canvas
+    
+    let m2Value = isWorkout ? (stats.calories ? String(stats.calories) : stats.date) : (stats.timeStr || '0m');
+    let m2Unit = isWorkout && stats.calories ? 'KCAL' : '';
+    let m2Label = isWorkout ? (stats.calories ? 'CALORIES' : 'DATE') : 'TOTAL DURATION';
+
+    // Pivot for workout case if calories were already in m1
+    if (isWorkout && !stats.avgHeartrate && stats.calories) {
+        m2Value = stats.date || 'TODAY';
+        m2Unit = '';
+        m2Label = 'DATE';
+    }
+
+    // Value 2 (Data - 85% Opacity)
+    ctx.save();
+    ctx.globalAlpha = 0.85;
+    ctx.font = "800 110px 'Ultra'";
+    ctx.fillStyle = accentColor;
+    ctx.fillText(m2Value.toUpperCase(), midX, currentY);
+    const m2ValW = ctx.measureText(m2Value.toUpperCase()).width;
+    ctx.restore();
+
+    // Unit 2
+    if (m2Unit) {
+        ctx.font = "800 52px 'Ultra'"; // Increased from 45px
+        ctx.fillStyle = secondaryColor;
+        ctx.globalAlpha = 1.0;
+        ctx.fillText(m2Unit.toUpperCase(), midX + m2ValW + 15, currentY);
+    }
+
+    // Label 2
+    ctx.font = "800 28px 'Ultra'"; // Increased from 24px
+    ctx.fillStyle = labelColor;
+    ctx.globalAlpha = 1.0; // Make labels solid as requested (unit names/labels)
+    ctx.fillText(m2Label, midX, currentY + 45);
+
+    if (typeof (ctx as any).letterSpacing !== 'undefined') {
+        (ctx as any).letterSpacing = "0px";
+    }
 
     ctx.restore();
 }
