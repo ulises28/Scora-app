@@ -30,15 +30,18 @@ function run() {
         rows.forEach(r => {
             if (r.status) statusDiscovery.add(r.status);
             if (r.type) typeDiscovery.add(r.type);
-            if (r.caseType) typeDiscovery.add(r.caseType);
 
-            // Flexible matching for Monocart failures
+            // Monocart Status check
             const isFailed = r.status === 'failed' || r.status === 'error';
-            const isTestCase = r.type === 'case' || r.caseType === 'test';
+            // In Monocart, case nodes are often type 'case' or have caseType defined
+            const isTestCase = r.type === 'case' || r.caseType === 'test' || r.caseNum > 0;
 
-            if (isFailed && isTestCase) {
+            if (isFailed && isTestCase && r.title) {
                 failedTests.push(r);
             }
+            
+            // 🛠️ THE FIX: Monocart uses 'subs' for nested suites/tests
+            if (r.subs) findFailed(r.subs);
             if (r.children) findFailed(r.children);
         });
     }
@@ -47,13 +50,17 @@ function run() {
 
     if (failedTests.length === 0) {
         console.log("### 🔍 Failure Diagnosis Summary");
-        console.log("⚠️ Build failed, but no individual test failures were identified in report.rows.");
+        console.log("⚠️ No failed test cases identified in `report.rows` using 'subs' traversal.");
         console.log("\n**Discovery Metadata**:");
-        console.log("- Found Statuses: " + Array.from(statusDiscovery).join(', '));
-        console.log("- Found Types: " + Array.from(typeDiscovery).join(', '));
+        console.log("- Statuses found: " + Array.from(statusDiscovery).join(', '));
+        console.log("- Types found: " + Array.from(typeDiscovery).join(', '));
         
         if (report.rows && report.rows.length > 0) {
-            console.log("- Row Schema: `" + Object.keys(report.rows[0]).join(', ') + "`");
+            const sample = report.rows[0];
+            console.log("- Root Row Keys: `" + Object.keys(sample).join(', ') + "`");
+            if (sample.subs && sample.subs.length > 0) {
+                console.log("- First Sub-Row Keys: `" + Object.keys(sample.subs[0]).join(', ') + "`");
+            }
         }
     } else {
         console.log("### 🔍 Failure Diagnosis Summary");
@@ -61,7 +68,9 @@ function run() {
         console.log("|:----------|:--------------|:---------|");
         
         failedTests.forEach(t => {
-            const errorMsg = (t.errors?.[0]?.message || t.results?.[0]?.error?.message || 'Check logs for details');
+            // Monocart keeps errors in an array 'errors' or results[0].error
+            const errorObj = (t.errors && t.errors[0]) || (t.results && t.results[0] && t.results[0].error);
+            const errorMsg = errorObj?.message || 'Check detailed report';
             const cleanError = errorMsg.split('\n')[0].replace(/\|/g, '-').trim().slice(0, 150);
             const location = t.location ? (t.location.file + ':' + t.location.line) : 'Unknown';
             console.log("| " + t.title + " | " + cleanError + "... | " + location + " |");

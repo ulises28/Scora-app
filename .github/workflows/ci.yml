@@ -69,22 +69,22 @@ jobs:
             -v ${{ github.workspace }}/test-results:/app/test-results \
             -v ${{ github.workspace }}/tests:/app/tests \
             scora-e2e \
-            npx playwright test ${{ github.event.inputs.update_snapshots == true && '--update-snapshots' || '' }}
+            npx playwright test ${{ (github.event.inputs.update_snapshots == 'true' || github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref_name == 'master')) && '--update-snapshots' || '' }}
           
           # 🗜️ PERMISSION SMASH: Ensuring the host can read/write Docker-generated assets
           sudo chown -R $(id -u):$(id -g) tests/ test-results/
           
       # 🏛️ Smart Self-Healing (Feature Branches)
-      # Condition: Always run if update_snapshots is true, regardless of test pass/fail.
+      # Condition: Auto-run on PRs OR if manual trigger is enabled.
       - name: Direct Commit Updated Snapshots (Feature Branches)
-        if: always() && github.event.inputs.update_snapshots == true && github.ref_name != 'master'
+        if: always() && (github.event.inputs.update_snapshots == 'true' || github.event_name == 'pull_request') && github.ref_name != 'master'
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "chore(testing): self-healing linux snapshots (docker-matrix) [skip ci]"
           file_pattern: "tests/**/*.png tests/e2e/fixtures/sticker-capabilities.json"
 
       - name: Open Pull Request with Updated Snapshots (Master Only)
-        if: always() && github.event.inputs.update_snapshots == true && github.ref_name == 'master'
+        if: always() && (github.event.inputs.update_snapshots == 'true' || github.event_name == 'push') && github.ref_name == 'master'
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
