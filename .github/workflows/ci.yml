@@ -75,15 +75,16 @@ jobs:
           sudo chown -R $(id -u):$(id -g) tests/ test-results/
           
       # 🏛️ Smart Self-Healing (Feature Branches)
+      # Condition: Always run if update_snapshots is true, regardless of test pass/fail.
       - name: Direct Commit Updated Snapshots (Feature Branches)
-        if: github.event.inputs.update_snapshots == true && github.ref_name != 'master'
+        if: always() && github.event.inputs.update_snapshots == true && github.ref_name != 'master'
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "chore(testing): self-healing linux snapshots (docker-matrix) [skip ci]"
           file_pattern: "tests/**/*.png tests/e2e/fixtures/sticker-capabilities.json"
 
       - name: Open Pull Request with Updated Snapshots (Master Only)
-        if: github.event.inputs.update_snapshots == true && github.ref_name == 'master'
+        if: always() && github.event.inputs.update_snapshots == true && github.ref_name == 'master'
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -109,7 +110,7 @@ jobs:
       - name: Generate Failure Diagnosis Summary
         if: failure()
         run: |
-          node scripts/ci-diagnostics.js >> $GITHUB_STEP_SUMMARY
+          node scripts/ci-diagnostics.cjs >> $GITHUB_STEP_SUMMARY
 
       - name: Upload Test Results
         uses: actions/upload-artifact@v6
