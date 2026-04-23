@@ -80,7 +80,7 @@ jobs:
         if: always() && (github.event.inputs.update_snapshots == 'true' || github.event_name == 'pull_request') && github.ref_name != 'master'
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "chore(testing): self-healing linux snapshots (docker-matrix) [skip ci]"
+          commit_message: "chore(testing): self-healing linux snapshots (docker-matrix)"
           file_pattern: "tests/**/*.png tests/e2e/fixtures/sticker-capabilities.json"
 
       - name: Open Pull Request with Updated Snapshots (Master Only)
