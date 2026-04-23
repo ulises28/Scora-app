@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       update_snapshots:
-        description: 'Set to true to generate a Pull Request with updated Linux snapshots'
+        description: 'Auto-update Linux snapshots (Direct commit on branches, PR on master)'
         required: false
         type: boolean
         default: false
@@ -119,21 +119,38 @@ jobs:
           if [ -f test-results/report.json ]; then
             node -e "
               const report = require('./test-results/report.json');
-              const failed = report.suites.flatMap(s => s.suites || []).flatMap(s => s.tests || []).filter(t => t.status === 'failed');
-              if (failed.length === 0) {
-                console.log('No failed tests found in the parsed structure.');
+              const failedTests = [];
+              
+              function findFailed(suite) {
+                if (suite.tests) {
+                  suite.tests.forEach(t => {
+                    if (t.status === 'failed') failedTests.push(t);
+                  });
+                }
+                if (suite.suites) {
+                  suite.suites.forEach(s => findFailed(s));
+                }
+              }
+              
+              if (report.suites) {
+                report.suites.forEach(s => findFailed(s));
+              }
+
+              if (failedTests.length === 0) {
+                console.log('⚠️ Test run failed but no specific failed tests were found in report.json structure.');
+                console.log('Available keys in report:', Object.keys(report).join(', '));
               } else {
                 console.log('| Test Case | Error Snippet | Location |');
                 console.log('|-----------|---------------|----------|');
-                failed.forEach(t => {
-                  const error = t.results?.[0]?.error?.message?.split('\n')[0]?.replace(/|/g, ' ') || 'No error message';
+                failedTests.forEach(t => {
+                  const error = t.results?.[0]?.error?.message?.split('\n')[0]?.replace(/\|/g, ' ') || 'No error message';
                   const location = t.location ? \`\${t.location.file}:\${t.location.line}\` : 'Unknown';
-                  console.log(\`| \${t.title} | \${error.slice(0, 100)}... | \${location} |\`);
+                  console.log(\`| \${t.title} | \${error.slice(0, 150)}... | \${location} |\`);
                 });
               }
             " >> $GITHUB_STEP_SUMMARY
           else
-            echo "⚠️ No report.json found to diagnose." >> $GITHUB_STEP_SUMMARY
+            echo "❌ No report.json found at test-results/report.json. Build likely crashed before generating reports." >> $GITHUB_STEP_SUMMARY
           fi
 
       - name: Upload Test Results
