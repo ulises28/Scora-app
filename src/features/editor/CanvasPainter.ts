@@ -4528,17 +4528,30 @@ export function drawSciencePro(ctx: CanvasRenderingContext2D, stats: any, textCo
     const accent = '#A3FFD6';
     ctx.textAlign = 'center';
 
-    // 1. Header (Ultra-Compact)
+    // 1. Header (Ultra-Compact + Scaled)
     const title = (stats.title || stats.type || 'Activity').toUpperCase();
-    ctx.font = "400 82px 'Michroma'";
+    let titleFontSize = 82;
+    ctx.font = `400 ${titleFontSize}px 'Michroma'`;
+    const maxTitleW = 900;
+    
+    // Auto-Scaling for Title
+    while (ctx.measureText(title).width > maxTitleW && titleFontSize > 30) {
+        titleFontSize -= 2;
+        ctx.font = `400 ${titleFontSize}px 'Michroma'`;
+    }
+    
     ctx.fillStyle = accent;
-    ctx.fillText(title, 540, 700); // Moved up from 720
+    ctx.fillText(title, 540, 700);
+
+    const isWorkout = stats.type?.toLowerCase().includes('workout') || stats.type?.toLowerCase().includes('training') || !stats.hasDistance;
+    const mainDisplayVal = isWorkout ? (stats.timeStr || '0:00') : (stats.distanceVal || stats.mainValue || '0.00');
+    const mainUnit = isWorkout ? 'DURATION' : 'KM';
 
     ctx.font = "400 32px 'Michroma'";
-    const meta = `${(stats.location || 'MEXICO CITY').toUpperCase()} — ${stats.distanceVal || stats.mainValue || '0.00'} KM`;
+    const meta = `${(stats.location || 'MEXICO CITY').toUpperCase()} — ${mainDisplayVal} ${mainUnit}`;
     ctx.globalAlpha = 0.8;
     setLetterSpacing(ctx, '4px');
-    ctx.fillText(meta, 540, 745); // Gap reduced to 45
+    ctx.fillText(meta, 540, 745); 
     setLetterSpacing(ctx, '0px');
     ctx.globalAlpha = 1.0;
 
@@ -4547,8 +4560,11 @@ export function drawSciencePro(ctx: CanvasRenderingContext2D, stats: any, textCo
     ctx.strokeStyle = accent;
     ctx.lineWidth = 5; // Bolder icons as requested
 
-    // A. Pace Pill (Standardized Width)
-    const paceVal = (stats.subValue || '5:15 /KM').toUpperCase();
+    // A. Performance Pill (Dynamic: PACE or CALORIES)
+    const calVal = stats.calories ? `${stats.calories} KCAL` : (stats.avgPower ? `${stats.avgPower} W` : (stats.timeStr || '--'));
+    const paceVal = (isWorkout ? calVal : (stats.subValue || '5:15 /KM')).toUpperCase();
+    const pillLabel = isWorkout ? (stats.calories ? 'CALORIES' : 'OUTPUT') : 'PACE';
+    
     const pillWidth = 200;
     const startX = 320;
 
@@ -4558,7 +4574,7 @@ export function drawSciencePro(ctx: CanvasRenderingContext2D, stats: any, textCo
     ctx.font = "900 18px 'Space Grotesk'";
     ctx.fillStyle = accent;
     ctx.globalAlpha = 0.6;
-    ctx.fillText('PACE', startX + pillWidth / 2, iconY - 45);
+    ctx.fillText(pillLabel, startX + pillWidth / 2, iconY - 45);
     ctx.globalAlpha = 1.0;
 
     ctx.font = "700 24px 'Space Grotesk'";
@@ -4980,28 +4996,31 @@ export function drawGraffitiBrand(ctx: CanvasRenderingContext2D, stats: any, tex
         ctx.shadowOffsetY = 6;
     };
 
-    // 1. Hero Distance (BOX 1 - Centered)
-    const distNum = (stats.distanceVal || '0.00').toUpperCase();
+    // 3. Logic: Check if Workout/Non-Distance
+    const isWorkout = stats.type?.toLowerCase().includes('workout') || stats.type?.toLowerCase().includes('training') || !stats.hasDistance;
+
+    // 1. Hero Metric (BOX 1 - Centered)
+    const heroVal = (isWorkout ? (stats.timeStr || '0:00') : (stats.distanceVal || '0.00')).toUpperCase();
     ctx.save();
     applyDeepShadow(35);
     ctx.globalAlpha = 1.0; 
     ctx.font = "900 135px 'BBH Bartle'"; 
     ctx.fillStyle = accentColor; 
-    ctx.fillText(distNum, midX, heroY);
+    ctx.fillText(heroVal, midX, heroY);
     ctx.restore();
 
     // 2. Main Unit (BOX 1 - Sub label)
+    const heroLabel = isWorkout ? "DURATION" : "KILOMETERS";
     ctx.save();
     applyDeepShadow(15);
     ctx.font = "800 32px 'Michroma'"; 
     ctx.fillStyle = accentColor;
     ctx.globalAlpha = 1.0; 
     if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "15px";
-    ctx.fillText("KILOMETERS", midX, heroY + 65);
+    ctx.fillText(heroLabel, midX, heroY + 65);
     ctx.restore();
 
     // 3. Activity Statistics (Data Prep)
-    const isWorkout = stats.type === 'Workout' || stats.type === 'WeightTraining';
     const isRide = stats.type === 'Ride' || stats.type === 'EBikeRide';
 
     let m1Value = ''; let m1Label = '';
@@ -5115,8 +5134,12 @@ export function drawJournalGrid(ctx: CanvasRenderingContext2D, stats: any, textC
     };
 
     // Find Elevation in dataPoints
-    const elevPoint = stats.dataPoints?.find(p => p.label.includes('Elevation')) || { value: '0', unit: 'm' };
-    const hrPoint = stats.dataPoints?.find(p => p.label.includes('HR')) || { value: stats.avgHeartrate || '-', unit: 'bpm' };
+    const elevPoint = stats.dataPoints?.find(p => p.label.toLowerCase().includes('elevation')) || { value: '0', unit: 'm' };
+    
+    // HR Logic: Explicitly prioritize Avg over Max for the Journal entry
+    const hrPoint = stats.dataPoints?.find(p => p.label.toLowerCase().includes('avg')) || 
+                    { value: stats.avgHeartrate || (stats.dataPoints?.find(p => p.label.includes('HR'))?.value) || '-', unit: 'bpm' };
+                    
     const paceLabel = sport === 'Ride' ? 'AVG. SPEED' : 'PACE';
     const paceUnit = sport === 'Ride' ? 'km/h' : '/km';
 

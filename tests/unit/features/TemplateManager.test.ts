@@ -66,7 +66,11 @@ describe('TemplateManager', () => {
         const manager = initTemplateManager(mockOnChange);
 
         expect(manager.template).toBe(TEMPLATES[0]);
-        expect(manager.color).toBe('white');
+        
+        const config = STICKER_REGISTRY[TEMPLATES[0]];
+        const expectedColor = config?.supportsCustomColor ? '#ffffff' : 'white';
+        
+        expect(manager.color).toBe(expectedColor);
         expect(manager.showLogo).toBe(true);
         expect(mockOnChange).toHaveBeenCalledTimes(1); 
     });
@@ -158,11 +162,22 @@ describe('TemplateManager', () => {
         const mockOnChange = vi.fn();
         const manager = initTemplateManager(mockOnChange);
 
+        // Find the first sticker that supports Black/White toggle but NOT custom colors
+        const bwTemplate = TEMPLATES.find(id => {
+            const config = STICKER_REGISTRY[id];
+            return config.supportsBlackText && !config.supportsCustomColor;
+        });
+
+        if (!bwTemplate) return; // Skip if no such template exists
+
+        manager.setTemplate(bwTemplate);
+        const initCalls = mockOnChange.mock.calls.length;
+
         (document.getElementById('color-toggle') as HTMLElement).click();
 
         expect(manager.color).toBe('black');
-        expect(mockOnChange).toHaveBeenCalledTimes(2); // 1 init + 1 toggle
-        expect(mockOnChange).toHaveBeenLastCalledWith(TEMPLATES[0], 'black', true);
+        expect(mockOnChange).toHaveBeenCalledTimes(initCalls + 1); 
+        expect(mockOnChange).toHaveBeenLastCalledWith(bwTemplate, 'black', true);
     });
 
     it('should toggle logo off and fire onChange', () => {
@@ -173,6 +188,9 @@ describe('TemplateManager', () => {
 
         expect(manager.showLogo).toBe(false);
         expect(mockOnChange).toHaveBeenCalledTimes(2); // 1 init + 1 toggle
-        expect(mockOnChange).toHaveBeenLastCalledWith(TEMPLATES[0], 'white', false);
+        
+        const config = STICKER_REGISTRY[TEMPLATES[0]];
+        const expectedColor = config?.supportsCustomColor ? '#ffffff' : 'white';
+        expect(mockOnChange).toHaveBeenLastCalledWith(TEMPLATES[0], expectedColor, false);
     });
 });

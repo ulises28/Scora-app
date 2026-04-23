@@ -11,9 +11,9 @@ import * as Renderers from './CanvasPainter';
 // ─── 1. ACTIVE PRODUCTIVE STICKERS ───────────────────────────────────────────
 // These are visible in the Studio UI Gallery.
 export const ACTIVE_STICKER_LIST: StickerDefinition[] = [
-    { id: 'ultra-detail', category: 'all', supportsCustomColor: true, supportsBlackText: true, features: { distance: true, duration: true, paceSpeed: true }, render: Renderers.drawUltraDetail },
+    { id: 'ultra-detail', category: 'all', supportsCustomColor: true, supportsBlackText: true, features: { distance: true, duration: true, paceSpeed: true, alwaysShowDuration: true }, render: Renderers.drawUltraDetail },
     { id: 'graffiti-expo', category: 'all', supportsCustomColor: true, supportsBlackText: true, features: { map: true }, render: Renderers.drawGraffitiExpo },
-    { id: 'graffiti-brand', category: 'all', supportsCustomColor: true, supportsBlackText: true, features: { distance: true, duration: true, paceSpeed: true }, render: Renderers.drawGraffitiBrand },
+    { id: 'graffiti-brand', category: 'all', supportsCustomColor: true, supportsBlackText: true, features: { distance: true, duration: true, paceSpeed: true, alwaysShowDuration: true }, expectedLabels: ['KILOMETERS', 'TOTAL DURATION', 'PACE', 'AVG. SPEED'], render: Renderers.drawGraffitiBrand },
     { id: 'editorial-strip', category: 'all', supportsBlackText: false, compact: true, features: { distance: true, duration: true, date: true }, render: Renderers.drawEditorialStrip },
     { id: 'science-pro', category: 'all', supportsBlackText: false, features: { distance: true, heartRate: true, date: true, paceSpeed: false }, render: Renderers.drawSciencePro },
     { id: 'narrative-highlight', category: 'all', supportsBlackText: true, preferredCase: 'lowercase', features: { distance: true, duration: true, paceSpeed: true, date: true }, render: Renderers.drawNarrativeHighlight },
