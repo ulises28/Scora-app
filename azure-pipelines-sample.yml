@@ -1,0 +1,97 @@
+# SCORA QA ARCHITECTURE - AZURE DEVOPS REFERENCE
+# This file is for study purposes and does not affect GitHub Actions.
+# Ported from Studio 3.0 GitHub CI Logic.
+
+trigger:
+  batch: true
+  branches:
+    include:
+      - master
+
+# Azure Parameters = GitHub Workflow Dispatch Inputs
+parameters:
+  - name: updateSnapshots
+    displayName: 'Auto-update Linux snapshots (Direct commit on branches, PR on master)'
+    type: boolean
+    default: false
+
+variables:
+  vmImage: 'ubuntu-24.04'
+
+jobs:
+- job: Scora_QA_Automation
+  displayName: 'Scora QA Matrix'
+  pool:
+    vmImage: $(vmImage)
+  
+  steps:
+  - checkout: self
+    persistCredentials: true # 🔑 CRITICAL: Needed for the "Direct Commit" logic to have push permissions
+
+  - task: NodeTool@0
+    inputs:
+      versionSpec: '24.x'
+    displayName: 'Install Node.js'
+
+  - script: |
+      npm ci
+      cp src/config.example.ts src/config.ts
+    displayName: 'Initialize Environment'
+
+  - script: |
+      docker build -f Dockerfile.playwright -t scora-e2e .
+      # Azure Conditional String Injection:
+      docker run --rm \
+        -e CI=true \
+        -v $(Build.SourcesDirectory)/test-results:/app/test-results \
+        scora-e2e \
+        npx playwright test ${{ if eq(parameters.updateSnapshots, true) }}: '--update-snapshots' {{ else }}: '' }}
+    displayName: 'Execute E2E Matrix (Dockerized)'
+
+  # 🏛️ SMART SELF-HEALING (Azure Devops Port)
+  # Condition: Check if updateSnapshots is true AND we are NOT on master/main
+  - script: |
+      git config --global user.email "qa-bot@scora.app"
+      git config --global user.name "Scora QA Bot"
+      git add tests/**/*.png tests/e2e/fixtures/sticker-capabilities.json
+      git commit -m "chore(testing): Azure self-healing snapshots [skip ci]"
+      git push origin HEAD:$(Build.SourceBranchName)
+    displayName: 'Direct Commit (Feature Branch Only)'
+    condition: and(succeeded(), eq('${{ parameters.updateSnapshots }}', true), ne(variables['Build.SourceBranch'], 'refs/heads/master'))
+
+  # 🔍 FAILURE DIAGNOSIS SURGEON (Azure Devops Port)
+  # Uses Azure VSO Logging Commands to inject errors directly into the build timeline.
+  - script: |
+      node -e "
+        const report = require('./test-results/report.json');
+        const failedTests = [];
+        
+        function findFailed(suite) {
+          if (suite.tests) {
+            suite.tests.filter(t => t.status === 'failed').forEach(t => failedTests.push(t));
+          }
+          if (suite.suites) suite.suites.forEach(findFailed);
+        }
+        
+        if (report.suites) report.suites.forEach(findFailed);
+
+        if (failedTests.length > 0) {
+          failedTests.forEach(t => {
+            const msg = t.results?.[0]?.error?.message?.split('\n')[0]?.replace(/;/g, ' ') || 'Unknown';
+            const file = t.location ? t.location.file : 'Unknown';
+            const line = t.location ? t.location.line : '0';
+            
+            // Azure Magic: ##vso[task.logissue] puts the failure on the MAIN Build Page
+            console.log('##vso[task.logissue type=error;sourcepath=' + file + ';linenumber=' + line + ';]' + t.title + ' -> ' + msg);
+          });
+        }
+      "
+    displayName: 'Recursive Failure Diagnosis'
+    condition: failed()
+
+  - task: PublishPipelineArtifact@1
+    inputs:
+      targetPath: '$(Build.SourcesDirectory)/test-results'
+      artifact: 'Scora-E2E-Report'
+    displayName: 'Archive Reports'
+    condition: always()

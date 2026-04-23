@@ -121,36 +121,33 @@ jobs:
               const report = require('./test-results/report.json');
               const failedTests = [];
               
-              function findFailed(suite) {
-                if (suite.tests) {
-                  suite.tests.forEach(t => {
-                    if (t.status === 'failed') failedTests.push(t);
-                  });
-                }
-                if (suite.suites) {
-                  suite.suites.forEach(s => findFailed(s));
-                }
+              function findFailed(rows) {
+                if (!rows) return;
+                rows.forEach(r => {
+                  if (r.type === 'case' && r.status === 'failed') {
+                    failedTests.push(r);
+                  }
+                  if (r.children) findFailed(r.children);
+                });
               }
               
-              if (report.suites) {
-                report.suites.forEach(s => findFailed(s));
-              }
+              findFailed(report.rows);
 
               if (failedTests.length === 0) {
-                console.log('⚠️ Test run failed but no specific failed tests were found in report.json structure.');
-                console.log('Available keys in report:', Object.keys(report).join(', '));
+                console.log('⚠️ Test run failed but no failed cases were found in report.rows.');
               } else {
                 console.log('| Test Case | Error Snippet | Location |');
                 console.log('|-----------|---------------|----------|');
                 failedTests.forEach(t => {
-                  const error = t.results?.[0]?.error?.message?.split('\n')[0]?.replace(/\|/g, ' ') || 'No error message';
+                  const error = (t.errors?.[0]?.message || t.results?.[0]?.error?.message || 'No error message')
+                    .split('\n')[0].replace(/\|/g, ' ');
                   const location = t.location ? \`\${t.location.file}:\${t.location.line}\` : 'Unknown';
                   console.log(\`| \${t.title} | \${error.slice(0, 150)}... | \${location} |\`);
                 });
               }
             " >> $GITHUB_STEP_SUMMARY
           else
-            echo "❌ No report.json found at test-results/report.json. Build likely crashed before generating reports." >> $GITHUB_STEP_SUMMARY
+            echo "❌ No report.json found at test-results/report.json." >> $GITHUB_STEP_SUMMARY
           fi
 
       - name: Upload Test Results
