@@ -2493,7 +2493,11 @@ export function exportCanvas(canvasId: string) {
     if (!canvas) return;
     const now = new Date();
     const dateStr = now.toISOString().split('T')[0];
-    const timeStr = `${now.getHours()}${now.getMinutes()}${now.getSeconds()}`;
+    const timeStr = [
+        now.getHours(),
+        now.getMinutes(),
+        now.getSeconds()
+    ].map(v => String(v).padStart(2, '0')).join('');
     const link = document.createElement('a');
     link.download = `scora-${dateStr}-${timeStr}.png`;
     link.href = canvas.toDataURL('image/png');

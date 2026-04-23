@@ -70,16 +70,16 @@ jobs:
             -v ${{ github.workspace }}/tests:/app/tests \
             scora-e2e \
             npx playwright test ${{ github.event.inputs.update_snapshots == true && '--update-snapshots' || '' }}
-
-      # 🏛️ Smart Self-Healing: Adjusted for Scora "Studio" Flow
-      # Feature Branches (!= master): Commit directly to the branch for high-speed iteration.
-      # Production (== master): Create a Pull Request for manual verification.
-      
+          
+          # 🗜️ PERMISSION SMASH: Ensuring the host can read/write Docker-generated assets
+          sudo chown -R $(id -u):$(id -g) tests/ test-results/
+          
+      # 🏛️ Smart Self-Healing (Feature Branches)
       - name: Direct Commit Updated Snapshots (Feature Branches)
         if: github.event.inputs.update_snapshots == true && github.ref_name != 'master'
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "chore(testing): auto-update linux snapshots (branch: ${{ github.ref_name }}) [skip ci]"
+          commit_message: "chore(testing): self-healing linux snapshots (docker-matrix) [skip ci]"
           file_pattern: "tests/**/*.png tests/e2e/fixtures/sticker-capabilities.json"
 
       - name: Open Pull Request with Updated Snapshots (Master Only)
@@ -92,17 +92,11 @@ jobs:
           delete-branch: true
           title: "🤖 CI: Production Snapshot Calibration"
           body: |
-            ### 📸 Production Snapshot Update
-            
-            This PR was automatically generated because `update_snapshots` was enabled for the `master` branch.
-            
-            **Action Required**:
-            - Verify these changes visually in the "Files changed" tab.
-            - Approve and merge if the sticker rendering looks perfect.
+            ### 📸 Production Snapshot Update (Docker Calibrated)
+            Merging this will update baseline Linux snapshots.
           add-paths: |
             tests/**/*.png
             tests/e2e/fixtures/sticker-capabilities.json
-
 
       - name: Upload Test Report
         uses: actions/upload-artifact@v6
@@ -120,12 +114,18 @@ jobs:
             node -e "
               const report = require('./test-results/report.json');
               const failedTests = [];
+              const foundStatuses = new Set();
               
               function findFailed(rows) {
                 if (!rows) return;
                 rows.forEach(r => {
-                  if (r.type === 'case' && r.status === 'failed') {
-                    failedTests.push(r);
+                  if (r.status) foundStatuses.add(r.status);
+                  
+                  // Flexible Match: Anything that isn't 'passed' or 'skipped' and has a title is a suspect
+                  if (r.status === 'failed' || r.status === 'error' || (r.errors && r.errors.length > 0)) {
+                    if (r.type === 'case' || r.caseType === 'test') {
+                        failedTests.push(r);
+                    }
                   }
                   if (r.children) findFailed(r.children);
                 });
@@ -134,15 +134,18 @@ jobs:
               findFailed(report.rows);
 
               if (failedTests.length === 0) {
-                console.log('⚠️ Test run failed but no failed cases were found in report.rows.');
+                console.log('⚠️ No failed cases found. Found Statuses: ' + Array.from(foundStatuses).join(', '));
+                if (report.rows && report.rows.length > 0) {
+                    console.log('Sample Row Schema:', Object.keys(report.rows[0]).join(', '));
+                }
               } else {
                 console.log('| Test Case | Error Snippet | Location |');
                 console.log('|-----------|---------------|----------|');
                 failedTests.forEach(t => {
-                  const error = (t.errors?.[0]?.message || t.results?.[0]?.error?.message || 'No error message')
-                    .split('\n')[0].replace(/\|/g, ' ');
-                  const location = t.location ? \`\${t.location.file}:\${t.location.line}\` : 'Unknown';
-                  console.log(\`| \${t.title} | \${error.slice(0, 150)}... | \${location} |\`);
+                  const errorMsg = (t.errors?.[0]?.message || t.results?.[0]?.error?.message || 'Check logs for details');
+                  const cleanError = errorMsg.split('\n')[0].replace(/\|/g, '-').slice(0, 150);
+                  const location = t.location ? `${t.location.file}:${t.location.line}` : 'Unknown';
+                  console.log(`| ${t.title} | ${cleanError}... | ${location} |`);
                 });
               }
             " >> $GITHUB_STEP_SUMMARY
