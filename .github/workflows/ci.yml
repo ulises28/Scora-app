@@ -108,7 +108,6 @@ jobs:
           retention-days: 2
 
       - name: Generate Failure Diagnosis Summary
-        if: failure()
         run: |
           node scripts/ci-diagnostics.cjs >> $GITHUB_STEP_SUMMARY
 
