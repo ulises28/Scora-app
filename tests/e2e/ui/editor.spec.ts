@@ -192,8 +192,8 @@ test.describe('Scora App UI: Sticker Editor (POM)', () => {
         expect(logs.some(l => l.includes('SCORA'))).toBeTruthy();
 
         // 2. Verify Color Toggle
-        // Find a template that supports black text
-        const colorId = ACTIVE_TEMPLATES.find(t => t.supportsBlackText)?.id || DEFAULT_ID;
+        // Find a template that supports standard black/white toggle (not Pro Custom Color)
+        const colorId = ACTIVE_TEMPLATES.find(t => t.supportsBlackText && !t.supportsCustomColor)?.id || DEFAULT_ID;
         await editorPage.selectTemplate(colorId);
         await editorPage.waitForDrawSettled();
 
@@ -218,9 +218,9 @@ test.describe('Scora App UI: Sticker Editor (POM)', () => {
         // Wait for the download to start and resolve
         const download = await downloadPromise;
 
-        // 1. Verify suggested filename matches Scora standards
+        // 1. Verify suggested filename matches Scora standards (scora-YYYY-MM-DD-HHMMSS.png)
         const filename = download.suggestedFilename();
-        expect(filename).toMatch(/^scora-sticker-.*\.png$/);
+        expect(filename).toMatch(/^scora-\d{4}-\d{2}-\d{2}-\d{6}\.png$/);
         
         // 2. Clear downloand path and ensure it's not empty
         const path = await download.path();

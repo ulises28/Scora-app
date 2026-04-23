@@ -1,6 +1,127 @@
 {
+  "ultra-detail": {
+    "version": "4.1",
+    "supportsCustomColor": true,
+    "supportsBlackText": true,
+    "compact": false,
+    "modes": {
+      "run": {
+        "metrics": [
+          "distance",
+          "pace",
+          "time"
+        ],
+        "labels": [
+          "KM",
+          "/KM"
+        ],
+        "metadata": []
+      },
+      "bike": {
+        "metrics": [
+          "distance",
+          "pace",
+          "time"
+        ],
+        "labels": [
+          "KM",
+          "KM/H"
+        ],
+        "metadata": []
+      },
+      "workout": {
+        "metrics": [
+          "time"
+        ],
+        "labels": [],
+        "metadata": []
+      }
+    }
+  },
+  "graffiti-expo": {
+    "version": "4.1",
+    "supportsCustomColor": true,
+    "supportsBlackText": true,
+    "compact": false,
+    "modes": {
+      "run": {
+        "metrics": [],
+        "labels": [],
+        "metadata": [
+          "MAP"
+        ]
+      },
+      "bike": {
+        "metrics": [],
+        "labels": [],
+        "metadata": [
+          "MAP"
+        ]
+      },
+      "workout": {
+        "metrics": [],
+        "labels": [],
+        "metadata": [
+          "MAP"
+        ]
+      }
+    }
+  },
+  "graffiti-brand": {
+    "version": "4.1",
+    "supportsCustomColor": true,
+    "supportsBlackText": true,
+    "compact": false,
+    "modes": {
+      "run": {
+        "metrics": [
+          "distance",
+          "pace",
+          "time"
+        ],
+        "labels": [
+          "KM",
+          "KILOMETERS",
+          "TOTAL DURATION",
+          "PACE",
+          "AVG. SPEED"
+        ],
+        "metadata": []
+      },
+      "bike": {
+        "metrics": [
+          "distance",
+          "pace",
+          "time"
+        ],
+        "labels": [
+          "KM",
+          "KM/H",
+          "KILOMETERS",
+          "TOTAL DURATION",
+          "PACE",
+          "AVG. SPEED"
+        ],
+        "metadata": []
+      },
+      "workout": {
+        "metrics": [
+          "time"
+        ],
+        "labels": [
+          "KILOMETERS",
+          "TOTAL DURATION",
+          "AVG. SPEED"
+        ],
+        "metadata": []
+      }
+    }
+  },
   "editorial-strip": {
     "version": "4.1",
+    "supportsCustomColor": false,
+    "supportsBlackText": false,
+    "compact": true,
     "modes": {
       "run": {
         "metrics": [
@@ -34,6 +155,9 @@
   },
   "science-pro": {
     "version": "4.1",
+    "supportsCustomColor": false,
+    "supportsBlackText": false,
+    "compact": false,
     "modes": {
       "run": {
         "metrics": [
@@ -74,6 +198,9 @@
   },
   "narrative-highlight": {
     "version": "4.1",
+    "supportsCustomColor": false,
+    "supportsBlackText": true,
+    "compact": false,
     "modes": {
       "run": {
         "metrics": [
@@ -111,6 +238,9 @@
   },
   "location-pill": {
     "version": "4.1",
+    "supportsCustomColor": false,
+    "supportsBlackText": true,
+    "compact": true,
     "modes": {
       "run": {
         "metrics": [
@@ -139,34 +269,11 @@
       }
     }
   },
-  "graffiti-expo": {
-    "version": "4.1",
-    "modes": {
-      "run": {
-        "metrics": [],
-        "labels": [],
-        "metadata": [
-          "MAP"
-        ]
-      },
-      "bike": {
-        "metrics": [],
-        "labels": [],
-        "metadata": [
-          "MAP"
-        ]
-      },
-      "workout": {
-        "metrics": [],
-        "labels": [],
-        "metadata": [
-          "MAP"
-        ]
-      }
-    }
-  },
   "dm": {
     "version": "4.1",
+    "supportsCustomColor": false,
+    "supportsBlackText": false,
+    "compact": false,
     "modes": {
       "run": {
         "metrics": [
@@ -204,6 +311,9 @@
   },
   "journal-grid": {
     "version": "4.1",
+    "supportsCustomColor": true,
+    "supportsBlackText": true,
+    "compact": false,
     "modes": {
       "run": {
         "metrics": [
@@ -246,6 +356,9 @@
   },
   "finish-line": {
     "version": "4.1",
+    "supportsCustomColor": false,
+    "supportsBlackText": false,
+    "compact": false,
     "modes": {
       "run": {
         "metrics": [
@@ -280,6 +393,9 @@
   },
   "tiny-gps": {
     "version": "4.1",
+    "supportsCustomColor": false,
+    "supportsBlackText": true,
+    "compact": true,
     "modes": {
       "run": {
         "metrics": [
@@ -310,6 +426,9 @@
   },
   "pulse-row": {
     "version": "4.1",
+    "supportsCustomColor": false,
+    "supportsBlackText": false,
+    "compact": false,
     "modes": {
       "run": {
         "metrics": [
@@ -349,6 +468,9 @@
   },
   "thin-path": {
     "version": "4.1",
+    "supportsCustomColor": false,
+    "supportsBlackText": true,
+    "compact": false,
     "modes": {
       "run": {
         "metrics": [
@@ -387,6 +509,9 @@
   },
   "brutalist-letters": {
     "version": "4.1",
+    "supportsCustomColor": false,
+    "supportsBlackText": true,
+    "compact": true,
     "modes": {
       "run": {
         "metrics": [
@@ -417,6 +542,9 @@
   },
   "boxed-metric": {
     "version": "4.1",
+    "supportsCustomColor": false,
+    "supportsBlackText": true,
+    "compact": true,
     "modes": {
       "run": {
         "metrics": [
@@ -447,6 +575,9 @@
   },
   "condesa-stack": {
     "version": "4.1",
+    "supportsCustomColor": false,
+    "supportsBlackText": true,
+    "compact": false,
     "modes": {
       "run": {
         "metrics": [
@@ -499,6 +630,9 @@
   },
   "mono-minimal": {
     "version": "4.1",
+    "supportsCustomColor": false,
+    "supportsBlackText": true,
+    "compact": true,
     "modes": {
       "run": {
         "metrics": [
@@ -529,6 +663,9 @@
   },
   "split-badge": {
     "version": "4.1",
+    "supportsCustomColor": false,
+    "supportsBlackText": false,
+    "compact": true,
     "modes": {
       "run": {
         "metrics": [
@@ -563,6 +700,9 @@
   },
   "stacked-editorial": {
     "version": "4.1",
+    "supportsCustomColor": false,
+    "supportsBlackText": true,
+    "compact": false,
     "modes": {
       "run": {
         "metrics": [
@@ -601,6 +741,9 @@
   },
   "micro-serif": {
     "version": "4.1",
+    "supportsCustomColor": false,
+    "supportsBlackText": true,
+    "compact": false,
     "modes": {
       "run": {
         "metrics": [
@@ -639,6 +782,9 @@
   },
   "vhs-retro": {
     "version": "4.1",
+    "supportsCustomColor": false,
+    "supportsBlackText": false,
+    "compact": false,
     "modes": {
       "run": {
         "metrics": [
@@ -675,6 +821,9 @@
   },
   "statement": {
     "version": "4.1",
+    "supportsCustomColor": false,
+    "supportsBlackText": true,
+    "compact": true,
     "modes": {
       "run": {
         "metrics": [
@@ -714,6 +863,9 @@
   },
   "marginalia": {
     "version": "4.1",
+    "supportsCustomColor": false,
+    "supportsBlackText": true,
+    "compact": true,
     "modes": {
       "run": {
         "metrics": [
@@ -750,6 +902,9 @@
   },
   "editorial-row": {
     "version": "4.1",
+    "supportsCustomColor": false,
+    "supportsBlackText": true,
+    "compact": false,
     "modes": {
       "run": {
         "metrics": [
@@ -791,6 +946,9 @@
   },
   "pro-vertical": {
     "version": "4.1",
+    "supportsCustomColor": false,
+    "supportsBlackText": true,
+    "compact": false,
     "modes": {
       "run": {
         "metrics": [
@@ -828,6 +986,9 @@
   },
   "mono-split": {
     "version": "4.1",
+    "supportsCustomColor": false,
+    "supportsBlackText": false,
+    "compact": false,
     "modes": {
       "run": {
         "metrics": [
@@ -862,6 +1023,9 @@
   },
   "essential-italic": {
     "version": "4.1",
+    "supportsCustomColor": false,
+    "supportsBlackText": true,
+    "compact": false,
     "modes": {
       "run": {
         "metrics": [
@@ -896,6 +1060,9 @@
   },
   "obsidian-bar": {
     "version": "4.1",
+    "supportsCustomColor": false,
+    "supportsBlackText": false,
+    "compact": false,
     "modes": {
       "run": {
         "metrics": [
@@ -930,6 +1097,9 @@
   },
   "modern-pill": {
     "version": "4.1",
+    "supportsCustomColor": false,
+    "supportsBlackText": false,
+    "compact": false,
     "modes": {
       "run": {
         "metrics": [
@@ -964,6 +1134,9 @@
   },
   "editorial-archive": {
     "version": "4.1",
+    "supportsCustomColor": false,
+    "supportsBlackText": false,
+    "compact": false,
     "modes": {
       "run": {
         "metrics": [
@@ -1001,6 +1174,9 @@
   },
   "info-glass": {
     "version": "4.1",
+    "supportsCustomColor": false,
+    "supportsBlackText": false,
+    "compact": false,
     "modes": {
       "run": {
         "metrics": [
@@ -1035,6 +1211,9 @@
   },
   "workout-receipt": {
     "version": "4.1",
+    "supportsCustomColor": false,
+    "supportsBlackText": false,
+    "compact": false,
     "modes": {
       "run": {
         "metrics": [
@@ -1072,6 +1251,9 @@
   },
   "brutalist-bold": {
     "version": "4.1",
+    "supportsCustomColor": false,
+    "supportsBlackText": false,
+    "compact": false,
     "modes": {
       "run": {
         "metrics": [
@@ -1106,6 +1288,9 @@
   },
   "data-modular": {
     "version": "4.1",
+    "supportsCustomColor": false,
+    "supportsBlackText": false,
+    "compact": false,
     "modes": {
       "run": {
         "metrics": [
@@ -1140,6 +1325,9 @@
   },
   "glass-slice": {
     "version": "4.1",
+    "supportsCustomColor": false,
+    "supportsBlackText": false,
+    "compact": false,
     "modes": {
       "run": {
         "metrics": [
@@ -1174,6 +1362,9 @@
   },
   "stealth-bar": {
     "version": "4.1",
+    "supportsCustomColor": false,
+    "supportsBlackText": false,
+    "compact": false,
     "modes": {
       "run": {
         "metrics": [
@@ -1208,6 +1399,9 @@
   },
   "vertical-label": {
     "version": "4.1",
+    "supportsCustomColor": false,
+    "supportsBlackText": false,
+    "compact": false,
     "modes": {
       "run": {
         "metrics": [
@@ -1242,6 +1436,9 @@
   },
   "minimal": {
     "version": "4.1",
+    "supportsCustomColor": false,
+    "supportsBlackText": true,
+    "compact": true,
     "modes": {
       "run": {
         "metrics": [
@@ -1272,6 +1469,9 @@
   },
   "classic-stack": {
     "version": "4.1",
+    "supportsCustomColor": false,
+    "supportsBlackText": true,
+    "compact": false,
     "modes": {
       "run": {
         "metrics": [

@@ -47,6 +47,7 @@ test.describe('Scora App UI: Data Fallback Intelligence', () => {
         await editorPage.injectCanvasInterceptor();
 
         // 4. Verify the fallback logic via Canvas interception
+        await editorPage.clearCanvasTextLog();
         await editorPage.selectTemplate(distanceSticker.id);
         await editorPage.waitForDrawSettled();
         
@@ -97,6 +98,7 @@ test.describe('Scora App UI: Data Fallback Intelligence', () => {
         await editorPage.injectCanvasInterceptor();
 
         // 3. Select the Workout Sticker
+        await editorPage.clearCanvasTextLog();
         await editorPage.selectTemplate(workoutSticker.id);
         await editorPage.waitForDrawSettled();
         

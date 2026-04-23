@@ -13,6 +13,8 @@ export interface TemplateFeatures {
     map?: boolean;
     /** Sticker renders the activity title / name */
     title?: boolean;
+    /** Obsidian Mode: Force duration rendering even in distance activities */
+    alwaysShowDuration?: boolean;
 }
 
 export type StickerCategory = 'distance' | 'workout' | 'all' | 'map';
@@ -29,5 +31,7 @@ export interface StickerDefinition {
     preferredCase?: 'uppercase' | 'lowercase' | 'title';
     expectedMetadata?: string[];
     expectedLabels?: string[];
+    /** Skip from gallery display */
+    hidden?: boolean;
     render: (ctx: CanvasRenderingContext2D, stats: any, textColor: string) => void;
 }

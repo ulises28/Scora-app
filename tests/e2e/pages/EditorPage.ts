@@ -52,19 +52,21 @@ export class EditorPage extends BasePage {
     @step('Inject Canvas Text Interceptor')
     async injectCanvasInterceptor() {
         await this.page.evaluate(() => {
-            (window as any)._scoraCanvasTextLog = [];
+            if (!(window as any)._scoraCanvasTextLog) {
+                (window as any)._scoraCanvasTextLog = [];
+            }
             const originalFillText = CanvasRenderingContext2D.prototype.fillText;
-            CanvasRenderingContext2D.prototype.fillText = function (text, x, y, maxWidth) {
-                const textStr = String(text);
+            CanvasRenderingContext2D.prototype.fillText = function(text, x, y, maxWidth) {
+                const textStr = (text || '').toString();
                 if (textStr) (window as any)._scoraCanvasTextLog.push(textStr);
-                return originalFillText.call(this, text, x, y, maxWidth);
+                return originalFillText.apply(this, [text, x, y, maxWidth]);
             };
 
             const originalStrokeText = CanvasRenderingContext2D.prototype.strokeText;
-            CanvasRenderingContext2D.prototype.strokeText = function (text, x, y, maxWidth) {
-                const textStr = String(text);
+            CanvasRenderingContext2D.prototype.strokeText = function(text, x, y, maxWidth) {
+                const textStr = (text || '').toString();
                 if (textStr) (window as any)._scoraCanvasTextLog.push(textStr);
-                return originalStrokeText.call(this, text, x, y, maxWidth);
+                return originalStrokeText.apply(this, [text, x, y, maxWidth]);
             };
         });
     }
@@ -90,7 +92,9 @@ export class EditorPage extends BasePage {
 
     @step('Wait for Draw Settled')
     async waitForDrawSettled() {
-        await this.page.waitForFunction(() => (window as any)._scoraIsSettled === true);
+        await this.page.waitForFunction(() => (window as any)._scoraIsSettled === true, { timeout: 10000 });
+        // Studio Precision: Allow one frame for the fillText logs to flush to the array
+        await this.page.evaluate(() => new Promise(resolve => requestAnimationFrame(resolve)));
     }
 
     getStickerThumb(templateId: string): Locator {
@@ -101,6 +105,7 @@ export class EditorPage extends BasePage {
     @step('Select Template via Gallery Thumbnail')
     async selectTemplate(templateId: string) {
         const thumb = this.getStickerThumb(templateId);
+        await thumb.scrollIntoViewIfNeeded();
         await thumb.waitFor({ state: 'visible' });
         await thumb.click();
     }

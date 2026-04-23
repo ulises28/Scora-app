@@ -26,10 +26,9 @@ async function syncStickers() {
             if (sticker.features.distance) metrics.push('distance');
             if (sticker.features.paceSpeed) metrics.push('pace');
             if (sticker.features.heartRate) metrics.push('heartRate');
-            // 'duration:true' on a distance sticker = "shows time as workout fallback only".
-            // 'duration:true' on a non-distance sticker = "always shows time" (e.g. brutal-slash).
-            // The workout universal fallback (below) handles the distance-sticker workout case.
-            if (sticker.features.duration && !sticker.features.distance) metrics.push('time');
+            if (sticker.features.alwaysShowDuration || (sticker.features.duration && !sticker.features.distance)) {
+                metrics.push('time');
+            }
             if (sticker.features.date) metrics.push('date');
             if (sticker.features.startTime) metrics.push('startTime');
             if (sticker.features.map) metadata.push('MAP');
@@ -87,7 +86,13 @@ async function syncStickers() {
             }
         });
 
-        capabilities[sticker.id] = { version: "4.1", modes };
+        capabilities[sticker.id] = { 
+            version: "4.1", 
+            supportsCustomColor: !!sticker.supportsCustomColor,
+            supportsBlackText: !!sticker.supportsBlackText,
+            compact: !!sticker.compact,
+            modes 
+        };
     });
 
     fs.writeFileSync(OUTPUT_PATH, JSON.stringify(capabilities, null, 2));

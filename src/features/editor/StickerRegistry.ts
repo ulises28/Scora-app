@@ -11,11 +11,13 @@ import * as Renderers from './CanvasPainter';
 // ─── 1. ACTIVE PRODUCTIVE STICKERS ───────────────────────────────────────────
 // These are visible in the Studio UI Gallery.
 export const ACTIVE_STICKER_LIST: StickerDefinition[] = [
+    { id: 'ultra-detail', category: 'all', supportsCustomColor: true, supportsBlackText: true, features: { distance: true, duration: true, paceSpeed: true, alwaysShowDuration: true }, render: Renderers.drawUltraDetail },
+    { id: 'graffiti-expo', category: 'all', supportsCustomColor: true, supportsBlackText: true, features: { map: true }, render: Renderers.drawGraffitiExpo },
+    { id: 'graffiti-brand', category: 'all', supportsCustomColor: true, supportsBlackText: true, features: { distance: true, duration: true, paceSpeed: true, alwaysShowDuration: true }, expectedLabels: ['KILOMETERS', 'TOTAL DURATION', 'PACE', 'AVG. SPEED'], render: Renderers.drawGraffitiBrand },
     { id: 'editorial-strip', category: 'all', supportsBlackText: false, compact: true, features: { distance: true, duration: true, date: true }, render: Renderers.drawEditorialStrip },
     { id: 'science-pro', category: 'all', supportsBlackText: false, features: { distance: true, heartRate: true, date: true, paceSpeed: false }, render: Renderers.drawSciencePro },
     { id: 'narrative-highlight', category: 'all', supportsBlackText: true, preferredCase: 'lowercase', features: { distance: true, duration: true, paceSpeed: true, date: true }, render: Renderers.drawNarrativeHighlight },
     { id: 'location-pill', category: 'all', supportsBlackText: true, compact: true, preferredCase: 'title', features: { distance: true }, render: Renderers.drawLocationPill },
-    { id: 'graffiti-expo', category: 'map', supportsCustomColor: true, supportsBlackText: true, features: { map: true }, render: Renderers.drawGraffitiExpo },
     { id: 'dm', category: 'distance', features: { distance: true, paceSpeed: true, startTime: true }, render: Renderers.drawDMModular },
     { id: 'journal-grid', category: 'distance', supportsCustomColor: true, supportsBlackText: true, features: { distance: true, duration: true, map: true, heartRate: true }, render: Renderers.drawJournalGrid },
     { id: 'finish-line', category: 'distance', supportsBlackText: false, features: { distance: true, duration: true, paceSpeed: true }, render: Renderers.drawFinishLine },
