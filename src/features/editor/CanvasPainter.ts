@@ -2488,9 +2488,10 @@ export function drawFrostedMinimal(ctx: CanvasRenderingContext2D, stats: any, te
 
 // ─── Export ───────────────────────────────────────────────────────────────────
 
-export function exportCanvas(canvasId: string) {
+export async function exportCanvas(canvasId: string) {
     const canvas = document.getElementById(canvasId) as HTMLCanvasElement;
     if (!canvas) return;
+
     const now = new Date();
     const dateStr = now.toISOString().split('T')[0];
     const timeStr = [
@@ -2498,10 +2499,39 @@ export function exportCanvas(canvasId: string) {
         now.getMinutes(),
         now.getSeconds()
     ].map(v => String(v).padStart(2, '0')).join('');
+    const fileName = `scora-${dateStr}-${timeStr}.png`;
+
+    // ─── OPTION A: Web Share API (iOS Safari ONLY) ───
+    // Standard download is "broken" on iOS Safari (saves to a hidden 'Files' folder).
+    // We use the Share Sheet here to allow "Save to Photos" directly.
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                  (/Macintosh/i.test(navigator.userAgent) && navigator.maxTouchPoints > 1) ||
+                  /Mobile/i.test(navigator.userAgent);
+
+    if (isIOS && navigator.share && navigator.canShare) {
+        try {
+            const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'));
+            if (blob) {
+                const file = new File([blob], fileName, { type: 'image/png' });
+                if (navigator.canShare({ files: [file] })) {
+                    await navigator.share({
+                        files: [file],
+                        title: 'Scora Sticker',
+                        text: 'Created with Scora'
+                    });
+                    return; // Success on iOS!
+                }
+            }
+        } catch (err) {
+            console.warn("[Export] Web Share failed, falling back to download:", err);
+        }
+    }
+
+    // ─── OPTION B: Standard Download (Android & Desktop) ───
+    // Fast, single-tap experience.
     const link = document.createElement('a');
-    link.download = `scora-${dateStr}-${timeStr}.png`;
+    link.download = fileName;
     link.href = canvas.toDataURL('image/png');
-    // Anchor to DOM for headless browser reliability
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
