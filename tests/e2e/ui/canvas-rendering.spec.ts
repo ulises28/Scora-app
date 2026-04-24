@@ -8,7 +8,7 @@ import { TEMPLATE_REGISTRY } from '../../../src/features/editor/TemplateManager'
 // 🔍 ARCHITECT RULE: 100% Discovery-Driven. No hardcoded sticker names.
 const ACTIVE_TEMPLATES = TEMPLATE_REGISTRY.filter(t => !t.hidden && t.id !== 'custom');
 
-test.describe('Scora App UI: Canvas Rendering Integrity (Absolute Truth)', () => {
+test.describe('Scora App UI: Canvas Rendering Integrity (Absolute Truth) @visual', () => {
 
     test.beforeEach(async ({ page }) => {
         const feedPage = new FeedPage(page);

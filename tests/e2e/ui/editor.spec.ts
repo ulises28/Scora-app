@@ -5,14 +5,14 @@ import { MockStravaClient } from '../utils/MockStravaClient';
 import { TEMPLATE_REGISTRY } from '../../../src/features/editor/TemplateManager';
 import { TestUtils } from '../utils/TestUtils';
 
-test.describe('Scora App UI: Sticker Editor (POM)', () => {
+test.describe('Scora App UI: Sticker Editor (POM) @smoke', () => {
 
     const ACTIVITY_WITH_DISTANCE = TestUtils.findFirstActivityWithDistance()!;
     const ACTIVITY_WITHOUT_DISTANCE = TestUtils.findFirstActivityWithoutDistance()!;
-    
+
     const ACTIVE_TEMPLATES = TEMPLATE_REGISTRY.filter(t => !t.seasonal);
     const DEFAULT_ID = ACTIVE_TEMPLATES[0].id;
-    
+
     const DISTANCE_STATS = TestUtils.getExpectedStats(ACTIVITY_WITH_DISTANCE).mainValue;
     const NODIST_STATS = TestUtils.getExpectedStats(ACTIVITY_WITHOUT_DISTANCE).mainValue;
 
@@ -179,6 +179,7 @@ test.describe('Scora App UI: Sticker Editor (POM)', () => {
         await editorPage.waitForDrawSettled();
 
         let logs = await editorPage.getCanvasTextLog();
+        await page.pause();
         expect(logs.some(l => l.includes('SCORA'))).toBeFalsy();
 
         // Off → On
@@ -211,17 +212,17 @@ test.describe('Scora App UI: Sticker Editor (POM)', () => {
 
         // Start waiting for the download event
         const downloadPromise = page.waitForEvent('download');
-        
+
         // Trigger the download
         await editorPage.clickDownload();
-        
+
         // Wait for the download to start and resolve
         const download = await downloadPromise;
 
         // 1. Verify suggested filename matches Scora standards (scora-YYYY-MM-DD-HHMMSS.png)
         const filename = download.suggestedFilename();
         expect(filename).toMatch(/^scora-\d{4}-\d{2}-\d{2}-\d{6}\.png$/);
-        
+
         // 2. Clear downloand path and ensure it's not empty
         const path = await download.path();
         expect(path).toBeTruthy();

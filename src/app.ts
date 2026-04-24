@@ -611,24 +611,22 @@ if (canvasWrapper) {
                 copyFeedbackTimeout = null;
             }, 1500);
 
-            canvas.toBlob(async (blob) => {
-                if (!blob) return;
-                try {
-                    // Check for modern ClipboardItem support
-                    if (typeof window.ClipboardItem !== 'undefined') {
-                        const item = new window.ClipboardItem({ "image/png": blob });
-                        await navigator.clipboard.write([item]);
+            // ─── SAFARI COMPATIBLE COPY ───
+            // We must call navigator.clipboard.write IMMEDIATELY.
+            if (typeof window.ClipboardItem !== 'undefined') {
+                const imagePromise = new Promise<Blob>((resolve, reject) => {
+                    canvas.toBlob((blob) => {
+                        if (blob) resolve(blob);
+                        else reject(new Error("Canvas toBlob failed"));
+                    }, 'image/png');
+                });
 
-                        // Visual Feedback
-                        console.log("[Studio] Sticker copied to clipboard.");
-                    } else {
-                        throw new Error("ClipboardItem not supported in this browser.");
-                    }
-                } catch (err) {
-                    console.error("[Studio] Copy failed:", err);
-                    alert("Sorry, your browser doesn't support direct image copying. Please use the Download button!");
-                }
-            });
+                const item = new window.ClipboardItem({ "image/png": imagePromise });
+                await navigator.clipboard.write([item]);
+                console.log("[Studio] Sticker copied to clipboard.");
+            } else {
+                throw new Error("ClipboardItem not supported");
+            }
 
         } catch (err) {
             console.error("[Studio] Clipboard API failed:", err);
