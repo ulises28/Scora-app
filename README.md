@@ -45,15 +45,16 @@ To manage the Strava API's strict "Single Connected Athlete" limitation without 
 To protect limits against sudden browser closures (e.g., Incognito Mode tab exits), Scora utilizes a **Dual-Layer Defense**:
 - **Client-Side Beacons**: Uses `navigator.sendBeacon` hooked into browser lifecycle events (`visibilitychange`, `pagehide`) to guarantee deauthorization payloads fire even when the browser process is instantly killed.
 
-### 4. Agentic Engineering & Self-Healing QA
-Scora features a "Studio Grade" quality pipeline that goes beyond traditional CI:
-- **0.01 Precision Threshold**: Visual regression tests are calibrated to a 1% sensitivity level, ensuring even microscopic design shifts (like 5px kerning changes) are caught.
-- **Scora IA-Agent (v2.4)**: A high-fidelity QA watchdog that uses **Static Visual Analysis** to extract sticker capabilities. It identifies 'Ghost Metrics' and 'Title Mismatches' by auditing the source code of templates.
-- **Self-Healing (AI-Healer)**: An autonomous calibration engine that synchronizes ephemeral Linux baselines with the local design state once the AI-Agent verifies a change as "Studio Grade."
-- **Metadata-Driven Truth**: E2E tests are "Truth-Aware," querying a generated `sticker-capabilities.json` to know exactly what labels and metrics a sticker *should* render, eliminating brittle hardcoded expectations.
-- **Zero-Delay Synchronization**: Utilizes a professional `_scoraIsSettled` signal hooked into `requestAnimationFrame` to eliminate all hardcoded `waitForTimeout` delays, achieving maximum test speed without flakiness.
-- **Monocart Dashboard**: Professional-grade test reporting with full trace logs, video recordings of failures, and DOM snapshots for deep-dive debugging.
-- **Agent Intelligence**: Powered by [AutoSkills](https://www.autoskills.sh/), enabling high-fidelity automated skill management and execution.
+### 4. Agentic Engineering & Autonomous QA Pipeline
+Scora features a "Studio Grade" quality pipeline that functions as a self-healing ecosystem, rather than a passive test suite:
+- **Architectural Tiering**: Tests are segmented into three distinct feedback layers:
+    - **`@smoke`**: Critical path verification (Fast feedback in < 60s).
+    - **`@regression`**: Exhaustive logic and fallback validation.
+    - **`@visual`**: The "Absolute Truth" engine for pixel-perfect rendering.
+- **Autonomous Self-Healing**: Utilizing the `stefanzweifel/git-auto-commit-action`, the pipeline automatically identifies missing or shifted Linux-based snapshots in Docker environments and commits them back to the branch—eliminating manual snapshot maintenance.
+- **Diagnostic Surgeon**: A custom Monocart JSON parser (`ci-diagnostics.cjs`) identifies exact test failures and publishes a high-visibility summary directly to the GitHub Job Summary—no more hunting through log files.
+- **Micro-Threshold Precision**: Visual tests are calibrated to a 1% sensitivity level, detecting even a 1px drift in typography or design elements.
+- **Signal-Aware Testing**: Uses the `_scoraIsSettled` hook into `requestAnimationFrame` to eliminate all flakiness, ensuring snapshots are only taken when the rendering engine is perfectly stable.
 
 ---
 
@@ -99,28 +100,32 @@ npm install
 npm run dev
 ```
 
-### Verification
+### Verification & Infrastructure
 ```bash
-# Run unit tests with Vitest
-npm run test
+# 🧪 TIER 1: Smoke Tests (Core Editor & Nav)
+# Fast validation for Pull Requests (< 60s feedback).
+npm run test:e2e -- --project="Smoke: Chromium"
 
-# Run E2E tests with Playwright (updates mock data & core logic)
-npm run test:e2e
+# 🧪 TIER 2: Full Regression (Deep Logic)
+# Exhaustive check of all 90+ rendering scenarios.
+npm run test:e2e -- --project="Regression: Chromium"
 
-# Run the Scora IA-Agent (Watchdog) for Visual Regressions
+# 🧪 TIER 3: Visual Absolute Truth (Snapshots)
+# Verifies pixel-perfect rendering across Docker snapshots.
+npm run test:e2e -- --project="Visual: Docker-Linux"
+
+# 🤖 Scora QA Bot (Watchdog & Healer)
+# Run IA-Agent visual audit and sync ephemeral design state.
 npm run test:agent
-
-# Update and synchronize latest agent skills
-npx autoskills
-
-# Finalize AI-approved design 'Heals' (Self-Healing snapshots)
 npm run heal
 
-# Open the professional Monocart test report dashboard
+# 📊 Diagnostics & Reports
+# Generate a local Monocart dashboard of the latest run result.
 npm run test:report
 
-# Update visual regression snapshots (if changing Sticker templates)
-npm run test:e2e -- --update-snapshots
+# ⚙️ Unit & Logic
+# Validate core mathematical and polyline processing logic.
+npm run test
 ```
 
 ---

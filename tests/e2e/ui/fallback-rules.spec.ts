@@ -6,7 +6,7 @@ import { TEMPLATE_REGISTRY } from '../../../src/features/editor/TemplateManager'
 import { TestUtils } from '../utils/TestUtils';
 import capabilities from '../fixtures/sticker-capabilities.json' with { type: 'json' };
 
-test.describe('Scora App UI: Data Fallback Intelligence', () => {
+test.describe('Scora App UI: Data Fallback Intelligence @regression', () => {
     
     // 🛡️ SAFARI-ISOLATION: Zero-touch stabilization for Mobile Safari
     async function stabilizeSafari(page: any, info: any) {

@@ -53,18 +53,57 @@ export default defineConfig({
   },
 
   projects: [
+    /* -------------------------------------------------------------------------
+     * TIER 1: SMOKE TESTS (@smoke)
+     * Goal: 60-second feedback loop. Verifies only critical user paths.
+     * ------------------------------------------------------------------------- */
     {
-      name: 'chromium',
+      name: 'Smoke: Chromium',
+      grep: /@smoke/,
+      testIgnore: /.*mobile.*\.spec\.ts/, // Guardrail: Desktop ignores mobile logic
       use: { ...devices['Desktop Chrome'] },
     },
-    /* Since you mentioned Capacitor for Scora, we MUST enable mobile. */
     {
-      name: 'Mobile Safari',
+      name: 'Smoke: Mobile Safari',
+      grep: /@smoke/,
       use: { ...devices['iPhone 13'] },
     },
+
+    /* -------------------------------------------------------------------------
+     * TIER 2: FULL REGRESSION (Exhaustive)
+     * Goal: 100% Coverage. Every test file and every case.
+     * Use this before merges to Master.
+     * ------------------------------------------------------------------------- */
     {
-      name: 'Mobile Chrome',
+      name: 'Regression: Chromium',
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'Regression: Mobile Chrome',
       use: { ...devices['Pixel 5'] },
+    },
+
+    /* -------------------------------------------------------------------------
+     * TIER 3: VISUAL INTEGRITY (@visual)
+     * Goal: "Absolute Truth" Screenshot validation.
+     * NOTE: We keep this separate to avoid "Screenshot Flakiness" in logic runs.
+     * ------------------------------------------------------------------------- */
+    {
+      name: 'Visual: Docker-Linux',
+      grep: /@visual/,
+      use: { ...devices['Desktop Chrome'] },
+      /* Architect Hint: You can use testIgnore here if certain visual tests 
+         only make sense in specific resolutions. */
+    },
+
+    /* -------------------------------------------------------------------------
+     * SPECIAL CONTEXT: MOBILE-ONLY RULES
+     * Logic that ONLY makes sense on touch-devices.
+     * ------------------------------------------------------------------------- */
+    {
+      name: 'Mobile-Only Features',
+      testMatch: /.*mobile-gestures\.spec\.ts/,
+      use: { ...devices['iPhone 13'] },
     },
   ],
 

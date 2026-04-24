@@ -5,7 +5,7 @@ import { MockStravaClient } from '../utils/MockStravaClient';
 import { TEMPLATE_REGISTRY } from '../../../src/features/editor/TemplateManager';
 import { TestUtils } from '../utils/TestUtils';
 
-test.describe('Scora App UI: Sticker Editor (POM)', () => {
+test.describe('Scora App UI: Sticker Editor (POM) @smoke', () => {
 
     const ACTIVITY_WITH_DISTANCE = TestUtils.findFirstActivityWithDistance()!;
     const ACTIVITY_WITHOUT_DISTANCE = TestUtils.findFirstActivityWithoutDistance()!;
