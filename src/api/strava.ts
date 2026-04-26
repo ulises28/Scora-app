@@ -31,8 +31,8 @@ export interface StravaActivity {
     location_city?: string | null;
     location_state?: string | null;
     timezone?: string;
-    start_latlng?: [number, number];
-    end_latlng?: [number, number];
+    start_latlng?: number[];
+    end_latlng?: number[];
     pr_count?: number;
     start_date_local: string;
     start_date: string;
