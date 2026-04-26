@@ -2592,7 +2592,7 @@ export function drawNarrativeHighlight(ctx: CanvasRenderingContext2D, stats: any
     if (isWorkout) {
         l1_p1 = `${duration}`;
         l1_p2 = ` ${applyActivityCasing(baseActivity, 'narrative-highlight')} ${location ? 'in ' + location : ''},`;
-        l2_p1 = region ? `${region} at ` : 'At ';
+        l2_p1 = 'At ';
         l2_p2 = stats.avgHeartrate ? `${stats.avgHeartrate} bpm` : 'steady';
         l2_p3 = ` effort · ${dateStr}`;
         l2_p4 = "";
@@ -2600,7 +2600,7 @@ export function drawNarrativeHighlight(ctx: CanvasRenderingContext2D, stats: any
     } else {
         l1_p1 = `${mainMetric} ${unit}`;
         l1_p2 = ` ${applyActivityCasing(baseActivity, 'narrative-highlight')} ${activityAction} ${location || 'the world'},`;
-        l2_p1 = region ? `${region} in ` : 'In ';
+        l2_p1 = 'In ';
         l2_p2 = `${duration}`;
         l2_p3 = `, at `;
         l2_p4 = `${pace}${paceUnit}`;
@@ -2768,7 +2768,15 @@ export function drawCondesaStack(ctx: CanvasRenderingContext2D, stats: any, text
     renderSolidItem(paceValueResult, startX, currY, DATA_SIZE, '900', '-0.05em');
     renderSolidUnit(`${paceLabelResult} (${paceUnitResult})`, startX, currY + UNIT_OFFSET);
 
-    renderSolidItem(locationNameResult, rightCol, currY, DATA_SIZE, '900', '-0.05em');
+    // Location with Smart Scaling
+    const locMaxW = 400; // Available space in the right column
+    ctx.font = `900 ${DATA_SIZE}px 'Inter', sans-serif`;
+    let locFontSize = DATA_SIZE;
+    const locWidth = ctx.measureText(locationNameResult).width;
+    if (locWidth > locMaxW) {
+        locFontSize = Math.floor(DATA_SIZE * (locMaxW / locWidth));
+    }
+    renderSolidItem(locationNameResult, rightCol, currY, locFontSize, '900', '-0.05em');
     renderSolidUnit("LOCATION", rightCol, currY + UNIT_OFFSET);
 
     ctx.restore();
