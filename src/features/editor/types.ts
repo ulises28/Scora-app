@@ -13,6 +13,8 @@ export interface TemplateFeatures {
     map?: boolean;
     /** Sticker renders the activity title / name */
     title?: boolean;
+    /** Sticker renders geographic location */
+    location?: boolean;
     /** Obsidian Mode: Force duration rendering even in distance activities */
     alwaysShowDuration?: boolean;
 }

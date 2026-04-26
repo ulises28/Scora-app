@@ -3,6 +3,7 @@
 import { STRAVA_CONFIG } from '../config.js';
 import { calculateMaxPace } from '../utils/mathUtils';
 import { getAdministrativeLocation } from '../utils/geoUtils';
+import { decodePolyline, getDynamicStats } from '../features/editor/CanvasUtils';
 
 // Usamos las variables importadas
 const CLIENT_ID = STRAVA_CONFIG.CLIENT_ID;
@@ -30,6 +31,8 @@ export interface StravaActivity {
     location_city?: string | null;
     location_state?: string | null;
     timezone?: string;
+    start_latlng?: [number, number];
+    end_latlng?: [number, number];
     pr_count?: number;
     start_date_local: string;
     start_date: string;
@@ -304,18 +307,13 @@ export function formatActivityStats(activity: StravaActivity): StickerStats {
         activityType: activity.type,
     };
 
-    // Location extraction logic (Stage 1: Metadata & Timezone)
+    // Location extraction logic (Stage 1: Metadata)
+    // We prefer specific location metadata (city/state) or fallback to an aesthetic placeholder.
+    // We NO LONGER use activity.name as a fallback for the location field.
     let city = activity.location_city || '';
     let state = activity.location_state || '';
 
-    if (!city && activity.timezone) {
-        const tzMatch = activity.timezone.match(/\/(.*)$/);
-        if (tzMatch) {
-            city = tzMatch[1].replace(/_/g, ' ');
-        }
-    }
-
-    stats.location = city || activity.name || 'MEXICO CITY'; 
+    stats.location = city || 'SECRET LOCATION'; 
     stats.region = state || (city ? '' : 'World');
 
     stats.timeStr = formatDuration(activity.moving_time);
@@ -370,15 +368,7 @@ export function formatActivityStats(activity: StravaActivity): StickerStats {
 
     const locCity = activity.location_city || '';
     const locState = activity.location_state || '';
-    let locationStr = locCity ? (locState ? `${locCity}, ${locState}` : locCity) : null;
-
-    if (!locationStr && activity.timezone) {
-        // match everything after the last slash, e.g. America/Mexico_City -> Mexico_City
-        const tzMatch = activity.timezone.match(/\/(.*)$/);
-        if (tzMatch) {
-            locationStr = tzMatch[1].replace(/_/g, ' ');
-        }
-    }
+    let locationStr = locCity ? (locState ? `${locCity}, ${locState}` : locCity) : 'SECRET LOCATION';
 
     const dataPool: Record<string, StickerStatSlot | null> = {
         distance: activity.distance > 0 ? { label: 'Distance', value: (activity.distance / 1000).toFixed(2), unit: 'km' } : null,
@@ -466,22 +456,48 @@ export function formatActivityStats(activity: StravaActivity): StickerStats {
  * Inspired by 'Fidelidad Total' Python logic.
  */
 export async function enrichActivityWithGeo(activity: StravaActivity, stats: StickerStats): Promise<Partial<StickerStats>> {
-    const latLng = (activity as any).start_latlng || [];
+    const startLatLng = activity.start_latlng;
+    const endLatLng = activity.end_latlng;
+    const summaryPolyline = activity.map?.summary_polyline;
+    
+    // Priority 1: Start Coord
+    // Priority 2: End Coord
+    // Priority 3: First point of decoded Polyline (Robust fallback)
+    let latLng = (startLatLng && startLatLng.length === 2) 
+        ? startLatLng 
+        : (endLatLng && endLatLng.length === 2 ? endLatLng : null);
+
+    if (!latLng && summaryPolyline) {
+        const coords = decodePolyline(summaryPolyline);
+        if (coords.length > 0) {
+            latLng = coords[0];
+            console.log("[Geo] Using Polyline Fallback Coord:", latLng);
+        }
+    }
+
     let scoraLocation = null;
 
-    if (latLng && latLng.length === 2) {
+    if (latLng) {
         scoraLocation = await getAdministrativeLocation(latLng[0], latLng[1]);
     }
 
-    const smartData = {
-        location_label: scoraLocation?.alcaldia_district || stats.location,
-        geo_summary: scoraLocation,
-        is_personal_record: (activity.pr_count || 0) > 0,
-        intensity_index: (activity.average_heartrate || 0) > 160 ? "High" : "Normal"
-    };
+    // 3. ATOMIC SYNCHRONIZATION: Update stats.location and refresh dataPoints
+    // This ensures metric-based stickers (location-pill, tiny-gps) stay in sync.
+    const locationLabel = scoraLocation?.alcaldia_district || stats.location;
+    
+    // We update the dataPoints array while preserving other stats
+    const updatedStats = { ...stats, location: locationLabel };
+    
+    // Refresh the specific dataPoints used by stickers
+    const newPoints = [...(stats.dataPoints || [])];
+    const locIdx = newPoints.findIndex(p => p.label.toUpperCase() === 'LOCATION');
+    if (locIdx !== -1) {
+        newPoints[locIdx].value = locationLabel;
+    }
 
     return {
-        location: smartData.location_label,
-        region: scoraLocation?.state || stats.region,
+        location: locationLabel,
+        region: scoraLocation ? `${scoraLocation.state}, ${scoraLocation.country}` : stats.region,
+        dataPoints: newPoints
     };
 }

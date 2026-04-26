@@ -126,6 +126,10 @@ npm run test:report
 # ⚙️ Unit & Logic
 # Validate core mathematical and polyline processing logic.
 npm run test
+
+# ⚙️ Sticker Registry
+# Sync sticker definitions and capabilities with the E2E audit JSON.
+npm run sync:stickers
 ```
 
 ---

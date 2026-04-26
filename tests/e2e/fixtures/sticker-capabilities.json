@@ -212,7 +212,9 @@
           "KM",
           "/KM"
         ],
-        "metadata": []
+        "metadata": [
+          "location"
+        ]
       },
       "bike": {
         "metrics": [
@@ -224,7 +226,9 @@
           "KM",
           "KM/H"
         ],
-        "metadata": []
+        "metadata": [
+          "location"
+        ]
       },
       "workout": {
         "metrics": [
@@ -232,7 +236,9 @@
           "time"
         ],
         "labels": [],
-        "metadata": []
+        "metadata": [
+          "location"
+        ]
       }
     }
   },
@@ -249,7 +255,9 @@
         "labels": [
           "KM"
         ],
-        "metadata": []
+        "metadata": [
+          "location"
+        ]
       },
       "bike": {
         "metrics": [
@@ -258,14 +266,18 @@
         "labels": [
           "KM"
         ],
-        "metadata": []
+        "metadata": [
+          "location"
+        ]
       },
       "workout": {
         "metrics": [
           "time"
         ],
         "labels": [],
-        "metadata": []
+        "metadata": [
+          "location"
+        ]
       }
     }
   },
@@ -285,7 +297,9 @@
           "KM",
           "/KM"
         ],
-        "metadata": []
+        "metadata": [
+          "location"
+        ]
       },
       "bike": {
         "metrics": [
@@ -297,7 +311,9 @@
           "KM",
           "KM/H"
         ],
-        "metadata": []
+        "metadata": [
+          "location"
+        ]
       },
       "workout": {
         "metrics": [
@@ -305,7 +321,9 @@
           "time"
         ],
         "labels": [],
-        "metadata": []
+        "metadata": [
+          "location"
+        ]
       }
     }
   },
@@ -325,7 +343,8 @@
           "BPM"
         ],
         "metadata": [
-          "MAP"
+          "MAP",
+          "location"
         ]
       },
       "bike": {
@@ -338,7 +357,8 @@
           "BPM"
         ],
         "metadata": [
-          "MAP"
+          "MAP",
+          "location"
         ]
       },
       "workout": {
@@ -349,7 +369,8 @@
           "BPM"
         ],
         "metadata": [
-          "MAP"
+          "MAP",
+          "location"
         ]
       }
     }
@@ -404,7 +425,9 @@
         "labels": [
           "KM"
         ],
-        "metadata": []
+        "metadata": [
+          "location"
+        ]
       },
       "bike": {
         "metrics": [
@@ -413,14 +436,18 @@
         "labels": [
           "KM"
         ],
-        "metadata": []
+        "metadata": [
+          "location"
+        ]
       },
       "workout": {
         "metrics": [
           "time"
         ],
         "labels": [],
-        "metadata": []
+        "metadata": [
+          "location"
+        ]
       }
     }
   },

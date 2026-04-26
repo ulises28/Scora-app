@@ -33,9 +33,8 @@ async function syncStickers() {
             if (sticker.features.startTime) metrics.push('startTime');
             if (sticker.features.map) metadata.push('MAP');
             if (sticker.features.heartRateType === 'max') metadata.push('MAX_HR');
-            // 'title' = sticker renders stats.title (activity name). The test's
-            // 'location' metadata handler checks both location city AND title prefix.
-            if (sticker.features.title) metadata.push('location');
+            // 'location' = sticker renders stats.location (geocoded city/district)
+            if (sticker.features.location || sticker.features.title) metadata.push('location');
 
             // Map standard labels for the audit
             if (sticker.features.distance) labels.push('KM');

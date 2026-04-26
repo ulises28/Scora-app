@@ -2625,16 +2625,16 @@ export function drawNarrativeHighlight(ctx: CanvasRenderingContext2D, stats: any
     const cardW = 1080;
     const cardH = 280; // Reduced from 320 for a tighter, symmetrical look
 
-    // 4. Card Background & Enhanced Paper Physics
+    // 4. Card Background (Clean White for High Fidelity)
     ctx.save();
 
-    // Deeper, more realistic paper shadow
-    ctx.shadowColor = 'rgba(0,0,0,0.18)';
-    ctx.shadowBlur = 50;
-    ctx.shadowOffsetY = 20;
+    // Subtle professional shadow
+    ctx.shadowColor = 'rgba(0,0,0,0.12)';
+    ctx.shadowBlur = 40;
+    ctx.shadowOffsetY = 15;
 
-    // Draw Base Card
-    ctx.fillStyle = bgColor;
+    // Draw Base Card (Pure White)
+    ctx.fillStyle = "#ffffff";
     const xIdx = cx - cardW / 2;
     const yIdx = cy - cardH / 2;
     ctx.beginPath();
@@ -2642,28 +2642,11 @@ export function drawNarrativeHighlight(ctx: CanvasRenderingContext2D, stats: any
     ctx.fill();
     ctx.restore();
 
-    // --- High-Fidelity Paper Engine (v5.0 Photographic Physics) ---
+    // Paper physics removed per user request
     ctx.save();
     ctx.beginPath();
     ctx.roundRect(xIdx, yIdx, cardW, cardH, 2);
     ctx.clip();
-
-    // Draw Crinkled Texture if loaded
-    if (paperTexture.complete && paperTexture.naturalWidth !== 0) {
-        ctx.globalCompositeOperation = 'multiply';
-        ctx.globalAlpha = 0.85;
-        // Use a slightly larger crop to ensure full coverage without edge artifacts
-        ctx.drawImage(paperTexture, xIdx - 10, yIdx - 10, cardW + 20, cardH + 20);
-    } else {
-        // Fallback to procedural grain if asset is still loading
-        ctx.globalCompositeOperation = 'multiply';
-        for (let i = 0; i < 4000; i++) {
-            const px = xIdx + Math.random() * cardW;
-            const py = yIdx + Math.random() * cardH;
-            ctx.fillStyle = `rgba(0,0,0,${Math.random() * 0.08})`;
-            ctx.fillRect(px, py, 1, 1);
-        }
-    }
     ctx.restore();
 
     // 5. Draw Text
@@ -3743,9 +3726,21 @@ export function drawTinyGPS(ctx: CanvasRenderingContext2D, stats: any, textColor
 
     // Primary Metadata (Cinzel 900 - Massive Readability)
     ctx.globalAlpha = 0.9;
-    ctx.font = "900 75px 'Cinzel'"; // Increased from 55px
+    const baseSize = 52; // Reduced from 75px
+    const fullText = `${loc.toUpperCase()} · ${displayVal}`;
+    ctx.font = `900 ${baseSize}px 'Cinzel'`;
+    
+    // Smart Shrink if it overflows 800px width
+    let fontSize = baseSize;
+    const maxW = 900;
+    let textW = ctx.measureText(fullText).width;
+    if (textW > maxW) {
+        fontSize = Math.floor(baseSize * (maxW / textW));
+        ctx.font = `900 ${fontSize}px 'Cinzel'`;
+    }
+
     if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0.05em"; }
-    ctx.fillText(`${loc.toUpperCase()} · ${displayVal}`, 540, 995);
+    ctx.fillText(fullText, 540, 995);
     if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0px"; }
 }
 
@@ -5154,10 +5149,21 @@ export function drawJournalGrid(ctx: CanvasRenderingContext2D, stats: any, textC
         ctx.globalAlpha = 0.6;
         ctx.fillText(label.toUpperCase(), x, y);
 
-        // Value
+        // Value with Smart Scaling
         ctx.globalAlpha = 0.9;
-        ctx.font = "bold 42px 'Merriweather'";
-        const valWidth = ctx.measureText(value).width;
+        const baseSize = 42;
+        ctx.font = `bold ${baseSize}px 'Merriweather'`;
+        
+        let fontSize = baseSize;
+        const maxW = 250; // Grid column limit
+        let valWidth = ctx.measureText(value).width;
+        
+        if (valWidth > maxW) {
+            fontSize = Math.floor(baseSize * (maxW / valWidth));
+            ctx.font = `bold ${fontSize}px 'Merriweather'`;
+            valWidth = ctx.measureText(value).width;
+        }
+
         ctx.fillText(value, x, y + 30);
 
         // Unit

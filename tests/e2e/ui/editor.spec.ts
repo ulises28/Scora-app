@@ -169,28 +169,17 @@ test.describe('Scora App UI: Sticker Editor (POM) @smoke', () => {
         await editorPage.injectCanvasInterceptor();
 
         // 1. Verify Logo Toggle (Should remove "SCORA" from rendering)
-        const logoToggle = editorPage.logoToggle;
-
         // On → Off
-        let startCount = await editorPage.getDrawCount();
         await editorPage.clearCanvasTextLog();
         await editorPage.setLogo(false);
-        await expect(logoToggle).toHaveClass(/right/); // Verify UI state
-        await editorPage.waitForDrawSettled();
-
-        let logs = await editorPage.getCanvasTextLog();
-        await page.pause();
-        expect(logs.some(l => l.includes('SCORA'))).toBeFalsy();
+        await editorPage.verifyLogoToggleUIState(false);
+        await editorPage.verifyLogoVisibilityOnCanvas(false);
 
         // Off → On
-        startCount = await editorPage.getDrawCount();
         await editorPage.clearCanvasTextLog();
         await editorPage.setLogo(true);
-        await expect(logoToggle).not.toHaveClass(/right/); // Verify UI state
-        await editorPage.waitForDrawSettled();
-
-        logs = await editorPage.getCanvasTextLog();
-        expect(logs.some(l => l.includes('SCORA'))).toBeTruthy();
+        await editorPage.verifyLogoToggleUIState(true);
+        await editorPage.verifyLogoVisibilityOnCanvas(true);
 
         // 2. Verify Color Toggle
         // Find a template that supports standard black/white toggle (not Pro Custom Color)
@@ -200,7 +189,10 @@ test.describe('Scora App UI: Sticker Editor (POM) @smoke', () => {
 
         // Both toggles should be clickable without errors
         await editorPage.setTextColor('black'); // White → Black
-        await editorPage.waitForDrawSettled();
+        await editorPage.verifyTextColorUIState('black');
+        
+        await editorPage.setTextColor('white'); // Black → White
+        await editorPage.verifyTextColorUIState('white');
     });
 
     test('Test 7: Download button generates a valid image file', async ({ page }) => {
