@@ -73,8 +73,6 @@ export class EditorPage extends BasePage {
 
     @step('Get Intercepted Canvas Text')
     async getCanvasTextLog(): Promise<string[]> {
-        // Critical: Allow micro-tasks to settle to ensure fillText captures are flushed
-        await this.page.evaluate(() => new Promise(resolve => setTimeout(resolve, 0)));
         return await this.page.evaluate(() => (window as any)._scoraCanvasTextLog || []);
     }
 
@@ -210,5 +208,37 @@ export class EditorPage extends BasePage {
     @step('Click Go Back')
     async goBack() {
         await this.backButton.click();
+    }
+
+    @step('Verify Logo Toggle UI State')
+    async verifyLogoToggleUIState(visible: boolean) {
+        if (visible) {
+            await expect(this.logoToggle).not.toHaveClass(/right/);
+        } else {
+            await expect(this.logoToggle).toHaveClass(/right/);
+        }
+    }
+
+    @step('Verify Logo Visibility on Canvas')
+    async verifyLogoVisibilityOnCanvas(visible: boolean) {
+        // The "Continuous Observer" pattern to handle flaky rendering in Safari
+        await expect(async () => {
+            const logs = await this.getCanvasTextLog();
+            const isLogoVisible = logs.some(l => l.includes('SCORA'));
+            if (visible) {
+                expect(isLogoVisible).toBeTruthy();
+            } else {
+                expect(isLogoVisible).toBeFalsy();
+            }
+        }).toPass({
+            timeout: 5000,
+            intervals: [500]
+        });
+    }
+
+    @step('Verify Text Color UI State')
+    async verifyTextColorUIState(color: 'white' | 'black') {
+        const opt = this.textColorToggle.locator(`.toggle-opt[data-value="${color}"]`);
+        await expect(opt).toHaveClass(/active/);
     }
 }

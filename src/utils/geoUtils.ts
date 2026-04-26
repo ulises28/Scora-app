@@ -15,35 +15,50 @@ export interface AdministrativeLocation {
  */
 export async function getAdministrativeLocation(lat: number, lng: number): Promise<AdministrativeLocation | null> {
     try {
-        // Nominatim requires a User-Agent and has a rate limit of 1 req/sec.
-        // We use a custom user-agent for scora.
+        // Nominatim requires an identifier, but 'User-Agent' is a forbidden header in browsers.
+        // The browser will send its own User-Agent and Referer automatically.
         const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`;
         
-        const response = await fetch(url, {
-            headers: {
-                'User-Agent': 'scora-high-fidelity-v1.0'
-            }
-        });
+        console.log(`[Geo] Requesting high-fidelity location for: ${lat}, ${lng}`);
+        const response = await fetch(url);
 
-        if (!response.ok) return null;
+        if (!response.ok) {
+            console.error(`[Geo] API Error: ${response.status}`);
+            return null;
+        }
 
         const data = await response.json();
+        console.log("[Geo] Reverse Geocoding Success:", data.address?.city_district || data.address?.city || "Found");
         const addr = data.address || {};
 
-        // 1. Determine District/Alcaldía (Primary Goal)
-        // Hierarchy: city_district -> county -> city -> town -> village
-        const district = addr.city_district || addr.county || addr.city || addr.town || addr.village;
-        
-        // 2. Determine State
-        const state = addr.state || "Unknown State";
+        // 1. Extract potential district names (Nominatim uses different keys by region)
+        const borough = addr.borough;
+        const district = addr.city_district || addr.district || addr.suburb_district;
+        const county = addr.county;
+        const city = addr.city || addr.town || addr.village;
+        const state = addr.state;
+        const country = addr.country;
 
-        // 3. Determine Country
-        const country = addr.country || "Unknown Country";
+        // 2. Determine the most specific "Delegación/Alcaldía" label
+        // We prioritize borough/district and filter out names that are identical to the State.
+        let primaryLabel = "";
+        
+        // Priority Chain: Borough -> District -> County (if not generic) -> City
+        if (borough && borough !== state) {
+            primaryLabel = borough;
+        } else if (district && district !== state) {
+            primaryLabel = district;
+        } else if (county && county !== state && county !== city) {
+            primaryLabel = county;
+        } else {
+            // Fallback to City or State
+            primaryLabel = city || state || country || "SECRET LOCATION";
+        }
 
         return {
-            alcaldia_district: district || state || "Unknown",
-            state: state,
-            country: country
+            alcaldia_district: primaryLabel,
+            state: state || city || "Unknown",
+            country: country || "Unknown"
         };
     } catch (error) {
         console.error("[Geo] Reverse geocoding failed:", error);
