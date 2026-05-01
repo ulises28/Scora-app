@@ -25,6 +25,41 @@ let lastActivities: any[] = []; // Cache for raw strava data
 let queuePollingInterval: ReturnType<typeof setInterval> | null = null;
 
 /**
+ * 🕵️ IN-APP BROWSER DETECTION (Instagram/Facebook)
+ * Instagram in-app browser is restrictive and often causes 403 errors during OAuth.
+ * We try to "jump out" to Chrome on Android, or show a guide on iOS.
+ */
+function checkInAppBrowser() {
+    const ua = navigator.userAgent || navigator.vendor || (window as any).opera;
+    const isInstagram = ua.indexOf('Instagram') > -1;
+    const isFacebook = ua.indexOf('FBAN') > -1 || ua.indexOf('FBAV') > -1;
+    const isInApp = isInstagram || isFacebook;
+
+    if (!isInApp) return false;
+
+    // 🚀 ANDROID: Force Jump to Chrome
+    if (/Android/i.test(ua)) {
+        console.log("[Bridge] Android In-App detected. Attempting Chrome Intent jump...");
+        const intentUrl = `intent://${window.location.host}${window.location.pathname}${window.location.search}#Intent;scheme=https;package=com.android.chrome;end`;
+        window.location.href = intentUrl;
+        return true;
+    }
+
+    // 🍎 iOS: Show the Bridge Guide
+    console.log("[Bridge] iOS In-App detected. Showing guidance overlay.");
+    const bridgeEl = document.getElementById('in-app-bridge');
+    if (bridgeEl) {
+        bridgeEl.classList.remove('hidden');
+        
+        const btnContinue = document.getElementById('btn-continue-in-app');
+        if (btnContinue) {
+            btnContinue.onclick = () => bridgeEl.classList.add('hidden');
+        }
+    }
+    return true;
+}
+
+/**
  * Handle Forced Admin Reset (Liberar App)
  */
 async function handleAdminReset() {
@@ -294,10 +329,18 @@ async function handleLoginClick() {
 // ============================================================
 
 async function initApp() {
-    setTimeout(removeLoader, 100);
-
+    // 🛡️ SECURITY & UX: Check if we are inside a restrictive in-app browser
+    // If we just came back from Strava (authCode exists), we DON'T show the bridge 
+    // to avoid interrupting the token exchange.
     const urlParams = new URLSearchParams(window.location.search);
     const authCode = urlParams.get('code');
+    const stateSid = urlParams.get('state');
+
+    if (!authCode) {
+        checkInAppBrowser();
+    }
+
+    setTimeout(removeLoader, 100);
 
     // 👑 ADMIN BUTTON: Inject below the Strava login button whenever ?admin=scora is in the URL.
     if (urlParams.get('admin') === 'scora') {
@@ -337,7 +380,10 @@ async function initApp() {
         if (activityListEl) activityListEl.innerHTML = "<p class='status-msg'>Sincronizando tus rutas...</p>";
         
         try {
-            const sid = sessionStorage.getItem('scora_queue_session_id') || 'fallback';
+            // 🛡️ SESSION RECOVERY: Instagram/Safari might wipe sessionStorage on redirect.
+            // We use the 'state' parameter returned by Strava as our absolute truth.
+            const sid = stateSid || sessionStorage.getItem('scora_queue_session_id') || 'fallback';
+            
             const tokenResponse = await exchangeToken(authCode, sid);
             saveStravaAuth(tokenResponse);
             const accessToken = tokenResponse.access_token;
@@ -488,7 +534,8 @@ async function initApp() {
         let accessToken = null;
 
         if (authCode) {
-            const sid = sessionStorage.getItem('scora_queue_session_id') || 'fallback';
+            // 🛡️ SESSION RECOVERY: Check URL state first, then sessionStorage
+            const sid = stateSid || sessionStorage.getItem('scora_queue_session_id') || 'fallback';
             const tokenResponse = await exchangeToken(authCode, sid);
             saveStravaAuth(tokenResponse);
             accessToken = tokenResponse.access_token;
@@ -666,8 +713,8 @@ window.addEventListener('message', async (event) => {
     if (event.data && event.data.type === 'strava_auth_success') {
         const newCode = event.data.code;
         
-        // 🛡️ SESSION RECOVERY: Get the sessionId we stored in sessionStorage (Fixes undefined error)
-        const sessionId = sessionStorage.getItem('scora_queue_session_id') || 'fallback';
+        // 🛡️ SESSION RECOVERY: Check for sessionId in message or fallback
+        const sessionId = event.data.sessionId || sessionStorage.getItem('scora_queue_session_id') || 'fallback';
 
         stopQueuePolling();
         showScreen('screen-feed');

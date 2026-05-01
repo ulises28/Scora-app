@@ -99,9 +99,9 @@ export interface StickerStats {
 }
 
 // 1. Construye el link al que enviaremos al usuario
-export function getStravaLoginUrl() {
+export function getStravaLoginUrl(sessionId: string = 'fallback') {
     // Changed approval_prompt=force to auto so it doesn't ask for permission every time
-    return `https://www.strava.com/oauth/authorize?client_id=${CLIENT_ID}&response_type=code&redirect_uri=${REDIRECT_URI}&approval_prompt=auto&scope=activity:read_all`;
+    return `https://www.strava.com/oauth/authorize?client_id=${CLIENT_ID}&response_type=code&redirect_uri=${REDIRECT_URI}&approval_prompt=auto&scope=activity:read_all&state=${sessionId}`;
 }
 
 // 2. Intercambia el "code" de la URL por el Token de acceso usando el backend de Vercel
