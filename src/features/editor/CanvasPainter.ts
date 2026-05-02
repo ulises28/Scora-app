@@ -71,6 +71,7 @@ function buildColors(textColor: string) {
  * Draws the Scora Activity Icons (Run, Bike, Workout) using Canvas Paths.
  * Optimized for high-fidelity rendering within stickers.
  */
+
 export function drawScoraActivityIcon(ctx: CanvasRenderingContext2D, type: string, size = 24, color = "white", x?: number, y?: number) {
     ctx.save();
     ctx.fillStyle = color;
@@ -5518,6 +5519,293 @@ export function drawUltraDetail(ctx: CanvasRenderingContext2D, stats: any, textC
         (ctx as any).letterSpacing = "0px";
     }
     ctx.restore();
+}
+
+/**
+ * 📝 NOTE MINIMAL (Stickers 4.0)
+ * Aesthetic: A clean digital one-liner journal entry.
+ * Features: Unified narrative (distance, pace, duration) with a gold cursor.
+ * Philosophy: "Athletic data as a single-line memory."
+ */
+export function drawNoteSticker(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const textCol = '#1a1a1a'; // Force professional dark gray for white background contrast
+    
+    // 1. Narrative Formatting (Smart Fallback Protocol)
+    const sport = normalizeSport(stats.type || stats.activityType || 'Run');
+    let narrative = "";
+
+    const distVal = stats.distanceVal || '0.00';
+    const time = stats.timeStr || '0m';
+    const pace = (stats.subValue || '').split(' ')[0] || '0:00';
+    const hasDistance = parseFloat(distVal) > 0;
+
+    if (hasDistance) {
+        if (sport === 'Swim') {
+            const meters = Math.round(parseFloat(distVal) * 1000);
+            narrative = `${meters}m swim in ${time} at ${pace} pace`;
+        } else if (sport === 'Ride') {
+            narrative = `${distVal} km at ${pace} km/h speed in ${time}`;
+        } else {
+            // Run, Walk, Hike, or Generic Distance activity
+            narrative = `${distVal} km at ${pace} pace in ${time}`;
+        }
+    } else {
+        // Training / Workout / Gym / Ski (Missing Distance)
+        const hr = stats.avgHeartrate ? ` at ${stats.avgHeartrate} bpm` : "";
+        narrative = `${time} ${sport}${hr}`;
+    }
+
+    ctx.save();
+    ctx.textBaseline = 'middle';
+    ctx.font = `500 42px 'Elms Sans'`;
+    
+    const textWidth = ctx.measureText(narrative).width;
+    const paddingX = 45;
+    const paddingY = 30;
+    
+    // Positioning: Under Scora logo (Top Left alignment)
+    const xStart = 80;
+    const yCenter = 210; 
+
+    // 2. White Background "Note" Card (Precision Replication)
+    ctx.save();
+    ctx.fillStyle = "#ffffff";
+    
+    // Subtle professional shadow
+    ctx.shadowColor = 'rgba(0,0,0,0.12)';
+    ctx.shadowBlur = 30;
+    ctx.shadowOffsetY = 8;
+    
+    const rectW = textWidth + (paddingX * 2) + 20; // Extra room for cursor
+    const rectH = 85; // Fixed height for consistency
+    const rectX = xStart;
+    const rectY = yCenter - rectH / 2;
+    
+    ctx.beginPath();
+    ctx.roundRect(rectX, rectY, rectW, rectH, 8);
+    ctx.fill();
+    ctx.restore();
+
+    // 3. Draw Text
+    ctx.textAlign = 'left';
+    ctx.fillStyle = textCol;
+    ctx.fillText(narrative, rectX + paddingX, yCenter + 2); // Slight Y offset for visual balance
+    
+    // 4. The Cursor (#eab308)
+    ctx.fillStyle = '#eab308';
+    ctx.fillRect(rectX + paddingX + textWidth + 12, yCenter - 26, 5, 52); 
+    
+    ctx.restore();
+}
+
+/**
+ * 💬 SOCIAL CHAT (Stickers 4.0)
+ * Aesthetic: A WhatsApp-style conversation flow.
+ * Features: Multi-bubble conversation + Optional Map Image message.
+ * Philosophy: "Athletic data as a personal share."
+ */
+export function drawChatSticker(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const bubbleOther = '#1f2c33'; // WA Dark: Other
+    const bubbleUser = '#005c4b';  // WA Dark: User
+    const textCol = '#e9edef';
+    const timestampCol = 'rgba(255,255,255,0.4)';
+
+    const dist = stats.distanceVal || '0.00';
+    const pace = (stats.subValue || '').split(' ')[0] || '0:00';
+    const time = stats.timeStr || '0h 00m';
+    const startTime = stats.startTime || '12:00';
+    const hr = stats.heartRate || stats.avgHR || null;
+
+    const sport = normalizeSport(stats.type || stats.activityType || 'Run');
+    const sportLower = sport.toLowerCase();
+    let activityVerb = 'Running';
+    if (sportLower === 'ride' || sportLower === 'bike') activityVerb = 'Riding';
+    else if (sportLower === 'swim') activityVerb = 'Swimming';
+    else if (sportLower === 'workout' || sportLower === 'training' || sportLower === 'gym') activityVerb = 'Training';
+
+    const location = stats.location && stats.location !== 'Unknown' ? ` in ${stats.location}` : "";
+
+    const intensityLabel = (sportLower === 'ride' || sportLower === 'bike') ? 'Speed' : 'Pace';
+    const intensityUnit = (sportLower === 'ride' || sportLower === 'bike') ? ' km/hr' : ' /km';
+
+    // Conversation Flow (Smart Fallback Logic)
+    let messages = [];
+    if (stats.hasDistance) {
+        messages = [
+            { text: `${activityVerb} for ${dist} km${location}`, side: 'left' as const, bg: bubbleOther },
+            { text: `${intensityLabel}: ${pace}${intensityUnit}`, side: 'right' as const, bg: bubbleUser },
+            { text: `During ${time}`, side: 'left' as const, bg: bubbleOther }
+        ];
+    } else {
+        messages = [
+            { text: `${activityVerb}${location}`, side: 'left' as const, bg: bubbleOther },
+            { text: hr ? `Heart rate: ${hr} bpm` : "Good sweat session! 🔥", side: 'right' as const, bg: bubbleUser },
+            { text: `During ${time}`, side: 'left' as const, bg: bubbleOther }
+        ];
+    }
+
+    let currentY = 320;
+    const spacing = 140;
+
+    messages.forEach(msg => {
+        drawWABubble(ctx, msg.text, msg.side, currentY, msg.bg, textCol, timestampCol, startTime);
+        currentY += spacing;
+    });
+
+    // Optional Map Bubble (Always from User / Right)
+    if (stats.polyline) {
+        currentY += 20;
+        drawWAMapBubble(ctx, stats.polyline, 'right', currentY, bubbleUser, timestampCol, startTime);
+        currentY += 500; // Map height is 480 + gap
+    }
+
+    // 3. WhatsApp Bottom Input Bar (Positioned closely under last message)
+    drawWAInput(ctx, currentY + 40);
+}
+
+function drawWABubble(ctx: CanvasRenderingContext2D, text: string, side: 'left' | 'right', y: number, bg: string, color: string, tsCol: string, time: string) {
+    ctx.save();
+    ctx.font = "400 36px 'Plus Jakarta Sans'";
+    const textWidth = ctx.measureText(text).width;
+    const bubbleW = Math.max(220, textWidth + (side === 'right' ? 180 : 140));
+    const bubbleH = 95;
+    const x = side === 'left' ? 70 : 1010 - bubbleW;
+
+    // Bubble Body
+    ctx.fillStyle = bg;
+    ctx.beginPath();
+    ctx.roundRect(x, y, bubbleW, bubbleH, 18);
+    ctx.fill();
+
+    // Tail
+    ctx.beginPath();
+    if (side === 'left') {
+        ctx.moveTo(x + 15, y);
+        ctx.lineTo(x - 12, y);
+        ctx.lineTo(x, y + 25);
+    } else {
+        ctx.moveTo(x + bubbleW - 15, y);
+        ctx.lineTo(x + bubbleW + 12, y);
+        ctx.lineTo(x + bubbleW, y + 25);
+    }
+    ctx.fill();
+
+    // Main Text (Better Centering)
+    ctx.fillStyle = color;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, x + 35, y + bubbleH / 2);
+
+    // Timestamp
+    ctx.fillStyle = tsCol;
+    ctx.font = "400 20px 'Plus Jakarta Sans'";
+    ctx.textAlign = 'right';
+    const tsX = x + bubbleW - 25;
+    ctx.fillText(time, tsX, y + bubbleH - 20);
+
+    ctx.restore();
+}
+
+function drawWAMapBubble(ctx: CanvasRenderingContext2D, polyline: string, side: 'left' | 'right', y: number, bg: string, tsCol: string, time: string) {
+    const bubbleW = 480;
+    const bubbleH = 480;
+    const x = side === 'left' ? 70 : 1010 - bubbleW;
+
+    ctx.save();
+    ctx.fillStyle = bg;
+    ctx.beginPath();
+    ctx.roundRect(x, y, bubbleW, bubbleH, 18);
+    ctx.fill();
+
+    // Tail
+    ctx.beginPath();
+    ctx.moveTo(x + bubbleW - 15, y);
+    ctx.lineTo(x + bubbleW + 12, y);
+    ctx.lineTo(x + bubbleW, y + 25);
+    ctx.fill();
+
+    // Inner Map
+    const margin = 12;
+    const mapW = bubbleW - margin * 2;
+    const mapH = bubbleH - margin * 2 - 45;
+    ctx.fillStyle = '#0b141a';
+    ctx.beginPath();
+    ctx.roundRect(x + margin, y + margin, mapW, mapH, 12);
+    ctx.fill();
+
+    const coords = decodePolyline(polyline);
+    if (coords.length > 1) {
+        let minLat = coords[0][0], maxLat = minLat, minLng = coords[0][1], maxLng = minLng;
+        coords.forEach(p => {
+            if (p[0] < minLat) minLat = p[0]; if (p[0] > maxLat) maxLat = p[0];
+            if (p[1] < minLng) minLng = p[1]; if (p[1] > maxLng) maxLng = p[1];
+        });
+        const scale = Math.min((mapW - 60) / (maxLng - minLng), (mapH - 60) / (maxLat - minLat));
+        const centerX = x + margin + mapW / 2;
+        const centerY = y + margin + mapH / 2;
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.strokeStyle = '#25d366';
+        ctx.lineWidth = 6;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        coords.forEach((p, i) => {
+            const px = centerX + (p[1] - (minLng + maxLng) / 2) * scale;
+            const py = centerY - (p[0] - (minLat + maxLat) / 2) * scale;
+            if (i === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+        });
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // Timestamp
+    ctx.fillStyle = tsCol;
+    ctx.font = "400 20px 'Plus Jakarta Sans'";
+    ctx.textAlign = 'right';
+    ctx.fillText(time, x + bubbleW - 25, y + bubbleH - 20);
+
+    ctx.restore();
+}
+
+
+function drawWAInput(ctx: CanvasRenderingContext2D, y: number) {
+    ctx.save();
+    const barH = 105;
+    const barW = 940; // Wider bar for minimalist look
+    const barX = 70;
+
+    // 1. Dark Background for Input Bar
+    ctx.fillStyle = '#1f2c33';
+    ctx.beginPath();
+    ctx.roundRect(barX, y, barW, barH, 50);
+    ctx.fill();
+
+    // 2. Icons & Text
+    // Smiley (Left)
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+    ctx.lineWidth = 4;
+    const smileyX = barX + 55;
+    const midY = y + barH / 2;
+    ctx.beginPath();
+    ctx.arc(smileyX, midY, 22, 0, Math.PI * 2);
+    ctx.stroke();
+    // Tiny eyes
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+    ctx.fillRect(smileyX - 8, midY - 8, 4, 4);
+    ctx.fillRect(smileyX + 4, midY - 8, 4, 4);
+    // Smile
+    ctx.beginPath();
+    ctx.arc(smileyX, midY, 12, 0.1 * Math.PI, 0.9 * Math.PI);
+    ctx.stroke();
+
+    // Placeholder "Message"
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.font = "400 36px 'Plus Jakarta Sans'";
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText("Message", barX + 115, midY);
 
     ctx.restore();
 }

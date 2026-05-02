@@ -11,6 +11,8 @@ import * as Renderers from './CanvasPainter';
 // ─── 1. ACTIVE PRODUCTIVE STICKERS ───────────────────────────────────────────
 // These are visible in the Studio UI Gallery.
 export const ACTIVE_STICKER_LIST: StickerDefinition[] = [
+    { id: 'social-chat', category: 'all', supportsBlackText: false, features: { distance: true, duration: true, paceSpeed: true, map: true }, render: Renderers.drawChatSticker },
+    { id: 'note-minimal', category: 'all', supportsBlackText: true, preferredCase: 'title', features: { distance: true, duration: true, paceSpeed: true }, render: Renderers.drawNoteSticker },
     { id: 'ultra-detail', category: 'all', supportsCustomColor: true, supportsBlackText: true, features: { distance: true, duration: true, paceSpeed: true, alwaysShowDuration: true }, render: Renderers.drawUltraDetail },
     { id: 'graffiti-expo', category: 'all', supportsCustomColor: true, supportsBlackText: true, features: { map: true }, render: Renderers.drawGraffitiExpo },
     { id: 'graffiti-brand', category: 'all', supportsCustomColor: true, supportsBlackText: true, features: { distance: true, duration: true, paceSpeed: true, alwaysShowDuration: true }, expectedLabels: ['KILOMETERS', 'TOTAL DURATION', 'PACE', 'AVG. SPEED'], render: Renderers.drawGraffitiBrand },
