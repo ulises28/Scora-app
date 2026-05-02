@@ -140,7 +140,7 @@ async function handleAdminReset() {
         
         console.log("[Admin] Reset Response:", data);
         alert(summary);
-        window.location.reload();
+        // window.location.reload();
     } catch (e) {
         console.error("[Admin] Reset failure:", e);
         alert('Error al intentar conectar con el servidor de reinicio.');
