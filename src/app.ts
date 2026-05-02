@@ -369,6 +369,7 @@ async function initApp() {
         if (!existingAdmin && authSection) {
             const adminBtn = document.createElement('button');
             adminBtn.id = 'btn-admin-reset';
+            adminBtn.dataset.testid = 'btn-admin-reset';
             adminBtn.className = 'btn-rescue';
             adminBtn.innerHTML = '<span>🚨</span> ADMIN: FORCE RESET';
             adminBtn.title = 'Admin: Force-reset the Strava connection slot';
@@ -615,7 +616,7 @@ async function initApp() {
                         <div class="error-container">
                             <span class="error-title">⚡ SISTEMA BLOQUEADO</span>
                             <p class='error-msg'>Un atleta está ocupando la conexión con Strava. ¿Quieres forzar la liberación para continuar?</p>
-                            <button id="btn-rescue-reset" class="btn-rescue">
+                            <button id="btn-rescue-reset" data-testid="btn-admin-reset" class="btn-rescue">
                                 <span>🚨</span> EMERGENCY BUTTON
                             </button>
                         </div>
@@ -767,7 +768,7 @@ window.addEventListener('message', async (event) => {
                         <div class="error-container">
                             <span class="error-title">🔒 ACCESO RESTRINGIDO</span>
                             <p class='error-msg'>Se detectó una sesión activa en la pista. Como administrador, puedes liberar el sistema ahora mismo.</p>
-                            <button id="btn-rescue-auth" class="btn-rescue">
+                            <button id="btn-rescue-auth" data-testid="btn-admin-reset" class="btn-rescue">
                                 <span>🚨</span> EMERGENCY BUTTON
                             </button>
                         </div>
