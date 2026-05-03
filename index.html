@@ -30,12 +30,12 @@
 
     <div class="app-container">
         <header class="main-header">
-            <div class="brand-logo" id="go-home">
+            <div class="brand-logo" id="go-home" data-testid="logo-home">
                 <div class="logo-dot"></div>
                 SCORA<span>.</span>
             </div>
             <div id="editor-nav-context" class="hidden">
-                <button id="btn-back" class="btn-text">← Volver</button>
+                <button id="btn-back" class="btn-text" data-testid="btn-back">← Volver</button>
                 <span id="selected-activity-name" data-testid="activity-title-main"></span>
             </div>
         </header>
@@ -55,7 +55,7 @@
                 <div class="intro-section">
                     <div class="intro-header">
                         <h1>Entrenamientos</h1>
-                        <button id="btn-sync" class="btn-icon" aria-label="Sincronizar nuevas actividades">
+                        <button id="btn-sync" class="btn-icon" data-testid="btn-sync" aria-label="Sincronizar nuevas actividades">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path
@@ -78,13 +78,13 @@
 
                 <div class="preview-container">
                     <!-- Arrows — desktop only, hidden on touch screens -->
-                    <button class="template-arrow template-arrow-prev" id="btn-template-prev"
+                    <button class="template-arrow template-arrow-prev" id="btn-template-prev" data-testid="btn-template-prev"
                         aria-label="Previous template">&#8249;</button>
                     <div class="canvas-wrapper transparency-grid" id="canvas-wrapper" data-testid="canvas-main-preview">
                         <canvas id="storyCanvas"></canvas>
                     </div>
 
-                    <button class="template-arrow template-arrow-next" id="btn-template-next"
+                    <button class="template-arrow template-arrow-next" id="btn-template-next" data-testid="btn-template-next"
                         aria-label="Next template">&#8250;</button>
                     <!-- Sticker Gallery (New Redesign) -->
                     <div class="sticker-gallery" id="sticker-gallery"></div>

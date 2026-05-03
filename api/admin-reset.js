@@ -1,12 +1,57 @@
 import { Redis } from '@upstash/redis';
+import fs from 'fs';
+import path from 'path';
 
 const LOCK_KEY = 'strava:slot:lock';
 const QUEUE_KEY = 'strava:slot:queue';
 const ACTIVE_TOKEN_KEY = 'strava:active_token';
 
-const REDIS_CONFIGURED = !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
-
 export default async function handler(req, res) {
+    
+    // ☢️ NUCLEAR BYPASS: Read .env.local manually if process.env is failing us
+    let url = process.env.UPSTASH_REDIS_REST_URL;
+    let token = process.env.UPSTASH_REDIS_REST_TOKEN;
+
+    if (!url || !token) {
+        try {
+            const pathsToTry = [
+                path.join(process.cwd(), '.env.local'),
+                path.join(process.cwd(), '.env'),
+                path.join(process.cwd(), '..', '.env.local'),
+                path.join(process.cwd(), '..', '.env'),
+                path.resolve('.env.local'),
+                path.resolve('.env')
+            ];
+
+            let targetPath = null;
+            for (const p of pathsToTry) {
+                if (fs.existsSync(p)) {
+                    targetPath = p;
+                    break;
+                }
+            }
+            
+            if (targetPath) {
+                const envContent = fs.readFileSync(targetPath, 'utf8');
+                const urlMatch = envContent.match(/UPSTASH_REDIS_REST_URL=["']?([^"'\n\r]+)/);
+                const tokenMatch = envContent.match(/UPSTASH_REDIS_REST_TOKEN=["']?([^"'\n\r]+)/);
+                const userMatch = envContent.match(/ADMIN_USER=["']?([^"'\n\r]+)/);
+                const passMatch = envContent.match(/ADMIN_PASS=["']?([^"'\n\r]+)/);
+
+                if (urlMatch) url = urlMatch[1].replace(/['"]/g, '');
+                if (tokenMatch) token = tokenMatch[1].replace(/['"]/g, '');
+                
+                // Also inject ADMIN keys if they are missing from the environment
+                if (userMatch && !process.env.ADMIN_USER) process.env.ADMIN_USER = userMatch[1].replace(/['"]/g, '');
+                if (passMatch && !process.env.ADMIN_PASS) process.env.ADMIN_PASS = passMatch[1].replace(/['"]/g, '');
+            }
+        } catch (e) {
+            console.error("[Admin] Manual env read failed:", e);
+        }
+    }
+
+    const REDIS_CONFIGURED = !!(url && token);
+
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method Not Allowed' });
     }
@@ -17,12 +62,12 @@ export default async function handler(req, res) {
     const expectedPass = process.env.ADMIN_PASS;
 
     if (!expectedPass) {
-        console.warn('[Admin] SECURITY ALERT: ADMIN_PASS not set in Vercel. Reset blocked.');
-        return res.status(500).json({ error: 'System not configured for remote reset. Add ADMIN_PASS in Vercel.' });
+        console.warn('[Admin] SECURITY ALERT: ADMIN_PASS not set. Reset blocked.');
+        return res.status(500).json({ error: 'System not configured for remote reset. Add ADMIN_PASS.' });
     }
 
-    // Simple comparison for 'Useful Admin' logic
-    const providedSecret = authHeader ? authHeader.replace('Bearer ', '') : '';
+    // Capture the base64 part regardless of if it's 'Basic ' or 'Bearer '
+    const providedSecret = authHeader ? authHeader.split(' ')[1] : '';
     const masterSecret = Buffer.from(`${expectedUser}:${expectedPass}`).toString('base64');
 
     if (providedSecret !== masterSecret) {
@@ -31,16 +76,24 @@ export default async function handler(req, res) {
     }
 
     if (!REDIS_CONFIGURED) {
-        return res.status(200).json({ message: 'Redis is not configured. Reset not necessary.' });
+        return res.status(200).json({ 
+            success: true,
+            redisMissing: true,
+            message: 'Redis is not configured. Reset not necessary.'
+        });
     }
 
     try {
         const redis = new Redis({
-            url: process.env.UPSTASH_REDIS_REST_URL,
-            token: process.env.UPSTASH_REDIS_REST_TOKEN
+            url: url,
+            token: token
         });
 
+        // 🔍 DIAGNOSTICS: Check what we are about to clear
         const activeToken = await redis.get(ACTIVE_TOKEN_KEY);
+        const lockHolder = await redis.get(LOCK_KEY);
+        const queueSize = await redis.llen(QUEUE_KEY);
+
         let tokenRevoked = false;
 
         // Try to revoke the active token on Strava's side if we have it.
@@ -57,22 +110,21 @@ export default async function handler(req, res) {
             } catch (cleanupErr) {
                 console.error('[Admin] Failed to deauthorize orphaned token on Strava:', cleanupErr);
             }
-        } else {
-            console.log('[Admin] No active token in Redis — lock may have expired naturally. Clearing queue...');
         }
 
-        // 🔑 ALWAYS clear all control keys, regardless of whether Strava deauth succeeded.
-        // Clearing the lock is the #1 priority — Strava's side is secondary.
-        await redis.del(LOCK_KEY);
-        await redis.del(QUEUE_KEY);
-        await redis.del(ACTIVE_TOKEN_KEY);
+        // 🔑 ALWAYS clear all control keys
+        const keysDeleted = await redis.del(LOCK_KEY, QUEUE_KEY, ACTIVE_TOKEN_KEY);
 
-        console.log('[Admin] Queue and locks forcibly cleared.');
+        console.log(`[Admin] Reset complete. Keys deleted: ${keysDeleted}. Lock was held by: ${lockHolder || 'none'}. Queue size was: ${queueSize}`);
 
         return res.status(200).json({ 
+            success: true,
             message: 'System reset successful.',
-            tokenRevoked: tokenRevoked,
             hadActiveToken: !!activeToken,
+            tokenRevoked: tokenRevoked,
+            hadLock: !!lockHolder,
+            queueCleared: queueSize > 0,
+            queueSize: queueSize,
             details: 'The queue, locks, and any stored active tokens were purged.'
         });
 

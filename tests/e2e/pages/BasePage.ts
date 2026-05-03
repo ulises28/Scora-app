@@ -18,9 +18,9 @@ export class BasePage {
     }
 
     //methods
-    @step('Navigate to App Root')
-    async goto() {
-        await this.page.goto('/');
+    @step('Navigate to URL')
+    async goto(path: string = '/') {
+        await this.page.goto(path);
     }
 
     @step('Ensure Loader Overlay is Hidden')

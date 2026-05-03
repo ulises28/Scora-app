@@ -86,7 +86,7 @@ async function handleAdminReset() {
         const res = await fetch('/api/admin-reset', { 
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${adminToken}`
+                'Authorization': `Basic ${adminToken}`
             }
         });
 
@@ -112,17 +112,38 @@ async function handleAdminReset() {
         localStorage.removeItem('stravaAuth');
         localStorage.removeItem('stravaActivities');
         
+        let summary = '✅ SISTEMA REINICIADO\n\n';
+        
         if (data.tokenRevoked) {
-            alert('¡Éxito! Sistema limpiado y conexión previa desconectada de Strava.');
+            summary += '• Conexión de Strava: Desconectada con éxito.\n';
         } else if (data.hadActiveToken) {
-            alert('Sistema limpiado (cola vaciada).\n\n⚠️ La sesión fue encontrada pero no se pudo desconectar automáticamente de Strava.\nEl usuario bloqueado debe ir a strava.com → Ajustes → "Mis Aplicaciones" → Revocar Acceso de Scora.');
-        } else {
-            alert('Sistema limpiado (cola vaciada).\n\nNo había ninguna sesión activa detectada en el sistema. Si el error 403 persiste, el usuario afectado debe ir a strava.com → Ajustes → "Mis Aplicaciones" → Revocar Acceso de Scora.');
+            summary += '• Conexión de Strava: Encontrada pero falló la desconexión auto.\n';
         }
-        window.location.reload();
-    } catch (e) {
-        console.error("[Admin] Reset failure:", e);
-        alert('Error al intentar conectar con el servidor de reinicio.');
+
+        if (data.hadLock) {
+            summary += '• Slot de conexión: Liberado.\n';
+        }
+
+        if (data.queueCleared) {
+            summary += `• Fila de espera: Vaciada (${data.queueSize} usuarios eliminados).\n`;
+        }
+
+        if (data.redisMissing) {
+            summary += '• Advertencia: El sistema de colas (Redis) no está configurado. No hay bloqueos que liberar.\n';
+        }
+
+        if (!data.hadLock && !data.hadActiveToken && !data.queueCleared && !data.redisMissing) {
+            summary += '• Estado: No se detectaron sesiones ni bloqueos activos.\n';
+        }
+
+        summary += '\nEl sistema debería estar libre ahora. Si el error 403 persiste, el usuario afectado debe revocar el acceso manualmente en Strava.';
+        
+        console.log("[Admin] Reset Response:", data);
+        alert(summary);
+        // window.location.reload();
+    } catch (e: any) {
+        console.error("[Admin] Reset failure details:", e);
+        alert(`Error al conectar: ${e.message}`);
     }
 }
 
@@ -348,6 +369,7 @@ async function initApp() {
         if (!existingAdmin && authSection) {
             const adminBtn = document.createElement('button');
             adminBtn.id = 'btn-admin-reset';
+            adminBtn.dataset.testid = 'btn-admin-reset';
             adminBtn.className = 'btn-rescue';
             adminBtn.innerHTML = '<span>🚨</span> ADMIN: FORCE RESET';
             adminBtn.title = 'Admin: Force-reset the Strava connection slot';
@@ -594,7 +616,7 @@ async function initApp() {
                         <div class="error-container">
                             <span class="error-title">⚡ SISTEMA BLOQUEADO</span>
                             <p class='error-msg'>Un atleta está ocupando la conexión con Strava. ¿Quieres forzar la liberación para continuar?</p>
-                            <button id="btn-rescue-reset" class="btn-rescue">
+                            <button id="btn-rescue-reset" data-testid="btn-admin-reset" class="btn-rescue">
                                 <span>🚨</span> EMERGENCY BUTTON
                             </button>
                         </div>
@@ -746,7 +768,7 @@ window.addEventListener('message', async (event) => {
                         <div class="error-container">
                             <span class="error-title">🔒 ACCESO RESTRINGIDO</span>
                             <p class='error-msg'>Se detectó una sesión activa en la pista. Como administrador, puedes liberar el sistema ahora mismo.</p>
-                            <button id="btn-rescue-auth" class="btn-rescue">
+                            <button id="btn-rescue-auth" data-testid="btn-admin-reset" class="btn-rescue">
                                 <span>🚨</span> EMERGENCY BUTTON
                             </button>
                         </div>
