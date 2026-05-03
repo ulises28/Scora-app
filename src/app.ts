@@ -86,7 +86,7 @@ async function handleAdminReset() {
         const res = await fetch('/api/admin-reset', { 
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${adminToken}`
+                'Authorization': `Basic ${adminToken}`
             }
         });
 
@@ -141,9 +141,9 @@ async function handleAdminReset() {
         console.log("[Admin] Reset Response:", data);
         alert(summary);
         // window.location.reload();
-    } catch (e) {
-        console.error("[Admin] Reset failure:", e);
-        alert('Error al intentar conectar con el servidor de reinicio.');
+    } catch (e: any) {
+        console.error("[Admin] Reset failure details:", e);
+        alert(`Error al conectar: ${e.message}`);
     }
 }
 

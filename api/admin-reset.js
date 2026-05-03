@@ -35,8 +35,15 @@ export default async function handler(req, res) {
                 const envContent = fs.readFileSync(targetPath, 'utf8');
                 const urlMatch = envContent.match(/UPSTASH_REDIS_REST_URL=["']?([^"'\n\r]+)/);
                 const tokenMatch = envContent.match(/UPSTASH_REDIS_REST_TOKEN=["']?([^"'\n\r]+)/);
+                const userMatch = envContent.match(/ADMIN_USER=["']?([^"'\n\r]+)/);
+                const passMatch = envContent.match(/ADMIN_PASS=["']?([^"'\n\r]+)/);
+
                 if (urlMatch) url = urlMatch[1].replace(/['"]/g, '');
                 if (tokenMatch) token = tokenMatch[1].replace(/['"]/g, '');
+                
+                // Also inject ADMIN keys if they are missing from the environment
+                if (userMatch && !process.env.ADMIN_USER) process.env.ADMIN_USER = userMatch[1].replace(/['"]/g, '');
+                if (passMatch && !process.env.ADMIN_PASS) process.env.ADMIN_PASS = passMatch[1].replace(/['"]/g, '');
             }
         } catch (e) {
             console.error("[Admin] Manual env read failed:", e);
@@ -55,12 +62,12 @@ export default async function handler(req, res) {
     const expectedPass = process.env.ADMIN_PASS;
 
     if (!expectedPass) {
-        console.warn('[Admin] SECURITY ALERT: ADMIN_PASS not set in Vercel. Reset blocked.');
-        return res.status(500).json({ error: 'System not configured for remote reset. Add ADMIN_PASS in Vercel.' });
+        console.warn('[Admin] SECURITY ALERT: ADMIN_PASS not set. Reset blocked.');
+        return res.status(500).json({ error: 'System not configured for remote reset. Add ADMIN_PASS.' });
     }
 
-    // Simple comparison for 'Useful Admin' logic
-    const providedSecret = authHeader ? authHeader.replace('Bearer ', '') : '';
+    // Capture the base64 part regardless of if it's 'Basic ' or 'Bearer '
+    const providedSecret = authHeader ? authHeader.split(' ')[1] : '';
     const masterSecret = Buffer.from(`${expectedUser}:${expectedPass}`).toString('base64');
 
     if (providedSecret !== masterSecret) {

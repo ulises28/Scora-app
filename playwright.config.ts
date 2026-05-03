@@ -38,15 +38,15 @@ export default defineConfig({
   },
 
   use: {
-    baseURL: process.env.BASE_URL || 'http://localhost:5500',
+    baseURL: process.env.BASE_URL || 'http://localhost:3000',
 
     /* DEBUGGING: 'on-first-retry' is the professional standard for lean disk usage.
        It only saves traces and videos if a test fails and needs to be retried. */
-    trace: 'on-first-retry',
+    trace: 'retain-on-failure',
     
     /* PRO-LEVEL EVIDENCE: Automatic video and screenshots for failed tests. */
     screenshot: 'only-on-failure',
-    video: 'on-first-retry',
+    video: 'retain-on-failure',
 
     /* HEADLESS: Default to true, but allow override for local debugging. */
     headless: true,
@@ -108,8 +108,8 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:5500',
+    command: 'npx vercel dev',
+    url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000, // Give the build time to finish
   },

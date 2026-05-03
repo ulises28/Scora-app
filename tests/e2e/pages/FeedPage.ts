@@ -76,38 +76,61 @@ export class FeedPage extends BasePage {
     }
 
     @step('Execute Full Admin Reset Flow')
-    async executeAdminResetFlow(adminUser: string, adminPass: string) {
-        // 1. Setup the PERSISTENT listener BEFORE clicking
-        // This stays active for the entire "Chain" of dialogs
-        this.page.on('dialog', async dialog => {
-            const message = dialog.message();
-            console.log(`Dialog Intercepted: ${message}`);
+    async executeAdminResetFlow(adminUser: string, adminPass: string): Promise<boolean> {
+        /**
+         * We return a Promise because browser dialogs (confirm/prompt) are asynchronous.
+         * The promise will only resolve once we reach the FINAL "Success" alert.
+         */
+        return new Promise(async (resolve) => {
+            let successFound = false;
 
-            if (message.includes('¿Continuar?') || message.includes('Esto eliminará')) {
-                // Handles both the initial check and the final hard reset confirmation
-                await dialog.accept();
-            }
-            else if (message.includes('Usuario Maestro')) {
-                // Types the admin username into the prompt
-                await dialog.accept(adminUser);
-            }
-            else if (message.includes('Contraseña Maestra') || message.includes('password')) {
-                // Types the admin password into the second prompt
-                await dialog.accept(adminPass);
-            }
-            else if (message.includes('SISTEMA REINICIADO')) {
-                // Acknowledges the final success message
-                await dialog.accept();
-            }
-            else {
-                // Safety: Dismiss anything unexpected so the test doesn't hang
-                console.warn(`Unexpected Dialog: ${message}`);
-                await dialog.dismiss();
-            }
+            // Define the handler as a named function so we can clean it up (off) later
+            const dialogHandler = async (dialog: any) => {
+                const message = dialog.message();
+                console.log(`[DIALOG INTERCEPTED]: ${message}`);
+
+                if (message.includes('¿Continuar?') || message.includes('Esto eliminará')) {
+                    // 1. Initial confirmation dialog
+                    await dialog.accept();
+                } 
+                else if (message.includes('Usuario Maestro')) {
+                    // 2. Username prompt
+                    await dialog.accept(adminUser);
+                } 
+                else if (message.includes('Contraseña Maestra') || message.includes('password')) {
+                    // 3. Password prompt -> This triggers the API call
+                    await dialog.accept(adminPass);
+                } 
+                else if (message.includes('SISTEMA REINICIADO')) {
+                    // 4. Final success alert -> The flow is officially complete
+                    successFound = true;
+                    await dialog.accept();
+                    this.page.off('dialog', dialogHandler); // Stop listening to avoid leaks
+                    resolve(true); // Notify the test that the UI flow succeeded
+                } 
+                else {
+                    // Safety: Dismiss anything else and fail the flow
+                    console.warn(`[DIALOG UNEXPECTED]: ${message}`);
+                    await dialog.dismiss();
+                    this.page.off('dialog', dialogHandler);
+                    resolve(false);
+                }
+            };
+
+            // Start listening BEFORE we trigger the click
+            this.page.on('dialog', dialogHandler);
+
+            // Trigger the first dialog
+            await this.emergencyButton.waitFor({ state: 'visible' });
+            await this.emergencyButton.click();
+
+            // Guard: If after 10 seconds we don't finish, timeout the promise
+            setTimeout(() => {
+                if (!successFound) {
+                    this.page.off('dialog', dialogHandler);
+                    resolve(false);
+                }
+            }, 10000);
         });
-
-        // 2. TRIGGER the flow (Outside the listener)
-        await this.emergencyButton.waitFor({ state: 'visible' });
-        await this.emergencyButton.click();
     }
 }
