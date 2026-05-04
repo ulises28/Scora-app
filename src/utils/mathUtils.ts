@@ -19,8 +19,13 @@ export function calculateMaxPace(maxSpeedMs: number | undefined | null): string 
 
     const speedKmh = maxSpeedMs * 3.6;          // m/s → km/h
     const paceDecimal = 60 / speedKmh;              // km/h → min/km
-    const mins = Math.floor(paceDecimal);
-    const secs = Math.round((paceDecimal - mins) * 60);
+    let mins = Math.floor(paceDecimal);
+    let secs = Math.round((paceDecimal - mins) * 60);
+
+    if (secs === 60) {
+        mins += 1;
+        secs = 0;
+    }
 
     return `${mins}:${secs.toString().padStart(2, '0')}`;
 }

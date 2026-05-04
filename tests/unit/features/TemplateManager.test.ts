@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TEMPLATES, initTemplateManager } from '../../../src/features/editor/TemplateManager';
 import { STICKER_REGISTRY } from '../../../src/features/editor/StickerRegistry';

@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
 import { STICKER_LIST } from '../../src/features/editor/StickerRegistry';
 import capabilities from '../e2e/fixtures/sticker-capabilities.json' with { type: 'json' };

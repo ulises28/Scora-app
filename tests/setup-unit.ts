@@ -25,7 +25,8 @@ class Path2D {
 vi.stubGlobal('Path2D', Path2D);
 
 // 2. Mock HTMLCanvasElement.prototype.getContext
-HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
+if (typeof HTMLCanvasElement !== 'undefined') {
+  HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
   fillStyle: '',
   strokeStyle: '',
   lineWidth: 0,
@@ -92,3 +93,4 @@ HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
   save: vi.fn(),
   restore: vi.fn()
 })) as any;
+}

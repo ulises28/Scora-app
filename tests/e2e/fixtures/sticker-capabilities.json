@@ -1,4 +1,119 @@
 {
+  "social-chat": {
+    "version": "4.1",
+    "supportsCustomColor": false,
+    "supportsBlackText": false,
+    "compact": false,
+    "modes": {
+      "run": {
+        "metrics": [
+          "distance",
+          "pace"
+        ],
+        "labels": [
+          "KM",
+          "/KM"
+        ],
+        "metadata": [
+          "MAP"
+        ]
+      },
+      "bike": {
+        "metrics": [
+          "distance",
+          "pace"
+        ],
+        "labels": [
+          "KM",
+          "KM/H"
+        ],
+        "metadata": [
+          "MAP"
+        ]
+      },
+      "workout": {
+        "metrics": [],
+        "labels": [],
+        "metadata": [
+          "MAP"
+        ]
+      }
+    }
+  },
+  "note-minimal": {
+    "version": "4.1",
+    "supportsCustomColor": false,
+    "supportsBlackText": true,
+    "compact": false,
+    "modes": {
+      "run": {
+        "metrics": [
+          "distance",
+          "pace"
+        ],
+        "labels": [
+          "KM",
+          "/KM"
+        ],
+        "metadata": []
+      },
+      "bike": {
+        "metrics": [
+          "distance",
+          "pace"
+        ],
+        "labels": [
+          "KM",
+          "KM/H"
+        ],
+        "metadata": []
+      },
+      "workout": {
+        "metrics": [
+          "time"
+        ],
+        "labels": [],
+        "metadata": []
+      }
+    }
+  },
+  "note-accent": {
+    "version": "4.1",
+    "supportsCustomColor": true,
+    "supportsBlackText": true,
+    "compact": false,
+    "modes": {
+      "run": {
+        "metrics": [
+          "distance",
+          "pace"
+        ],
+        "labels": [
+          "KM",
+          "/KM"
+        ],
+        "metadata": []
+      },
+      "bike": {
+        "metrics": [
+          "distance",
+          "pace"
+        ],
+        "labels": [
+          "KM",
+          "KM/H"
+        ],
+        "metadata": []
+      },
+      "workout": {
+        "metrics": [
+          "time"
+        ],
+        "labels": [],
+        "metadata": []
+      }
+    }
+  },
   "ultra-detail": {
     "version": "4.1",
     "supportsCustomColor": true,
