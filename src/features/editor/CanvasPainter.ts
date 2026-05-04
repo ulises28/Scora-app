@@ -5561,7 +5561,6 @@ export function drawNoteSticker(ctx: CanvasRenderingContext2D, stats: any, textC
     
     const textWidth = ctx.measureText(narrative).width;
     const paddingX = 45;
-    const paddingY = 30;
     
     // Positioning: Under Scora logo (Top Left alignment)
     const xStart = 80;
@@ -5595,6 +5594,179 @@ export function drawNoteSticker(ctx: CanvasRenderingContext2D, stats: any, textC
     ctx.fillStyle = '#eab308';
     ctx.fillRect(rectX + paddingX + textWidth + 12, yCenter - 26, 5, 52); 
     
+    ctx.restore();
+}
+
+/**
+ * SCORA V18 "NOTE ACCENT" (The Stepped Dimension Style)
+ * 
+ * Aesthetic: A minimalist "callout" with blue accents, stepped lines, and a 
+ * semi-transparent background box. Reuses Note-Minimal data.
+ */
+export function drawNoteAccentSticker(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    // 1. Color Logic (Dynamic Accent Support)
+    const isHex = textColor.startsWith('#');
+    const accentColor = isHex ? textColor : '#4f46e5';
+    const rgb = hexToRgb(accentColor);
+    
+    // For the text itself, we use solid white or black depending on the background contrast
+    // but the user's "selected text" background uses the accent.
+    const isDark = isColorDark(accentColor);
+    const textCol = isDark ? '#ffffff' : (textColor === 'black' ? '#000000' : '#ffffff');
+    
+    // 2. Narrative Formatting (Standard Note Data)
+    const sport = normalizeSport(stats.type || stats.activityType || 'Run');
+    let narrative = "";
+
+    const distVal = stats.distanceVal || '0.00';
+    const time = stats.timeStr || '0m';
+    const pace = (stats.subValue || '').split(' ')[0] || '0:00';
+    const hasDistance = parseFloat(distVal) > 0;
+
+    if (hasDistance) {
+        if (sport === 'Swim') {
+            const meters = Math.round(parseFloat(distVal) * 1000);
+            narrative = `${meters}m swim in ${time} at ${pace} pace`;
+        } else if (sport === 'Ride') {
+            narrative = `${distVal} km at ${pace} km/h speed in ${time}`;
+        } else {
+            narrative = `${distVal} km at ${pace} pace in ${time}`;
+        }
+    } else {
+        const hr = stats.avgHeartrate ? ` at ${stats.avgHeartrate} bpm` : "";
+        narrative = `${time} ${sport}${hr}`;
+    }
+
+    ctx.save();
+    
+    // 3. Measuring & Layout
+    ctx.font = `500 44px 'Plus Jakarta Sans'`;
+    ctx.textBaseline = 'alphabetic';
+    const textWidth = ctx.measureText(narrative).width;
+    
+    const paddingX = 40;
+    const boxHeight = 110; 
+    const boxWidth = textWidth + (paddingX * 2);
+    
+    const xStart = 100;
+    const yBaseline = 400; // Moved down to avoid overlapping Scora logo
+    
+    const xL = xStart;
+    const xR = xStart + boxWidth;
+    
+    const markerOffset = 45; // Much closer to the box as per reference
+    const boxY = yBaseline - boxHeight / 2;
+    const boxBottom = boxY + boxHeight;
+    
+    const yTop = boxY - markerOffset + 15;
+    const yBottom = boxBottom + markerOffset - 15;
+    const circleRadius = 26;
+
+    // 4. Draw Background Box (Selected Text Opacity)
+    ctx.fillStyle = `rgba(${rgb}, 0.45)`; 
+    ctx.fillRect(xL, boxY, boxWidth, boxHeight);
+
+    // 5. Draw Markers (Separated Vertical Bars)
+    ctx.strokeStyle = accentColor;
+    ctx.lineWidth = 6;
+    ctx.lineCap = 'round';
+    
+    // Left Marker: Circle at top, line down to selection bottom
+    ctx.beginPath();
+    ctx.moveTo(xL, yTop);
+    ctx.lineTo(xL, boxBottom); 
+    ctx.stroke();
+    
+    // Right Marker: Circle at bottom, line up to selection top
+    ctx.beginPath();
+    ctx.moveTo(xR, yBottom);
+    ctx.lineTo(xR, boxY); 
+    ctx.stroke();
+    
+    // 6. Draw Marker Circles
+    ctx.fillStyle = accentColor;
+    
+    // Start Marker (Top)
+    ctx.beginPath();
+    ctx.arc(xL, yTop, circleRadius, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // End Marker (Bottom)
+    ctx.beginPath();
+    ctx.arc(xR, yBottom, circleRadius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 7. Draw Narrative Text
+    ctx.fillStyle = textCol;
+    ctx.textAlign = 'left';
+    
+    // Professional shadow for high-contrast legibility
+    ctx.shadowColor = 'rgba(0,0,0,0.15)';
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetY = 2;
+    
+    // Center text vertically in the box
+    ctx.textBaseline = 'middle';
+    ctx.fillText(narrative, xL + paddingX, yBaseline + 2);
+
+    // 8. SCORA V18 "ACTION MENU" (The Floating Context Menu)
+    // Replicating the NEW iOS "Glass Effect" (Border + Transparency)
+    ctx.restore();
+    ctx.save();
+
+    const menuW = 920; 
+    const menuH = 135; 
+    const menuX = 540 - (menuW / 2); 
+    const menuY = yBaseline + 160; 
+
+    // Draw Menu Shadow (iOS Depth)
+    ctx.shadowColor = 'rgba(0,0,0,0.2)';
+    ctx.shadowBlur = 50;
+    ctx.shadowOffsetY = 25;
+
+    // Draw Menu Body (Glass Effect)
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+    ctx.beginPath();
+    ctx.roundRect(menuX, menuY, menuW, menuH, menuH / 2);
+    ctx.fill();
+    
+    // Add the white border (iOS highlight)
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+
+    // Draw Subtle Dividers
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.05)';
+    ctx.lineWidth = 2;
+    
+    const items = ['Cut', 'Copy', 'Paste', 'AutoFill'];
+    const sectionW = (menuW - 120) / items.length;
+    
+    for (let i = 1; i < items.length; i++) {
+        const dX = menuX + (i * sectionW) + 20;
+        ctx.beginPath();
+        ctx.moveTo(dX, menuY + 35);
+        ctx.lineTo(dX, menuY + menuH - 35);
+        ctx.stroke();
+    }
+
+    // Draw Menu Labels
+    ctx.fillStyle = '#111111';
+    ctx.font = `500 42px 'Plus Jakarta Sans'`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    items.forEach((item, i) => {
+        const tX = menuX + (i * sectionW) + (sectionW / 2) + 20;
+        ctx.fillText(item, tX, menuY + (menuH / 2));
+    });
+
+    // Draw the Selection Arrow (Symmetric section)
+    ctx.font = `600 48px 'Plus Jakarta Sans'`;
+    ctx.fillText('>', menuX + menuW - 65, menuY + (menuH / 2) - 2);
+
     ctx.restore();
 }
 
