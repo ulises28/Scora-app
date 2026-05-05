@@ -108,7 +108,7 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: process.env.VERCEL_TOKEN ? `vercel dev --yes --token=${process.env.VERCEL_TOKEN}` : 'vercel dev --yes',
+    command: 'vercel dev --yes --scope team_laRoHIAGhFSpCKAzcEhgFk4Z',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000, // Give the build time to finish
