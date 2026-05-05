@@ -19,6 +19,9 @@ COPY package.json package-lock.json ./
 # Install all dependencies (including devDependencies like Playwright)
 RUN npm ci
 
+# Pre-install Vercel CLI for the webServer
+RUN npm install -g vercel@53.1.1
+
 # Copy the rest of the project source
 COPY . .
 

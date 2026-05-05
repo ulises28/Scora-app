@@ -8,7 +8,7 @@
     "build": "cp src/config.example.ts src/config.ts || true && tsc && vite build",
     "preview": "vite preview",
     "test": "npm run sync:stickers && vitest",
-    "test:e2e": "npm run test:cleanup && playwright test",
+    "test:e2e": "npm run test:cleanup && playwright test; node scripts/ci-diagnostics.cjs",
     "test:ui": "playwright test --ui",
     "test:debug": "playwright test --headed",
     "test:cleanup": "rm -rf test-results/ playwright-report/",
