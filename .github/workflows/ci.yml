@@ -65,6 +65,7 @@ jobs:
             -e CI=true \
             -e VITE_STRAVA_CLIENT_ID=${{ secrets.STRAVA_CLIENT_ID }} \
             -e VITE_STRAVA_CLIENT_SECRET=${{ secrets.STRAVA_CLIENT_SECRET }} \
+            -e VERCEL_TOKEN=${{ secrets.VERCEL_TOKEN }} \
             -v ${{ github.workspace }}/blob-report:/app/blob-report \
             -v ${{ github.workspace }}/test-results:/app/test-results \
             -v ${{ github.workspace }}/tests:/app/tests \
