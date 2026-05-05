@@ -27,7 +27,8 @@ export default defineConfig({
     ['monocart-reporter', {
       name: 'Scora E2E Test Report',
       outputFile: './test-results/report.html',
-    }]
+    }],
+    ['blob', { outputDir: 'blob-report' }]
   ],
 
   /* TIMEOUTS: Explicit control to prevent "Hung" tests. */

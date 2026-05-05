@@ -9,7 +9,9 @@ function run() {
     const reportPath = path.join(process.cwd(), 'test-results', 'report.json');
     
     if (!fs.existsSync(reportPath)) {
-        console.log("❌ No report.json found at " + reportPath);
+        console.log("### 🚨 CRITICAL: Test Report Missing");
+        console.log("> **Diagnosis**: The E2E environment likely crashed or timed out before generating results.");
+        console.log("> **Action**: Check the 'Run E2E Tests' logs for Vercel or Docker errors.");
         return;
     }
 
