@@ -6,9 +6,9 @@ import { mockActivities } from '../../fixtures/stravaData';
 // The real button ID as defined in app.ts line 304
 const ADMIN_BTN_ID = '#btn-admin-reset';
 
-test.describe('Scora Admin Controls: Emergency Reset', () => {
+test.describe('Scora Admin Controls: Emergency Reset @regression', () => {
 
-    test('Emergency Button is injected when ?admin=scora is present', async ({ page }) => {
+    test('Admin: Emergency Reset button appears when admin parameter is present', async ({ page }) => {
         const feedPage = new FeedPage(page);
         const api = new MockStravaClient(page);
 
@@ -38,7 +38,7 @@ test.describe('Scora Admin Controls: Emergency Reset', () => {
         await expect(btn).toBeVisible();
     });
 
-    test('Emergency Button triggers system reset', async ({ page }) => {
+    test('Admin: Emergency Reset button triggers a full system reload', async ({ page }) => {
         const feedPage = new FeedPage(page);
         new MockStravaClient(page);
 
@@ -61,10 +61,11 @@ test.describe('Scora Admin Controls: Emergency Reset', () => {
         await expect(btn).toBeVisible();
 
         // Click and verify it handles the reset (window will reload)
-        await Promise.all([
-            page.waitForNavigation(),
-            btn.click()
-        ]);
+        await btn.click();
+        
+        // Wait for the system to finish reloading to the admin dashboard
+        await page.waitForURL(url => url.searchParams.get('admin') === 'scora', { timeout: 30000 });
+        await page.waitForLoadState('load');
         
         // After reload, should still have the admin parameter
         expect(page.url()).toContain('admin=scora');

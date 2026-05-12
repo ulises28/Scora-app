@@ -16,7 +16,7 @@ test.describe('Scora App UI: Feed (POM)', () => {
         await feedPage.waitForLoaderToHide();
     });
 
-    test('Test 1: Feed successfully renders all mocked incoming data', async ({ page }) => {
+    test('Feed: Activity list correctly renders all incoming Strava data', async ({ page }) => {
         const feedPage = new FeedPage(page);
 
         // Verify EVERY activity from the JSON is rendered correctly

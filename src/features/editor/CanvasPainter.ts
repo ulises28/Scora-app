@@ -207,12 +207,23 @@ export function drawTemplate(
     stats: any,
     templateType = 'minimal',
     textColor = 'white',
-    showLogo = true
+    showLogo = true,
+    isMain = false // 🚀 Studio Grade: Only main canvas triggers E2E signals
 ) {
-    (window as any)._scoraIsSettled = false;
     const canvas = document.getElementById(canvasId) as HTMLCanvasElement;
     const ctx = canvas?.getContext('2d');
-    if (!ctx) return;
+    if (isMain) {
+        (window as any)._scoraIsSettled = false;
+        (window as any)._scoraLastDrawId = ((window as any)._scoraLastDrawId || 0) + 1;
+    }
+
+    if (!ctx) {
+        if (isMain) {
+            (window as any)._scoraSettledId = (window as any)._scoraLastDrawId;
+            (window as any)._scoraIsSettled = true; 
+        }
+        return;
+    }
 
     // Standard Story resolution (1080 × 1920)
     const TARGET_W = 1080;
@@ -251,11 +262,15 @@ export function drawTemplate(
     ctx.restore();
 
     // ARCHITECT NOTE: Deterministic synchronization signal for E2E tests
-    // Using requestAnimationFrame ensures the signal triggers ONLY after the browser paints the pixels.
-    requestAnimationFrame(() => {
-        (window as any)._scoraIsSettled = true;
-        (window as any)._scoraDrawCount = ((window as any)._scoraDrawCount || 0) + 1;
-    });
+    if (isMain) {
+        const currentId = (window as any)._scoraLastDrawId;
+        
+        requestAnimationFrame(() => {
+            (window as any)._scoraIsSettled = true;
+            (window as any)._scoraSettledId = currentId;
+            (window as any)._scoraDrawCount = ((window as any)._scoraDrawCount || 0) + 1;
+        });
+    }
 }
 
 

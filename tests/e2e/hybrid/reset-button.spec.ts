@@ -9,7 +9,7 @@ import * as dotenv from 'dotenv';
  */
 dotenv.config({ path: '.env.local' });
 
-test.describe('Scora Admin: Emergency Reset Flow', () => {
+test.describe('Scora Admin: Emergency Reset Flow @regression', () => {
     let feedPage: FeedPage;
 
     test.beforeEach(async ({ page }) => {

@@ -20,7 +20,7 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 # Pre-install Vercel CLI for the webServer
-RUN npm install -g vercel@53.1.1
+RUN npm install -g vercel@latest
 
 # Copy the rest of the project source
 COPY . .

@@ -123,4 +123,62 @@ test.describe('Scora App UI: Data Fallback Intelligence @regression', () => {
         // 5. Visual Proof
         await expect(editorPage.canvasWrapper).toHaveScreenshot(`forward-fill-work-to-dist-${workoutSticker.id}.png`);
     });
+
+    /**
+     * SCENARIO: Adaptive Selection
+     * Opening a new activity always resets the sticker to its default adaptive choice
+     * based on the sticker-capabilities contract.
+     */
+    test('Editor: Opening a new activity always resets the sticker to its default adaptive choice', async ({ page }) => {
+        const feedPage = new FeedPage(page);
+        const editorPage = new EditorPage(page);
+
+        const ACTIVITY_WITH_DISTANCE = TestUtils.findFirstActivityWithMap()!;
+        const ACTIVITY_WITHOUT_DISTANCE = TestUtils.findFirstActivityWithoutDistance()!;
+        const DISTANCE_STATS = TestUtils.getExpectedStats(ACTIVITY_WITH_DISTANCE).mainValue;
+        const NODIST_STATS = TestUtils.getExpectedStats(ACTIVITY_WITHOUT_DISTANCE);
+
+        // Open activity and wait for thumbnails to load
+        await feedPage.openActivityEditor(ACTIVITY_WITH_DISTANCE.name, DISTANCE_STATS);
+        await editorPage.verifyEditorScreenVisible(ACTIVITY_WITH_DISTANCE.name);
+        await editorPage.waitForDrawSettled();
+
+        // 🕵️ UI-DRIVEN DISCOVERY: Pick the 2nd visible template from the gallery
+        const thumbs = page.locator('.sticker-thumb');
+        await expect(thumbs.first()).toBeVisible();
+        const alternateId = await thumbs.nth(1).getAttribute('data-template') || 'default';
+        
+        await editorPage.selectTemplate(alternateId);
+        await editorPage.verifyTemplateIsActive(alternateId);
+
+        // Go back to feed and open another activity (Workout)
+        await editorPage.goBack();
+        await feedPage.openActivityEditor(ACTIVITY_WITHOUT_DISTANCE.name, String(NODIST_STATS.mainValue));
+
+        // 🕵️ CONTRACT-DRIVEN DISCOVERY: 
+        // Based on sticker-capabilities.json, find the first sticker that supports this activity type.
+        const jsonMode = ACTIVITY_WITHOUT_DISTANCE.type === 'WeightTraining' ? 'workout' : 'run';
+        const hasMapData = !!NODIST_STATS.polyline;
+
+        const expectedDefaultId = Object.keys(capabilities).find(id => {
+            const mode = (capabilities as any)[id].modes[jsonMode];
+            const metrics = mode.metrics || [];
+            const metadata = mode.metadata || [];
+            const hasSupport = metrics.length > 0 || metadata.length > 0;
+            
+            if (!hasSupport) return false;
+
+            // 🛡️ Studio Rule: Only hide if the sticker specifically requires a MAP but we have no polyline
+            const needsMap = metadata.includes('MAP');
+            if (needsMap && !hasMapData) return false;
+
+            return true;
+        }) || 'minimal';
+
+        await editorPage.verifyEditorScreenVisible(ACTIVITY_WITHOUT_DISTANCE.name);
+        await editorPage.waitForDrawSettled(); 
+        
+        // Assert the app respects the contract order (Adaptive Verification)
+        await editorPage.verifyTemplateIsActive(expectedDefaultId);
+    });
 });

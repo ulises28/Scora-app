@@ -165,7 +165,7 @@ const templateManager = initTemplateManager(async (template, color, showLogo) =>
             }
         }
         */
-        drawTemplate('storyCanvas', currentStats, template, color, showLogo);
+        drawTemplate('storyCanvas', currentStats, template, color, showLogo, true);
     }
 });
 
@@ -200,7 +200,7 @@ function openEditor(stats: any) {
             const nameEl = document.getElementById('selected-activity-name');
             if (nameEl) nameEl.innerText = currentStats.shortTitle ?? currentStats.title;
             // Force redraw with high-fidelity data
-            drawTemplate('storyCanvas', currentStats, templateManager.template, templateManager.color, templateManager.showLogo);
+            drawTemplate('storyCanvas', currentStats, templateManager.template, templateManager.color, templateManager.showLogo, true);
         });
     }
 
@@ -721,7 +721,7 @@ window.addEventListener('popstate', (event) => {
             currentStats = event.state.stats;
             const nameEl = document.getElementById('selected-activity-name');
             if (nameEl) nameEl.innerText = currentStats.shortTitle ?? currentStats.title;
-            drawTemplate('storyCanvas', currentStats, templateManager.template, templateManager.color, templateManager.showLogo);
+            drawTemplate('storyCanvas', currentStats, templateManager.template, templateManager.color, templateManager.showLogo, true);
         }
     } else {
         showScreen('screen-feed');

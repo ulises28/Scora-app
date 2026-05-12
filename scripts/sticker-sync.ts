@@ -26,7 +26,7 @@ async function syncStickers() {
             if (sticker.features.distance) metrics.push('distance');
             if (sticker.features.paceSpeed) metrics.push('pace');
             if (sticker.features.heartRate) metrics.push('heartRate');
-            if (sticker.features.alwaysShowDuration || (sticker.features.duration && !sticker.features.distance)) {
+            if (sticker.features.duration || sticker.features.alwaysShowDuration) {
                 metrics.push('time');
             }
             if (sticker.features.date) metrics.push('date');
@@ -69,16 +69,9 @@ async function syncStickers() {
             if (sticker.expectedMetadata) metadata.push(...sticker.expectedMetadata);
 
             if (mode === 'workout') {
+                // Workout mode strictly excludes distance-based metrics and labels
                 const workoutMetrics = metrics.filter(m => m !== 'distance' && m !== 'pace');
                 const workoutLabels = labels.filter(l => l !== 'KM' && l !== 'PACE' && l !== 'KM/H' && l !== '/KM');
-
-                // Universal workout fallback: add elapsed time for stickers that render primary data.
-                // Exception: stickers with map features rely on GPS polylines which workouts don't have.
-                const needsGPS = !!sticker.features.map;
-                if (!needsGPS && !workoutMetrics.includes('time')) {
-                    workoutMetrics.push('time');
-                }
-
                 modes[mode] = { metrics: workoutMetrics, labels: workoutLabels, metadata };
             } else {
                 modes[mode] = { metrics, labels, metadata };

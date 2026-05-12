@@ -8,7 +8,8 @@
       "run": {
         "metrics": [
           "distance",
-          "pace"
+          "pace",
+          "time"
         ],
         "labels": [
           "KM",
@@ -21,7 +22,8 @@
       "bike": {
         "metrics": [
           "distance",
-          "pace"
+          "pace",
+          "time"
         ],
         "labels": [
           "KM",
@@ -32,7 +34,9 @@
         ]
       },
       "workout": {
-        "metrics": [],
+        "metrics": [
+          "time"
+        ],
         "labels": [],
         "metadata": [
           "MAP"
@@ -49,7 +53,8 @@
       "run": {
         "metrics": [
           "distance",
-          "pace"
+          "pace",
+          "time"
         ],
         "labels": [
           "KM",
@@ -60,7 +65,8 @@
       "bike": {
         "metrics": [
           "distance",
-          "pace"
+          "pace",
+          "time"
         ],
         "labels": [
           "KM",
@@ -86,7 +92,8 @@
       "run": {
         "metrics": [
           "distance",
-          "pace"
+          "pace",
+          "time"
         ],
         "labels": [
           "KM",
@@ -97,7 +104,8 @@
       "bike": {
         "metrics": [
           "distance",
-          "pace"
+          "pace",
+          "time"
         ],
         "labels": [
           "KM",
@@ -241,6 +249,7 @@
       "run": {
         "metrics": [
           "distance",
+          "time",
           "date"
         ],
         "labels": [
@@ -251,6 +260,7 @@
       "bike": {
         "metrics": [
           "distance",
+          "time",
           "date"
         ],
         "labels": [
@@ -260,8 +270,8 @@
       },
       "workout": {
         "metrics": [
-          "date",
-          "time"
+          "time",
+          "date"
         ],
         "labels": [],
         "metadata": []
@@ -301,8 +311,7 @@
       "workout": {
         "metrics": [
           "heartRate",
-          "date",
-          "time"
+          "date"
         ],
         "labels": [
           "BPM"
@@ -321,6 +330,7 @@
         "metrics": [
           "distance",
           "pace",
+          "time",
           "date"
         ],
         "labels": [
@@ -335,6 +345,7 @@
         "metrics": [
           "distance",
           "pace",
+          "time",
           "date"
         ],
         "labels": [
@@ -347,8 +358,8 @@
       },
       "workout": {
         "metrics": [
-          "date",
-          "time"
+          "time",
+          "date"
         ],
         "labels": [],
         "metadata": [
@@ -386,9 +397,7 @@
         ]
       },
       "workout": {
-        "metrics": [
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": [
           "location"
@@ -406,6 +415,7 @@
         "metrics": [
           "distance",
           "pace",
+          "time",
           "startTime"
         ],
         "labels": [
@@ -420,6 +430,7 @@
         "metrics": [
           "distance",
           "pace",
+          "time",
           "startTime"
         ],
         "labels": [
@@ -432,8 +443,8 @@
       },
       "workout": {
         "metrics": [
-          "startTime",
-          "time"
+          "time",
+          "startTime"
         ],
         "labels": [],
         "metadata": [
@@ -451,7 +462,8 @@
       "run": {
         "metrics": [
           "distance",
-          "heartRate"
+          "heartRate",
+          "time"
         ],
         "labels": [
           "KM",
@@ -465,7 +477,8 @@
       "bike": {
         "metrics": [
           "distance",
-          "heartRate"
+          "heartRate",
+          "time"
         ],
         "labels": [
           "KM",
@@ -478,7 +491,8 @@
       },
       "workout": {
         "metrics": [
-          "heartRate"
+          "heartRate",
+          "time"
         ],
         "labels": [
           "BPM"
@@ -499,7 +513,8 @@
       "run": {
         "metrics": [
           "distance",
-          "pace"
+          "pace",
+          "time"
         ],
         "labels": [
           "KM",
@@ -510,7 +525,8 @@
       "bike": {
         "metrics": [
           "distance",
-          "pace"
+          "pace",
+          "time"
         ],
         "labels": [
           "KM",
@@ -535,7 +551,8 @@
     "modes": {
       "run": {
         "metrics": [
-          "distance"
+          "distance",
+          "time"
         ],
         "labels": [
           "KM"
@@ -546,7 +563,8 @@
       },
       "bike": {
         "metrics": [
-          "distance"
+          "distance",
+          "time"
         ],
         "labels": [
           "KM"
@@ -596,8 +614,7 @@
       },
       "workout": {
         "metrics": [
-          "heartRate",
-          "time"
+          "heartRate"
         ],
         "labels": [
           "BPM"
@@ -657,7 +674,8 @@
     "modes": {
       "run": {
         "metrics": [
-          "distance"
+          "distance",
+          "time"
         ],
         "labels": [
           "KM"
@@ -666,7 +684,8 @@
       },
       "bike": {
         "metrics": [
-          "distance"
+          "distance",
+          "time"
         ],
         "labels": [
           "KM"
@@ -690,7 +709,8 @@
     "modes": {
       "run": {
         "metrics": [
-          "distance"
+          "distance",
+          "time"
         ],
         "labels": [
           "KM"
@@ -699,7 +719,8 @@
       },
       "bike": {
         "metrics": [
-          "distance"
+          "distance",
+          "time"
         ],
         "labels": [
           "KM"
@@ -758,8 +779,7 @@
       "workout": {
         "metrics": [
           "date",
-          "startTime",
-          "time"
+          "startTime"
         ],
         "labels": [],
         "metadata": [
@@ -778,7 +798,8 @@
     "modes": {
       "run": {
         "metrics": [
-          "distance"
+          "distance",
+          "time"
         ],
         "labels": [
           "KM"
@@ -787,7 +808,8 @@
       },
       "bike": {
         "metrics": [
-          "distance"
+          "distance",
+          "time"
         ],
         "labels": [
           "KM"
@@ -812,7 +834,8 @@
       "run": {
         "metrics": [
           "distance",
-          "pace"
+          "pace",
+          "time"
         ],
         "labels": [
           "KM",
@@ -823,7 +846,8 @@
       "bike": {
         "metrics": [
           "distance",
-          "pace"
+          "pace",
+          "time"
         ],
         "labels": [
           "KM",
@@ -953,8 +977,7 @@
       "workout": {
         "metrics": [
           "date",
-          "startTime",
-          "time"
+          "startTime"
         ],
         "labels": [],
         "metadata": []
@@ -970,6 +993,7 @@
       "run": {
         "metrics": [
           "distance",
+          "time",
           "date"
         ],
         "labels": [
@@ -982,6 +1006,7 @@
       "bike": {
         "metrics": [
           "distance",
+          "time",
           "date"
         ],
         "labels": [
@@ -993,8 +1018,8 @@
       },
       "workout": {
         "metrics": [
-          "date",
-          "time"
+          "time",
+          "date"
         ],
         "labels": [],
         "metadata": [
@@ -1011,7 +1036,8 @@
     "modes": {
       "run": {
         "metrics": [
-          "distance"
+          "distance",
+          "time"
         ],
         "labels": [
           "KM"
@@ -1022,7 +1048,8 @@
       },
       "bike": {
         "metrics": [
-          "distance"
+          "distance",
+          "time"
         ],
         "labels": [
           "KM"
@@ -1076,8 +1103,7 @@
       },
       "workout": {
         "metrics": [
-          "heartRate",
-          "time"
+          "heartRate"
         ],
         "labels": [
           "BPM"
@@ -1118,8 +1144,7 @@
       },
       "workout": {
         "metrics": [
-          "startTime",
-          "time"
+          "startTime"
         ],
         "labels": [],
         "metadata": []
@@ -1135,7 +1160,8 @@
       "run": {
         "metrics": [
           "distance",
-          "pace"
+          "pace",
+          "time"
         ],
         "labels": [
           "KM",
@@ -1146,7 +1172,8 @@
       "bike": {
         "metrics": [
           "distance",
-          "pace"
+          "pace",
+          "time"
         ],
         "labels": [
           "KM",
@@ -1172,7 +1199,8 @@
       "run": {
         "metrics": [
           "distance",
-          "pace"
+          "pace",
+          "time"
         ],
         "labels": [
           "KM",
@@ -1183,7 +1211,8 @@
       "bike": {
         "metrics": [
           "distance",
-          "pace"
+          "pace",
+          "time"
         ],
         "labels": [
           "KM",
@@ -1209,7 +1238,8 @@
       "run": {
         "metrics": [
           "distance",
-          "pace"
+          "pace",
+          "time"
         ],
         "labels": [
           "KM",
@@ -1220,7 +1250,8 @@
       "bike": {
         "metrics": [
           "distance",
-          "pace"
+          "pace",
+          "time"
         ],
         "labels": [
           "KM",
@@ -1246,7 +1277,8 @@
       "run": {
         "metrics": [
           "distance",
-          "pace"
+          "pace",
+          "time"
         ],
         "labels": [
           "KM",
@@ -1257,7 +1289,8 @@
       "bike": {
         "metrics": [
           "distance",
-          "pace"
+          "pace",
+          "time"
         ],
         "labels": [
           "KM",
@@ -1284,6 +1317,7 @@
         "metrics": [
           "distance",
           "pace",
+          "time",
           "date"
         ],
         "labels": [
@@ -1296,6 +1330,7 @@
         "metrics": [
           "distance",
           "pace",
+          "time",
           "date"
         ],
         "labels": [
@@ -1306,8 +1341,8 @@
       },
       "workout": {
         "metrics": [
-          "date",
-          "time"
+          "time",
+          "date"
         ],
         "labels": [],
         "metadata": []
@@ -1323,7 +1358,8 @@
       "run": {
         "metrics": [
           "distance",
-          "pace"
+          "pace",
+          "time"
         ],
         "labels": [
           "KM",
@@ -1334,7 +1370,8 @@
       "bike": {
         "metrics": [
           "distance",
-          "pace"
+          "pace",
+          "time"
         ],
         "labels": [
           "KM",
@@ -1361,6 +1398,7 @@
         "metrics": [
           "distance",
           "pace",
+          "time",
           "date"
         ],
         "labels": [
@@ -1373,6 +1411,7 @@
         "metrics": [
           "distance",
           "pace",
+          "time",
           "date"
         ],
         "labels": [
@@ -1383,8 +1422,8 @@
       },
       "workout": {
         "metrics": [
-          "date",
-          "time"
+          "time",
+          "date"
         ],
         "labels": [],
         "metadata": []
@@ -1400,30 +1439,39 @@
       "run": {
         "metrics": [
           "distance",
-          "pace"
+          "pace",
+          "heartRate",
+          "time"
         ],
         "labels": [
           "KM",
-          "/KM"
+          "/KM",
+          "BPM"
         ],
         "metadata": []
       },
       "bike": {
         "metrics": [
           "distance",
-          "pace"
+          "pace",
+          "heartRate",
+          "time"
         ],
         "labels": [
           "KM",
-          "KM/H"
+          "KM/H",
+          "BPM"
         ],
         "metadata": []
       },
       "workout": {
         "metrics": [
+          "heartRate",
           "time"
         ],
-        "labels": [],
+        "labels": [
+          "BPM"
+        ],
         "metadata": []
       }
     }
@@ -1437,7 +1485,8 @@
       "run": {
         "metrics": [
           "distance",
-          "pace"
+          "pace",
+          "time"
         ],
         "labels": [
           "KM",
@@ -1448,7 +1497,8 @@
       "bike": {
         "metrics": [
           "distance",
-          "pace"
+          "pace",
+          "time"
         ],
         "labels": [
           "KM",
@@ -1474,7 +1524,8 @@
       "run": {
         "metrics": [
           "distance",
-          "pace"
+          "pace",
+          "time"
         ],
         "labels": [
           "KM",
@@ -1485,7 +1536,8 @@
       "bike": {
         "metrics": [
           "distance",
-          "pace"
+          "pace",
+          "time"
         ],
         "labels": [
           "KM",
@@ -1511,7 +1563,8 @@
       "run": {
         "metrics": [
           "distance",
-          "pace"
+          "pace",
+          "time"
         ],
         "labels": [
           "KM",
@@ -1522,7 +1575,8 @@
       "bike": {
         "metrics": [
           "distance",
-          "pace"
+          "pace",
+          "time"
         ],
         "labels": [
           "KM",
@@ -1548,7 +1602,8 @@
       "run": {
         "metrics": [
           "distance",
-          "pace"
+          "pace",
+          "time"
         ],
         "labels": [
           "KM",
@@ -1559,7 +1614,8 @@
       "bike": {
         "metrics": [
           "distance",
-          "pace"
+          "pace",
+          "time"
         ],
         "labels": [
           "KM",
@@ -1584,7 +1640,8 @@
     "modes": {
       "run": {
         "metrics": [
-          "distance"
+          "distance",
+          "time"
         ],
         "labels": [
           "KM"
@@ -1593,7 +1650,8 @@
       },
       "bike": {
         "metrics": [
-          "distance"
+          "distance",
+          "time"
         ],
         "labels": [
           "KM"
@@ -1618,6 +1676,7 @@
       "run": {
         "metrics": [
           "distance",
+          "time",
           "date"
         ],
         "labels": [
@@ -1628,6 +1687,7 @@
       "bike": {
         "metrics": [
           "distance",
+          "time",
           "date"
         ],
         "labels": [
@@ -1637,8 +1697,8 @@
       },
       "workout": {
         "metrics": [
-          "date",
-          "time"
+          "time",
+          "date"
         ],
         "labels": [],
         "metadata": []

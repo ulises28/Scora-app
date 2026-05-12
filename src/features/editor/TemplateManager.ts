@@ -64,9 +64,11 @@ export function initTemplateManager(onChange: OnChangeCallback) {
             const mockIndex = i % GALLERY_MOCKS.length;
             const previewStats = GALLERY_MOCKS[mockIndex];
 
-            setTimeout(() => {
+            // 🛡️ Studio Performance: Use requestAnimationFrame to throttle background renders
+            // This prevents the main thread from saturating during gallery initialization.
+            requestAnimationFrame(() => {
                 drawTemplate(canvas.id, previewStats, id, 'white', false);
-            }, 0);
+            });
         });
     }
 
@@ -222,14 +224,30 @@ export function initTemplateManager(onChange: OnChangeCallback) {
         get showLogo() { return currentShowLogo; },
         setTemplate,
         filterByActivity: (stats: any) => {
-            const sport = normalizeSport(stats.type);
-            const isTraining = sport === 'Training';
+            // Studio Grade Classification: Expand "Gym" types to ensure proper sticker filtering
+            const isGym = ['Workout', 'WeightTraining', 'Yoga', 'FunctionalStrength', 'Crossfit'].includes(stats.type);
+            const isTraining = normalizeSport(stats.type) === 'Training' || isGym;
             
             currentTemplates = TEMPLATES.filter(id => {
                 const config = STICKER_REGISTRY[id];
-                // Only hide map stickers for pure Training (Workout/Gym)
-                // For other sports, we show them even if GPS is missing (e.g. private run)
-                if (config?.features?.map && isTraining) return false;
+                const needsMap = config?.features?.map;
+                const hasMap = !!stats.polyline;
+
+                // 🛡️ Studio Rule 1: Hide map-based stickers if no polyline data is present
+                if (needsMap && !hasMap) return false;
+
+                // 🛡️ Studio Rule 2: Hide distance-specific stickers for stationary activities
+                const needsDistance = config?.features?.distance;
+                const hasDistance = stats.hasDistance;
+                const supportsOthers = config?.features?.duration || 
+                                     config?.features?.heartRate || 
+                                     config?.features?.title || 
+                                     config?.features?.location || 
+                                     config?.features?.date || 
+                                     config?.features?.map;
+
+                if (needsDistance && !hasDistance && !supportsOthers) return false;
+                
                 return true;
             });
 

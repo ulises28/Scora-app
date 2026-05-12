@@ -4,7 +4,7 @@
   "description": "Scora es una aplicación web diseñada para transformar tus actividades de Strava en stickers e imágenes estéticas listas para ser compartidas en redes sociales como Instagram Stories, TikTok y más.",
   "main": "index.js",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --port 3000",
     "build": "cp src/config.example.ts src/config.ts || true && tsc && vite build",
     "preview": "vite preview",
     "test": "npm run sync:stickers && vitest",

@@ -166,6 +166,14 @@ export const TestUtils = {
     },
 
     /**
+     * Finds the first activity that has BOTH distance AND a map polyline.
+     * Essential for testing the full sticker gallery in the Editor.
+     */
+    findFirstActivityWithMap(): StravaActivity | undefined {
+        return (mockActivities as any[]).find(a => a.distance > 0 && a.map?.summary_polyline);
+    },
+
+    /**
      * Finds the first activity that DOES NOT have distance
      */
     findFirstActivityWithoutDistance(): StravaActivity | undefined {

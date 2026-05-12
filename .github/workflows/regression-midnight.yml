@@ -1,0 +1,46 @@
+name: "🌙 Scora | Midnight Regression Validation"
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Every night at 00:00 UTC
+  workflow_dispatch: # Allow manual trigger for testing
+
+jobs:
+  regression:
+    name: "Full API Integrity Check (Vercel)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Run Unit Tests (Vitest)
+        run: npm run test:unit
+
+      - name: Build Playwright Docker Image
+        run: docker build -f Dockerfile.playwright -t scora-full-suite .
+
+      - name: Run Full Midnight Validation (Vercel)
+        run: |
+          docker run --rm \
+            -e CI=true \
+            -e E2E_SERVER=vercel \
+            -e VITE_STRAVA_CLIENT_ID=${{ secrets.STRAVA_CLIENT_ID }} \
+            -e VITE_STRAVA_CLIENT_SECRET=${{ secrets.STRAVA_CLIENT_SECRET }} \
+            -e VERCEL_TOKEN=${{ secrets.VERCEL_TOKEN }} \
+            -e VERCEL_ORG_ID=${{ secrets.VERCEL_ORG_ID }} \
+            -e VERCEL_PROJECT_ID=${{ secrets.VERCEL_PROJECT_ID }} \
+            -e ADMIN_USER=${{ secrets.ADMIN_USER }} \
+            -e ADMIN_PASS=${{ secrets.ADMIN_PASS }} \
+            -v ${{ github.workspace }}/test-results:/app/test-results \
+            scora-full-suite \
+            npx playwright test
+
+      - name: Upload Regression Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: regression-results
+          path: test-results/
+          retention-days: 7
