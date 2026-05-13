@@ -58,7 +58,7 @@ function run() {
         try { triage = JSON.parse(fs.readFileSync(triagePath, 'utf8')); } catch(e) {}
     }
 
-    console.log("### 🕵️ IA-Agent Triage Report");
+    console.log("### QA Triage Report");
     if (triage.drift_detected) {
         console.log("> **STATUS**: 🩹 **AUTO-HEALED**");
         console.log("> **DIAGNOSIS**: Intentional design drift detected in source files. Snapshots were automatically updated.");

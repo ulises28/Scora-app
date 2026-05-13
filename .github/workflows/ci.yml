@@ -91,11 +91,11 @@ jobs:
             scora-e2e \
             npx playwright test --project=UI-Core --project=Mobile-Chrome $SNAPSHOT_FLAG
 
-          # 🕵️ Generate Triage Signal for diagnostics script
-          echo "{\"drift_detected\": ${{ steps.drift.outputs.drift_detected }}}" > test-results/TRIAGE_SIGNAL.json
-          
           # 🗜️ PERMISSION SMASH: Ensuring the host can read/write Docker-generated assets
           sudo chown -R $(id -u):$(id -g) tests/ test-results/
+
+          # 🕵️ Generate Triage Signal for diagnostics script
+          echo "{\"drift_detected\": ${{ steps.drift.outputs.drift_detected }}}" > test-results/TRIAGE_SIGNAL.json
           
       # 🏛️ Smart Self-Healing (Feature Branches)
       # Condition: Auto-run on PRs OR if manual trigger is enabled.
