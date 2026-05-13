@@ -1,0 +1,86 @@
+[WebServer] Retrieving project…
+[WebServer] [90m>[39m Running Dev Command [36m[1m“vite --port $PORT”[22m[39m
+[WebServer] [36m> Ready![39m Available at [36m[4mhttp://localhost:3000[24m[39m
+
+Running 1 test using 1 worker
+
+  ✘  1 [Regression-API] › tests/e2e/ui/registry_quality_scan.spec.ts:27:5 › Scora App UI: Registry Integrity (Deep Regression) [ @regression ] › Registry: Exhaustive quality scan of all registered templates for data integrity (31.0s)
+  ✘  2 [Regression-API] › tests/e2e/ui/registry_quality_scan.spec.ts:27:5 › Scora App UI: Registry Integrity (Deep Regression) [ @regression ] › Registry: Exhaustive quality scan of all registered templates for data integrity (retry #1) (18.5s)
+
+
+  1) [Regression-API] › tests/e2e/ui/registry_quality_scan.spec.ts:27:5 › Scora App UI: Registry Integrity (Deep Regression) [ @regression ] › Registry: Exhaustive quality scan of all registered templates for data integrity 
+
+    Error: brutalist-bold: Time "31M" missing
+
+    [2mexpect([22m[31mreceived[39m[2m).[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
+
+    Expected substring: [32m"31M"[39m
+    Received string:    [31m"SCORA500KM97AVGSPEEDKMH"[39m
+
+      87 |                     if (metric === 'time') {
+      88 |                         const timeVal = TestUtils.normalizeForCanvas(expected.timeStr);
+    > 89 |                         expect(normalizedLogs, `${id}: Time "${timeVal}" missing`).toContain(timeVal);
+         |                                                                                    ^
+      90 |                     }
+      91 |                 }
+      92 |
+        at scanTemplates (/Users/ulises/Developer/Scora-app/tests/e2e/ui/registry_quality_scan.spec.ts:89:84)
+        at /Users/ulises/Developer/Scora-app/tests/e2e/ui/registry_quality_scan.spec.ts:107:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/ui-registry_quality_scan-S-fcdc9-emplates-for-data-integrity-Regression-API/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/ui-registry_quality_scan-S-fcdc9-emplates-for-data-integrity-Regression-API/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/ui-registry_quality_scan-S-fcdc9-emplates-for-data-integrity-Regression-API/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/ui-registry_quality_scan-S-fcdc9-emplates-for-data-integrity-Regression-API/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/ui-registry_quality_scan-S-fcdc9-emplates-for-data-integrity-Regression-API/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Error: brutalist-bold: Time "31M" missing
+
+    [2mexpect([22m[31mreceived[39m[2m).[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
+
+    Expected substring: [32m"31M"[39m
+    Received string:    [31m"SCORA500KM97AVGSPEEDKMH"[39m
+
+      87 |                     if (metric === 'time') {
+      88 |                         const timeVal = TestUtils.normalizeForCanvas(expected.timeStr);
+    > 89 |                         expect(normalizedLogs, `${id}: Time "${timeVal}" missing`).toContain(timeVal);
+         |                                                                                    ^
+      90 |                     }
+      91 |                 }
+      92 |
+        at scanTemplates (/Users/ulises/Developer/Scora-app/tests/e2e/ui/registry_quality_scan.spec.ts:89:84)
+        at /Users/ulises/Developer/Scora-app/tests/e2e/ui/registry_quality_scan.spec.ts:107:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/ui-registry_quality_scan-S-fcdc9-emplates-for-data-integrity-Regression-API-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/ui-registry_quality_scan-S-fcdc9-emplates-for-data-integrity-Regression-API-retry1/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/ui-registry_quality_scan-S-fcdc9-emplates-for-data-integrity-Regression-API-retry1/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/ui-registry_quality_scan-S-fcdc9-emplates-for-data-integrity-Regression-API-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/ui-registry_quality_scan-S-fcdc9-emplates-for-data-integrity-Regression-API-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    [Regression-API] › tests/e2e/ui/registry_quality_scan.spec.ts:27:5 › Scora App UI: Registry Integrity (Deep Regression) [ @regression ] › Registry: Exhaustive quality scan of all registered templates for data integrity 

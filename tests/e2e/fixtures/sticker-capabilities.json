@@ -415,7 +415,6 @@
         "metrics": [
           "distance",
           "pace",
-          "time",
           "startTime"
         ],
         "labels": [
@@ -430,7 +429,6 @@
         "metrics": [
           "distance",
           "pace",
-          "time",
           "startTime"
         ],
         "labels": [
@@ -443,7 +441,6 @@
       },
       "workout": {
         "metrics": [
-          "time",
           "startTime"
         ],
         "labels": [],
@@ -1160,8 +1157,7 @@
       "run": {
         "metrics": [
           "distance",
-          "pace",
-          "time"
+          "pace"
         ],
         "labels": [
           "KM",
@@ -1172,8 +1168,7 @@
       "bike": {
         "metrics": [
           "distance",
-          "pace",
-          "time"
+          "pace"
         ],
         "labels": [
           "KM",
@@ -1182,9 +1177,7 @@
         "metadata": []
       },
       "workout": {
-        "metrics": [
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       }
@@ -1199,8 +1192,7 @@
       "run": {
         "metrics": [
           "distance",
-          "pace",
-          "time"
+          "pace"
         ],
         "labels": [
           "KM",
@@ -1211,8 +1203,7 @@
       "bike": {
         "metrics": [
           "distance",
-          "pace",
-          "time"
+          "pace"
         ],
         "labels": [
           "KM",
@@ -1221,9 +1212,7 @@
         "metadata": []
       },
       "workout": {
-        "metrics": [
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       }
@@ -1277,8 +1266,7 @@
       "run": {
         "metrics": [
           "distance",
-          "pace",
-          "time"
+          "pace"
         ],
         "labels": [
           "KM",
@@ -1289,8 +1277,7 @@
       "bike": {
         "metrics": [
           "distance",
-          "pace",
-          "time"
+          "pace"
         ],
         "labels": [
           "KM",
@@ -1299,9 +1286,7 @@
         "metadata": []
       },
       "workout": {
-        "metrics": [
-          "time"
-        ],
+        "metrics": [],
         "labels": [],
         "metadata": []
       }

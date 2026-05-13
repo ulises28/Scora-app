@@ -206,10 +206,8 @@ export const TestUtils = {
 
         // Obsidian Pivot: Some stickers are "toggles" (render EITHER distance OR duration)
         // If it's a compact/pill sticker, we only expect the "primary" metric of the mode
-        const isToggle = [
-            'step-master', 'dual-pill', 'brutalist-letters',
-            'mono-minimal', 'tiny-gps', 'location-pill'
-        ].includes(stickerId);
+        const template = TEMPLATE_REGISTRY.find(t => t.id === stickerId);
+        const isToggle = template?.compact;
 
         if (isToggle) {
             if (mode === 'run' || mode === 'bike') {

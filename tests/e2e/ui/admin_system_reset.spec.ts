@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { FeedPage } from '../pages/FeedPage';
 import { MockStravaClient } from '../utils/MockStravaClient';
-import { mockActivities } from '../../fixtures/stravaData';
+
 
 // The real button ID as defined in app.ts line 304
 const ADMIN_BTN_ID = '#btn-admin-reset';

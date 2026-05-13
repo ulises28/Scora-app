@@ -90,11 +90,12 @@ To test real Strava integration and serverless functions:
 
 ### 🧪 Tier 1: UI & Visual (Vite-Powered)
 ```bash
-# Run all UI tests (Mocked APIs, sub-60s)
-npx playwright test --project="UI-Core"
+# 🚀 Safe Smoke Suite (Daily Dev)
+# Automatically cleans up old results and runs the fast, backend-free UI-Core suite
+npm run test:e2e:smoke
 
 # Run specific UI test
-npx playwright test tests/e2e/ui/editor.spec.ts --project="UI-Core"
+npx playwright test tests/e2e/ui/canvas_content_verification.spec.ts --project="UI-Core"
 
 # Run Visual tests in Docker (Absolute Truth)
 npm run test:sync-linux
@@ -102,11 +103,12 @@ npm run test:sync-linux
 
 ### 🧪 Tier 2: Backend & Integration (Vercel-Powered)
 ```bash
-# Run backend verification integration tests
-E2E_SERVER=vercel npx playwright test tests/e2e/api/backend-verification.spec.ts --project="Regression-API"
+# 🚀 Deep Regression Suite
+# Automatically injects E2E_SERVER=vercel and runs the API/Admin tests
+npm run test:e2e:regression
 
-# Run full regression suite against real API
-E2E_SERVER=vercel npx playwright test --project="Regression-API"
+# Run specific integration test
+E2E_SERVER=vercel npx playwright test tests/e2e/ui/admin_system_reset.spec.ts --project="Regression-API"
 ```
 
 ### 🧪 Tier 3: Unit & Diagnostics

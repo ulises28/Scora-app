@@ -26,8 +26,8 @@ export class EditorPage extends BasePage {
         this.titleLabel = page.getByTestId('activity-title-main');
         this.nextTemplateButton = page.getByRole('button', { name: /Next template/i }); 
         this.prevTemplateButton = page.getByRole('button', { name: /Previous template/i }); 
-        this.textColorToggle = page.getByTestId('color-toggle');
-        this.logoToggle = page.getByTestId('logo-toggle');
+        this.textColorToggle = page.locator('#color-toggle');
+        this.logoToggle = page.locator('#logo-toggle');
         this.downloadButton = page.getByRole('button', { name: /Descargar/i }).or(page.getByTestId('download-btn'));
         this.backButton = page.getByRole('button', { name: /Back|Atrás/i }).or(page.locator('#btn-back'));
         this.canvasWrapper = page.getByTestId('canvas-main-preview');
@@ -267,12 +267,20 @@ export class EditorPage extends BasePage {
 
     @step('Set Text Color')
     async setTextColor(color: 'white' | 'black') {
-        const value = color === 'white' ? 'off' : 'on';
-        const beforeId = await this.page.evaluate(() => (window as any)._scoraSettledId || 0);
+        const beforeId = await this.page.evaluate(() => (window as any)._scoraLastDrawId || 0);
         
-        await this.page.getByTestId('color-toggle').locator(`.toggle-opt[data-value="${value}"]`).click();
+        // 🛡️ Studio Grade: Direct DOM Interaction
+        const option = this.page.getByTestId('color-toggle').locator(`.toggle-opt[data-value="${color}"]`);
+        await option.evaluate(el => (el as HTMLElement).click());
         
-        return beforeId;
+        // 🛡️ Atomic Wait: Wait for the next draw cycle to settle
+        await this.page.waitForFunction(
+            (id) => (window as any)._scoraLastDrawId > id && (window as any)._scoraIsSettled === true,
+            beforeId,
+            { timeout: 5000 }
+        ).catch(() => {
+            return this.waitForDrawSettled();
+        });
     }
 
     @step('Set Custom Color')
@@ -285,8 +293,22 @@ export class EditorPage extends BasePage {
     @step('Set Logo Visibility')
     async setLogo(visible: boolean) {
         const value = visible ? 'on' : 'off';
-        // 🛡️ Studio Grade: Direct Interaction
-        await this.logoToggle.locator(`.toggle-opt[data-value="${value}"]`).click({ force: true });
+        const beforeId = await this.page.evaluate(() => (window as any)._scoraLastDrawId || 0);
+
+        // 🛡️ Studio Grade: Direct DOM Interaction (Bypasses Playwright visibility heuristics)
+        const option = this.logoToggle.locator(`.toggle-opt[data-value="${value}"]`);
+        await option.evaluate(el => (el as HTMLElement).click());
+        
+        // 🛡️ Atomic Wait: Wait for the next draw cycle to settle
+        await this.page.waitForFunction(
+            (id) => (window as any)._scoraLastDrawId > id && (window as any)._scoraIsSettled === true,
+            beforeId,
+            { timeout: 5000 }
+        ).catch(() => {
+            // If no redraw was needed (state already correct), just ensure settled
+            return this.waitForDrawSettled();
+        });
+
         await this.verifyLogoToggleUIState(visible);
     }
 
@@ -322,8 +344,7 @@ export class EditorPage extends BasePage {
             const value = await this.page.locator('#map-color-value').innerText();
             expect(value.toLowerCase()).toBe(color.toLowerCase());
         } else {
-            const value = color === 'white' ? 'off' : 'on';
-            const opt = this.textColorToggle.locator(`.toggle-opt[data-value="${value}"]`);
+            const opt = this.textColorToggle.locator(`.toggle-opt[data-value="${color}"]`);
             await expect(opt).toHaveClass(/active/);
         }
     }

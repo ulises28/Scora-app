@@ -29,7 +29,7 @@ export default defineConfig({
   },
 
   use: {
-    baseURL: process.env.BASE_URL || 'http://localhost:3001',
+    baseURL: process.env.BASE_URL || 'http://localhost:3000',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
@@ -59,7 +59,7 @@ export default defineConfig({
     command: process.env.E2E_SERVER === 'vercel' 
       ? 'vercel dev --yes --scope team_laRoHIAGhFSpCKAzcEhgFk4Z'
       : 'npm run dev',
-    url: 'http://localhost:3001',
+    url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 180 * 1000, 
   },

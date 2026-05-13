@@ -1,4 +1,4 @@
-name: "🌙 Scora | Midnight Regression Validation"
+name: "Scora | Midnight E2ERegression"
 
 on:
   schedule:
@@ -31,8 +31,6 @@ jobs:
             -e VERCEL_TOKEN=${{ secrets.VERCEL_TOKEN }} \
             -e VERCEL_ORG_ID=${{ secrets.VERCEL_ORG_ID }} \
             -e VERCEL_PROJECT_ID=${{ secrets.VERCEL_PROJECT_ID }} \
-            -e ADMIN_USER=${{ secrets.ADMIN_USER }} \
-            -e ADMIN_PASS=${{ secrets.ADMIN_PASS }} \
             -v ${{ github.workspace }}/test-results:/app/test-results \
             scora-full-suite \
             npx playwright test
