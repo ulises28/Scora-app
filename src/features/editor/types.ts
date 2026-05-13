@@ -17,6 +17,9 @@ export interface TemplateFeatures {
     location?: boolean;
     /** Obsidian Mode: Force duration rendering even in distance activities */
     alwaysShowDuration?: boolean;
+    elevation?: boolean;
+    calories?: boolean;
+    temperature?: boolean;
 }
 
 export type StickerCategory = 'distance' | 'workout' | 'all' | 'map';

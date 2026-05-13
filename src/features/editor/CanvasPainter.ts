@@ -5996,3 +5996,212 @@ function drawWAInput(ctx: CanvasRenderingContext2D, y: number) {
 
     ctx.restore();
 }
+
+/**
+ * Image 1: BOLD DAY
+ * Audiowide font, massive centered numbers, auto-scaling.
+ * WORKOUT FALLBACK: If distance is 0, show Calories or Duration.
+ */
+export function drawBoldDay(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const mainFont = "'Audiowide', cursive";
+    const sysFont = "'Plus Jakarta Sans', sans-serif";
+    const day = (stats.dayName || 'SUNDAY').toUpperCase();
+    
+    // Workout Detection
+    const hasDist = stats.distanceVal && parseFloat(stats.distanceVal) > 0.1;
+    let distText = `${stats.distanceVal || '0.00'}KM`;
+    let label = day;
+
+    if (!hasDist) {
+        distText = stats.calories && stats.calories !== '0' ? `${stats.calories}KCAL` : (stats.timeStr || 'WORKOUT');
+        label = (stats.type || 'WORKOUT').toUpperCase();
+    }
+
+    const cx = 540;
+    const cy = 220; 
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = textColor;
+
+    // Day of Week / Activity (Top)
+    ctx.font = `800 45px ${sysFont}`;
+    if (typeof ctx.letterSpacing !== 'undefined') ctx.letterSpacing = "15px";
+    ctx.globalAlpha = 0.85;
+    ctx.fillText(label, 0, -80);
+    ctx.letterSpacing = "0px";
+
+    // Distance (Bottom - MASSIVE & Scaling)
+    let fontSize = 220; 
+    ctx.font = `900 ${fontSize}px ${mainFont}`;
+    
+    // Auto-scaling loop to use entire width
+    while (ctx.measureText(distText).width > 960 && fontSize > 80) {
+        fontSize -= 5;
+        ctx.font = `900 ${fontSize}px ${mainFont}`;
+    }
+
+    ctx.globalAlpha = 1.0;
+    ctx.fillText(distText, 0, 70);
+
+    ctx.restore();
+}
+
+/**
+ * Image 3: STUDIO PRECISION
+ * Unified Boldonse aesthetic, massive hero metric.
+ * WORKOUT FALLBACK: Duration as hero.
+ * BIKE FIX: Increased spacing and dynamic column widths.
+ */
+export function drawStudioPrecision(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const mainFont = "'Boldonse', sans-serif";
+    
+    // Workout Detection
+    const isBike = (stats.type || '').toLowerCase().includes('ride') || (stats.type || '').toLowerCase().includes('bike');
+    const hasDist = stats.distanceVal && parseFloat(stats.distanceVal) > 0.1;
+    
+    let heroText = `${stats.distanceVal || '0.00'}KM`;
+    if (!hasDist) heroText = stats.timeStr || '0:00';
+
+    const startX = 60;
+    const endX = 1020;
+    const startY = 220;
+
+    ctx.save();
+    ctx.fillStyle = textColor;
+    
+    // Hero Metric (Boldonse)
+    let fontSize = 320; 
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.font = `900 ${fontSize}px ${mainFont}`;
+    
+    // Scaling loop
+    while (ctx.measureText(heroText).width > 980 && fontSize > 100) {
+        fontSize -= 5;
+        ctx.font = `900 ${fontSize}px ${mainFont}`;
+    }
+    
+    ctx.fillText(heroText, 540, startY);
+
+    // Sub-metrics (Boldonse)
+    const elevPoint = stats.dataPoints?.find(p => p.label.toUpperCase() === 'ELEVATION');
+    const elevVal = elevPoint ? `${elevPoint.value}${elevPoint.unit}`.toUpperCase() : '0M';
+    const calVal = stats.calories && stats.calories !== '0' ? `${stats.calories}KCAL` : '0 KCAL';
+
+    let metrics: { label: string; val: string }[] = [];
+    
+    if (hasDist) {
+        const paceVal = (stats.subValue || '0:00').toUpperCase();
+        const paceLabel = isBike ? 'SPEED' : 'PACE';
+        const hrVal = stats.avgHeartrate ? `${stats.avgHeartrate}BPM` : elevVal;
+        const hrLabel = stats.avgHeartrate ? 'HEART RATE' : 'ALTITUDE';
+        metrics = [
+            { label: paceLabel, val: paceVal },
+            { label: 'DURATION', val: (stats.timeStr || '0:00').toUpperCase() },
+            { label: hrLabel, val: hrVal }
+        ];
+    } else {
+        metrics = [
+            { label: 'CALORIES', val: calVal },
+            { label: 'ELAPSED', val: (stats.timeStr || '0:00').toUpperCase() },
+            { label: 'HEART RATE', val: stats.avgHeartrate ? `${stats.avgHeartrate}BPM` : '-' }
+        ];
+    }
+
+    const rowY = startY + fontSize + 40; // Increased spacing for Boldonse
+    const colW = (endX - startX) / 3;
+
+    metrics.forEach((m, i) => {
+        // For bikes, we shift the center column slightly to avoid KM/H overlap
+        let x = startX + (i * colW) + (colW / 2);
+        if (isBike && i === 0) x -= 20;
+        if (isBike && i === 1) x += 20;
+
+        ctx.globalAlpha = 0.5;
+        ctx.font = `700 28px ${mainFont}`;
+        ctx.fillText(m.label, x, rowY);
+
+        ctx.globalAlpha = 1.0;
+        ctx.font = `900 68px ${mainFont}`; // BIGGER
+        
+        // Final sanity check on width for bike KM/H
+        let mSize = 68;
+        ctx.font = `900 ${mSize}px ${mainFont}`;
+        while(ctx.measureText(m.val).width > (colW - 10) && mSize > 30) {
+            mSize -= 2;
+            ctx.font = `900 ${mSize}px ${mainFont}`;
+        }
+        
+        ctx.fillText(m.val, x, rowY + 65);
+    });
+
+    ctx.restore();
+}
+
+/**
+ * Image 4: MANIFEST LIST
+ * IBM Plex Serif editorial look, Label over Value.
+ * High-fidelity match for user's reference image.
+ */
+export function drawManifestList(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const mainFont = "'IBM Plex Serif', serif";
+    
+    // Formatting Helpers
+    const toTitleCase = (str: string) => str.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+
+    const elevPoint = stats.dataPoints?.find(p => p.label.toUpperCase() === 'ELEVATION');
+    const calPoint = stats.dataPoints?.find(p => p.label.toUpperCase() === 'ENERGY');
+    
+    const elevVal = stats.elevation || elevPoint?.value || '0';
+    const tempVal = stats.avgTemp || stats.temperature || '0';
+    
+    const items = [
+        { label: 'Distance', val: `${stats.distanceVal || '0.00'} km` },
+        { label: 'Moving Time', val: `${stats.timeStr || '0:00'} min` },
+        { label: 'Pace', val: `${stats.subValue || '0:00'} /km` },
+        { label: 'Total Elevation Gain', val: `+${elevVal} m`, hide: parseFloat(elevVal) === 0 && !elevPoint },
+        { label: 'Calories Burned', val: `${stats.calories || '0'} kcal`, hide: !stats.calories || stats.calories === '0' },
+        { label: 'Temperature', val: `${tempVal}°C`, hide: !tempVal || tempVal === '0' }
+    ].filter(i => !i.hide);
+
+    const startX = 60; 
+    const startY = 200; // More space from Scora logo
+    const rowHeight = 125; // Tighter vertical rhythm
+
+    ctx.save();
+    ctx.fillStyle = textColor;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+
+    // Header (Title Case)
+    ctx.font = `700 68px ${mainFont}`;
+    ctx.fillText(toTitleCase(stats.title || "Activity"), startX, startY);
+    
+    // Sub-header: "7:56 AM in Mexico"
+    const timeRaw = (stats.startTime || '00:00 AM').toUpperCase();
+    const location = stats.location || 'Mexico';
+    ctx.font = `400 32px ${mainFont}`;
+    ctx.globalAlpha = 0.8;
+    ctx.fillText(`${timeRaw} in ${location}`, startX, startY + 80);
+
+    // List Items (Label over Value)
+    let currentY = startY + 180;
+    items.forEach(item => {
+        // Label (Top)
+        ctx.globalAlpha = 0.6;
+        ctx.font = `400 22px ${mainFont}`; // Slightly smaller label
+        ctx.fillText(item.label, startX, currentY);
+
+        // Value (Bottom)
+        ctx.globalAlpha = 1.0;
+        ctx.font = `700 56px ${mainFont}`; // Slightly smaller value
+        ctx.fillText(item.val, startX, currentY + 30); // Tighter gap
+        
+        currentY += rowHeight;
+    });
+
+    ctx.restore();
+}

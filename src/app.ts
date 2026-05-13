@@ -698,7 +698,12 @@ if (canvasWrapper) {
             }
 
         } catch (err) {
-            console.error("[Studio] Clipboard API failed:", err);
+            if (err instanceof Error && err.message === "ClipboardItem not supported") {
+                // Silent fallback for non-secure/incompatible contexts
+                console.warn("[Studio] Clipboard API not available in this environment.");
+            } else {
+                console.error("[Studio] Clipboard API failed:", err);
+            }
         }
     });
 }
