@@ -16,6 +16,15 @@ on:
       - 'README.md'
       - 'docs/**'
       - '.github/workflows/docker-publish.yml'
+      - '.gitignore'
+      - '.dockerignore'
+      - '.npmrc'
+      - '.agent/**'
+      - '.claude/**'
+      - '.gemini/**'
+      - '.vscode/**'
+      - '.env.example'
+      - 'azure-pipelines-sample.yml'
   pull_request:
     branches:
       - master
@@ -24,6 +33,15 @@ on:
       - 'README.md'
       - 'docs/**'
       - '.github/workflows/docker-publish.yml'
+      - '.gitignore'
+      - '.dockerignore'
+      - '.npmrc'
+      - '.agent/**'
+      - '.claude/**'
+      - '.gemini/**'
+      - '.vscode/**'
+      - '.env.example'
+      - 'azure-pipelines-sample.yml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
