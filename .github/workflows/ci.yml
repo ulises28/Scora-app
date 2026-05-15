@@ -53,15 +53,18 @@ jobs:
     name: Browser Tests (Playwright / Docker)
     needs: unit-tests
     runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/scora-runtime:latest
+      options: --user root
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Set up configuration file
         run: cp src/config.example.ts src/config.ts
 
-      - name: Build Playwright Docker Image
-        run: docker build -f Dockerfile.playwright -t scora-e2e .
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Detect Design Drift
         id: drift
@@ -74,7 +77,14 @@ jobs:
             echo "🛡️ No design changes. Enforcing Strict Mode."
           fi
 
-      - name: Run E2E Tests inside Docker
+      - name: Run E2E Tests
+        env:
+          CI: true
+          VITE_STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
+          VITE_STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
           # Logic: Update snapshots ONLY if manual override is set OR if drift is detected
           SNAPSHOT_FLAG=""
@@ -82,21 +92,8 @@ jobs:
             SNAPSHOT_FLAG="--update-snapshots"
           fi
 
-          docker run --rm \
-            -e CI=true \
-            -e VITE_STRAVA_CLIENT_ID=${{ secrets.STRAVA_CLIENT_ID }} \
-            -e VITE_STRAVA_CLIENT_SECRET=${{ secrets.STRAVA_CLIENT_SECRET }} \
-            -e VERCEL_TOKEN=${{ secrets.VERCEL_TOKEN }} \
-            -e VERCEL_ORG_ID=${{ secrets.VERCEL_ORG_ID }} \
-            -e VERCEL_PROJECT_ID=${{ secrets.VERCEL_PROJECT_ID }} \
-            -v ${{ github.workspace }}/blob-report:/app/blob-report \
-            -v ${{ github.workspace }}/test-results:/app/test-results \
-            -v ${{ github.workspace }}/tests:/app/tests \
-            scora-e2e \
-            npx playwright test --project=UI-Core --project=Mobile-Chrome $SNAPSHOT_FLAG
-
-          # 🗜️ PERMISSION SMASH: Ensuring the host can read/write Docker-generated assets
-          sudo chown -R $(id -u):$(id -g) tests/ test-results/
+          mkdir -p blob-report test-results
+          npx playwright test --project=UI-Core --project=Mobile-Chrome $SNAPSHOT_FLAG
 
           # 🕵️ Generate Triage Signal for diagnostics script
           echo "{\"drift_detected\": ${{ steps.drift.outputs.drift_detected }}}" > test-results/TRIAGE_SIGNAL.json
@@ -127,7 +124,7 @@ jobs:
             tests/e2e/fixtures/sticker-capabilities.json
 
       - name: Upload Test Report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: blob-report
@@ -140,7 +137,7 @@ jobs:
           node scripts/ci-diagnostics.cjs >> $GITHUB_STEP_SUMMARY
 
       - name: Upload Test Results
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: test-results
