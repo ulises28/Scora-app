@@ -36,6 +36,10 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: 🧼 Sanitize Branch Name
+        id: slug
+        run: echo "tag=$(echo ${{ github.ref_name }} | sed 's/\//-/g')" >> $GITHUB_OUTPUT
+
       - name: Build and Push
         uses: docker/build-push-action@v6
         with:
@@ -44,7 +48,7 @@ jobs:
           push: true
           tags: |
             ghcr.io/${{ github.repository_owner }}/scora-runtime:${{ github.ref_name == 'master' && 'latest' || 'staging' }}
-            ghcr.io/${{ github.repository_owner }}/scora-runtime:${{ github.ref_name == 'master' && 'latest' || github.ref_name }}
+            ghcr.io/${{ github.repository_owner }}/scora-runtime:${{ steps.slug.outputs.tag }}
             ghcr.io/${{ github.repository_owner }}/scora-runtime:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

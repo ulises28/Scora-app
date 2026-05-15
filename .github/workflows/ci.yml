@@ -58,16 +58,19 @@ jobs:
       - name: Resolve Environment Tag
         id: resolve
         run: |
+          # 🧼 Sanitize tag name (Docker doesn't allow slashes)
           TAG="${{ github.head_ref || github.ref_name }}"
+          SAFE_TAG=$(echo $TAG | sed 's/\//-/g')
+          
           # Check if branch-specific image exists in GHCR (STG)
           TOKEN=$(echo "${{ secrets.GITHUB_TOKEN }}" | base64)
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
             -H "Authorization: Bearer $TOKEN" \
-            "https://ghcr.io/v2/${{ github.repository_owner }}/scora-runtime/manifests/$TAG")
+            "https://ghcr.io/v2/${{ github.repository_owner }}/scora-runtime/manifests/$SAFE_TAG")
 
           if [ "$STATUS" == "200" ]; then
-            echo "🛡️ Isolated Staging Image Detected: $TAG"
-            echo "tag=$TAG" >> $GITHUB_OUTPUT
+            echo "🛡️ Isolated Staging Image Detected: $SAFE_TAG"
+            echo "tag=$SAFE_TAG" >> $GITHUB_OUTPUT
           else
             echo "🌍 Using Production Baseline: latest"
             echo "tag=latest" >> $GITHUB_OUTPUT
