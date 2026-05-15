@@ -38,7 +38,12 @@ jobs:
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
           mkdir -p test-results
-          npx playwright test --project=Regression-API
+          npx playwright test --project=Regression-API --reporter=list,json=test-results/report.json
+
+      - name: Generate Failure Diagnosis Summary
+        if: always()
+        run: |
+          node scripts/ci-diagnostics.cjs >> $GITHUB_STEP_SUMMARY
 
       - name: Upload Regression Results
         if: always()
