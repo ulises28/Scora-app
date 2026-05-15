@@ -44,6 +44,7 @@ on:
       - 'azure-pipelines-sample.yml'
 
 concurrency:
+  # 🛡️ Unify concurrency to handle both 'push' and 'pull_request' on the same branch
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
