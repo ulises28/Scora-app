@@ -44,7 +44,8 @@ on:
       - 'azure-pipelines-sample.yml'
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  # 🛡️ Unify concurrency to handle both 'push' and 'pull_request' on the same branch
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 permissions:
@@ -96,25 +97,47 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # 🧼 Sanitize tag name
-          TAG="${{ github.head_ref || github.ref_name }}"
-          SAFE_TAG=$(echo $TAG | sed 's/\//-/g')
+          if [ "${{ github.ref_name }}" == "master" ]; then
+            SAFE_TAG="latest"
+            INFRA_CHANGE=$(git diff --name-only HEAD~1 | grep -qE "Dockerfile.base|package.json" && echo "true" || echo "false")
+          else
+            TAG="${{ github.head_ref || github.ref_name }}"
+            SAFE_TAG=$(echo $TAG | sed 's/\//-/g')
+            INFRA_CHANGE=$(git diff --name-only origin/master...HEAD | grep -qE "Dockerfile.base|package.json" && echo "true" || echo "false")
+          fi
           
-          # 🕵️ Detect if this branch HAS intentional infra changes
-          INFRA_CHANGE=$(git diff --name-only origin/master...HEAD | grep -qE "Dockerfile.base|package.json" && echo "true" || echo "false")
-          
-          # 🛰️ Check registry for branch image using GitHub API (try orgs first, then users)
-          VERSIONS=$(gh api /orgs/${{ github.repository_owner }}/packages/container/scora-runtime/versions --jq '.[] | .metadata.container.tags[]' 2>/dev/null || \
-                     gh api /users/${{ github.repository_owner }}/packages/container/scora-runtime/versions --jq '.[] | .metadata.container.tags[]' 2>/dev/null || \
-                     echo "")
+          # 🛰️ Check registry for branch image using GitHub API (with Polling if infra changed)
+          MAX_RETRIES=20 # 10 minutes total (20 * 30s)
+          RETRY_COUNT=0
+          IMAGE_EXISTS="false"
 
-          IMAGE_EXISTS=$(echo "$VERSIONS" | grep -x "$SAFE_TAG" || echo "false")
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            # Check registry (try orgs first, then users)
+            VERSIONS=$(gh api /orgs/${{ github.repository_owner }}/packages/container/scora-runtime/versions --jq '.[] | .metadata.container.tags[]' 2>/dev/null || \
+                       gh api /users/${{ github.repository_owner }}/packages/container/scora-runtime/versions --jq '.[] | .metadata.container.tags[]' 2>/dev/null || \
+                       echo "")
+
+            IMAGE_EXISTS=$(echo "$VERSIONS" | grep -x "$SAFE_TAG" || echo "false")
+
+            if [ "$IMAGE_EXISTS" == "$SAFE_TAG" ]; then
+              break
+            fi
+
+            if [ "$INFRA_CHANGE" == "true" ]; then
+              echo "⏳ Waiting for Docker image to be ready... (Attempt $((RETRY_COUNT + 1))/$MAX_RETRIES)"
+              sleep 30
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+            else
+              # If no infra change, we don't wait for a branch image, we just fall back to latest
+              break
+            fi
+          done
 
           if [ "$IMAGE_EXISTS" == "$SAFE_TAG" ]; then
             echo "🛡️ Isolated Staging Image Detected: $SAFE_TAG"
             echo "tag=$SAFE_TAG" >> $GITHUB_OUTPUT
           elif [ "$INFRA_CHANGE" == "true" ]; then
-            echo "🚨 CRITICAL: Infra changes detected but Docker image is not ready yet!"
-            echo "Please wait for the 'Scora | Build Runtime Image' workflow to finish, then re-run this job."
+            echo "🚨 CRITICAL: Infra changes detected but Docker image did not appear after 10 minutes!"
             exit 1
           else
             echo "🌍 Using Production Baseline: latest"
