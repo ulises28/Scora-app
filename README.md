@@ -68,9 +68,29 @@ To prevent drift between code and documentation:
 - **Capability Pinning**: E2E tests use this JSON to dynamically generate a test matrix for all registered stickers.
 
 ### 3. Intelligent Failure Diagnostics (`ci-diagnostics.cjs`)
-A custom post-test analyzer that groups failures by project, cleans ANSI codes, and injects **Quick Debug Stacks** directly into the GitHub Job Summary.
+A custom post-test analyzer that groups failures by project, cleans ANSI codes, and injects **Quick Debug Stacks** directly into the GitHub Job Summary. It explicitly detects **Infrastructure Mismatches** (e.g., engine vs. container version) to prevent false-positive functional triage.
 
 ---
+
+## 🏛️ Bimodal Infrastructure & Environment Safety
+
+Scora utilizes a **State-of-the-Art CI/CD Infrastructure** designed for maximum safety, resource efficiency, and developer velocity.
+
+### 1. Isolated Staging Images (Environment Sandboxing)
+To prevent "Production Poisoning," feature branches build their own isolated Docker images in **GHCR** (GitHub Container Registry).
+- **Production Baseline**: The `:latest` tag is strictly reserved for the master branch.
+- **Staging Tier**: Feature branches push to unique tags (e.g., `feat-new-stickers`).
+- **Benefit**: Infrastructure upgrades (like Playwright version bumps) can be verified in a PR sandbox without affecting the rest of the team.
+
+### 2. The Smart Gatekeeper (`resolve-env`)
+A specialized pre-flight job that ensures the E2E suite only runs when the environment is "Baked" and ready.
+- **Intent Detection**: Automatically detects if a PR has modified infrastructure files (`package.json` or `Dockerfile.base`).
+- **Resource Efficiency**: If infra changes are detected but the Docker build hasn't finished, the suite **cancels itself in seconds** to save compute minutes.
+- **Registry Discovery**: Uses an authenticated **GitHub CLI (gh api)** handshake to verify image availability before proceeding.
+
+### 3. Registry-Safe Sanitization
+The CI automatically "slugifies" branch names to comply with strict Docker Registry standards.
+- **Logic**: Slashes (e.g., `feat/ui-fix`) are automatically converted to dashes (`feat-ui-fix`) to ensure 100% reliability in image tagging and pulling.
 
 ## 🛠 Local Development
 
