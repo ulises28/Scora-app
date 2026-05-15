@@ -55,14 +55,22 @@ jobs:
     outputs:
       image_tag: ${{ steps.resolve.outputs.tag }}
     steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Required for git diff origin/master
+
       - name: Resolve Environment Tag
         id: resolve
         run: |
-          # 🧼 Sanitize tag name (Docker doesn't allow slashes)
+          # 🧼 Sanitize tag name
           TAG="${{ github.head_ref || github.ref_name }}"
           SAFE_TAG=$(echo $TAG | sed 's/\//-/g')
           
-          # Check if branch-specific image exists in GHCR (STG)
+          # 🕵️ Detect if this branch HAS intentional infra changes
+          INFRA_CHANGE=$(git diff --name-only origin/master...HEAD | grep -qE "Dockerfile.base|package.json" && echo "true" || echo "false")
+          
+          # 🛰️ Check registry for branch image
           TOKEN=$(echo "${{ secrets.GITHUB_TOKEN }}" | base64)
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
             -H "Authorization: Bearer $TOKEN" \
@@ -71,6 +79,10 @@ jobs:
           if [ "$STATUS" == "200" ]; then
             echo "🛡️ Isolated Staging Image Detected: $SAFE_TAG"
             echo "tag=$SAFE_TAG" >> $GITHUB_OUTPUT
+          elif [ "$INFRA_CHANGE" == "true" ]; then
+            echo "🚨 CRITICAL: Infra changes detected but Docker image is not ready yet!"
+            echo "Please wait for the 'Scora | Build Runtime Image' workflow to finish, then re-run this job."
+            exit 1
           else
             echo "🌍 Using Production Baseline: latest"
             echo "tag=latest" >> $GITHUB_OUTPUT
