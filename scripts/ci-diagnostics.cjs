@@ -9,9 +9,10 @@ function run() {
     const reportPath = path.join(process.cwd(), 'test-results', 'report.json');
     
     if (!fs.existsSync(reportPath)) {
-        console.log("### 🚨 CRITICAL: Test Report Missing");
-        console.log("> **Diagnosis**: The E2E environment likely crashed or timed out before generating results.");
-        console.log("> **Action**: Check the 'Run E2E Tests' logs for Vercel or Docker errors.");
+        console.log("### 🚨 INFRASTRUCTURE CRASH DETECTED");
+        console.log("> **DIAGNOSIS**: The E2E environment failed to initialize or crashed during the engine handshake.");
+        console.log("> **PROBABLE CAUSE**: Playwright version mismatch between `package.json` and the Docker image.");
+        console.log("> **ACTION**: Ensure the `scora-runtime` image is built with the Playwright version required by the lockfile.");
         return;
     }
 

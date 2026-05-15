@@ -49,16 +49,43 @@ jobs:
       - name: Run Unit Tests
         run: pnpm test -- run
 
+  # 🧠 Smart Environment Resolution: STG vs PROD
+  resolve-env:
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.resolve.outputs.tag }}
+    steps:
+      - name: Resolve Environment Tag
+        id: resolve
+        run: |
+          TAG="${{ github.head_ref || github.ref_name }}"
+          # Check if branch-specific image exists in GHCR (STG)
+          TOKEN=$(echo "${{ secrets.GITHUB_TOKEN }}" | base64)
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer $TOKEN" \
+            "https://ghcr.io/v2/${{ github.repository_owner }}/scora-runtime/manifests/$TAG")
+
+          if [ "$STATUS" == "200" ]; then
+            echo "🛡️ Isolated Staging Image Detected: $TAG"
+            echo "tag=$TAG" >> $GITHUB_OUTPUT
+          else
+            echo "🌍 Using Production Baseline: latest"
+            echo "tag=latest" >> $GITHUB_OUTPUT
+          fi
+
   e2e-tests:
     name: Browser Tests (Playwright / Docker)
-    needs: unit-tests
+    needs: [unit-tests, resolve-env]
     runs-on: ubuntu-24.04
     container:
-      image: ghcr.io/${{ github.repository_owner }}/scora-runtime:latest
+      image: ghcr.io/${{ github.repository_owner }}/scora-runtime:${{ needs.resolve-env.outputs.image_tag }}
       options: --user root
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+
+      - name: 🛡️ Authorize Workspace Security
+        run: git config --global --add safe.directory /__w/Scora-app/Scora-app
 
       - name: Set up configuration file
         run: cp src/config.example.ts src/config.ts
