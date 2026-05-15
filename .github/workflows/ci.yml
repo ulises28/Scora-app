@@ -62,6 +62,8 @@ jobs:
 
       - name: Resolve Environment Tag
         id: resolve
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # 🧼 Sanitize tag name
           TAG="${{ github.head_ref || github.ref_name }}"
@@ -70,13 +72,14 @@ jobs:
           # 🕵️ Detect if this branch HAS intentional infra changes
           INFRA_CHANGE=$(git diff --name-only origin/master...HEAD | grep -qE "Dockerfile.base|package.json" && echo "true" || echo "false")
           
-          # 🛰️ Check registry for branch image
-          TOKEN=$(echo "${{ secrets.GITHUB_TOKEN }}" | base64)
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-            -H "Authorization: Bearer $TOKEN" \
-            "https://ghcr.io/v2/${{ github.repository_owner }}/scora-runtime/manifests/$SAFE_TAG")
+          # 🛰️ Check registry for branch image using GitHub API (try orgs first, then users)
+          VERSIONS=$(gh api /orgs/${{ github.repository_owner }}/packages/container/scora-runtime/versions --jq '.[] | .metadata.container.tags[]' 2>/dev/null || \
+                     gh api /users/${{ github.repository_owner }}/packages/container/scora-runtime/versions --jq '.[] | .metadata.container.tags[]' 2>/dev/null || \
+                     echo "")
 
-          if [ "$STATUS" == "200" ]; then
+          IMAGE_EXISTS=$(echo "$VERSIONS" | grep -x "$SAFE_TAG" || echo "false")
+
+          if [ "$IMAGE_EXISTS" == "$SAFE_TAG" ]; then
             echo "🛡️ Isolated Staging Image Detected: $SAFE_TAG"
             echo "tag=$SAFE_TAG" >> $GITHUB_OUTPUT
           elif [ "$INFRA_CHANGE" == "true" ]; then
