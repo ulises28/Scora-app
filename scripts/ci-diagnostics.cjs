@@ -59,8 +59,21 @@ function run() {
         try { triage = JSON.parse(fs.readFileSync(triagePath, 'utf8')); } catch(e) {}
     }
 
+    let infraErrorDetected = false;
+    failedTests.forEach(t => {
+        const result = t.results && t.results[0];
+        const errors = t.errors || (result && (result.errors || (result.error ? [result.error] : [])));
+        if (errors && JSON.stringify(errors).includes('browserType.launch') || JSON.stringify(errors).includes('Executable doesn\'t exist')) {
+            infraErrorDetected = true;
+        }
+    });
+
     console.log("### QA Triage Report");
-    if (triage.drift_detected) {
+    if (infraErrorDetected) {
+        console.log("> **STATUS**: 🚨 **INFRASTRUCTURE MISMATCH**");
+        console.log("> **DIAGNOSIS**: Playwright could not launch the browser. This is an environment issue, not a code bug.");
+        console.log("> **ACTION**: Check the 'Playwright Version Bridge' logs in CI.");
+    } else if (triage.drift_detected) {
         console.log("> **STATUS**: 🩹 **AUTO-HEALED**");
         console.log("> **DIAGNOSIS**: Intentional design drift detected in source files. Snapshots were automatically updated.");
     } else if (failedTests.length > 0) {
