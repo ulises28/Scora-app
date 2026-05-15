@@ -156,4 +156,13 @@ function run() {
     }
 }
 
-run();
+try {
+    run();
+} catch (e) {
+    console.log("### 🚨 QA Triage Diagnostic Failure");
+    console.log("> **ERROR**: The diagnostic script encountered an internal error while parsing results.");
+    console.log(`> **DETAILS**: ${e.message}`);
+    console.log("\n---");
+    console.log("#### 🛠️ Manual Intervention Required");
+    console.log("Please check the **'Run E2E Tests'** raw logs for the underlying failure cause.");
+}
