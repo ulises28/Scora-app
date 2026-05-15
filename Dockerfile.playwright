@@ -13,14 +13,14 @@ FROM mcr.microsoft.com/playwright:v1.58.2-noble
 # Set working directory inside the container
 WORKDIR /app
 
-# Copy dependency manifests first (layer caching — only re-runs npm ci if these change)
-COPY package.json package-lock.json ./
+# Copy dependency manifests first (layer caching — only re-runs pnpm install if these change)
+COPY package.json pnpm-lock.yaml ./
 
-# Install all dependencies (including devDependencies like Playwright)
-RUN npm ci
+# Install pnpm and dependencies
+RUN npm install -g pnpm && pnpm install --frozen-lockfile
 
 # Pre-install Vercel CLI for the webServer
-RUN npm install -g vercel@latest
+RUN pnpm install -g vercel@latest
 
 # Copy the rest of the project source
 COPY . .

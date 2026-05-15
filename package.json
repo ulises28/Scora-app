@@ -7,10 +7,11 @@
     "dev": "vite --port 3000",
     "build": "cp src/config.example.ts src/config.ts || true && tsc && vite build",
     "preview": "vite preview",
-    "test": "npm run sync:stickers && vitest",
+    "test": "pnpm run sync:stickers && vitest",
+    "test:unit": "pnpm test -- run",
     "test:e2e": "echo 'Please use test:e2e:smoke or test:e2e:regression'",
-    "test:e2e:smoke": "npm run test:cleanup && playwright test --project=UI-Core",
-    "test:e2e:regression": "npm run test:cleanup && E2E_SERVER=vercel playwright test --project=Regression-API",
+    "test:e2e:smoke": "pnpm run test:cleanup && playwright test --project=UI-Core",
+    "test:e2e:regression": "pnpm run test:cleanup && E2E_SERVER=vercel playwright test --project=Regression-API",
     "test:cleanup": "rm -rf test-results/ playwright-report/",
     "test:report": "npx monocart show-report test-results/report.html",
     "test:sync-linux": "docker compose -f docker-compose.playwright.yml run --rm playwright npx playwright test --update-snapshots",
@@ -50,5 +51,10 @@
   "dependencies": {
     "@upstash/redis": "^1.36.3",
     "dotenv": "^17.4.2"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
   }
 }

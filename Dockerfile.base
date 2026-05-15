@@ -1,0 +1,21 @@
+# ============================================================
+# Dockerfile.base
+# Purpose: Static environment for Scora E2E Regressions.
+# Includes Node, pnpm, Playwright Browsers, and Vercel CLI.
+# This image is built once and pushed to GHCR.
+# ============================================================
+
+# Use the official Playwright image as the foundation
+FROM mcr.microsoft.com/playwright:v1.58.2-noble
+
+# Set working directory
+WORKDIR /app
+
+# Install global tools
+# We install pnpm and vercel globally so they are available in the $PATH
+RUN npm install -g pnpm vercel@latest
+
+# Pre-verify the environment
+RUN node --version && pnpm --version && vercel --version
+
+# No source code is copied here to keep the image static and reusable.
