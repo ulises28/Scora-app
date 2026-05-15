@@ -9,9 +9,39 @@ on:
         type: boolean
         default: false
   push:
-    branches: [ "master" ]
+    branches:
+      - master
+      - 'feat/**'
+    paths-ignore:
+      - 'README.md'
+      - 'docs/**'
+      - '.github/workflows/docker-publish.yml'
+      - '.gitignore'
+      - '.dockerignore'
+      - '.npmrc'
+      - '.agent/**'
+      - '.claude/**'
+      - '.gemini/**'
+      - '.vscode/**'
+      - '.env.example'
+      - 'azure-pipelines-sample.yml'
   pull_request:
-    branches: [ "master" ]
+    branches:
+      - master
+      - 'feat/**'
+    paths-ignore:
+      - 'README.md'
+      - 'docs/**'
+      - '.github/workflows/docker-publish.yml'
+      - '.gitignore'
+      - '.dockerignore'
+      - '.npmrc'
+      - '.agent/**'
+      - '.claude/**'
+      - '.gemini/**'
+      - '.vscode/**'
+      - '.env.example'
+      - 'azure-pipelines-sample.yml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -49,19 +79,67 @@ jobs:
       - name: Run Unit Tests
         run: pnpm test -- run
 
-  e2e-tests:
-    name: Browser Tests (Playwright / Docker)
-    needs: unit-tests
-    runs-on: ubuntu-24.04
+  # 🧠 Smart Environment Resolution: STG vs PROD
+  resolve-env:
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.resolve.outputs.tag }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Required for git diff origin/master
+
+      - name: Resolve Environment Tag
+        id: resolve
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # 🧼 Sanitize tag name
+          TAG="${{ github.head_ref || github.ref_name }}"
+          SAFE_TAG=$(echo $TAG | sed 's/\//-/g')
+          
+          # 🕵️ Detect if this branch HAS intentional infra changes
+          INFRA_CHANGE=$(git diff --name-only origin/master...HEAD | grep -qE "Dockerfile.base|package.json" && echo "true" || echo "false")
+          
+          # 🛰️ Check registry for branch image using GitHub API (try orgs first, then users)
+          VERSIONS=$(gh api /orgs/${{ github.repository_owner }}/packages/container/scora-runtime/versions --jq '.[] | .metadata.container.tags[]' 2>/dev/null || \
+                     gh api /users/${{ github.repository_owner }}/packages/container/scora-runtime/versions --jq '.[] | .metadata.container.tags[]' 2>/dev/null || \
+                     echo "")
+
+          IMAGE_EXISTS=$(echo "$VERSIONS" | grep -x "$SAFE_TAG" || echo "false")
+
+          if [ "$IMAGE_EXISTS" == "$SAFE_TAG" ]; then
+            echo "🛡️ Isolated Staging Image Detected: $SAFE_TAG"
+            echo "tag=$SAFE_TAG" >> $GITHUB_OUTPUT
+          elif [ "$INFRA_CHANGE" == "true" ]; then
+            echo "🚨 CRITICAL: Infra changes detected but Docker image is not ready yet!"
+            echo "Please wait for the 'Scora | Build Runtime Image' workflow to finish, then re-run this job."
+            exit 1
+          else
+            echo "🌍 Using Production Baseline: latest"
+            echo "tag=latest" >> $GITHUB_OUTPUT
+          fi
+
+  e2e-tests:
+    name: Browser Tests (Playwright / Docker)
+    needs: [unit-tests, resolve-env]
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/scora-runtime:${{ needs.resolve-env.outputs.image_tag }}
+      options: --user root
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🛡️ Authorize Workspace Security
+        run: git config --global --add safe.directory /__w/Scora-app/Scora-app
 
       - name: Set up configuration file
         run: cp src/config.example.ts src/config.ts
 
-      - name: Build Playwright Docker Image
-        run: docker build -f Dockerfile.playwright -t scora-e2e .
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Detect Design Drift
         id: drift
@@ -74,7 +152,14 @@ jobs:
             echo "🛡️ No design changes. Enforcing Strict Mode."
           fi
 
-      - name: Run E2E Tests inside Docker
+      - name: Run E2E Tests
+        env:
+          CI: true
+          VITE_STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
+          VITE_STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
           # Logic: Update snapshots ONLY if manual override is set OR if drift is detected
           SNAPSHOT_FLAG=""
@@ -82,21 +167,8 @@ jobs:
             SNAPSHOT_FLAG="--update-snapshots"
           fi
 
-          docker run --rm \
-            -e CI=true \
-            -e VITE_STRAVA_CLIENT_ID=${{ secrets.STRAVA_CLIENT_ID }} \
-            -e VITE_STRAVA_CLIENT_SECRET=${{ secrets.STRAVA_CLIENT_SECRET }} \
-            -e VERCEL_TOKEN=${{ secrets.VERCEL_TOKEN }} \
-            -e VERCEL_ORG_ID=${{ secrets.VERCEL_ORG_ID }} \
-            -e VERCEL_PROJECT_ID=${{ secrets.VERCEL_PROJECT_ID }} \
-            -v ${{ github.workspace }}/blob-report:/app/blob-report \
-            -v ${{ github.workspace }}/test-results:/app/test-results \
-            -v ${{ github.workspace }}/tests:/app/tests \
-            scora-e2e \
-            npx playwright test --project=UI-Core --project=Mobile-Chrome $SNAPSHOT_FLAG
-
-          # 🗜️ PERMISSION SMASH: Ensuring the host can read/write Docker-generated assets
-          sudo chown -R $(id -u):$(id -g) tests/ test-results/
+          mkdir -p blob-report test-results
+          npx playwright test --project=UI-Core --project=Mobile-Chrome $SNAPSHOT_FLAG
 
           # 🕵️ Generate Triage Signal for diagnostics script
           echo "{\"drift_detected\": ${{ steps.drift.outputs.drift_detected }}}" > test-results/TRIAGE_SIGNAL.json
@@ -127,7 +199,7 @@ jobs:
             tests/e2e/fixtures/sticker-capabilities.json
 
       - name: Upload Test Report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: blob-report
@@ -140,7 +212,7 @@ jobs:
           node scripts/ci-diagnostics.cjs >> $GITHUB_STEP_SUMMARY
 
       - name: Upload Test Results
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: test-results

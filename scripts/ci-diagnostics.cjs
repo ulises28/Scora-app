@@ -9,9 +9,10 @@ function run() {
     const reportPath = path.join(process.cwd(), 'test-results', 'report.json');
     
     if (!fs.existsSync(reportPath)) {
-        console.log("### 🚨 CRITICAL: Test Report Missing");
-        console.log("> **Diagnosis**: The E2E environment likely crashed or timed out before generating results.");
-        console.log("> **Action**: Check the 'Run E2E Tests' logs for Vercel or Docker errors.");
+        console.log("### 🚨 INFRASTRUCTURE CRASH DETECTED");
+        console.log("> **DIAGNOSIS**: The E2E environment failed to initialize or crashed during the engine handshake.");
+        console.log("> **PROBABLE CAUSE**: Playwright version mismatch between `package.json` and the Docker image.");
+        console.log("> **ACTION**: Ensure the `scora-runtime` image is built with the Playwright version required by the lockfile.");
         return;
     }
 
@@ -58,8 +59,21 @@ function run() {
         try { triage = JSON.parse(fs.readFileSync(triagePath, 'utf8')); } catch(e) {}
     }
 
+    let infraErrorDetected = false;
+    failedTests.forEach(t => {
+        const result = t.results && t.results[0];
+        const errors = t.errors || (result && (result.errors || (result.error ? [result.error] : [])));
+        if (errors && JSON.stringify(errors).includes('browserType.launch') || JSON.stringify(errors).includes('Executable doesn\'t exist')) {
+            infraErrorDetected = true;
+        }
+    });
+
     console.log("### QA Triage Report");
-    if (triage.drift_detected) {
+    if (infraErrorDetected) {
+        console.log("> **STATUS**: 🚨 **INFRASTRUCTURE MISMATCH**");
+        console.log("> **DIAGNOSIS**: Playwright could not launch the browser. This is an environment issue, not a code bug.");
+        console.log("> **ACTION**: Check the 'Playwright Version Bridge' logs in CI.");
+    } else if (triage.drift_detected) {
         console.log("> **STATUS**: 🩹 **AUTO-HEALED**");
         console.log("> **DIAGNOSIS**: Intentional design drift detected in source files. Snapshots were automatically updated.");
     } else if (failedTests.length > 0) {
@@ -142,4 +156,13 @@ function run() {
     }
 }
 
-run();
+try {
+    run();
+} catch (e) {
+    console.log("### 🚨 QA Triage Diagnostic Failure");
+    console.log("> **ERROR**: The diagnostic script encountered an internal error while parsing results.");
+    console.log(`> **DETAILS**: ${e.message}`);
+    console.log("\n---");
+    console.log("#### 🛠️ Manual Intervention Required");
+    console.log("Please check the **'Run E2E Tests'** raw logs for the underlying failure cause.");
+}
