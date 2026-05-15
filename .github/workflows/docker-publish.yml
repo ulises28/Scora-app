@@ -5,6 +5,9 @@ on:
     branches:
       - master
       - 'feat/**'
+    paths:
+      - 'Dockerfile.base'
+      - 'package.json'
   workflow_dispatch:
 
 # Permissions required to push to GHCR
