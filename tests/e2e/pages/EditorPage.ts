@@ -161,15 +161,18 @@ export class EditorPage extends BasePage {
     }
     @step('Wait for Draw Settled')
     async waitForDrawSettled() {
-        // Soft wait: Try to wait for a redraw, but don't fail if it doesn't happen
-        // This prevents 10s timeouts on CI for optimized renders
+        // 🛡️ Studio Grade: Optimized Settlement Check
+        // We wait for the 'Is Settled' flag. Timeout is 4s (Fail-Fast).
+        // Returns instantly (usually <100ms) on success.
         const currentId = await this.page.evaluate(() => (window as any)._scoraSettledId || 0);
-        try {
-            await this.page.waitForFunction((id) => (window as any)._scoraSettledId > id, currentId, { timeout: 2000 });
-        } catch (e) {
-            // Redraw wasn't needed or was too fast
-        }
-        await this.page.waitForTimeout(50);
+        
+        await this.page.waitForFunction((id) => {
+            const win = window as any;
+            return win._scoraIsSettled === true && win._scoraSettledId >= id;
+        }, currentId, { timeout: 4000 });
+        
+        // Final micro-task flush (Ensures canvas buffer is ready for inspection)
+        await this.page.evaluate(() => new Promise(resolve => requestAnimationFrame(resolve)));
     }
 
     getStickerThumb(templateId: string): Locator {
