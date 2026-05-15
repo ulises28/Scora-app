@@ -58,7 +58,7 @@ export default defineConfig({
     // 🚀 BIMODAL SERVER: Vite for day-to-day work, Vercel only for scheduled regression
     command: process.env.E2E_SERVER === 'vercel' 
       ? 'vercel dev --yes --scope team_laRoHIAGhFSpCKAzcEhgFk4Z'
-      : 'npm run dev',
+      : 'pnpm run dev',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 180 * 1000, 

@@ -28,12 +28,12 @@ test.describe('Scora App UI: Canvas Interaction & Reliability @visual', () => {
 
         await feedPage.openActivityEditor(activity.name, stats.mainValue);
         await editorPage.verifyEditorScreenVisible(activity.name);
-        
+
         // 🛡️ Setup Interceptor for "Absolute Truth" verification
         await editorPage.injectCanvasInterceptor();
 
-        // 1. Logo Toggle (Using 'minimal' template for neutral background)
-        await editorPage.selectTemplate('minimal');
+        // 1. Logo Toggle (Using 'studio-precision' as it is a premium sticker that supports all toggles)
+        await editorPage.selectTemplate('studio-precision');
         await editorPage.waitForDrawSettled();
 
         // Toggle Off
@@ -67,7 +67,7 @@ test.describe('Scora App UI: Canvas Interaction & Reliability @visual', () => {
     test('Editor: Correct metadata is rendered in the Editor screen and Canvas', async ({ page }) => {
         const feedPage = new FeedPage(page);
         const editorPage = new EditorPage(page);
-        
+
         const activity = TestUtils.findFirstActivityWithDistance()!;
         const stats = TestUtils.getExpectedStats(activity);
 
@@ -92,7 +92,7 @@ test.describe('Scora App UI: Canvas Interaction & Reliability @visual', () => {
     test('Editor: Workout activities without distance correctly display Duration on Canvas', async ({ page }) => {
         const feedPage = new FeedPage(page);
         const editorPage = new EditorPage(page);
-        
+
         const activity = TestUtils.findFirstActivityWithoutDistance()!;
         const stats = TestUtils.getExpectedStats(activity);
 
@@ -102,7 +102,7 @@ test.describe('Scora App UI: Canvas Interaction & Reliability @visual', () => {
 
         const logs = await editorPage.getCanvasTextLog();
         const normalizedLogs = TestUtils.normalizeForCanvas(logs.join(' '));
-        
+
         expect(normalizedLogs).toContain(TestUtils.normalizeForCanvas(stats.mainValue));
         expect(normalizedLogs).not.toContain('0.00KM');
     });

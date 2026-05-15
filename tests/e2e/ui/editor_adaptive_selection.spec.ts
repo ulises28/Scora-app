@@ -81,12 +81,10 @@ test.describe('Scora App UI: Data Fallback Intelligence @regression', () => {
         await editorPage.goBack();
         await feedPage.openActivityEditor(ACTIVITY_WITHOUT_DISTANCE.name, String(NODIST_STATS.mainValue));
 
-        // Calculate expected default based on contract
-        const jsonMode = ACTIVITY_WITHOUT_DISTANCE.type === 'WeightTraining' ? 'workout' : 'run';
-        const expectedDefaultId = Object.keys(capabilities).find(id => {
-            const mode = (capabilities as any)[id].modes[jsonMode];
-            return mode.metrics.length > 0 || mode.metadata.length > 0;
-        }) || 'minimal';
+        // Calculate expected default based on contract (Studio v9.0)
+        // Rule: Map activity -> social-chat; No-map activity -> note-minimal
+        const hasMap = !!ACTIVITY_WITHOUT_DISTANCE.map?.summary_polyline;
+        const expectedDefaultId = hasMap ? 'social-chat' : 'note-minimal';
 
         await editorPage.waitForDrawSettled(); 
         await editorPage.verifyTemplateIsActive(expectedDefaultId);

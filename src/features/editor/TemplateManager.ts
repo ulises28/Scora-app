@@ -22,7 +22,7 @@ type OnChangeCallback = (template: string, color: string, showLogo: boolean) => 
  */
 export function initTemplateManager(onChange: OnChangeCallback) {
     let currentTemplates = [...TEMPLATES];
-    let currentTemplate = currentTemplates[0] || 'minimal';
+    let currentTemplate = currentTemplates[0] || 'note-minimal';
     let currentTextColor = 'white';
     let currentMapColor = '#ffffff';
     let currentShowLogo = true;
@@ -87,7 +87,7 @@ export function initTemplateManager(onChange: OnChangeCallback) {
     function setTemplate(id: string) {
         if (!currentTemplates.includes(id)) {
             // Fallback to first available if not found in current filtered set
-            id = currentTemplates[0] || 'minimal';
+            id = currentTemplates[0] || 'note-minimal';
         }
         currentTemplate = id;
 
@@ -256,7 +256,7 @@ export function initTemplateManager(onChange: OnChangeCallback) {
             
             // Always reset to the FIRST sticker in the list when switching activities.
             // This ensures a fresh "Studio Gallery" experience.
-            setTemplate(currentTemplates[0] || 'minimal');
+            setTemplate(currentTemplates[0] || 'note-minimal');
         }
     };
 }

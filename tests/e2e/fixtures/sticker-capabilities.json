@@ -1257,7 +1257,7 @@
     "version": "4.1",
     "supportsCustomColor": false,
     "supportsBlackText": false,
-    "compact": false,
+    "compact": true,
     "modes": {
       "run": {
         "metrics": [
@@ -1303,7 +1303,7 @@
     "version": "4.1",
     "supportsCustomColor": false,
     "supportsBlackText": false,
-    "compact": false,
+    "compact": true,
     "modes": {
       "run": {
         "metrics": [
@@ -1533,7 +1533,7 @@
     "version": "4.1",
     "supportsCustomColor": false,
     "supportsBlackText": true,
-    "compact": false,
+    "compact": true,
     "modes": {
       "run": {
         "metrics": [

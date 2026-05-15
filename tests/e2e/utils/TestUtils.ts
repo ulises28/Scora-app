@@ -211,9 +211,9 @@ export const TestUtils = {
 
         if (isToggle) {
             if (mode === 'run' || mode === 'bike') {
-                metrics = metrics.filter((m: string) => m !== 'time');
+                metrics = metrics.filter((m: string) => m !== 'time' && m !== 'heartRate');
             } else if (mode === 'workout') {
-                metrics = metrics.filter((m: string) => m !== 'distance');
+                metrics = metrics.filter((m: string) => m !== 'distance' && m !== 'pace');
             }
         }
 
