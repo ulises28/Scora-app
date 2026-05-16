@@ -183,6 +183,7 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          PLAYWRIGHT_JSON_OUTPUT_NAME: test-results/report.json
         run: |
           # Logic: Update snapshots ONLY if manual override is set OR if drift is detected
           SNAPSHOT_FLAG=""
@@ -191,7 +192,7 @@ jobs:
           fi
 
           mkdir -p blob-report test-results
-          npx playwright test --project=UI-Core --project=Mobile-Chrome $SNAPSHOT_FLAG
+          npx playwright test --project=UI-Core --project=Mobile-Chrome $SNAPSHOT_FLAG --reporter=list,json
 
           # 🕵️ Generate Triage Signal for diagnostics script
           echo "{\"drift_detected\": ${{ steps.drift.outputs.drift_detected }}}" > test-results/TRIAGE_SIGNAL.json
