@@ -36,9 +36,10 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          PLAYWRIGHT_JSON_OUTPUT_NAME: test-results/report.json
         run: |
           mkdir -p test-results
-          npx playwright test --project=Regression-API --reporter=list,json=test-results/report.json
+          npx playwright test --project=Regression-API --reporter=list,json
 
       - name: Generate Failure Diagnosis Summary
         if: always()
