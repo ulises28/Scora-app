@@ -25,32 +25,33 @@ function run() {
     }
 
     const failedTests = [];
-    const statusDiscovery = new Set();
-    const typeDiscovery = new Set();
 
-    function findFailed(rows, parent = null) {
-        if (!rows || !Array.isArray(rows)) return;
-        rows.forEach(r => {
-            r.parent = parent; // Link parent for project resolution later
-            if (r.status) statusDiscovery.add(r.status);
-            if (r.type) typeDiscovery.add(r.type);
-
-            // Monocart Status check
-            const isFailed = r.status === 'failed' || r.status === 'error' || r.status === 'timedOut' || r.caseType === 'failed';
-            // In Monocart, case nodes are often type 'case' or have caseType defined
-            const isTestCase = r.type === 'case' || r.caseType === 'test' || r.caseNum > 0;
-
-            if (isFailed && isTestCase && r.title) {
-                failedTests.push(r);
-            }
-            
-            // 🛠️ THE FIX: Monocart uses 'subs' for nested suites/tests
-            if (r.subs) findFailed(r.subs, r);
-            if (r.children) findFailed(r.children, r);
-        });
+    // --- PLAYWRIGHT NATIVE PARSER ---
+    function traverse(suite) {
+        if (suite.suites) suite.suites.forEach(s => traverse(s));
+        if (suite.specs) {
+            suite.specs.forEach(spec => {
+                spec.tests.forEach(test => {
+                    // A test is considered failed if any of its results are not 'passed'
+                    const isFailed = test.results.some(r => r.status === 'failed' || r.status === 'timedOut' || r.status === 'interrupted');
+                    if (isFailed) {
+                        failedTests.push({
+                            title: spec.title,
+                            file: spec.file,
+                            line: spec.line,
+                            projectName: test.projectName,
+                            results: test.results,
+                            error: test.results.find(r => r.error)?.error || test.results[0].error
+                        });
+                    }
+                });
+            });
+        }
     }
 
-    findFailed(report.rows);
+    if (report.suites) {
+        report.suites.forEach(s => traverse(s));
+    }
 
     // --- SMART TRIAGE INTEGRATION ---
     const triagePath = path.join(process.cwd(), 'test-results', 'TRIAGE_SIGNAL.json');
@@ -61,9 +62,8 @@ function run() {
 
     let infraErrorDetected = false;
     failedTests.forEach(t => {
-        const result = t.results && t.results[0];
-        const errors = t.errors || (result && (result.errors || (result.error ? [result.error] : [])));
-        if (errors && JSON.stringify(errors).includes('browserType.launch') || JSON.stringify(errors).includes('Executable doesn\'t exist')) {
+        const error = t.error;
+        if (error && (JSON.stringify(error).includes('browserType.launch') || JSON.stringify(error).includes('Executable doesn\'t exist'))) {
             infraErrorDetected = true;
         }
     });
@@ -78,7 +78,7 @@ function run() {
         console.log("> **DIAGNOSIS**: Intentional design drift detected in source files. Snapshots were automatically updated.");
     } else if (failedTests.length > 0) {
         console.log("> **STATUS**: 🚨 **STRICT REGRESSION**");
-        console.log("> **DIAGNOSIS**: No code drift detected in design files, but UI tests failed. This is a functional regression.");
+        console.log("> **DIAGNOSIS**: Functional regressions detected in UI or API logic.");
     } else {
         console.log("> **STATUS**: ✅ **ALL SYSTEMS NOMINAL**");
     }
@@ -89,68 +89,37 @@ function run() {
         console.log("#### **STATUS: 100% PASS**");
         console.log("The Scora Integrity Engine has verified all rendering matrices. No regressions detected.");
         
-        const totalTests = report.summary?.stats?.total || 'Verified';
+        const stats = report.stats || {};
         console.log("\n| Metric | Result |");
         console.log("|:-------|:-------|");
-        console.log("| Total Tests | " + totalTests + " |");
+        console.log("| Total Tests | " + (stats.expected || 'Verified') + " |");
         console.log("| Failures | 0 |");
         console.log("| Environment | Docker (Linux) |");
     } else {
         console.log("### 🔍 Failure Diagnosis Summary");
-        console.log("| Test Case | Error Snippet | Location |");
-        console.log("|:----------|:--------------|:---------|");
+        console.log("| Project | Test Case | Error Snippet | Location |");
+        console.log("|:--------|:----------|:--------------|:---------|");
         
         failedTests.forEach(t => {
-            // 1. Resolve Project Name (Traverse up to find the project suite)
-            let projectName = '';
-            let curr = t.parent;
-            while (curr) {
-                if (curr.type === 'project') {
-                    projectName = `[${curr.title}] `;
-                    break;
-                }
-                curr = curr.parent;
-            }
-
-            // 2. Resolve Result & Errors
-            const result = t.results && t.results[0];
-            // Monocart can put errors in t.errors, result.errors (array), or result.error (object)
-            const errors = t.errors || (result && (result.errors || (result.error ? [result.error] : [])));
+            const errorMsg = t.error ? (t.error.message || 'Check detailed report') : 'No explicit error found';
             
-            let errorMsg = 'No explicit error found';
-            if (errors && errors.length > 0) {
-                // Take the first meaningful error message
-                const firstError = errors[0];
-                errorMsg = typeof firstError === 'string' ? firstError : (firstError.message || firstError.value || 'Check detailed report');
-            }
-            
-            // Clean up the error for the table (strip ANSI, pipes, and newlines)
+            // Clean up the error for the table
             const cleanError = errorMsg
                 .split('\n')[0]
                 .replace(/\|/g, '-')
                 .replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '')
                 .trim()
-                .slice(0, 120);
+                .slice(0, 80);
             
-            // 3. Resolve Location (Handle strings like "file.ts:10:5" or objects)
-            let locStr = 'Unknown';
-            const rawLoc = t.location || (result && result.location);
-            if (typeof rawLoc === 'string') {
-                locStr = path.basename(rawLoc);
-            } else if (rawLoc && rawLoc.file) {
-                locStr = `${path.basename(rawLoc.file)}:${rawLoc.line || '?'}`;
-            }
-            
-            console.log(`| ${projectName}${t.title} | ${cleanError}${errorMsg.length > 120 ? '...' : ''} | ${locStr} |`);
+            const locStr = `${path.basename(t.file)}:${t.line || '?'}`;
+            console.log(`| ${t.projectName} | ${t.title} | ${cleanError}${errorMsg.length > 80 ? '...' : ''} | ${locStr} |`);
         });
 
         // 🚀 PRO-TIP: Output the first 3 full error stacks for immediate debugging
         console.log("\n### 🛠️ Quick Debug (Top Failures)");
         failedTests.slice(0, 3).forEach((t, i) => {
-            const result = t.results && t.results[0];
-            const error = (t.errors && t.errors[0]) || (result && (result.errors?.[0] || result.error));
-            if (error && error.stack) {
-                console.log(`<details><summary><b>${i+1}. ${t.title}</b></summary>\n\n\`\`\`text\n${error.stack.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '')}\n\`\`\`\n</details>`);
+            if (t.error && t.error.stack) {
+                console.log(`<details><summary><b>${i+1}. ${t.title}</b></summary>\n\n\`\`\`text\n${t.error.stack.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '')}\n\`\`\`\n</details>`);
             }
         });
     }
