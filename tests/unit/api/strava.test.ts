@@ -28,7 +28,7 @@ describe('formatActivityStats', () => {
         expect(result.subLabel).toBe('Pace');
         expect(result.subValue).toBe('5:00 /km');
         expect(result.hasMap).toBe(true);
-        expect(result.calories).toBe('852'); // 852.1 kilojoules
+        expect(result.calories).toBe('204'); // 852.1 kilojoules * 0.239
     });
 
     it('should format a Private Run (No Map) correctly', () => {
