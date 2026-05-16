@@ -15,7 +15,8 @@ describe('formatActivityStats', () => {
             distance: 5000,          // 5 km
             max_speed: 4.5,
             start_date_local: "2026-03-06T09:31:09Z", // 9:31 AM
-            map: { summary_polyline: 'abc' }
+            map: { summary_polyline: 'abc' },
+            kilojoules: 852.1
         };
 
         const result = formatActivityStats(mockRun as any);
@@ -27,6 +28,7 @@ describe('formatActivityStats', () => {
         expect(result.subLabel).toBe('Pace');
         expect(result.subValue).toBe('5:00 /km');
         expect(result.hasMap).toBe(true);
+        expect(result.calories).toBe('852'); // 852.1 kilojoules
     });
 
     it('should format a Private Run (No Map) correctly', () => {
@@ -111,6 +113,7 @@ describe('formatActivityStats', () => {
         expect(result.subLabel).toBe('Avg Heartrate');
         expect(result.subValue).toBe('120 bpm');
         expect(result.hasDistance).toBe(false);
+        expect(result.calories).toBe(null); // No kilojoules in mock
     });
 
     it('should format long durations (1h+) correctly as "1h 11m"', () => {

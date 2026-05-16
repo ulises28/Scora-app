@@ -9,7 +9,7 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: 1,
-  workers: process.env.CI ? 4 : undefined,
+  workers: process.env.CI ? 2 : undefined,
 
   reporter: [
     ['list'],
@@ -56,10 +56,11 @@ export default defineConfig({
 
   webServer: {
     // 🚀 BIMODAL SERVER: Vite for day-to-day work, Vercel only for scheduled regression
-    command: process.env.E2E_SERVER === 'vercel' 
+    command: (process.env.E2E_SERVER === 'vercel' && process.env.VERCEL_TOKEN)
       ? 'vercel dev --yes --scope team_laRoHIAGhFSpCKAzcEhgFk4Z'
       : 'pnpm run dev',
     url: 'http://localhost:3000',
+    stdout: 'pipe',
     reuseExistingServer: !process.env.CI,
     timeout: 180 * 1000, 
   },

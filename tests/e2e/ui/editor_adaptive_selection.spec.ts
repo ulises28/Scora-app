@@ -32,6 +32,17 @@ test.describe('Scora App UI: Data Fallback Intelligence @regression', () => {
         await editorPage.selectTemplate(distanceSticker.id);
         await editorPage.waitForDrawSettled();
 
+        /**
+         * SCORA RULE: No-Double Rule.
+         * For a workout, 'Distance' stickers must fallback to 'Duration'.
+         */
+        await page.waitForFunction(() => document.querySelector(".canvas-e2e-label")?.textContent?.includes("DURATION"));
+        const logs = await editorPage.getCanvasTextLog();
+        const normalizedLogs = TestUtils.normalizeForCanvas(logs.join(' '));
+        
+        expect(normalizedLogs).toContain('DURATION');
+        expect(normalizedLogs).not.toContain('DISTANCE');
+
         // 🛡️ Visual Assertion: Standard Screenshot
         await expect(editorPage.canvasWrapper).toHaveScreenshot(`fallback-dist-to-work-${distanceSticker.id}.png`);
     });
@@ -81,10 +92,12 @@ test.describe('Scora App UI: Data Fallback Intelligence @regression', () => {
         await editorPage.goBack();
         await feedPage.openActivityEditor(ACTIVITY_WITHOUT_DISTANCE.name, String(NODIST_STATS.mainValue));
 
-        // Calculate expected default based on contract (Studio v9.0)
-        // Rule: Map activity -> social-chat; No-map activity -> note-minimal
-        const hasMap = !!ACTIVITY_WITHOUT_DISTANCE.map?.summary_polyline;
-        const expectedDefaultId = hasMap ? 'social-chat' : 'note-minimal';
+        /**
+         * SCORA RULE (v9.0): No hard-coded defaults.
+         * Opening a new activity ALWAYS resets to the first sticker in the filtered list.
+         */
+        const firstThumb = page.locator('.sticker-thumb').first();
+        const expectedDefaultId = await firstThumb.getAttribute('data-template') || 'note-minimal';
 
         await editorPage.waitForDrawSettled(); 
         await editorPage.verifyTemplateIsActive(expectedDefaultId);

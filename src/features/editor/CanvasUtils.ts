@@ -13,7 +13,7 @@ export interface ThemeColors {
  * Builds a theme palette based on the target text color.
  */
 export function getThemeColors(textColor: string): ThemeColors {
-    const alphaValue = 0.45;
+    const alphaValue = 0.8;
     const base = textColor === 'black' ? '0, 0, 0' : '255, 255, 255';
     return {
         solid: `rgb(${base})`,
@@ -219,7 +219,7 @@ export function drawMetricBlock(
         ctx.textBaseline = 'bottom';
         ctx.font = options.labelFont;
         ctx.fillStyle = options.color;
-        ctx.globalAlpha = options.labelAlpha ?? 0.4;
+        ctx.globalAlpha = options.labelAlpha ?? 0.8;
         setLetterSpacing(ctx, "0.15em");
         ctx.fillText(label.toUpperCase(), 0, -spacing);
         ctx.restore();
