@@ -22,6 +22,7 @@ export interface StravaActivity {
     average_heartrate?: number;
     max_heartrate?: number;
     total_elevation_gain?: number;
+    calories?: number;
     kilojoules?: number;
     average_cadence?: number;
     average_temp?: number;
@@ -96,6 +97,7 @@ export interface StickerStats {
     region?: string;
     activityType: string;
     rawDate?: string;
+    calories: string | null;
 }
 
 // 1. Construye el link al que enviaremos al usuario
@@ -303,8 +305,9 @@ export function formatActivityStats(activity: StravaActivity): StickerStats {
         dayAndNumber: formatDayAndNumber(activity.start_date_local || activity.start_date),
         rawDate: activity.start_date_local || activity.start_date,
         avgTemp: (activity.average_temp !== undefined && activity.average_temp !== null) ? String(Math.round(activity.average_temp)) : null,
-        hasDistance: DISTANCE_SPORTS.has(activity.type) && activity.distance > 0,
+        hasDistance: activity.distance > 0,
         activityType: activity.type,
+        calories: activity.calories ? String(Math.round(activity.calories)) : (activity.kilojoules ? String(Math.round(activity.kilojoules * 0.239)) : null),
     };
 
     // Location extraction logic (Stage 1: Metadata)
@@ -383,7 +386,7 @@ export function formatActivityStats(activity: StravaActivity): StickerStats {
         elev_high: activity.elev_high ? { label: 'Elev High', value: String(Math.round(activity.elev_high)), unit: 'm' } : null,
         cadence: activity.average_cadence ? { label: 'Cadence', value: String(Math.round(activity.average_cadence)), unit: 'spm' } : null,
         max_watts: activity.max_watts ? { label: 'Max Watts', value: String(Math.round(activity.max_watts)), unit: 'W' } : null,
-        energy: activity.kilojoules ? { label: 'Energy', value: String(Math.round(activity.kilojoules)), unit: 'kcal' } : null,
+        energy: activity.calories ? { label: 'Energy', value: String(Math.round(activity.calories)), unit: 'kcal' } : (activity.kilojoules ? { label: 'Energy', value: String(Math.round(activity.kilojoules * 0.239)), unit: 'kcal' } : null),
         pr_count: activity.pr_count ? { label: 'PRs', value: String(activity.pr_count), unit: '' } : null,
         location: locationStr ? { label: 'Location', value: locationStr, unit: '' } : null,
         type: { label: 'Type', value: (activity.type === 'WeightTraining' || activity.type === 'Workout') ? 'Gym' : activity.type, unit: '' },

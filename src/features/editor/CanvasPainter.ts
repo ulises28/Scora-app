@@ -49,7 +49,7 @@ function isColorDark(hex: string) {
 }
 
 function buildColors(textColor: string) {
-    const alphaValue = 0.85;
+    const alphaValue = 0.9;
     let base = '255, 255, 255';
     if (textColor === 'black') base = '0, 0, 0';
     else if (textColor.startsWith('#')) base = hexToRgb(textColor);
@@ -721,7 +721,7 @@ export function drawGymEffort(ctx, stats, textColor = 'white') {
         ctx.fillText('Duration', 540, 1300);
     } else {
         // Hero is duration, show date or type as sub to avoid duplication
-        const subSub = stats.date || stats.type || 'Gym';
+        const subSub = stats.date || normalizeSport(stats.type) || 'Gym';
         ctx.font = "500 55px 'Plus Jakarta Sans'";
         ctx.fillStyle = c.trans;
         ctx.fillText(subSub, 540, 1250);
@@ -1495,8 +1495,8 @@ export function drawVHSRetro(ctx: CanvasRenderingContext2D, stats: any, textColo
     // 1. Data Processing
     const rawType = stats.activityType || 'RUN';
     const activity = applyActivityCasing(normalizeSport(stats.activityType || 'RUN'), 'vhs-retro');
-    const distanceVal = stats.distanceVal || '0.00';
-
+    const distText = stats.hasDistance ? `${stats.distanceVal || '0.00'} KM` : `${stats.calories && stats.calories !== '0' ? stats.calories + ' KCAL' : (stats.timeStr || '0:00')}`;
+    const paceUnit = stats.hasDistance ? '/KM' : 'BPM';
     // 🛡️ Timezone Fix: Treat the date string as literal local time 
     // to prevent 6-hour shifts in Mexico City / CST.
     const dateStrRaw = stats.rawDate || '';
@@ -1578,14 +1578,14 @@ export function drawVHSRetro(ctx: CanvasRenderingContext2D, stats: any, textColo
     drawVCR("SP", trX, trY + 60, 'right', 'top', 28);
 
     // Line 3: Distance
-    drawVCR(`${distanceVal} KM`, trX, trY + 110, 'right', 'top', 40);
+    drawVCR(distText, trX, trY + 110, 'right', 'top', 40);
 
     // --- BOTTOM LEFT: Timestamps ---
     drawVCR(timeStr, margin, canvasH - margin - 65, 'left', 'bottom', 36);
     drawVCR(dateStr, margin, canvasH - margin, 'left', 'bottom', 36);
 
     // --- BOTTOM RIGHT: Data ---
-    drawVCR(`${paceVal} /KM`, canvasW - margin, canvasH - margin - 65, 'right', 'bottom', 36);
+    drawVCR(`${paceVal} ${paceUnit}`, canvasW - margin, canvasH - margin - 65, 'right', 'bottom', 36);
     drawVCR("TRACKING", canvasW - margin, canvasH - margin, 'right', 'bottom', 36);
 
     ctx.restore();
@@ -2603,7 +2603,7 @@ export function drawNarrativeHighlight(ctx: CanvasRenderingContext2D, stats: any
     let l2_p4 = "";
     let l2_p5 = "";
 
-    const isWorkout = activityLower.includes('workout') || activityLower.includes('training') || activityLower.includes('gym');
+    const isWorkout = stats.type?.toLowerCase().includes('workout') || stats.type?.toLowerCase().includes('training') || stats.type?.toLowerCase().includes('gym') || !stats.hasDistance;
 
     if (isWorkout) {
         l1_p1 = `${duration}`;
@@ -2730,7 +2730,7 @@ export function drawCondesaStack(ctx: CanvasRenderingContext2D, stats: any, text
     const weekday = new Intl.DateTimeFormat('es-ES', { weekday: 'long' }).format(rawDate).toUpperCase();
     const dayNum = rawDate.getDate().toString().padStart(2, '0');
     const startTimeResult = (stats.startTime || '10:24 PM').toUpperCase();
-    const isWorkout = stats.type === 'Workout';
+    const isWorkout = stats.type?.toLowerCase().includes('workout') || stats.type?.toLowerCase().includes('training') || stats.type?.toLowerCase().includes('gym') || !stats.hasDistance;
     const distValueResult = isWorkout ? (stats.timeStr || '0m') : (stats.distanceVal || '0.00');
     const distUnitResult = isWorkout ? 'DURATION' : (parseFloat(distValueResult) === 1 ? 'KILOMETER' : 'KILOMETERS');
     const paceValueResult = (stats.subValue || '').split(' ')[0] || '0:00';
@@ -4582,7 +4582,7 @@ export function drawSciencePro(ctx: CanvasRenderingContext2D, stats: any, textCo
     ctx.textAlign = 'center';
 
     // 1. Header (Ultra-Compact + Scaled)
-    const title = (stats.title || stats.type || 'Activity').toUpperCase();
+    const title = (stats.title || normalizeSport(stats.type) || 'Activity').toUpperCase();
     let titleFontSize = 82;
     ctx.font = `400 ${titleFontSize}px 'Michroma'`;
     const maxTitleW = 900;
@@ -4596,7 +4596,7 @@ export function drawSciencePro(ctx: CanvasRenderingContext2D, stats: any, textCo
     ctx.fillStyle = accent;
     ctx.fillText(title, 540, 700);
 
-    const isWorkout = stats.type?.toLowerCase().includes('workout') || stats.type?.toLowerCase().includes('training') || !stats.hasDistance;
+    const isWorkout = stats.type?.toLowerCase().includes('workout') || stats.type?.toLowerCase().includes('training') || stats.type?.toLowerCase().includes('gym') || !stats.hasDistance;
     const mainDisplayVal = isWorkout ? (stats.timeStr || '0:00') : (stats.distanceVal || stats.mainValue || '0.00');
     const mainUnit = isWorkout ? 'DURATION' : 'KM';
 
@@ -5050,7 +5050,7 @@ export function drawGraffitiBrand(ctx: CanvasRenderingContext2D, stats: any, tex
     };
 
     // 3. Logic: Check if Workout/Non-Distance
-    const isWorkout = stats.type?.toLowerCase().includes('workout') || stats.type?.toLowerCase().includes('training') || !stats.hasDistance;
+    const isWorkout = stats.type?.toLowerCase().includes('workout') || stats.type?.toLowerCase().includes('training') || stats.type?.toLowerCase().includes('gym') || !stats.hasDistance;
 
     // 1. Hero Metric (BOX 1 - Centered)
     const heroVal = (isWorkout ? (stats.timeStr || '0:00') : (stats.distanceVal || '0.00')).toUpperCase();
@@ -5082,8 +5082,8 @@ export function drawGraffitiBrand(ctx: CanvasRenderingContext2D, stats: any, tex
     if (isWorkout) {
         m1Value = stats.avgHeartrate ? `${stats.avgHeartrate} BPM` : (stats.calories ? `${stats.calories} KCAL` : 'WORKOUT');
         m1Label = stats.avgHeartrate ? 'AVG HEART RATE' : (stats.calories ? 'CALORIES' : 'SESSION');
-        m2Value = (stats.timeStr || '0M').toUpperCase();
-        m2Label = 'TOTAL DURATION';
+        m2Value = stats.calories && stats.avgHeartrate ? `${stats.calories} KCAL` : (stats.date || 'TODAY').toUpperCase();
+        m2Label = stats.calories && stats.avgHeartrate ? 'CALORIES' : 'DATE';
     } else {
         m1Value = (stats.subValue || '0:00 /KM').toUpperCase();
         m1Label = isRide ? 'AVG. SPEED' : 'PACE';
@@ -5361,7 +5361,7 @@ export function drawUltraDetail(ctx: CanvasRenderingContext2D, stats: any, textC
     const startX = 70; // Shifted left for more gutter
     let currentY = 320;
 
-    const isWorkout = stats.type === 'Workout' || stats.type === 'WeightTraining';
+    const isWorkout = stats.type?.toLowerCase().includes('workout') || stats.type?.toLowerCase().includes('training') || stats.type?.toLowerCase().includes('gym') || !stats.hasDistance;
     const isRide = stats.type === 'Ride' || stats.type === 'EBikeRide';
 
     // ── 1. Hero Block (Level 2) ──────────────────────────────────────────────
@@ -6008,17 +6008,17 @@ export function drawBoldDay(ctx: CanvasRenderingContext2D, stats: any, textColor
     const day = (stats.dayName || 'SUNDAY').toUpperCase();
     
     // Workout Detection
-    const hasDist = stats.distanceVal && parseFloat(stats.distanceVal) > 0.1;
+    const isWorkoutType = stats.type?.toLowerCase().includes('workout') || stats.type?.toLowerCase().includes('training') || stats.type?.toLowerCase().includes('gym');
+    const hasDist = !isWorkoutType && stats.distanceVal && parseFloat(stats.distanceVal) > 0.1;
     let distText = `${stats.distanceVal || '0.00'}KM`;
     let label = day;
 
     if (!hasDist) {
-        distText = stats.calories && stats.calories !== '0' ? `${stats.calories}KCAL` : (stats.timeStr || 'WORKOUT');
-        label = (stats.type || 'WORKOUT').toUpperCase();
+        distText = stats.calories && stats.calories !== '0' ? `${stats.calories} KCAL` : (stats.timeStr || 'WORKOUT').toUpperCase();
     }
 
     const cx = 540;
-    const cy = 220; 
+    const cy = 280; // Shifted down globally to avoid SCORA logo
 
     ctx.save();
     ctx.translate(cx, cy);
@@ -6030,7 +6030,7 @@ export function drawBoldDay(ctx: CanvasRenderingContext2D, stats: any, textColor
     ctx.font = `800 45px ${sysFont}`;
     if (typeof ctx.letterSpacing !== 'undefined') ctx.letterSpacing = "15px";
     ctx.globalAlpha = 0.85;
-    ctx.fillText(label, 0, -80);
+    ctx.fillText(label, 0, -100); // Pushed further up from the data for more breathing room
     ctx.letterSpacing = "0px";
 
     // Distance (Bottom - MASSIVE & Scaling)
@@ -6044,7 +6044,7 @@ export function drawBoldDay(ctx: CanvasRenderingContext2D, stats: any, textColor
     }
 
     ctx.globalAlpha = 1.0;
-    ctx.fillText(distText, 0, 70);
+    ctx.fillText(distText, 0, 100); // Pushed further down from the label
 
     ctx.restore();
 }
@@ -6060,10 +6060,13 @@ export function drawStudioPrecision(ctx: CanvasRenderingContext2D, stats: any, t
     
     // Workout Detection
     const isBike = (stats.type || '').toLowerCase().includes('ride') || (stats.type || '').toLowerCase().includes('bike');
-    const hasDist = stats.distanceVal && parseFloat(stats.distanceVal) > 0.1;
+    const isWorkoutType = stats.type?.toLowerCase().includes('workout') || stats.type?.toLowerCase().includes('training') || stats.type?.toLowerCase().includes('gym');
+    const hasDist = !isWorkoutType && stats.distanceVal && parseFloat(stats.distanceVal) > 0.1;
     
     let heroText = `${stats.distanceVal || '0.00'}KM`;
-    if (!hasDist) heroText = stats.timeStr || '0:00';
+    if (!hasDist) {
+        heroText = stats.calories && stats.calories !== '0' ? `${stats.calories} KCAL` : (stats.timeStr || '0:00');
+    }
 
     const startX = 60;
     const endX = 1020;
@@ -6089,25 +6092,36 @@ export function drawStudioPrecision(ctx: CanvasRenderingContext2D, stats: any, t
     // Sub-metrics (Boldonse)
     const elevPoint = stats.dataPoints?.find(p => p.label.toUpperCase() === 'ELEVATION');
     const elevVal = elevPoint ? `${elevPoint.value}${elevPoint.unit}`.toUpperCase() : '0M';
-    const calVal = stats.calories && stats.calories !== '0' ? `${stats.calories}KCAL` : '0 KCAL';
+    const calVal = stats.calories && stats.calories !== '0' ? `${stats.calories} KCAL` : '0 KCAL';
 
     let metrics: { label: string; val: string }[] = [];
     
     if (hasDist) {
-        const paceVal = (stats.subValue || '0:00').toUpperCase();
-        const paceLabel = isBike ? 'SPEED' : 'PACE';
+        let metric1Val = (stats.subValue || '0:00').toUpperCase();
+        let metric1Label = isBike ? 'SPEED' : 'PACE';
+
+        if ((stats.type || '').toLowerCase().includes('workout') || (stats.type || '').toLowerCase().includes('training')) {
+            metric1Val = stats.calories && stats.calories !== '0' ? `${stats.calories} KCAL` : metric1Val;
+            metric1Label = stats.calories && stats.calories !== '0' ? 'CALORIES' : metric1Label;
+        }
+
         const hrVal = stats.avgHeartrate ? `${stats.avgHeartrate}BPM` : elevVal;
         const hrLabel = stats.avgHeartrate ? 'HEART RATE' : 'ALTITUDE';
         metrics = [
-            { label: paceLabel, val: paceVal },
+            { label: metric1Label, val: metric1Val },
             { label: 'DURATION', val: (stats.timeStr || '0:00').toUpperCase() },
             { label: hrLabel, val: hrVal }
         ];
     } else {
+        // Workout mode: If hero is calories, show duration. If hero is duration, show calories.
+        const heroIsCalories = heroText.includes('KCAL');
+        const secondaryVal = heroIsCalories ? (stats.timeStr || '0:00').toUpperCase() : calVal;
+        const secondaryLabel = heroIsCalories ? 'DURATION' : 'CALORIES';
+
         metrics = [
-            { label: 'CALORIES', val: calVal },
-            { label: 'ELAPSED', val: (stats.timeStr || '0:00').toUpperCase() },
-            { label: 'HEART RATE', val: stats.avgHeartrate ? `${stats.avgHeartrate}BPM` : '-' }
+            { label: secondaryLabel, val: secondaryVal },
+            { label: 'HEART RATE', val: stats.avgHeartrate ? `${stats.avgHeartrate}BPM` : '-' },
+            { label: 'TYPE', val: normalizeSport(stats.type || 'GYM').toUpperCase() }
         ];
     }
 
@@ -6120,7 +6134,7 @@ export function drawStudioPrecision(ctx: CanvasRenderingContext2D, stats: any, t
         if (isBike && i === 0) x -= 20;
         if (isBike && i === 1) x += 20;
 
-        ctx.globalAlpha = 0.5;
+        ctx.globalAlpha = 0.8;
         ctx.font = `700 28px ${mainFont}`;
         ctx.fillText(m.label, x, rowY);
 
@@ -6159,9 +6173,9 @@ export function drawManifestList(ctx: CanvasRenderingContext2D, stats: any, text
     const tempVal = stats.avgTemp || stats.temperature || '0';
     
     const items = [
-        { label: 'Distance', val: `${stats.distanceVal || '0.00'} km` },
-        { label: 'Moving Time', val: `${stats.timeStr || '0:00'} min` },
-        { label: 'Pace', val: `${stats.subValue || '0:00'} /km` },
+        { label: 'Distance', val: stats.mainValue || '0.00 km', hide: !stats.hasDistance },
+        { label: 'Moving Time', val: stats.timeStr || '0:00' },
+        { label: 'Pace', val: stats.subValue || '0:00', hide: !stats.hasDistance },
         { label: 'Total Elevation Gain', val: `+${elevVal} m`, hide: parseFloat(elevVal) === 0 && !elevPoint },
         { label: 'Calories Burned', val: `${stats.calories || '0'} kcal`, hide: !stats.calories || stats.calories === '0' },
         { label: 'Temperature', val: `${tempVal}°C`, hide: !tempVal || tempVal === '0' }
@@ -6191,7 +6205,7 @@ export function drawManifestList(ctx: CanvasRenderingContext2D, stats: any, text
     let currentY = startY + 180;
     items.forEach(item => {
         // Label (Top)
-        ctx.globalAlpha = 0.6;
+        ctx.globalAlpha = 0.8;
         ctx.font = `400 22px ${mainFont}`; // Slightly smaller label
         ctx.fillText(item.label, startX, currentY);
 

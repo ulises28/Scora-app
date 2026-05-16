@@ -69,6 +69,7 @@ export interface StickerStats {
     subValue: string;
     subLabel: string;
     rawDate?: string;
+    calories: string | null;
 }
 
 const DISTANCE_SPORTS = new Set([
@@ -101,6 +102,7 @@ function formatActivityStats(activity: StravaActivity): StickerStats {
         hasDistance: DISTANCE_SPORTS.has(activity.type) && activity.distance > 0,
         location: activity.location_city || '', // Removed hardcoded fallback
         rawDate: activity.start_date_local || activity.start_date,
+        calories: activity.kilojoules ? String(Math.round(activity.kilojoules)) : null,
     };
 
     // Location extraction logic (Mirrors strava.ts v4.1)

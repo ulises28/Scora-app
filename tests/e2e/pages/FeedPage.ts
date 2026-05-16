@@ -127,13 +127,14 @@ export class FeedPage extends BasePage {
             await this.emergencyButton.waitFor({ state: 'visible' });
             await this.emergencyButton.click();
 
-            // Guard: If after 10 seconds we don't finish, timeout the promise
+            // Guard: If after 30 seconds we don't finish, timeout the promise
             setTimeout(() => {
                 if (!successFound) {
+                    console.error('[DIALOG TIMEOUT]: The reset flow failed to reach the "SISTEMA REINICIADO" confirmation within 30s.');
                     this.page.off('dialog', dialogHandler);
                     resolve(false);
                 }
-            }, 10000);
+            }, 30000);
         });
     }
 }

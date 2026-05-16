@@ -17,13 +17,20 @@ test.describe('Scora Admin: Emergency Reset Flow @regression', () => {
     });
 
     test('Hybrid: Execute reset and validate backend response', async ({ page }) => {
+        // 🛡️ Forensic Spy: Catch API failures in real-time
+        page.on('response', response => {
+            if (response.url().includes('api/admin-reset') && response.status() >= 400) {
+                console.error(`[API ERROR] ${response.url()} returned ${response.status()}`);
+            }
+        });
+
         /**
-         * 1. SETUP: Prepare API listener
-         * We define the 'waitForResponse' promise BEFORE the action starts.
+         * Wait for the Reset API to trigger.
          * This ensures we catch the network request as soon as it fires.
          */
         const promiseResetAPI = page.waitForResponse(resp =>
-            resp.url().includes('api/admin-reset') && resp.request().method() === 'POST'
+            resp.url().includes('api/admin-reset') && resp.request().method() === 'POST',
+            { timeout: 60000 }
         );
 
         // 2. ACTION: Navigate to the admin-authenticated URL

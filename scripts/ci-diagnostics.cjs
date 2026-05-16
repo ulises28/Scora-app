@@ -8,11 +8,13 @@ const path = require('path');
 function run() {
     const reportPath = path.join(process.cwd(), 'test-results', 'report.json');
     
+    // 🕵️ Debug: Log what we are looking for
+    // console.log(`Searching for report at: ${reportPath}`);
+
     if (!fs.existsSync(reportPath)) {
         console.log("### 🚨 INFRASTRUCTURE CRASH DETECTED");
-        console.log("> **DIAGNOSIS**: The E2E environment failed to initialize or crashed during the engine handshake.");
-        console.log("> **PROBABLE CAUSE**: Playwright version mismatch between `package.json` and the Docker image.");
-        console.log("> **ACTION**: Ensure the `scora-runtime` image is built with the Playwright version required by the lockfile.");
+        console.log("> **DIAGNOSIS**: No test report was found. The engine likely crashed before the tests could start.");
+        console.log("> **PROBABLE CAUSE**: WebServer failure (Vercel/Vite) or Docker resource exhaustion.");
         return;
     }
 
@@ -20,7 +22,8 @@ function run() {
     try {
         report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
     } catch (e) {
-        console.log("❌ Failed to parse report.json: " + e.message);
+        console.log("### 🚨 CORRUPT REPORT DETECTED");
+        console.log("> **DIAGNOSIS**: The report.json exists but is invalid or empty.");
         return;
     }
 
@@ -32,7 +35,6 @@ function run() {
         if (suite.specs) {
             suite.specs.forEach(spec => {
                 spec.tests.forEach(test => {
-                    // A test is considered failed if any of its results are not 'passed'
                     const isFailed = test.results.some(r => r.status === 'failed' || r.status === 'timedOut' || r.status === 'interrupted');
                     if (isFailed) {
                         failedTests.push({
@@ -49,9 +51,17 @@ function run() {
         }
     }
 
-    if (report.suites) {
+    if (report.suites && report.suites.length > 0) {
         report.suites.forEach(s => traverse(s));
+    } else {
+        // ⚠️ THE CRITICAL FIX: If we have a file but NO tests, it's a crash!
+        console.log("### 🚨 INFRASTRUCTURE SILENCE");
+        console.log("> **DIAGNOSIS**: The report exists but contains **zero** test results.");
+        console.log("> **PROBABLE CAUSE**: Playwright was aborted early (likely by a WebServer error).");
+        return;
     }
+
+    // --- rest of the logic ---
 
     // --- SMART TRIAGE INTEGRATION ---
     const triagePath = path.join(process.cwd(), 'test-results', 'TRIAGE_SIGNAL.json');

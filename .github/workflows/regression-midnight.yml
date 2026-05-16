@@ -27,6 +27,9 @@ jobs:
       - name: Run Unit Tests (Vitest)
         run: pnpm run test:unit
 
+      - name: 🧼 Clean Stale Results
+        run: rm -rf test-results
+
       - name: Run Full Midnight Validation (Vercel)
         env:
           CI: true
@@ -39,7 +42,7 @@ jobs:
           PLAYWRIGHT_JSON_OUTPUT_NAME: test-results/report.json
         run: |
           mkdir -p test-results
-          npx playwright test --project=Regression-API --reporter=list,json
+          npx playwright test --reporter=list,json
 
       - name: Generate Failure Diagnosis Summary
         if: always()

@@ -7,6 +7,7 @@ import { TEMPLATE_REGISTRY } from '../../../src/features/editor/TemplateManager'
 
 // 🔍 ARCHITECT RULE: 100% Discovery-Driven.
 const ACTIVE_TEMPLATES = TEMPLATE_REGISTRY.filter(t => !t.hidden && t.id !== 'custom');
+test.use({ trace: 'off' }); // 🚀 Memory Opt: Traces for 40+ stickers are too heavy for Docker
 
 test.describe('Scora App UI: Registry Integrity (Deep Regression) [ @regression ]', () => {
 
@@ -65,7 +66,7 @@ test.describe('Scora App UI: Registry Integrity (Deep Regression) [ @regression 
                 await editorPage.selectTemplate(id);
                 await page.evaluate(() => document.fonts.ready); // Ensure font rendering is settled
                 await editorPage.waitForDrawSettled();
-                await page.waitForTimeout(200); // 🏁 Studio Cooldown: Prevent canvas flickering
+                await page.waitForTimeout(500); // 🏁 Studio Cooldown: Prevent canvas flickering
                 
                 const logs = await editorPage.getCanvasTextLog();
                 const normalizedLogs = TestUtils.normalizeForCanvas(logs.join(' '));

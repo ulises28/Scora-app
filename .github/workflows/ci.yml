@@ -175,6 +175,9 @@ jobs:
             echo "🛡️ No design changes. Enforcing Strict Mode."
           fi
 
+      - name: 🧼 Clean Stale Results
+        run: rm -rf test-results blob-report
+        
       - name: Run E2E Tests
         env:
           CI: true

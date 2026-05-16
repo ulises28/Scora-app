@@ -217,6 +217,7 @@ export const mockActivities = [
         "end_latlng": [],
         "average_speed": 0.0,
         "max_speed": 0.0,
+        "kilojoules": 852.1,
         "has_heartrate": true,
         "average_heartrate": 122.2,
         "max_heartrate": 172.0,
