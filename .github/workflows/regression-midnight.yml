@@ -3,12 +3,20 @@ name: "Scora | Midnight E2ERegression"
 on:
   schedule:
     - cron: '0 0 * * *' # Every night at 00:00 UTC
-  workflow_dispatch: # Allow manual trigger for testing
+  workflow_dispatch:
+    inputs:
+      update_snapshots:
+        description: 'Auto-update Linux snapshots for regression tests'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   regression:
     name: "Full API Integrity Check (Vercel)"
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     container:
       image: ghcr.io/${{ github.repository_owner }}/scora-runtime:latest
       options: --user root # Ensure we have permissions for pnpm/playwright
@@ -48,8 +56,24 @@ jobs:
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           PLAYWRIGHT_JSON_OUTPUT_NAME: test-results/report.json
         run: |
+          SNAPSHOT_FLAG=""
+          if [[ "${{ github.event.inputs.update_snapshots }}" == "true" ]]; then
+            SNAPSHOT_FLAG="--update-snapshots"
+          fi
           mkdir -p test-results
-          npx playwright test --reporter=list,json
+          npx playwright test $SNAPSHOT_FLAG --reporter=list,json
+
+      - name: Configure Git Safe Directory
+        if: always() && github.event.inputs.update_snapshots == 'true'
+        run: |
+          git config --global --add safe.directory /__w/Scora-app/Scora-app || true
+
+      - name: Direct Commit Updated Snapshots
+        if: always() && github.event.inputs.update_snapshots == 'true'
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore(testing): auto-update regression linux snapshots"
+          file_pattern: "tests/**/*.png"
 
       - name: Generate Failure Diagnosis Summary
         if: always()
