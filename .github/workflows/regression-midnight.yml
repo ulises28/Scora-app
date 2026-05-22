@@ -46,6 +46,7 @@ jobs:
         run: npx vercel env pull .env.local --yes
 
       - name: Run Full Midnight Validation (Vercel)
+        shell: bash
         env:
           CI: true
           E2E_SERVER: vercel
@@ -60,7 +61,7 @@ jobs:
           echo "github.event.inputs.update_snapshots: '${{ github.event.inputs.update_snapshots }}'"
           echo "inputs.update_snapshots: '${{ inputs.update_snapshots }}'"
           SNAPSHOT_FLAG=""
-          if [[ "${{ github.event.inputs.update_snapshots }}" == "true" ]] || [[ "${{ inputs.update_snapshots }}" == "true" ]]; then
+          if [ "${{ github.event.inputs.update_snapshots }}" = "true" ] || [ "${{ inputs.update_snapshots }}" = "true" ]; then
             SNAPSHOT_FLAG="--update-snapshots"
             echo "📸 Snapshot update enabled: passing --update-snapshots to Playwright"
           else
