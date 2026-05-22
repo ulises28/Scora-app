@@ -10,8 +10,10 @@ test.describe('Scora App UI: Data Fallback Intelligence @regression', () => {
     
     test.beforeEach(async ({ page }) => {
         const feedPage = new FeedPage(page);
+        const editorPage = new EditorPage(page);
         const api = new MockStravaClient(page);
         await feedPage.injectMockAuth();
+        await editorPage.injectCanvasInterceptor();
         await api.mockSuccessfulActivities();
         await feedPage.goto();
         await feedPage.waitForLoaderToHide();
@@ -36,7 +38,7 @@ test.describe('Scora App UI: Data Fallback Intelligence @regression', () => {
          * SCORA RULE: No-Double Rule.
          * For a workout, 'Distance' stickers must fallback to 'Duration'.
          */
-        await page.waitForFunction(() => document.querySelector(".canvas-e2e-label")?.textContent?.includes("DURATION"));
+        await editorPage.waitForCanvasContent('DURATION', true);
         const logs = await editorPage.getCanvasTextLog();
         const normalizedLogs = TestUtils.normalizeForCanvas(logs.join(' '));
         

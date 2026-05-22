@@ -175,9 +175,16 @@ jobs:
             echo "🛡️ No design changes. Enforcing Strict Mode."
           fi
 
-      - name: 🧼 Clean Stale Results
+      - name:  Clean Stale Results
         run: rm -rf test-results blob-report
         
+      - name: Pull Environment Variables
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: npx vercel env pull .env.local --yes
+
       - name: Run E2E Tests
         env:
           CI: true
