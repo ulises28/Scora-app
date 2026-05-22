@@ -132,6 +132,29 @@ function run() {
                 console.log(`<details><summary><b>${i+1}. ${t.title}</b></summary>\n\n\`\`\`text\n${t.error.stack.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '')}\n\`\`\`\n</details>`);
             }
         });
+
+        // 💡 Smart Troubleshooting Tips
+        const tips = new Set();
+        failedTests.forEach(t => {
+            const errorMsg = t.error ? (t.error.message || '') : '';
+            const errorStack = t.error ? (t.error.stack || '') : '';
+            const combined = (errorMsg + '\n' + errorStack).toLowerCase();
+            
+            if (combined.includes('havescreenshot') || combined.includes('snapshot') || combined.includes('diff')) {
+                tips.add(`📸 **Visual Drift / Missing Snapshot**: A snapshot mismatch or missing baseline snapshot was detected. You can auto-update baseline snapshots by running this workflow manually via **workflow_dispatch** with the **update_snapshots** parameter set to \`true\`.`);
+            }
+            if (combined.includes('waitfordrawsettled') || combined.includes('_scoraissettled') || combined.includes('waitforfunction') || combined.includes('timeout')) {
+                tips.add(`⏳ **Timeout / Render Slowdown**: The canvas failed to settle in time. This is usually caused by container resource throttling in GitHub Actions. We have tuned timeouts to be environment-aware, but if this persists, verify the runner CPU load.`);
+            }
+            if (combined.includes('vercel') || combined.includes('env pull') || combined.includes('credentials')) {
+                tips.add(`🔑 **Vercel Credentials**: The test failed accessing Vercel dev variables. Make sure \`VERCEL_TOKEN\`, \`VERCEL_ORG_ID\`, and \`VERCEL_PROJECT_ID\` secrets are set in your GitHub repository secrets.`);
+            }
+        });
+
+        if (tips.size > 0) {
+            console.log("\n### 💡 Smart Troubleshooting Tips");
+            tips.forEach(tip => console.log(`- ${tip}`));
+        }
     }
 }
 
