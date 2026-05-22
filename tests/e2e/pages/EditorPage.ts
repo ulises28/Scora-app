@@ -169,7 +169,7 @@ export class EditorPage extends BasePage {
         await this.page.waitForFunction((id) => {
             const win = window as any;
             return win._scoraIsSettled === true && win._scoraSettledId >= id;
-        }, currentId, { timeout: 4000 });
+        }, currentId, { timeout: process.env.CI ? 15000 : 5000 });
         
         // Final micro-task flush (Ensures canvas buffer is ready for inspection)
         await this.page.evaluate(() => new Promise(resolve => requestAnimationFrame(resolve)));
@@ -280,7 +280,7 @@ export class EditorPage extends BasePage {
         await this.page.waitForFunction(
             (id) => (window as any)._scoraLastDrawId > id && (window as any)._scoraIsSettled === true,
             beforeId,
-            { timeout: 5000 }
+            { timeout: process.env.CI ? 10000 : 5000 }
         ).catch(() => {
             return this.waitForDrawSettled();
         });
@@ -306,7 +306,7 @@ export class EditorPage extends BasePage {
         await this.page.waitForFunction(
             (id) => (window as any)._scoraLastDrawId > id && (window as any)._scoraIsSettled === true,
             beforeId,
-            { timeout: 5000 }
+            { timeout: process.env.CI ? 10000 : 5000 }
         ).catch(() => {
             // If no redraw was needed (state already correct), just ensure settled
             return this.waitForDrawSettled();
