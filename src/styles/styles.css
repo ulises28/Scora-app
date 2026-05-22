@@ -65,7 +65,20 @@ body { background-color: var(--bg); color: var(--text); font-family: var(--font-
     border-bottom: 1px solid rgba(255, 255, 255, 0.03);
 }
 
-.brand-logo { display: flex; align-items: center; gap: 12px; font-size: 20px; font-weight: 800; cursor: pointer; letter-spacing: -0.5px; z-index: 10; }
+.brand-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-alt);
+    font-size: 25px;
+    font-weight: 800;
+    cursor: pointer;
+    letter-spacing: -0.5px;
+    z-index: 10;
+}
+.brand-logo span {
+    color: var(--accent);
+}
 .logo-dot { width: 10px; height: 10px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 15px var(--accent); }
 
 #editor-nav-context { display: flex; align-items: center; gap: 15px; z-index: 10; }
@@ -82,11 +95,17 @@ body { background-color: var(--bg); color: var(--text); font-family: var(--font-
 
 /* ====== SCREEN ISOLATION ====== */
 .screen { display: none !important; position: fixed; top: 70px; left: 0; right: 0; bottom: 0; overflow-y: auto; z-index: 1; }
-.screen.active { display: flex !important; animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; z-index: 50; flex-direction: column; }
+.screen.active { display: block !important; animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; z-index: 50; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
 /* ====== FEED SCREEN ====== */
-#screen-feed { max-width: 1000px; margin: 0 auto; padding: 50px 25px 40px; width: 100%; position: relative; z-index: 10; }
+#screen-feed { max-width: 1000px; margin: 0 auto; padding: 50px 25px 40px; width: 100%; position: fixed; z-index: 10; }
+#screen-feed:has(#auth-section:not(.hidden)) {
+    display: flex !important;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
 @media (min-width: 800px) { #screen-feed { padding: 25px 25px 40px; } }
 .intro-section { margin-bottom: 50px; width: 100%; }
 @media (min-width: 800px) { .intro-section { margin-bottom: 25px; } }
