@@ -80,7 +80,7 @@ jobs:
 
       - name: Direct Commit Updated Snapshots
         if: always() && (github.event.inputs.update_snapshots == 'true' || inputs.update_snapshots == true)
-        uses: stefanzweifel/git-auto-commit-action@v5
+        uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: "chore(testing): auto-update regression linux snapshots"
           file_pattern: "tests/**/*.png"
@@ -92,7 +92,7 @@ jobs:
 
       - name: Upload Regression Results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: regression-results
           path: test-results/
