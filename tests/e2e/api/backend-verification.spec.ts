@@ -69,6 +69,24 @@ test.describe('Scora App: Backend API Verification (Real Integration) [ @regress
         expect(data.error).toContain('Unauthorized');
     });
 
+    // ─── HEALTH CHECK VERIFICATION ───────────────────────────────────────────
+
+    test('Health API: Returns health status JSON', async ({ request }) => {
+        const response = await request.get('/api/health');
+        expect([200, 503]).toContain(response.status());
+        
+        const data = await response.json();
+        expect(data).toMatchObject({
+            status: expect.any(String),
+            checks: expect.objectContaining({
+                env: expect.any(String),
+                strava: expect.any(String),
+                redis: expect.any(String)
+            }),
+            timestamp: expect.any(String)
+        });
+    });
+
     // ─── HTTP METHOD VALIDATION ──────────────────────────────────────────────
 
     test('Method Check: POST endpoints reject GET requests (405)', async ({ request }) => {
@@ -80,4 +98,14 @@ test.describe('Scora App: Backend API Verification (Real Integration) [ @regress
         }
     });
 
+    test('Method Check: GET endpoints reject POST requests (405)', async ({ request }) => {
+        const endpoints = ['/api/health', '/api/queue-status?sessionId=test'];
+        
+        for (const url of endpoints) {
+            const response = await request.post(url);
+            expect(response.status(), `Endpoint ${url} should reject POST`).toBe(405);
+        }
+    });
+
 });
+
