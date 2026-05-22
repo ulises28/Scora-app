@@ -56,20 +56,26 @@ jobs:
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           PLAYWRIGHT_JSON_OUTPUT_NAME: test-results/report.json
         run: |
+          echo "=== Debug Snapshot Flag ==="
+          echo "github.event.inputs.update_snapshots: '${{ github.event.inputs.update_snapshots }}'"
+          echo "inputs.update_snapshots: '${{ inputs.update_snapshots }}'"
           SNAPSHOT_FLAG=""
-          if [[ "${{ github.event.inputs.update_snapshots }}" == "true" ]]; then
+          if [[ "${{ github.event.inputs.update_snapshots }}" == "true" ]] || [[ "${{ inputs.update_snapshots }}" == "true" ]]; then
             SNAPSHOT_FLAG="--update-snapshots"
+            echo "📸 Snapshot update enabled: passing --update-snapshots to Playwright"
+          else
+            echo "🛡️ Snapshot update disabled"
           fi
           mkdir -p test-results
           npx playwright test $SNAPSHOT_FLAG --reporter=list,json
 
       - name: Configure Git Safe Directory
-        if: always() && github.event.inputs.update_snapshots == 'true'
+        if: always() && (github.event.inputs.update_snapshots == 'true' || inputs.update_snapshots == true)
         run: |
           git config --global --add safe.directory /__w/Scora-app/Scora-app || true
 
       - name: Direct Commit Updated Snapshots
-        if: always() && github.event.inputs.update_snapshots == 'true'
+        if: always() && (github.event.inputs.update_snapshots == 'true' || inputs.update_snapshots == true)
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "chore(testing): auto-update regression linux snapshots"

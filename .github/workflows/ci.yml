@@ -196,9 +196,15 @@ jobs:
           PLAYWRIGHT_JSON_OUTPUT_NAME: test-results/report.json
         run: |
           # Logic: Update snapshots ONLY if manual override is set OR if drift is detected
+          echo "=== Debug Snapshot Flag ==="
+          echo "github.event.inputs.update_snapshots: '${{ github.event.inputs.update_snapshots }}'"
+          echo "inputs.update_snapshots: '${{ inputs.update_snapshots }}'"
           SNAPSHOT_FLAG=""
-          if [[ "${{ github.event.inputs.update_snapshots }}" == "true" ]] || [[ "${{ steps.drift.outputs.drift_detected }}" == "true" ]]; then
+          if [[ "${{ github.event.inputs.update_snapshots }}" == "true" ]] || [[ "${{ inputs.update_snapshots }}" == "true" ]] || [[ "${{ steps.drift.outputs.drift_detected }}" == "true" ]]; then
             SNAPSHOT_FLAG="--update-snapshots"
+            echo "📸 Snapshot update enabled: passing --update-snapshots to Playwright"
+          else
+            echo "🛡️ Snapshot update disabled"
           fi
 
           mkdir -p blob-report test-results
@@ -210,14 +216,14 @@ jobs:
       # 🏛️ Smart Self-Healing (Feature Branches)
       # Condition: Auto-run on PRs OR if manual trigger is enabled.
       - name: Direct Commit Updated Snapshots (Feature Branches)
-        if: always() && (github.event.inputs.update_snapshots == 'true' || github.event_name == 'pull_request') && github.ref_name != 'master'
+        if: always() && (github.event.inputs.update_snapshots == 'true' || inputs.update_snapshots == true || github.event_name == 'pull_request') && github.ref_name != 'master'
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "chore(testing): self-healing linux snapshots (docker-matrix)"
           file_pattern: "tests/**/*.png tests/e2e/fixtures/sticker-capabilities.json"
 
       - name: Open Pull Request with Updated Snapshots (Master Only)
-        if: always() && (github.event.inputs.update_snapshots == 'true' || github.event_name == 'push') && github.ref_name == 'master'
+        if: always() && (github.event.inputs.update_snapshots == 'true' || inputs.update_snapshots == true || github.event_name == 'push') && github.ref_name == 'master'
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
