@@ -52,6 +52,16 @@ export default defineConfig({
       use: { ...devices['Pixel 5'] },
       grepInvert: /@regression/,
     },
+    {
+      name: 'Desktop-Safari',
+      use: { ...devices['Desktop Safari'] },
+      grepInvert: /@regression/,
+    },
+    {
+      name: 'Mobile-Safari',
+      use: { ...devices['iPhone 13'] },
+      grepInvert: /@regression/,
+    },
   ],
 
   webServer: {
