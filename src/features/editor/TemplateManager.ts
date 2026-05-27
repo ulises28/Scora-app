@@ -66,8 +66,8 @@ export function initTemplateManager(onChange: OnChangeCallback) {
 
             // 🛡️ Studio Performance: Use requestAnimationFrame to throttle background renders
             // This prevents the main thread from saturating during gallery initialization.
-            requestAnimationFrame(() => {
-                drawTemplate(canvas.id, previewStats, id, 'white', false);
+            requestAnimationFrame(async () => {
+                await drawTemplate(canvas.id, previewStats, id, 'white', false);
             });
         });
     }

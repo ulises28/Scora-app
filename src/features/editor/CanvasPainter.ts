@@ -13,6 +13,35 @@ import { getThemeColors, drawStatWithUnit, setLetterSpacing, drawRoutePath, deco
 import { StickerStats } from '../../api/strava';
 import { STICKER_REGISTRY } from './StickerRegistry';
 
+// ─── Polyfills (Safari iOS < 16 Compatibility) ──────────────────────────────
+if (typeof CanvasRenderingContext2D !== 'undefined' && !CanvasRenderingContext2D.prototype.roundRect) {
+    CanvasRenderingContext2D.prototype.roundRect = function (x: number, y: number, w: number, h: number, radii?: number | number[]) {
+        let r: any = radii;
+        if (typeof r === 'undefined') r = 0;
+        if (typeof r === 'number') r = { tl: r, tr: r, br: r, bl: r };
+        else if (Array.isArray(r)) {
+            if (r.length === 1) r = { tl: r[0], tr: r[0], br: r[0], bl: r[0] };
+            else if (r.length === 2) r = { tl: r[0], tr: r[1], br: r[0], bl: r[1] };
+            else if (r.length === 3) r = { tl: r[0], tr: r[1], br: r[2], bl: r[1] };
+            else if (r.length === 4) r = { tl: r[0], tr: r[1], br: r[2], bl: r[3] };
+        }
+
+        if (w < 0) { x += w; w = Math.abs(w); }
+        if (h < 0) { y += h; h = Math.abs(h); }
+
+        this.moveTo(x + r.tl, y);
+        this.lineTo(x + w - r.tr, y);
+        this.quadraticCurveTo(x + w, y, x + w, y + r.tr);
+        this.lineTo(x + w, y + h - r.br);
+        this.quadraticCurveTo(x + w, y + h, x + w - r.br, y + h);
+        this.lineTo(x + r.bl, y + h);
+        this.quadraticCurveTo(x, y + h, x, y + h - r.bl);
+        this.lineTo(x, y + r.tl);
+        this.quadraticCurveTo(x, y, x + r.tl, y);
+        this.closePath();
+    };
+}
+
 // ─── Asset Pre-loading (Node-safe) ──────────────────────────────────────────
 // We check for 'Image' existence to prevent crashes during Node-based analysis/tests.
 const paperTexture = typeof Image !== 'undefined' ? new Image() : null;
@@ -202,7 +231,7 @@ type StickerRenderer = (ctx: CanvasRenderingContext2D, stats: any, textColor: st
 /**
  * Main Public API — Draws a template based on type and stats.
  */
-export function drawTemplate(
+export async function drawTemplate(
     canvasId: string,
     stats: any,
     templateType = 'minimal',
@@ -210,6 +239,21 @@ export function drawTemplate(
     showLogo = true,
     isMain = false // 🚀 Studio Grade: Only main canvas triggers E2E signals
 ) {
+    if (typeof document !== 'undefined' && 'fonts' in document) {
+        try {
+            await Promise.race([
+                Promise.all([
+                    document.fonts.load("500 12px 'Plus Jakarta Sans'"),
+                    document.fonts.load("700 12px 'Plus Jakarta Sans'"),
+                    document.fonts.load("800 12px 'Plus Jakarta Sans'"),
+                    document.fonts.load("500 12px 'Elms Sans'")
+                ]),
+                new Promise(resolve => setTimeout(resolve, 500))
+            ]);
+        } catch (e) {
+            console.warn("[Canvas] Font preloading failed:", e);
+        }
+    }
     const canvas = document.getElementById(canvasId) as HTMLCanvasElement;
     const ctx = canvas?.getContext('2d');
     if (isMain) {
@@ -220,7 +264,7 @@ export function drawTemplate(
     if (!ctx) {
         if (isMain) {
             (window as any)._scoraSettledId = (window as any)._scoraLastDrawId;
-            (window as any)._scoraIsSettled = true; 
+            (window as any)._scoraIsSettled = true;
         }
         return;
     }
@@ -264,7 +308,7 @@ export function drawTemplate(
     // ARCHITECT NOTE: Deterministic synchronization signal for E2E tests
     if (isMain) {
         const currentId = (window as any)._scoraLastDrawId;
-        
+
         requestAnimationFrame(() => {
             (window as any)._scoraIsSettled = true;
             (window as any)._scoraSettledId = currentId;
@@ -2520,9 +2564,9 @@ export async function exportCanvas(canvasId: string) {
     // ─── OPTION A: Web Share API (iOS Safari ONLY) ───
     // Standard download is "broken" on iOS Safari (saves to a hidden 'Files' folder).
     // We use the Share Sheet here to allow "Save to Photos" directly.
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-                  (/Macintosh/i.test(navigator.userAgent) && navigator.maxTouchPoints > 1) ||
-                  /Mobile/i.test(navigator.userAgent);
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+        (/Macintosh/i.test(navigator.userAgent) && navigator.maxTouchPoints > 1) ||
+        /Mobile/i.test(navigator.userAgent);
 
     if (isIOS && navigator.share && navigator.canShare) {
         try {
@@ -3753,7 +3797,7 @@ export function drawTinyGPS(ctx: CanvasRenderingContext2D, stats: any, textColor
     const baseSize = 52; // Reduced from 75px
     const fullText = `${loc.toUpperCase()} · ${displayVal}`;
     ctx.font = `900 ${baseSize}px 'Cinzel'`;
-    
+
     // Smart Shrink if it overflows 800px width
     let fontSize = baseSize;
     const maxW = 900;
@@ -4586,13 +4630,13 @@ export function drawSciencePro(ctx: CanvasRenderingContext2D, stats: any, textCo
     let titleFontSize = 82;
     ctx.font = `400 ${titleFontSize}px 'Michroma'`;
     const maxTitleW = 900;
-    
+
     // Auto-Scaling for Title
     while (ctx.measureText(title).width > maxTitleW && titleFontSize > 30) {
         titleFontSize -= 2;
         ctx.font = `400 ${titleFontSize}px 'Michroma'`;
     }
-    
+
     ctx.fillStyle = accent;
     ctx.fillText(title, 540, 700);
 
@@ -4604,7 +4648,7 @@ export function drawSciencePro(ctx: CanvasRenderingContext2D, stats: any, textCo
     const meta = `${(stats.location || 'MEXICO CITY').toUpperCase()} — ${mainDisplayVal} ${mainUnit}`;
     ctx.globalAlpha = 0.8;
     setLetterSpacing(ctx, '4px');
-    ctx.fillText(meta, 540, 745); 
+    ctx.fillText(meta, 540, 745);
     setLetterSpacing(ctx, '0px');
     ctx.globalAlpha = 1.0;
 
@@ -4617,7 +4661,7 @@ export function drawSciencePro(ctx: CanvasRenderingContext2D, stats: any, textCo
     const calVal = stats.calories ? `${stats.calories} KCAL` : (stats.avgPower ? `${stats.avgPower} W` : (stats.timeStr || '--'));
     const paceVal = (isWorkout ? calVal : (stats.subValue || '5:15 /KM')).toUpperCase();
     const pillLabel = isWorkout ? (stats.calories ? 'CALORIES' : 'OUTPUT') : 'PACE';
-    
+
     const pillWidth = 200;
     const startX = 320;
 
@@ -4972,9 +5016,6 @@ export function drawGraffitiExpo(ctx: CanvasRenderingContext2D, stats: any, text
     // Distance (Data - 85% Opacity)
     const distNum = stats.distanceVal || '0.00';
     ctx.save();
-    ctx.shadowColor = isDarkAccent ? 'rgba(255, 255, 255, 0.45)' : 'rgba(0, 0, 0, 0.6)';
-    ctx.shadowBlur = 18;
-    ctx.shadowOffsetY = 4;
     ctx.globalAlpha = 0.85;
     ctx.font = "900 140px 'BBH Bartle'";
     ctx.fillStyle = customColor;
@@ -4986,9 +5027,6 @@ export function drawGraffitiExpo(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.font = "800 32px 'Plus Jakarta Sans'";
     ctx.fillStyle = secondaryColor;
     ctx.globalAlpha = 1.0;
-    ctx.shadowColor = isDarkSecondary ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.6)';
-    ctx.shadowBlur = 12;
-    ctx.shadowOffsetY = 2;
     if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "15px";
     ctx.fillText("KILOMETERS", 540, 1515);
     if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "0px";
@@ -4996,9 +5034,6 @@ export function drawGraffitiExpo(ctx: CanvasRenderingContext2D, stats: any, text
 
     // Secondary Data (Pace & Time - 85% Opacity)
     ctx.save();
-    ctx.shadowColor = isDarkAccent ? 'rgba(255, 255, 255, 0.45)' : 'rgba(0, 0, 0, 0.6)';
-    ctx.shadowBlur = 12;
-    ctx.shadowOffsetY = 3;
     ctx.globalAlpha = 0.85;
     ctx.font = "900 55px 'BBH Bartle'";
     ctx.fillStyle = customColor;
@@ -5011,9 +5046,6 @@ export function drawGraffitiExpo(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.font = "800 24px 'Plus Jakarta Sans'";
     ctx.fillStyle = secondaryColor;
     ctx.globalAlpha = 1.0;
-    ctx.shadowColor = isDarkSecondary ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.6)';
-    ctx.shadowBlur = 10;
-    ctx.shadowOffsetY = 2;
     if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "10px";
 
     const paceLabel = sport === 'Ride' ? 'AVG. SPEED' : 'PACE';
@@ -5032,21 +5064,19 @@ export function drawGraffitiBrand(ctx: CanvasRenderingContext2D, stats: any, tex
     const isDarkAccent = isColorDark(accentColor);
 
     // Canvas Constants
-    const midX = 540; 
+    const midX = 540;
     const colX1 = 270; // Center of Left Box (540/2)
     const colX2 = 810; // Center of Right Box (540 + 270)
-    
+
     // Vertical Box Targets
-    let heroY = 280; 
+    let heroY = 280;
     let row2Y = 580;
 
     ctx.textAlign = 'center';
     ctx.textBaseline = 'alphabetic';
 
     const applyDeepShadow = (blur = 30) => {
-        ctx.shadowColor = isDarkAccent ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.9)';
-        ctx.shadowBlur = blur;
-        ctx.shadowOffsetY = 6;
+        // Shadow removed as requested
     };
 
     // 3. Logic: Check if Workout/Non-Distance
@@ -5056,9 +5086,9 @@ export function drawGraffitiBrand(ctx: CanvasRenderingContext2D, stats: any, tex
     const heroVal = (isWorkout ? (stats.timeStr || '0:00') : (stats.distanceVal || '0.00')).toUpperCase();
     ctx.save();
     applyDeepShadow(35);
-    ctx.globalAlpha = 1.0; 
-    ctx.font = "900 135px 'BBH Bartle'"; 
-    ctx.fillStyle = accentColor; 
+    ctx.globalAlpha = 1.0;
+    ctx.font = "900 135px 'BBH Bartle'";
+    ctx.fillStyle = accentColor;
     ctx.fillText(heroVal, midX, heroY);
     ctx.restore();
 
@@ -5066,9 +5096,9 @@ export function drawGraffitiBrand(ctx: CanvasRenderingContext2D, stats: any, tex
     const heroLabel = isWorkout ? "DURATION" : "KILOMETERS";
     ctx.save();
     applyDeepShadow(15);
-    ctx.font = "800 32px 'Michroma'"; 
+    ctx.font = "800 32px 'Michroma'";
     ctx.fillStyle = accentColor;
-    ctx.globalAlpha = 1.0; 
+    ctx.globalAlpha = 1.0;
     if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "15px";
     ctx.fillText(heroLabel, midX, heroY + 65);
     ctx.restore();
@@ -5100,8 +5130,8 @@ export function drawGraffitiBrand(ctx: CanvasRenderingContext2D, stats: any, tex
         applyDeepShadow();
         ctx.fillStyle = accentColor;
         ctx.globalAlpha = 1.0;
-        
-        let subFontSize = 85; 
+
+        let subFontSize = 85;
         ctx.font = `900 ${subFontSize}px 'BBH Bartle'`;
         // Safety Auto-Scaling
         while (ctx.measureText(val).width > maxSubW && subFontSize > 40) {
@@ -5177,11 +5207,11 @@ export function drawJournalGrid(ctx: CanvasRenderingContext2D, stats: any, textC
         ctx.globalAlpha = 0.9;
         const baseSize = 42;
         ctx.font = `bold ${baseSize}px 'Merriweather'`;
-        
+
         let fontSize = baseSize;
         const maxW = 250; // Grid column limit
         let valWidth = ctx.measureText(value).width;
-        
+
         if (valWidth > maxW) {
             fontSize = Math.floor(baseSize * (maxW / valWidth));
             ctx.font = `bold ${fontSize}px 'Merriweather'`;
@@ -5199,11 +5229,11 @@ export function drawJournalGrid(ctx: CanvasRenderingContext2D, stats: any, textC
 
     // Find Elevation in dataPoints
     const elevPoint = stats.dataPoints?.find(p => p.label.toLowerCase().includes('elevation')) || { value: '0', unit: 'm' };
-    
+
     // HR Logic: Explicitly prioritize Avg over Max for the Journal entry
-    const hrPoint = stats.dataPoints?.find(p => p.label.toLowerCase().includes('avg')) || 
-                    { value: stats.avgHeartrate || (stats.dataPoints?.find(p => p.label.includes('HR'))?.value) || '-', unit: 'bpm' };
-                    
+    const hrPoint = stats.dataPoints?.find(p => p.label.toLowerCase().includes('avg')) ||
+        { value: stats.avgHeartrate || (stats.dataPoints?.find(p => p.label.includes('HR'))?.value) || '-', unit: 'bpm' };
+
     const paceLabel = sport === 'Ride' ? 'AVG. SPEED' : 'PACE';
     const paceUnit = sport === 'Ride' ? 'km/h' : '/km';
 
@@ -5544,7 +5574,7 @@ export function drawUltraDetail(ctx: CanvasRenderingContext2D, stats: any, textC
  */
 export function drawNoteSticker(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
     const textCol = '#1a1a1a'; // Force professional dark gray for white background contrast
-    
+
     // 1. Narrative Formatting (Smart Fallback Protocol)
     const sport = normalizeSport(stats.type || stats.activityType || 'Run');
     let narrative = "";
@@ -5573,28 +5603,28 @@ export function drawNoteSticker(ctx: CanvasRenderingContext2D, stats: any, textC
     ctx.save();
     ctx.textBaseline = 'middle';
     ctx.font = `500 42px 'Elms Sans'`;
-    
+
     const textWidth = ctx.measureText(narrative).width;
     const paddingX = 45;
-    
+
     // Positioning: Under Scora logo (Top Left alignment)
     const xStart = 80;
-    const yCenter = 210; 
+    const yCenter = 210;
 
     // 2. White Background "Note" Card (Precision Replication)
     ctx.save();
     ctx.fillStyle = "#ffffff";
-    
+
     // Subtle professional shadow
     ctx.shadowColor = 'rgba(0,0,0,0.12)';
     ctx.shadowBlur = 30;
     ctx.shadowOffsetY = 8;
-    
+
     const rectW = textWidth + (paddingX * 2) + 20; // Extra room for cursor
     const rectH = 85; // Fixed height for consistency
     const rectX = xStart;
     const rectY = yCenter - rectH / 2;
-    
+
     ctx.beginPath();
     ctx.roundRect(rectX, rectY, rectW, rectH, 8);
     ctx.fill();
@@ -5604,11 +5634,11 @@ export function drawNoteSticker(ctx: CanvasRenderingContext2D, stats: any, textC
     ctx.textAlign = 'left';
     ctx.fillStyle = textCol;
     ctx.fillText(narrative, rectX + paddingX, yCenter + 2); // Slight Y offset for visual balance
-    
+
     // 4. The Cursor (#eab308)
     ctx.fillStyle = '#eab308';
-    ctx.fillRect(rectX + paddingX + textWidth + 12, yCenter - 26, 5, 52); 
-    
+    ctx.fillRect(rectX + paddingX + textWidth + 12, yCenter - 26, 5, 52);
+
     ctx.restore();
 }
 
@@ -5623,12 +5653,12 @@ export function drawNoteAccentSticker(ctx: CanvasRenderingContext2D, stats: any,
     const isHex = textColor.startsWith('#');
     const accentColor = isHex ? textColor : '#4f46e5';
     const rgb = hexToRgb(accentColor);
-    
+
     // For the text itself, we use solid white or black depending on the background contrast
     // but the user's "selected text" background uses the accent.
     const isDark = isColorDark(accentColor);
     const textCol = isDark ? '#ffffff' : (textColor === 'black' ? '#000000' : '#ffffff');
-    
+
     // 2. Narrative Formatting (Standard Note Data)
     const sport = normalizeSport(stats.type || stats.activityType || 'Run');
     let narrative = "";
@@ -5653,59 +5683,59 @@ export function drawNoteAccentSticker(ctx: CanvasRenderingContext2D, stats: any,
     }
 
     ctx.save();
-    
+
     // 3. Measuring & Layout
     ctx.font = `500 44px 'Plus Jakarta Sans'`;
     ctx.textBaseline = 'alphabetic';
     const textWidth = ctx.measureText(narrative).width;
-    
+
     const paddingX = 40;
-    const boxHeight = 110; 
+    const boxHeight = 110;
     const boxWidth = textWidth + (paddingX * 2);
-    
+
     const xStart = 100;
     const yBaseline = 400; // Moved down to avoid overlapping Scora logo
-    
+
     const xL = xStart;
     const xR = xStart + boxWidth;
-    
+
     const markerOffset = 45; // Much closer to the box as per reference
     const boxY = yBaseline - boxHeight / 2;
     const boxBottom = boxY + boxHeight;
-    
+
     const yTop = boxY - markerOffset + 15;
     const yBottom = boxBottom + markerOffset - 15;
     const circleRadius = 26;
 
     // 4. Draw Background Box (Selected Text Opacity)
-    ctx.fillStyle = `rgba(${rgb}, 0.45)`; 
+    ctx.fillStyle = `rgba(${rgb}, 0.45)`;
     ctx.fillRect(xL, boxY, boxWidth, boxHeight);
 
     // 5. Draw Markers (Separated Vertical Bars)
     ctx.strokeStyle = accentColor;
     ctx.lineWidth = 6;
     ctx.lineCap = 'round';
-    
+
     // Left Marker: Circle at top, line down to selection bottom
     ctx.beginPath();
     ctx.moveTo(xL, yTop);
-    ctx.lineTo(xL, boxBottom); 
+    ctx.lineTo(xL, boxBottom);
     ctx.stroke();
-    
+
     // Right Marker: Circle at bottom, line up to selection top
     ctx.beginPath();
     ctx.moveTo(xR, yBottom);
-    ctx.lineTo(xR, boxY); 
+    ctx.lineTo(xR, boxY);
     ctx.stroke();
-    
+
     // 6. Draw Marker Circles
     ctx.fillStyle = accentColor;
-    
+
     // Start Marker (Top)
     ctx.beginPath();
     ctx.arc(xL, yTop, circleRadius, 0, Math.PI * 2);
     ctx.fill();
-    
+
     // End Marker (Bottom)
     ctx.beginPath();
     ctx.arc(xR, yBottom, circleRadius, 0, Math.PI * 2);
@@ -5714,12 +5744,12 @@ export function drawNoteAccentSticker(ctx: CanvasRenderingContext2D, stats: any,
     // 7. Draw Narrative Text
     ctx.fillStyle = textCol;
     ctx.textAlign = 'left';
-    
+
     // Professional shadow for high-contrast legibility
     ctx.shadowColor = 'rgba(0,0,0,0.15)';
     ctx.shadowBlur = 8;
     ctx.shadowOffsetY = 2;
-    
+
     // Center text vertically in the box
     ctx.textBaseline = 'middle';
     ctx.fillText(narrative, xL + paddingX, yBaseline + 2);
@@ -5729,10 +5759,10 @@ export function drawNoteAccentSticker(ctx: CanvasRenderingContext2D, stats: any,
     ctx.restore();
     ctx.save();
 
-    const menuW = 920; 
-    const menuH = 135; 
-    const menuX = 540 - (menuW / 2); 
-    const menuY = yBaseline + 160; 
+    const menuW = 920;
+    const menuH = 135;
+    const menuX = 540 - (menuW / 2);
+    const menuY = yBaseline + 160;
 
     // Draw Menu Shadow (iOS Depth)
     ctx.shadowColor = 'rgba(0,0,0,0.2)';
@@ -5744,7 +5774,7 @@ export function drawNoteAccentSticker(ctx: CanvasRenderingContext2D, stats: any,
     ctx.beginPath();
     ctx.roundRect(menuX, menuY, menuW, menuH, menuH / 2);
     ctx.fill();
-    
+
     // Add the white border (iOS highlight)
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
@@ -5755,10 +5785,10 @@ export function drawNoteAccentSticker(ctx: CanvasRenderingContext2D, stats: any,
     // Draw Subtle Dividers
     ctx.strokeStyle = 'rgba(0, 0, 0, 0.05)';
     ctx.lineWidth = 2;
-    
+
     const items = ['Cut', 'Copy', 'Paste', 'AutoFill'];
     const sectionW = (menuW - 120) / items.length;
-    
+
     for (let i = 1; i < items.length; i++) {
         const dX = menuX + (i * sectionW) + 20;
         ctx.beginPath();
@@ -6006,7 +6036,7 @@ export function drawBoldDay(ctx: CanvasRenderingContext2D, stats: any, textColor
     const mainFont = "'Audiowide', cursive";
     const sysFont = "'Plus Jakarta Sans', sans-serif";
     const day = (stats.dayName || 'SUNDAY').toUpperCase();
-    
+
     // Workout Detection
     const isWorkoutType = stats.type?.toLowerCase().includes('workout') || stats.type?.toLowerCase().includes('training') || stats.type?.toLowerCase().includes('gym');
     const hasDist = !isWorkoutType && stats.distanceVal && parseFloat(stats.distanceVal) > 0.1;
@@ -6034,9 +6064,9 @@ export function drawBoldDay(ctx: CanvasRenderingContext2D, stats: any, textColor
     ctx.letterSpacing = "0px";
 
     // Distance (Bottom - MASSIVE & Scaling)
-    let fontSize = 220; 
+    let fontSize = 220;
     ctx.font = `900 ${fontSize}px ${mainFont}`;
-    
+
     // Auto-scaling loop to use entire width
     while (ctx.measureText(distText).width > 960 && fontSize > 80) {
         fontSize -= 5;
@@ -6057,12 +6087,12 @@ export function drawBoldDay(ctx: CanvasRenderingContext2D, stats: any, textColor
  */
 export function drawStudioPrecision(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
     const mainFont = "'Boldonse', sans-serif";
-    
+
     // Workout Detection
     const isBike = (stats.type || '').toLowerCase().includes('ride') || (stats.type || '').toLowerCase().includes('bike');
     const isWorkoutType = stats.type?.toLowerCase().includes('workout') || stats.type?.toLowerCase().includes('training') || stats.type?.toLowerCase().includes('gym');
     const hasDist = !isWorkoutType && stats.distanceVal && parseFloat(stats.distanceVal) > 0.1;
-    
+
     let heroText = `${stats.distanceVal || '0.00'}KM`;
     if (!hasDist) {
         heroText = stats.calories && stats.calories !== '0' ? `${stats.calories} KCAL` : (stats.timeStr || '0:00');
@@ -6070,24 +6100,36 @@ export function drawStudioPrecision(ctx: CanvasRenderingContext2D, stats: any, t
 
     const startX = 60;
     const endX = 1020;
-    const startY = 220;
+    // Push the hero metric down for workout activities so it doesn't overlap the Scora logo
+    const startY = hasDist ? 220 : 340;
 
     ctx.save();
     ctx.fillStyle = textColor;
-    
+
     // Hero Metric (Boldonse)
-    let fontSize = 320; 
+    let fontSize = 320;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     ctx.font = `900 ${fontSize}px ${mainFont}`;
-    
+
     // Scaling loop
     while (ctx.measureText(heroText).width > 980 && fontSize > 100) {
         fontSize -= 5;
         ctx.font = `900 ${fontSize}px ${mainFont}`;
     }
-    
-    ctx.fillText(heroText, 540, startY);
+
+    let isSafari = false;
+    if (typeof navigator !== 'undefined') {
+        isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    }
+
+    if (isSafari) {
+        ctx.textBaseline = 'alphabetic';
+        ctx.fillText(heroText, 540, startY + (fontSize * 0.76));
+    } else {
+        ctx.textBaseline = 'top';
+        ctx.fillText(heroText, 540, startY);
+    }
 
     // Sub-metrics (Boldonse)
     const elevPoint = stats.dataPoints?.find(p => p.label.toUpperCase() === 'ELEVATION');
@@ -6095,7 +6137,7 @@ export function drawStudioPrecision(ctx: CanvasRenderingContext2D, stats: any, t
     const calVal = stats.calories && stats.calories !== '0' ? `${stats.calories} KCAL` : '0 KCAL';
 
     let metrics: { label: string; val: string }[] = [];
-    
+
     if (hasDist) {
         let metric1Val = (stats.subValue || '0:00').toUpperCase();
         let metric1Label = isBike ? 'SPEED' : 'PACE';
@@ -6113,10 +6155,11 @@ export function drawStudioPrecision(ctx: CanvasRenderingContext2D, stats: any, t
             { label: hrLabel, val: hrVal }
         ];
     } else {
-        // Workout mode: If hero is calories, show duration. If hero is duration, show calories.
+        // Workout mode: If hero is calories, show duration. If hero is duration, show start time (replacing calories).
         const heroIsCalories = heroText.includes('KCAL');
-        const secondaryVal = heroIsCalories ? (stats.timeStr || '0:00').toUpperCase() : calVal;
-        const secondaryLabel = heroIsCalories ? 'DURATION' : 'CALORIES';
+        const timeVal = (stats.startTime || '--:--').toUpperCase();
+        const secondaryVal = heroIsCalories ? (stats.timeStr || '0:00').toUpperCase() : timeVal;
+        const secondaryLabel = heroIsCalories ? 'DURATION' : 'START TIME';
 
         metrics = [
             { label: secondaryLabel, val: secondaryVal },
@@ -6134,22 +6177,35 @@ export function drawStudioPrecision(ctx: CanvasRenderingContext2D, stats: any, t
         if (isBike && i === 0) x -= 20;
         if (isBike && i === 1) x += 20;
 
-        ctx.globalAlpha = 0.8;
+        // Safari's text antialiasing makes semi-transparent text look much thicker/darker.
+        // We lower the opacity specifically in Safari to visually match Chrome.
+        ctx.globalAlpha = (typeof isSafari !== 'undefined' && isSafari) ? 0.5 : 0.8;
         ctx.font = `700 28px ${mainFont}`;
-        ctx.fillText(m.label, x, rowY);
+        if (typeof isSafari !== 'undefined' && isSafari) {
+            ctx.textBaseline = 'alphabetic';
+            ctx.fillText(m.label, x, rowY + (28 * 0.76));
+        } else {
+            ctx.textBaseline = 'top';
+            ctx.fillText(m.label, x, rowY);
+        }
 
         ctx.globalAlpha = 1.0;
-        ctx.font = `900 68px ${mainFont}`; // BIGGER
-        
-        // Final sanity check on width for bike KM/H
         let mSize = 68;
-        ctx.font = `900 ${mSize}px ${mainFont}`;
-        while(ctx.measureText(m.val).width > (colW - 10) && mSize > 30) {
+        ctx.font = `900 ${mSize}px ${mainFont}`; // BIGGER
+
+        // Final sanity check on width for bike KM/H
+        while (ctx.measureText(m.val).width > (colW - 10) && mSize > 30) {
             mSize -= 2;
             ctx.font = `900 ${mSize}px ${mainFont}`;
         }
-        
-        ctx.fillText(m.val, x, rowY + 65);
+
+        if (typeof isSafari !== 'undefined' && isSafari) {
+            ctx.textBaseline = 'alphabetic';
+            ctx.fillText(m.val, x, rowY + 65 + (mSize * 0.76));
+        } else {
+            ctx.textBaseline = 'top';
+            ctx.fillText(m.val, x, rowY + 65);
+        }
     });
 
     ctx.restore();
@@ -6162,16 +6218,16 @@ export function drawStudioPrecision(ctx: CanvasRenderingContext2D, stats: any, t
  */
 export function drawManifestList(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
     const mainFont = "'IBM Plex Serif', serif";
-    
+
     // Formatting Helpers
     const toTitleCase = (str: string) => str.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
     const elevPoint = stats.dataPoints?.find(p => p.label.toUpperCase() === 'ELEVATION');
     const calPoint = stats.dataPoints?.find(p => p.label.toUpperCase() === 'ENERGY');
-    
+
     const elevVal = stats.elevation || elevPoint?.value || '0';
     const tempVal = stats.avgTemp || stats.temperature || '0';
-    
+
     const items = [
         { label: 'Distance', val: stats.mainValue || '0.00 km', hide: !stats.hasDistance },
         { label: 'Moving Time', val: stats.timeStr || '0:00' },
@@ -6181,7 +6237,7 @@ export function drawManifestList(ctx: CanvasRenderingContext2D, stats: any, text
         { label: 'Temperature', val: `${tempVal}°C`, hide: !tempVal || tempVal === '0' }
     ].filter(i => !i.hide);
 
-    const startX = 60; 
+    const startX = 60;
     const startY = 200; // More space from Scora logo
     const rowHeight = 125; // Tighter vertical rhythm
 
@@ -6193,7 +6249,7 @@ export function drawManifestList(ctx: CanvasRenderingContext2D, stats: any, text
     // Header (Title Case)
     ctx.font = `700 68px ${mainFont}`;
     ctx.fillText(toTitleCase(stats.title || "Activity"), startX, startY);
-    
+
     // Sub-header: "7:56 AM in Mexico"
     const timeRaw = (stats.startTime || '00:00 AM').toUpperCase();
     const location = stats.location || 'Mexico';
@@ -6213,7 +6269,7 @@ export function drawManifestList(ctx: CanvasRenderingContext2D, stats: any, text
         ctx.globalAlpha = 1.0;
         ctx.font = `700 56px ${mainFont}`; // Slightly smaller value
         ctx.fillText(item.val, startX, currentY + 30); // Tighter gap
-        
+
         currentY += rowHeight;
     });
 

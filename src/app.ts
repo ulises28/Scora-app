@@ -165,7 +165,7 @@ const templateManager = initTemplateManager(async (template, color, showLogo) =>
             }
         }
         */
-        drawTemplate('storyCanvas', currentStats, template, color, showLogo, true);
+        await drawTemplate('storyCanvas', currentStats, template, color, showLogo, true);
     }
 });
 
@@ -194,13 +194,13 @@ function openEditor(stats: any) {
     // We get the raw activity from context or ID if needed.
     const rawActivity = lastActivities.find(a => a.id === stats.id);
     if (rawActivity) {
-        enrichActivityWithGeo(rawActivity, stats).then(smartStats => {
+        enrichActivityWithGeo(rawActivity, stats).then(async smartStats => {
             Object.assign(currentStats, smartStats);
             console.log("[Geo] Smart Enrichment complete:", currentStats.location);
             const nameEl = document.getElementById('selected-activity-name');
             if (nameEl) nameEl.innerText = currentStats.shortTitle ?? currentStats.title;
             // Force redraw with high-fidelity data
-            drawTemplate('storyCanvas', currentStats, templateManager.template, templateManager.color, templateManager.showLogo, true);
+            await drawTemplate('storyCanvas', currentStats, templateManager.template, templateManager.color, templateManager.showLogo, true);
         });
     }
 
@@ -718,7 +718,7 @@ if (btnSync) {
 }
 
 // History Navigation Manager
-window.addEventListener('popstate', (event) => {
+window.addEventListener('popstate', async (event) => {
     stopQueuePolling();
     if (event.state && event.state.screen) {
         showScreen(event.state.screen);
@@ -726,7 +726,7 @@ window.addEventListener('popstate', (event) => {
             currentStats = event.state.stats;
             const nameEl = document.getElementById('selected-activity-name');
             if (nameEl) nameEl.innerText = currentStats.shortTitle ?? currentStats.title;
-            drawTemplate('storyCanvas', currentStats, templateManager.template, templateManager.color, templateManager.showLogo, true);
+            await drawTemplate('storyCanvas', currentStats, templateManager.template, templateManager.color, templateManager.showLogo, true);
         }
     } else {
         showScreen('screen-feed');
