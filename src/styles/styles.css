@@ -356,41 +356,57 @@ canvas { width: 100%; height: 100%; display: block; }
     position: relative;
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 8px;
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 10px;
-    padding: 0 10px 0 6px;
-    height: 28px;
+    background: rgba(20, 20, 20, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 0 12px 0 8px;
+    height: 32px;
     cursor: pointer;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    transition: var(--transit);
-    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05), inset 0 2px 4px rgba(255, 255, 255, 0.02);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.4s ease;
+    overflow: hidden;
 }
 
 .color-picker-wrapper:hover {
-    border-color: rgba(128, 203, 196, 0.3);
-    background: rgba(128, 203, 196, 0.05);
+    background: rgba(30, 30, 30, 0.8);
+    transform: scale(1.02);
+}
+
+.color-picker-wrapper:active {
+    transform: scale(0.98);
 }
 
 .color-swatch {
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
     background: #ffffff;
-    border: 1px solid rgba(255,255,255,0.15);
-    box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
-    transition: var(--transit);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.color-picker-wrapper:hover .color-swatch {
+    transform: scale(1.1);
 }
 
 .hex-value {
-    font-size: 8px;
-    font-weight: 900;
-    color: var(--text);
+    font-size: 10px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.8);
     font-family: 'Space Mono', monospace;
-    letter-spacing: 1px;
+    letter-spacing: 0.5px;
     text-transform: uppercase;
+    transition: opacity 0.3s, color 0.3s;
+}
+
+.color-picker-wrapper:hover .hex-value {
+    opacity: 1;
+    color: #ffffff;
 }
 
 #map-color-picker {

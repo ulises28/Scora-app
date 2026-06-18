@@ -12,14 +12,34 @@ export interface ThemeColors {
 /**
  * Builds a theme palette based on the target text color.
  */
+function hexToRgb(hex: string) {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '255, 255, 255';
+}
+
+function isColorDark(hex: string) {
+    if (!hex.startsWith('#')) return hex === 'black';
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b; // ITU-R BT.709
+    return luma < 128;
+}
+
 export function getThemeColors(textColor: string): ThemeColors {
     const alphaValue = 0.8;
-    const base = textColor === 'black' ? '0, 0, 0' : '255, 255, 255';
+    let base = '255, 255, 255';
+    if (textColor === 'black') base = '0, 0, 0';
+    else if (textColor.startsWith('#')) base = hexToRgb(textColor);
+
+    const isDark = isColorDark(textColor.startsWith('#') ? textColor : (textColor === 'black' ? '#000000' : '#ffffff'));
+    const accent = textColor.startsWith('#') ? textColor : (textColor === 'black' ? '#000000' : '#ffffff');
+
     return {
         solid: `rgb(${base})`,
         trans: `rgba(${base}, ${alphaValue})`,
-        label: textColor === 'black' ? 'rgba(0,0,0,0.75)' : 'rgba(255,255,255,0.75)',
-        accent: '#80cbc4',
+        label: isDark ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.75)',
+        accent: accent,
     };
 }
 
