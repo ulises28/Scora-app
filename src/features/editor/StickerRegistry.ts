@@ -19,6 +19,7 @@ export const ACTIVE_STICKER_LIST: StickerDefinition[] = [
     { id: 'graffiti-expo', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { map: true }, render: Renderers.drawGraffitiExpo },
 
     { id: 'graffiti-brand', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, duration: true, paceSpeed: true, alwaysShowDuration: true }, expectedLabels: ['KILOMETERS', 'TOTAL DURATION', 'PACE', 'AVG. SPEED'], render: Renderers.drawGraffitiBrand },
+    { id: 'stacked-editorial', supportsCustomColor: true, category: 'distance', supportsBlackText: true, features: { distance: true, paceSpeed: true, map: true }, render: Renderers.drawStackedEditorial },
     { id: 'editorial-strip', supportsCustomColor: true, category: 'all', supportsBlackText: false, compact: true, features: { distance: true, duration: true, date: true }, render: Renderers.drawEditorialStrip },
     { id: 'science-pro', category: 'all', supportsBlackText: false, features: { distance: true, heartRate: true, date: true, paceSpeed: false }, render: Renderers.drawSciencePro },
     { id: 'narrative-highlight', category: 'all', supportsBlackText: true, preferredCase: 'lowercase', features: { distance: true, duration: true, paceSpeed: true, date: true, location: true }, render: Renderers.drawNarrativeHighlight },
@@ -32,7 +33,6 @@ export const ACTIVE_STICKER_LIST: StickerDefinition[] = [
     { id: 'boxed-metric', supportsCustomColor: true, category: 'distance', supportsBlackText: true, compact: true, features: { distance: true, duration: true }, render: Renderers.drawBoxedMetric },
     { id: 'condesa-stack', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, paceSpeed: true, startTime: true, date: true }, expectedMetadata: ['location', 'LOCAL TIME', 'LOCATION'], render: Renderers.drawCondesaStack },
     { id: 'split-badge', category: 'all', supportsBlackText: false, compact: true, features: { distance: true, paceSpeed: true, duration: true }, render: Renderers.drawSplitBadge },
-    { id: 'stacked-editorial', supportsCustomColor: true, category: 'distance', supportsBlackText: true, features: { distance: true, paceSpeed: true, map: true }, render: Renderers.drawStackedEditorial },
     { id: 'micro-serif', supportsCustomColor: true, category: 'distance', supportsBlackText: true, features: { distance: true, paceSpeed: true, map: true }, render: Renderers.drawMicroSerif },
     { id: 'vhs-retro', category: 'distance', supportsBlackText: false, features: { distance: true, date: true, startTime: true }, render: Renderers.drawVHSRetro },
     { id: 'editorial-row', category: 'all', supportsBlackText: true, features: { distance: true, paceSpeed: true, heartRate: true }, render: Renderers.drawEditorialRow },

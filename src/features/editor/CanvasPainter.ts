@@ -3049,46 +3049,68 @@ export function drawCondesaStack(ctx: CanvasRenderingContext2D, stats: any, text
 // ─── New Stickers Support Helpers ──────────────────────────────────────────
 
 export function drawStackedEditorial(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
-    const { s1, hasMap } = getDynamicStats(stats);
-    const cx = 540;
+    const { s1, s2, s3, hasMap } = getDynamicStats(stats);
+    // The user's selected color drives the map. Text is always white.
+    const { accent: accentColor } = buildColors(textColor);
     
-    const dateObj = stats.rawDate ? new Date(stats.rawDate) : new Date();
-    const dayLabel = (stats.dayName || dateObj.toLocaleDateString('en-US', { weekday: 'long' })).toUpperCase();
+    const cx = 540;
+    const safeW = 960;
+    
+    // Parse the day name from the raw date
+    const dateStrRaw = stats.rawDate || '';
+    const rawDate = dateStrRaw ? new Date(dateStrRaw.replace('Z', '')) : new Date();
+    const dayLabel = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(rawDate).toUpperCase();
 
     ctx.save();
-    applyAntiGhostingShadow(ctx, textColor);
     
-    // 1. Giant Day Name at Top
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.font = `900 180px 'Inter', sans-serif`;
-    ctx.fillStyle = 'white';
-    
-    let titleFontSize = 180;
-    while (ctx.measureText(dayLabel).width > 960 && titleFontSize > 50) {
-        titleFontSize -= 5;
-        ctx.font = `900 ${titleFontSize}px 'Inter', sans-serif`;
-    }
-    ctx.fillText(dayLabel, cx, 450);
-    
-    // 2. Giant Distance at Bottom
-    ctx.font = `900 200px 'Inter', sans-serif`;
-    const distText = s1.value + ' ' + s1.label;
-    
-    let distFontSize = 200;
-    while (ctx.measureText(distText).width > 960 && distFontSize > 50) {
-        distFontSize -= 5;
-        ctx.font = `900 ${distFontSize}px 'Inter', sans-serif`;
-    }
-    ctx.fillText(distText, cx, 1450);
+    // NO SHADOWS - pure flat editorial style
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
 
-    // 3. Map Route (Middle)
+    // 1. Map Route (Drawn FIRST so it's behind text)
     if (hasMap && stats.polyline) {
-        drawRoutePath(ctx, stats.polyline, cx, 950, 800, {
-            color: textColor, // The exact selected color
+        drawRoutePath(ctx, stats.polyline, cx, 930, 800, {
+            color: accentColor, // Only the map changes color!
             strokeWidth: 20
         });
     }
+    
+    const mainFont = "'Archivo Black', sans-serif";
+    ctx.fillStyle = '#ffffff'; // Text is permanently white
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
+
+    // 2. Giant Day Name at Top (Squeezed down to y=750)
+    // Scale to fill exactly 960px
+    ctx.font = `900 100px ${mainFont}`;
+    const topW = Math.max(1, ctx.measureText(dayLabel).width);
+    let topSize = Math.floor(100 * (safeW / topW));
+    if (!isFinite(topSize) || topSize > 400) topSize = 400; // Cap height
+    
+    ctx.font = `900 ${topSize}px ${mainFont}`;
+    ctx.fillText(dayLabel, cx, 750);
+    
+    // 3. Giant Distance at Bottom (Squeezed up to y=1150)
+    const valText = String(s1.value);
+    const unitText = String(s1.label);
+    const distText = `${valText} ${unitText}`;
+    
+    ctx.font = `900 100px ${mainFont}`;
+    const botW = Math.max(1, ctx.measureText(distText).width);
+    let botSize = Math.floor(100 * (safeW / botW));
+    if (!isFinite(botSize) || botSize > 400) botSize = 400; // Cap height
+    
+    ctx.font = `900 ${botSize}px ${mainFont}`;
+    ctx.fillText(distText, cx, 1150);
+
+    // 4. Sub-Metrics (Directly below distance)
+    const subText = `${s2.value} ${s2.label}   /   ${s3.value} ${s3.label}`.toUpperCase();
+    ctx.font = `900 36px ${mainFont}`;
+    // Force sub-metrics to be white too, per instruction: "the letter should stay white"
+    ctx.fillStyle = '#ffffff'; 
+    if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "4px";
+    ctx.fillText(subText, cx, 1220);
+    if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "0px";
 
     ctx.restore();
 }
