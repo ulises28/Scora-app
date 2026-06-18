@@ -1,0 +1,2975 @@
+diff --git a/src/features/editor/CanvasPainter.ts b/src/features/editor/CanvasPainter.ts
+index 8499e9e..647be46 100644
+--- a/src/features/editor/CanvasPainter.ts
++++ b/src/features/editor/CanvasPainter.ts
+@@ -95,6 +95,15 @@ function buildColors(textColor: string) {
+     };
+ }
+ 
++export function applyAntiGhostingShadow(ctx: CanvasRenderingContext2D, textColor: string) {
++    const isDark = isColorDark(textColor.startsWith('#') ? textColor : (textColor === 'black' ? '#000000' : '#ffffff'));
++    ctx.shadowOffsetX = 0;
++    ctx.shadowOffsetY = 6;
++    ctx.shadowBlur = 25;
++    ctx.shadowColor = isDark ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.45)';
++}
++
++
+ 
+ /**
+  * Draws the Scora Activity Icons (Run, Bike, Workout) using Canvas Paths.
+@@ -1199,10 +1208,10 @@ export function drawScoraStealth(ctx, stats, textColor) {
+     ctx.fillText(paceText, rightX - pUnitW, bottomY);
+ }
+ 
+-export function drawInfoGlass(ctx, stats, textColor) {
+-    const c = buildColors(textColor);
++export function drawInfoGlass(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
++    const { solid, trans, label: labelColor, accent: accentColor } = buildColors(textColor);
+     ctx.textBaseline = 'middle';
+-    const sysFont = "'Plus Jakarta Sans', sans-serif";
++    const sysFont = "'Outfit', sans-serif";
+ 
+     // Fallbacks
+     const distLabel = stats.hasDistance ? "DISTANCE" : "DURATION";
+@@ -1221,66 +1230,84 @@ export function drawInfoGlass(ctx, stats, textColor) {
+     const startX = (1080 - w) / 2;
+     const centerY = 300;
+ 
++    ctx.save();
++    applyAntiGhostingShadow(ctx, textColor);
++
++    // Dynamic glassmorphic container with custom accent highlights
+     ctx.beginPath();
+-    ctx.roundRect(startX, centerY - h / 2, w, h, 40);
+-    ctx.fillStyle = textColor === 'black' ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.15)';
++    ctx.roundRect(startX, centerY - h / 2, w, h, 24);
++    ctx.fillStyle = textColor === 'black' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(28, 28, 30, 0.7)';
+     ctx.fill();
+-    ctx.strokeStyle = textColor === 'black' ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.2)';
+-    ctx.lineWidth = 2;
++    ctx.strokeStyle = textColor === 'black' ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.15)';
++    ctx.lineWidth = 1.5;
+     ctx.stroke();
+ 
+     const col1 = startX + w / 6;
+     const col2 = startX + w / 2;
+     const col3 = startX + 5 * w / 6;
+ 
+-    ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
+     ctx.textAlign = 'center';
++    ctx.shadowBlur = 0;
++    ctx.shadowOffsetY = 0;
+ 
+-    ctx.font = `800 22px ${sysFont}`;
+-    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.6)';
+-    ctx.fillText(distLabel, col1, centerY - 25);
+-    ctx.font = `900 60px ${sysFont}`;
+-    ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
+-
+-    // Add Units to main value
+-    const distWithUnit = stats.hasDistance ? `${distText} KM` : distText;
+-    ctx.fillText(distWithUnit, col1, centerY + 30);
+-
++    // Divider columns
+     ctx.beginPath();
+-    ctx.moveTo(startX + w / 3, centerY - 60);
+-    ctx.lineTo(startX + w / 3, centerY + 60);
+-    ctx.moveTo(startX + 2 * w / 3, centerY - 60);
+-    ctx.lineTo(startX + 2 * w / 3, centerY + 60);
+-    ctx.strokeStyle = textColor === 'black' ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.15)';
++    ctx.moveTo(startX + w / 3, centerY - 50);
++    ctx.lineTo(startX + w / 3, centerY + 50);
++    ctx.moveTo(startX + 2 * w / 3, centerY - 50);
++    ctx.lineTo(startX + 2 * w / 3, centerY + 50);
++    ctx.strokeStyle = textColor === 'black' ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.1)';
++    ctx.lineWidth = 1;
+     ctx.stroke();
+ 
+-    ctx.font = `800 22px ${sysFont}`;
+-    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.6)';
+-    ctx.fillText(paceLabel, col2, centerY - 25);
+-    ctx.font = `900 60px ${sysFont}`;
+-    ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
++    // Column 1
++    ctx.font = `800 13px ${sysFont}`;
++    ctx.fillStyle = accentColor;
++    setLetterSpacing(ctx, '2px');
++    ctx.fillText(distLabel, col1, centerY - 30);
++    setLetterSpacing(ctx, '0px');
++
++    ctx.font = `900 44px ${sysFont}`;
++    ctx.fillStyle = textColor;
++    const distWithUnit = stats.hasDistance ? `${distText} KM` : distText;
++    ctx.fillText(distWithUnit, col1, centerY + 20);
++
++    // Column 2
++    ctx.font = `800 13px ${sysFont}`;
++    ctx.fillStyle = accentColor;
++    setLetterSpacing(ctx, '2px');
++    ctx.fillText(paceLabel, col2, centerY - 30);
++    setLetterSpacing(ctx, '0px');
+ 
+-    // Add Units to pace/HR value
++    ctx.font = `900 44px ${sysFont}`;
++    ctx.fillStyle = textColor;
+     const paceUnit = stats.hasDistance ? (stats.type === 'Ride' ? 'KM/H' : '/KM') : 'BPM';
+     const paceWithUnit = `${paceText} ${paceUnit}`;
+-    ctx.fillText(paceWithUnit, col2, centerY + 30);
++    ctx.fillText(paceWithUnit, col2, centerY + 20);
+ 
+-    ctx.font = `800 22px ${sysFont}`;
+-    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.6)';
+-    ctx.fillText(timeLabel, col3, centerY - 25);
+-    ctx.font = `900 60px ${sysFont}`;
+-    ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
++    // Column 3
++    ctx.font = `800 13px ${sysFont}`;
++    ctx.fillStyle = accentColor;
++    setLetterSpacing(ctx, '2px');
++    ctx.fillText(timeLabel, col3, centerY - 30);
++    setLetterSpacing(ctx, '0px');
+ 
+-    // Time/Max HR unit logic
++    ctx.font = `900 44px ${sysFont}`;
++    ctx.fillStyle = textColor;
+     const timeUnit = stats.hasDistance ? '' : 'BPM';
+     const timeWithUnit = timeUnit ? `${timeText} ${timeUnit}` : timeText;
+-    ctx.fillText(timeWithUnit, col3, centerY + 30);
++    ctx.fillText(timeWithUnit, col3, centerY + 20);
++
++    ctx.restore();
+ }
+ 
+-export function drawSplitBadge(ctx, stats, textColor) {
+-    const sysFont = "'Plus Jakarta Sans', sans-serif";
+-    ctx.textBaseline = 'middle';
+-    ctx.textAlign = 'center';
++export function drawSplitBadge(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
++    const { accent: accentColor } = buildColors(textColor);
++    const isDarkAccent = isColorDark(accentColor);
++    const sysFont = "'Outfit', sans-serif";
++
++    ctx.save();
++    applyAntiGhostingShadow(ctx, textColor);
+ 
+     const distLabel = stats.mainLabel || (stats.hasDistance ? "DISTANCE" : "DURATION");
+     const distText = stats.hasDistance ? (stats.distanceVal || '0.00') : (stats.timeStr || '0:00');
+@@ -1292,102 +1319,139 @@ export function drawSplitBadge(ctx, stats, textColor) {
+     let paceUnit = paceParts[1] ? paceParts[1].toUpperCase() : (stats.hasDistance ? 'MIN / KM' : 'BPM');
+     if (paceUnit === '/KM') paceUnit = 'MIN / KM';
+ 
+-    const centerY = 960;
++    const centerY = 1680;
+     const centerX = 540;
+ 
+-    ctx.save();
+     ctx.translate(centerX, centerY);
+-    ctx.rotate(-2 * Math.PI / 180);
+ 
+-    const w = 350;
+-    const h = 260;
+-
+-    ctx.shadowColor = 'rgba(0,0,0,0.3)';
+-    ctx.shadowBlur = 40;
+-    ctx.shadowOffsetY = 20;
++    const w = 270; // Total width is 540 (w * 2)
++    const h = 130; // Total height is 130
+ 
++    // Left Side Background (Accent Color)
+     ctx.beginPath();
+-    ctx.roundRect(-w, -h / 2, w, h, [40, 0, 0, 40]);
+-    ctx.fillStyle = '#f97316';
++    ctx.roundRect(-w, -h / 2, w, h, [20, 0, 0, 20]);
++    ctx.fillStyle = accentColor;
+     ctx.fill();
+ 
++    // Right Side Background (Solid Contrast)
++    const isLightTextTheme = textColor === 'black';
++    const rightBg = isLightTextTheme ? '#ffffff' : '#1c1c1e';
+     ctx.beginPath();
+-    ctx.roundRect(0, -h / 2, w, h, [0, 40, 40, 0]);
+-    ctx.fillStyle = 'white';
++    ctx.roundRect(0, -h / 2, w, h, [0, 20, 20, 0]);
++    ctx.fillStyle = rightBg;
+     ctx.fill();
+ 
+-    ctx.restore();
++    // Text Baseline and alignment
++    ctx.textBaseline = 'middle';
++    ctx.textAlign = 'center';
++    ctx.shadowBlur = 0;
++    ctx.shadowOffsetY = 0;
+ 
+-    ctx.save();
+-    ctx.translate(centerX, centerY);
+-    ctx.rotate(-2 * Math.PI / 180);
++    // --- LEFT SIDE TEXT ---
++    ctx.fillStyle = isDarkAccent ? '#ffffff' : '#111111';
+ 
+-    ctx.fillStyle = 'black';
+-    ctx.font = `900 30px ${sysFont}`;
+-    ctx.fillText(distLabel, -w / 2, -60);
+-    ctx.font = `900 100px ${sysFont}`;
+-    ctx.fillText(distText, -w / 2, 10);
+-    ctx.font = `800 25px ${sysFont}`;
+-    ctx.fillText(distUnit, -w / 2, 80);
+-
+-    ctx.fillStyle = '#ea580c';
+-    ctx.font = `900 30px ${sysFont}`;
+-    ctx.fillText(paceLabel, w / 2, -60);
+-    ctx.font = `900 100px ${sysFont}`;
+-    ctx.fillText(paceText, w / 2, 10);
+-    ctx.font = `800 25px ${sysFont}`;
+-    ctx.fillText(paceUnit, w / 2, 80);
++    // Label
++    ctx.font = `800 13px ${sysFont}`;
++    setLetterSpacing(ctx, '2px');
++    ctx.fillText(distLabel.toUpperCase(), -w / 2, -28);
++
++    // Value
++    ctx.font = `900 44px ${sysFont}`;
++    setLetterSpacing(ctx, '0px');
++    ctx.fillText(distText, -w / 2, 12);
++
++    // Unit
++    if (distUnit) {
++        ctx.font = `800 10px ${sysFont}`;
++        setLetterSpacing(ctx, '1px');
++        ctx.fillText(distUnit, -w / 2, 45);
++    }
++
++    // --- RIGHT SIDE TEXT ---
++    ctx.fillStyle = isLightTextTheme ? '#111111' : '#ffffff';
++
++    // Label
++    ctx.font = `800 13px ${sysFont}`;
++    setLetterSpacing(ctx, '2px');
++    ctx.fillText(paceLabel, w / 2, -28);
++
++    // Value
++    ctx.font = `900 44px ${sysFont}`;
++    setLetterSpacing(ctx, '0px');
++    ctx.fillText(paceText, w / 2, 12);
++
++    // Unit
++    ctx.font = `800 10px ${sysFont}`;
++    setLetterSpacing(ctx, '1px');
++    ctx.fillText(paceUnit, w / 2, 45);
++    setLetterSpacing(ctx, '0px');
+ 
+     ctx.restore();
+ }
+ 
+ 
+ export function drawBrutalistBold(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+-    const sysFont = "'Plus Jakarta Sans', sans-serif";
+-    const p = stats.dataPoints || [];
+-    const main = p[0] || { value: '0.00', label: 'Dist', unit: 'km' };
+-    const p2 = p[1] || { value: '0:00', label: 'Pace', unit: '' };
++    const { solid, trans, label: labelColor, accent: accentColor } = buildColors(textColor);
++    const sysFont = "'Outfit', sans-serif";
+ 
+     const cx = 540;
+     const cy = 1750;
+-    const w = 940;
+-    const h = 280;
++    const w = 920;
++    const h = 240;
++
++    const isWorkout = stats.type?.toLowerCase().includes('workout') || stats.type?.toLowerCase().includes('training') || stats.type?.toLowerCase().includes('gym') || !stats.hasDistance;
++    const isRide = stats.type === 'Ride' || stats.type === 'EBikeRide';
++
++    const mainVal = (isWorkout ? (stats.timeStr || '0:00') : (stats.distanceVal || '0.00')).toUpperCase();
++    const mainUnit = isWorkout ? 'DURATION' : 'KM';
++
++    const paceLabel = isWorkout ? "HEART RATE" : (isRide ? "AVG SPEED" : "PACE");
++    const paceVal = isWorkout ? (stats.avgHeartrate ? `${stats.avgHeartrate} BPM` : 'WORKOUT') : (stats.subValue || '0:00 /KM').toUpperCase();
+ 
+-    // "Rectangle background should have a little transparency"
+     ctx.save();
+-    ctx.translate(cx, cy);
++    applyAntiGhostingShadow(ctx, textColor);
+ 
+-    // Main background with transparency
+-    ctx.fillStyle = textColor === 'black' ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.85)';
+-    ctx.fillRect(-w / 2, -h / 2, w, h);
++    // Main background with glass transparency
++    ctx.fillStyle = textColor === 'black' ? 'rgba(255, 255, 255, 0.85)' : 'rgba(28, 28, 30, 0.75)';
++    ctx.beginPath();
++    ctx.roundRect(cx - w / 2, cy - h / 2, w, h, 16);
++    ctx.fill();
++
++    ctx.strokeStyle = textColor === 'black' ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.15)';
++    ctx.lineWidth = 1.5;
++    ctx.stroke();
+ 
+-    // Accent line (left)
+-    ctx.fillStyle = '#ff3b30'; // Red accent
+-    ctx.fillRect(-w / 2, -h / 2, 10, h);
++    ctx.fillStyle = accentColor;
++    ctx.beginPath();
++    ctx.roundRect(cx - w / 2 + 15, cy - h / 2 + 20, 10, h - 40, 5);
++    ctx.fill();
+ 
+-    // Data - Left Column
++    ctx.shadowBlur = 0;
++    ctx.shadowOffsetY = 0;
+     ctx.textAlign = 'left';
+     ctx.textBaseline = 'middle';
+-    ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
++    ctx.fillStyle = textColor;
+ 
+-    ctx.font = `italic 900 120px ${sysFont}`;
+-    const mainVal = main.value;
+-    ctx.fillText(mainVal, -w / 2 + 50, -20);
++    ctx.font = `italic 900 85px ${sysFont}`;
++    ctx.fillText(mainVal, cx - w / 2 + 50, cy - 10);
+     const mainW = ctx.measureText(mainVal).width;
+ 
+-    ctx.font = `800 32px ${sysFont}`;
+-    ctx.globalAlpha = 1.0; // "without opacity"
+-    ctx.fillText((main.unit || main.label).toUpperCase(), -w / 2 + 65 + mainW, 10);
++    ctx.font = `800 20px ${sysFont}`;
++    ctx.fillStyle = accentColor;
++    setLetterSpacing(ctx, '2px');
++    ctx.fillText(mainUnit, cx - w / 2 + 70 + mainW, cy + 10);
++    setLetterSpacing(ctx, '0px');
+ 
+-    // Data - Right Column
+     ctx.textAlign = 'right';
+-    ctx.font = `900 85px ${sysFont}`;
+-    ctx.fillText(p2.value, w / 2 - 50, -20);
+-
+-    ctx.font = `800 24px ${sysFont}`;
+-    const fullPaceLabel = `${p2.label}${p2.unit ? ` (${p2.unit})` : ''}`.toUpperCase();
+-    ctx.fillText(fullPaceLabel, w / 2 - 50, 45);
++    ctx.fillStyle = textColor;
++    ctx.font = `italic 900 56px ${sysFont}`;
++    ctx.fillText(paceVal, w / 2 + cx - 50, cy - 10);
+ 
++    ctx.font = `800 13px ${sysFont}`;
++    ctx.fillStyle = accentColor;
++    setLetterSpacing(ctx, '2px');
++    ctx.fillText(paceLabel, w / 2 + cx - 50, cy + 35);
++    setLetterSpacing(ctx, '0px');
+     ctx.restore();
+ }
+ 
+@@ -1438,18 +1502,19 @@ export function drawTechHUD(ctx, stats, textColor) {
+     ctx.letterSpacing = "0px";
+ }
+ 
+-export function drawDataModular(ctx, stats, textColor) {
+-    const sysFont = "'Plus Jakarta Sans', sans-serif";
++export function drawDataModular(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
++    const { solid, trans, label: labelColor, accent: accentColor } = buildColors(textColor);
++    const sysFont = "'Outfit', sans-serif";
+     ctx.textBaseline = 'alphabetic';
+ 
+-    const distLabel = (stats.mainLabel || (stats.hasDistance ? "DISTANCE" : "DURATION")).toUpperCase();
+-    const distText = stats.hasDistance ? (stats.distanceVal || '0.00') : (stats.timeStr || '0:00');
++    const isWorkout = stats.type?.toLowerCase().includes('workout') || stats.type?.toLowerCase().includes('training') || stats.type?.toLowerCase().includes('gym') || !stats.hasDistance;
++    const isRide = stats.type === 'Ride' || stats.type === 'EBikeRide';
+ 
+-    const paceLabel = (stats.subLabel || (stats.hasDistance ? (stats.type === 'Ride' ? "Avg Speed" : "Pace") : "Avg HR")).toUpperCase();
+-    const paceParts = (stats.subValue || '').trim().split(' ');
+-    const paceText = paceParts[0] || (stats.avgHeartrate ? String(stats.avgHeartrate) : '0');
+-    let paceUnit = paceParts[1] || (stats.hasDistance ? (stats.type === 'Ride' ? 'KM/H' : '/KM') : 'BPM');
+-    if (paceUnit.toLowerCase() === 'min/km') paceUnit = '/KM';
++    const distLabel = (isWorkout ? "DURATION" : "DISTANCE").toUpperCase();
++    const distText = isWorkout ? (stats.timeStr || '0:00') : `${stats.distanceVal || '0.00'} KM`;
++
++    const paceLabel = (isWorkout ? "HEART RATE" : (isRide ? "AVG SPEED" : "PACE")).toUpperCase();
++    const paceVal = isWorkout ? (stats.avgHeartrate ? `${stats.avgHeartrate} BPM` : 'WORKOUT') : (stats.subValue || 'N/A').toUpperCase();
+ 
+     const cx = 540;
+     const cy = 1600;
+@@ -1458,6 +1523,7 @@ export function drawDataModular(ctx, stats, textColor) {
+     const r = 32;
+ 
+     ctx.save();
++    applyAntiGhostingShadow(ctx, textColor);
+ 
+     // Main boundary path for clipping and border
+     ctx.beginPath();
+@@ -1475,10 +1541,10 @@ export function drawDataModular(ctx, stats, textColor) {
+     const startY = cy - h / 2;
+ 
+     // Inner panel styles (Swiss Grid uses dark boxes inside a colored border/gap frame)
+-    const panelBg = textColor === 'black' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.4)'; // Slightly more transparent
+-    const bottomBg = textColor === 'black' ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.05)';
++    const panelBg = textColor === 'black' ? 'rgba(255,255,255,0.8)' : 'rgba(28, 28, 30, 0.7)';
++    const bottomBg = textColor === 'black' ? 'rgba(255,255,255,0.95)' : 'rgba(28, 28, 30, 0.9)';
+ 
+-    // Top Left Panel (Sharp rects! Clipping handles the outer curve)
++    // Top Left Panel
+     ctx.fillStyle = panelBg;
+     ctx.fillRect(startX, startY, w / 2 - 0.5, topH);
+ 
+@@ -1489,44 +1555,48 @@ export function drawDataModular(ctx, stats, textColor) {
+     ctx.fillStyle = bottomBg;
+     ctx.fillRect(startX, startY + topH + 1, w, botH);
+ 
++    ctx.shadowBlur = 0;
++    ctx.shadowOffsetY = 0;
++
+     // Text for Top Left
+     ctx.textAlign = 'left';
+-    ctx.fillStyle = '#22d3ee';
+-    ctx.font = `900 18px ${sysFont}`;
+-    ctx.letterSpacing = "2px";
+-    ctx.fillText(distLabel, startX + 50, startY + 50);
++    ctx.fillStyle = accentColor;
++    ctx.font = `800 13px ${sysFont}`;
++    setLetterSpacing(ctx, "3px");
++    ctx.fillText(distLabel, startX + 50, startY + 55);
+ 
+-    ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
+-    ctx.font = `italic 900 70px ${sysFont}`;
+-    ctx.letterSpacing = "0px";
++    ctx.fillStyle = textColor;
++    ctx.font = `italic 900 60px ${sysFont}`;
++    setLetterSpacing(ctx, "0px");
+     ctx.fillText(distText, startX + 50, startY + 130);
+ 
+     // Text for Top Right
+-    ctx.fillStyle = '#22d3ee';
+-    ctx.font = `900 18px ${sysFont}`;
+-    ctx.letterSpacing = "2px";
+-    ctx.fillText(paceLabel, startX + w / 2 + 50, startY + 50);
++    ctx.fillStyle = accentColor;
++    ctx.font = `800 13px ${sysFont}`;
++    setLetterSpacing(ctx, "3px");
++    ctx.fillText(paceLabel, startX + w / 2 + 50, startY + 55);
+ 
+-    ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
+-    ctx.font = `italic 900 70px ${sysFont}`;
+-    ctx.letterSpacing = "0px";
+-    ctx.fillText(`${paceText} ${paceUnit}`.toUpperCase(), startX + w / 2 + 50, startY + 130);
++    ctx.fillStyle = textColor;
++    ctx.font = `italic 900 60px ${sysFont}`;
++    setLetterSpacing(ctx, "0px");
++    ctx.fillText(paceVal, startX + w / 2 + 50, startY + 130);
+ 
+     // Text for Bottom
+     ctx.textAlign = 'center';
+     ctx.textBaseline = 'middle';
+-    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.85)';
+-    ctx.font = `900 14px ${sysFont}`;
+-    ctx.letterSpacing = "6px";
++    ctx.fillStyle = textColor;
++    ctx.font = `800 13px ${sysFont}`;
++    setLetterSpacing(ctx, "4px");
+     ctx.fillText("SCORA PERFORMANCE LOG", cx + 3, startY + topH + 1 + botH / 2);
++    setLetterSpacing(ctx, "0px");
+ 
+     ctx.restore();
+ 
+     // Draw the outer border over everything
+     ctx.beginPath();
+     ctx.roundRect(cx - w / 2, cy - h / 2, w, h, r);
+-    ctx.lineWidth = 1;
+-    ctx.strokeStyle = textColor === 'black' ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.3)';
++    ctx.lineWidth = 2;
++    ctx.strokeStyle = textColor === 'black' ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.15)';
+     ctx.stroke();
+ }
+ 
+@@ -1904,111 +1974,167 @@ export function drawTrackGraphic(ctx, x, y, w, h) {
+ }
+ 
+ export function drawWorkoutReceipt(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+-    const sysFont = "'Plus Jakarta Sans', sans-serif";
+     const monoFont = "'Space Mono', monospace";
+-    const p = stats.dataPoints || [];
+ 
+     const cx = 540;
+     const cy = 1100;
+     const w = 640;
+-    const h = 750;
++    const h = 820;
++
++    const isWorkout = stats.type?.toLowerCase().includes('workout') || stats.type?.toLowerCase().includes('training') || stats.type?.toLowerCase().includes('gym') || !stats.hasDistance;
++    const isRide = stats.type === 'Ride' || stats.type === 'EBikeRide';
+ 
+     ctx.save();
+     ctx.translate(cx, cy);
+-    ctx.rotate(-1.5 * Math.PI / 180); // -1.5deg rotation
++    ctx.rotate(-1.5 * Math.PI / 180); // Classic slightly skewed receipt print
+ 
+-    // Shadow
+-    ctx.shadowBlur = 40;
+-    ctx.shadowColor = 'rgba(0,0,0,0.2)';
++    // 1. Physical Paper Shadow
++    ctx.shadowBlur = 45;
++    ctx.shadowColor = 'rgba(0,0,0,0.18)';
+     ctx.shadowOffsetY = 20;
+ 
+-    // Thermal Background (Yellow)
+-    ctx.fillStyle = '#facc15';
+-    ctx.fillRect(-w / 2, -h / 2, w, h);
++    // 2. Programmatic Serrated Zig-zag Paper Edges
++    const zigZagHeight = 12;
++    const teethCount = 36;
++    const toothWidth = w / teethCount;
++
++    ctx.beginPath();
++    // Top Edge
++    ctx.moveTo(-w / 2, -h / 2 + zigZagHeight);
++    for (let i = 0; i <= teethCount; i++) {
++        const x = -w / 2 + i * toothWidth;
++        const y = -h / 2 + (i % 2 === 0 ? 0 : zigZagHeight);
++        ctx.lineTo(x, y);
++    }
++    // Right Edge
++    ctx.lineTo(w / 2, h / 2 - zigZagHeight);
++    // Bottom Edge
++    for (let i = teethCount; i >= 0; i--) {
++        const x = -w / 2 + i * toothWidth;
++        const y = h / 2 - (i % 2 === 0 ? 0 : zigZagHeight);
++        ctx.lineTo(x, y);
++    }
++    // Left Edge
++    ctx.lineTo(-w / 2, -h / 2 + zigZagHeight);
++    ctx.closePath();
++
++    ctx.fillStyle = '#f5f4f0'; // Warm cream paper
++    ctx.fill();
+ 
+-    // Completely clear shadow so inner text has no shadow bleeding
++    // 3. Clear shadows for text rendering
+     ctx.shadowBlur = 0;
+     ctx.shadowOffsetY = 0;
+     ctx.shadowColor = 'transparent';
+ 
+-    // Header Line
++    // 4. Header Details
++    ctx.fillStyle = '#111111';
++    ctx.textAlign = 'center';
++
++    ctx.font = `800 32px ${monoFont}`;
++    ctx.fillText("SCORA SPORT CORP.", 0, -h / 2 + 75);
++
++    ctx.font = `700 18px ${monoFont}`;
++    ctx.fillText("WORKOUT SUMMARY RECEIPT", 0, -h / 2 + 110);
++
++    // Header Divider
++    ctx.lineWidth = 2;
++    ctx.strokeStyle = '#111111';
++    ctx.beginPath();
++    ctx.moveTo(-w / 2 + 50, -h / 2 + 140);
++    ctx.lineTo(w / 2 - 50, -h / 2 + 140);
++    ctx.stroke();
++
++    // Store Info Lines
+     ctx.textAlign = 'left';
+-    ctx.fillStyle = 'black';
++    ctx.font = `700 16px ${monoFont}`;
++    const dateStr = (stats.date || 'TODAY').toUpperCase();
++    const timeStr = (stats.startTime || '00:00 AM').toUpperCase();
++    ctx.fillText(`DATE: ${dateStr}`, -w / 2 + 50, -h / 2 + 175);
++    ctx.fillText(`TIME: ${timeStr}`, -w / 2 + 50, -h / 2 + 205);
++    ctx.fillText(`TYPE: ${normalizeSport(stats.type || 'RUN').toUpperCase()}`, -w / 2 + 50, -h / 2 + 235);
++
++    // Double Divider
++    ctx.beginPath();
++    ctx.moveTo(-w / 2 + 50, -h / 2 + 260); ctx.lineTo(w / 2 - 50, -h / 2 + 260);
++    ctx.moveTo(-w / 2 + 50, -h / 2 + 266); ctx.lineTo(w / 2 - 50, -h / 2 + 266);
++    ctx.stroke();
+ 
+-    // Day and Number Day (Requested)
+-    const dateStr = (stats.dayAndNumber || stats.date || '').toUpperCase();
+-    ctx.font = `900 24px ${monoFont}`;
+-    if (typeof ctx.letterSpacing !== 'undefined') ctx.letterSpacing = "10px";
+-    ctx.fillText(dateStr, -w / 2 + 60, -h / 2 + 80);
+-    ctx.letterSpacing = "0px";
++    // 5. Line Items (Dotted Leaders)
++    const lineYStart = -h / 2 + 315;
++    const rowGap = 70;
+ 
+-    // Header divider
+-    ctx.globalAlpha = 0.1;
+-    ctx.fillRect(-w / 2 + 60, -h / 2 + 105, w - 120, 4);
+-    ctx.globalAlpha = 1.0;
++    const drawReceiptLine = (label: string, value: string, y: number) => {
++        ctx.font = `700 22px ${monoFont}`;
++        ctx.fillStyle = '#111111';
++        ctx.textAlign = 'left';
++        ctx.fillText(label, -w / 2 + 50, y);
+ 
+-    // Main Row: Distance
+-    const main = p[0] || { value: '0.00', unit: 'km' };
+-    ctx.save();
+-    ctx.font = `700 24px ${monoFont}`;
+-    ctx.globalAlpha = 0.4;
+-    ctx.fillText("DISTANCE", -w / 2 + 60, -h / 2 + 200);
++        ctx.textAlign = 'right';
++        ctx.fillText(value, w / 2 - 50, y);
+ 
+-    ctx.textAlign = 'right';
+-    ctx.globalAlpha = 1.0;
+-    ctx.font = `italic 900 85px ${sysFont}`;
+-    ctx.fillText(`${main.value} ${main.unit || ''}`, w / 2 - 60, -h / 2 + 200);
+-    ctx.restore();
++        // Compute and draw dotted leaders
++        ctx.textAlign = 'left';
++        const labelW = ctx.measureText(label).width;
++        const valW = ctx.measureText(value).width;
++        const startX = -w / 2 + 50 + labelW + 10;
++        const endX = w / 2 - 50 - valW - 10;
++
++        let dotStr = "";
++        while (ctx.measureText(dotStr + ".").width < (endX - startX)) {
++            dotStr += ".";
++        }
++        ctx.fillText(dotStr, startX, y);
++    };
+ 
+-    // Sub Row 1: Average
+-    const pace = p[1] || { value: '0:00', unit: '/km' };
+-    ctx.save();
+-    ctx.globalAlpha = 0.1;
+-    ctx.fillRect(-w / 2 + 60, -h / 2 + 260, w - 120, 2);
+-    ctx.globalAlpha = 0.4;
+-    ctx.font = `700 24px ${monoFont}`;
+-    ctx.fillText("AVERAGE", -w / 2 + 60, -h / 2 + 330);
++    // Extract values based on activity context
++    const distLabel = isWorkout ? "DURATION" : "DISTANCE";
++    const distText = isWorkout ? (stats.timeStr || '0:00') : `${stats.distanceVal || '0.00'} KM`;
+ 
+-    ctx.textAlign = 'right';
+-    ctx.globalAlpha = 1.0;
+-    ctx.font = `italic 900 50px ${sysFont}`;
+-    ctx.fillText(`${pace.value} ${pace.unit || ''}`, w / 2 - 60, -h / 2 + 330);
+-    ctx.restore();
++    const paceLabel = isWorkout ? "HEART RATE" : (isRide ? "AVG SPEED" : "PACE");
++    const paceText = isWorkout ? (stats.avgHeartrate ? `${stats.avgHeartrate} BPM` : 'N/A') : (stats.subValue || 'N/A').toUpperCase();
+ 
+-    // Sub Row 2: Duration
+-    const duration = p[2] || { value: '0:00' };
+-    ctx.save();
+-    ctx.globalAlpha = 0.1;
+-    ctx.fillRect(-w / 2 + 60, -h / 2 + 390, w - 120, 2);
+-    ctx.globalAlpha = 0.4;
+-    ctx.font = `700 24px ${monoFont}`;
+-    ctx.fillText("DURATION", -w / 2 + 60, -h / 2 + 460);
++    const energyLabel = isWorkout ? "CALORIES" : "DURATION";
++    const energyText = isWorkout ? (stats.calories ? `${stats.calories} KCAL` : 'N/A') : (stats.timeStr || 'N/A').toUpperCase();
+ 
+-    ctx.textAlign = 'right';
+-    ctx.globalAlpha = 1.0;
+-    ctx.font = `italic 900 50px ${sysFont}`;
+-    ctx.fillText(duration.value, w / 2 - 60, -h / 2 + 460);
+-    ctx.restore();
++    drawReceiptLine(distLabel, distText, lineYStart);
++    drawReceiptLine(paceLabel, paceText, lineYStart + rowGap);
++    drawReceiptLine(energyLabel, energyText, lineYStart + rowGap * 2);
+ 
+-    // Footer - Dashed divider
+-    ctx.save();
+-    ctx.setLineDash([10, 10]);
+-    ctx.strokeStyle = 'rgba(0,0,0,0.1)';
+-    ctx.lineWidth = 4;
++    // Location line
++    const locLabel = "LOCATION";
++    const locText = (stats.location || 'OUTDOORS').toUpperCase().substring(0, 16);
++    drawReceiptLine(locLabel, locText, lineYStart + rowGap * 3);
++
++    // Barcode Divider
++    ctx.setLineDash([5, 5]);
+     ctx.beginPath();
+-    ctx.moveTo(-w / 2 + 60, h / 2 - 120);
+-    ctx.lineTo(w / 2 - 60, h / 2 - 120);
++    ctx.moveTo(-w / 2 + 50, lineYStart + rowGap * 3 + 55);
++    ctx.lineTo(w / 2 - 50, lineYStart + rowGap * 3 + 55);
+     ctx.stroke();
++    ctx.setLineDash([]);
+ 
+-    ctx.textAlign = 'center';
+-    ctx.font = `900 18px ${monoFont}`;
+-    ctx.globalAlpha = 0.3;
+-    if (typeof ctx.letterSpacing !== 'undefined') ctx.letterSpacing = "15px";
++    // 6. Draw barcode
++    const barcodeY = h / 2 - 150;
++    const barcodeH = 65;
++    const barcodeW = w - 180;
++    const startX = -barcodeW / 2;
+ 
+-    // Replace branding with activity name
+-    const footerText = (stats.shortTitle || stats.title || 'SCORA RECORD').toUpperCase().substring(0, 22);
+-    ctx.fillText(footerText, 0 + 7.5, h / 2 - 60);
+-    ctx.restore();
++    ctx.fillStyle = '#111111';
++    let currX = startX;
++    // Deterministic bars
++    const bars = [3, 1, 4, 1, 2, 3, 1, 4, 2, 1, 3, 2, 1, 4, 1, 2, 3, 1, 4, 2, 1, 3, 2];
++    for (let i = 0; i < bars.length; i++) {
++        const barW = bars[i] * 3.5;
++        const gapW = ((i % 4) + 1.5) * 3;
++        ctx.fillRect(currX, barcodeY, barW, barcodeH);
++        currX += barW + gapW;
++    }
++
++    // Barcode serial label
++    ctx.textAlign = 'center';
++    ctx.font = `700 15px ${monoFont}`;
++    const activityId = stats.id ? String(stats.id).substring(0, 12).toUpperCase() : 'FIT-REC-99';
++    ctx.fillText(`*SC-${activityId}*`, 0, barcodeY + barcodeH + 25);
+ 
+     ctx.restore();
+ }
+@@ -2070,106 +2196,153 @@ export function drawEssentialItalic(ctx: CanvasRenderingContext2D, stats: any, t
+ }
+ 
+ export function drawObsidianBar(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+-    const sysFont = "'Plus Jakarta Sans', sans-serif";
+-    const p = stats.dataPoints || [];
+-    const p1 = p[0] || { value: '0.00', label: 'Dist', unit: 'km' };
+-    const p2 = p[1] || { value: '0:00', label: 'Pace', unit: '' };
+-    const p3 = p[2] || { value: '0m', label: 'Time', unit: '' };
++    const { solid, trans, label: labelColor, accent: accentColor } = buildColors(textColor);
++    const sysFont = "'Outfit', sans-serif";
+ 
+     const cx = 540;
+     const cy = 1750;
+     const barW = 880;
+     const barH = 160;
++    const radius = 24;
+ 
+-    // Background - solid pill (user asked for no opacity)
+-    ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
+-    const radius = 20;
++    const isWorkout = stats.type?.toLowerCase().includes('workout') || stats.type?.toLowerCase().includes('training') || stats.type?.toLowerCase().includes('gym') || !stats.hasDistance;
++    const isRide = stats.type === 'Ride' || stats.type === 'EBikeRide';
++
++    const p1Label = isWorkout ? "DURATION" : "DISTANCE";
++    const p1Value = isWorkout ? (stats.timeStr || '0:00') : `${stats.distanceVal || '0.00'} KM`;
++
++    const p2Label = isWorkout ? "HEART RATE" : (isRide ? "AVG SPEED" : "PACE");
++    const p2Value = isWorkout ? (stats.avgHeartrate ? `${stats.avgHeartrate} BPM` : 'N/A') : (stats.subValue || 'N/A').toUpperCase();
++
++    const p3Label = isWorkout ? "ENERGY" : "DURATION";
++    const p3Value = isWorkout ? (stats.calories ? `${stats.calories} KCAL` : 'N/A') : (stats.timeStr || 'N/A').toUpperCase();
++
++    ctx.save();
++    applyAntiGhostingShadow(ctx, textColor);
++
++    // Glass backdrop container
++    ctx.fillStyle = textColor === 'black' ? 'rgba(255, 255, 255, 0.85)' : 'rgba(28, 28, 30, 0.75)';
+     ctx.beginPath();
+     ctx.roundRect(cx - barW / 2, cy - barH / 2, barW, barH, radius);
+     ctx.fill();
+ 
+-    const drawCell = (data: any, x: number) => {
++    ctx.strokeStyle = textColor === 'black' ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.15)';
++    ctx.lineWidth = 1.5;
++    ctx.stroke();
++
++    // Subtle vertical dividers between columns
++    ctx.strokeStyle = textColor === 'black' ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.1)';
++    ctx.beginPath();
++    ctx.moveTo(cx - barW / 6, cy - 40);
++    ctx.lineTo(cx - barW / 6, cy + 40);
++    ctx.moveTo(cx + barW / 6, cy - 40);
++    ctx.lineTo(cx + barW / 6, cy + 40);
++    ctx.stroke();
++
++    ctx.shadowBlur = 0;
++    ctx.shadowOffsetY = 0;
++
++    const drawCell = (val: string, label: string, x: number) => {
+         ctx.save();
+         ctx.translate(x, cy);
+         ctx.textAlign = 'center';
+         ctx.textBaseline = 'middle';
+ 
+-        // Main Value
+-        ctx.fillStyle = textColor === 'black' ? 'white' : 'black';
+-        ctx.font = `600 55px ${sysFont}`;
+-        ctx.fillText(data.value, 0, -20);
++        // Label
++        ctx.fillStyle = accentColor;
++        ctx.font = `800 13px ${sysFont}`;
++        setLetterSpacing(ctx, "3px");
++        ctx.fillText(label, 0, -25);
++        setLetterSpacing(ctx, "0px");
++
++        // Value
++        ctx.fillStyle = textColor;
++        ctx.font = `italic 900 42px ${sysFont}`;
++        ctx.fillText(val, 0, 20);
+ 
+-        ctx.font = `800 24px ${sysFont}`;
+-        if (typeof ctx.letterSpacing !== 'undefined') ctx.letterSpacing = "6px";
+-        const labelText = (data.unit || data.label).toUpperCase();
+-        ctx.fillText(labelText, 0, 35);
+         ctx.restore();
+     };
+ 
+-    drawCell(p1, cx - 280);
+-    drawCell(p2, cx);
+-    drawCell(p3, cx + 280);
++    drawCell(p1Value, p1Label, cx - 280);
++    drawCell(p2Value, p2Label, cx);
++    drawCell(p3Value, p3Label, cx + 280);
++
++    ctx.restore();
+ }
+ 
+ export function drawModernPill(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+-    const sysFont = "'Plus Jakarta Sans', sans-serif";
+-    const p = stats.dataPoints || [];
+-    const main = p[0] || { value: '0.00', label: 'Dist', unit: 'km' };
+-    const sub = p[1] || { value: '0:00', label: 'Pace', unit: '/km' };
++    const { solid, trans, label: labelColor, accent: accentColor } = buildColors(textColor);
++    const sysFont = "'Outfit', sans-serif";
+ 
+     const cx = 540;
+     const cy = 1750;
+     const w = 920;
+-    const h = 200;
+-    const radius = 100; // Full pill caps
+-
+-    ctx.save();
++    const h = 160;
++    const radius = 80;
+ 
+-    // 1. Black/Glass Background
++    const isWorkout = stats.type?.toLowerCase().includes('workout') || stats.type?.toLowerCase().includes('training') || stats.type?.toLowerCase().includes('gym') || !stats.hasDistance;
++    const isRide = stats.type === 'Ride' || stats.type === 'EBikeRide';
++
++    const p1Label = isWorkout ? "DURATION" : "DISTANCE";
++    const p1Value = isWorkout ? (stats.timeStr || '0:00') : (stats.distanceVal || '0.00');
++    const p1Unit = isWorkout ? '' : 'KM';
++
++    const p2Label = isWorkout ? "HEART RATE" : (isRide ? "AVG SPEED" : "PACE");
++    const p2Value = isWorkout ? (stats.avgHeartrate ? `${stats.avgHeartrate}` : 'N/A') : (stats.subValue || 'N/A').split(' ')[0];
++    const p2Unit = isWorkout ? 'BPM' : (stats.subValue || '').split(' ')[1] || (isRide ? 'KM/H' : '/KM');
++
++    ctx.save();
++    applyAntiGhostingShadow(ctx, textColor);
++
++    // 1. Glass Backdrop Container
+     ctx.beginPath();
+     ctx.roundRect(cx - w / 2, cy - h / 2, w, h, radius);
+-    ctx.fillStyle = 'rgba(0,0,0,0.6)'; // Matching React's bg-black/60
++    ctx.fillStyle = textColor === 'black' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(28, 28, 30, 0.7)';
+     ctx.fill();
+ 
+-    // Border
+-    ctx.strokeStyle = 'rgba(255,255,255,0.1)'; // white/10%
+-    ctx.lineWidth = 2;
++    ctx.strokeStyle = textColor === 'black' ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.15)';
++    ctx.lineWidth = 1.5;
+     ctx.stroke();
+ 
+-    // 2. Data
++    ctx.shadowBlur = 0;
++    ctx.shadowOffsetY = 0;
++
++    // 2. Data Left Half
+     ctx.textBaseline = 'middle';
+     ctx.textAlign = 'left';
+-    ctx.fillStyle = 'white';
++    ctx.fillStyle = textColor;
+ 
+-    // Main Stat (Distance)
+-    ctx.font = `italic 900 130px ${sysFont}`; // text-5xl equivalent on canvas
+-    const valText = main.value;
+-    const valW = ctx.measureText(valText).width;
+-    ctx.fillText(valText, cx - w / 2 + 80, cy - 10);
++    // Left value
++    ctx.font = `italic 900 85px ${sysFont}`;
++    ctx.fillText(p1Value, cx - w / 2 + 70, cy - 12);
++    const valW = ctx.measureText(p1Value).width;
+ 
+-    // Main Unit
+-    ctx.font = `900 20px ${sysFont}`; // text-[9px] equivalent
+-    ctx.fillStyle = 'rgba(255,255,255,0.2)'; // white/20%
+-    if (typeof ctx.letterSpacing !== 'undefined') ctx.letterSpacing = "8px";
+-    ctx.fillText((main.unit || main.label).toUpperCase(), cx - w / 2 + 80, cy + 60);
+-    ctx.letterSpacing = "0px";
++    // Left unit
++    ctx.font = `800 13px ${sysFont}`;
++    ctx.fillStyle = accentColor;
++    setLetterSpacing(ctx, "3px");
++    ctx.fillText(`${p1Label} ${p1Unit}`, cx - w / 2 + 70, cy + 38);
++    setLetterSpacing(ctx, "0px");
+ 
+-    // Separator Line
+-    ctx.fillStyle = 'rgba(255,255,255,0.1)';
+-    ctx.fillRect(cx - w / 2 + 80 + valW + 50, cy - 40, 2, 80);
++    // Middle Separator Line
++    ctx.strokeStyle = textColor === 'black' ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.1)';
++    ctx.lineWidth = 1.5;
++    ctx.beginPath();
++    ctx.moveTo(cx - w / 2 + 70 + valW + 40, cy - 35);
++    ctx.lineTo(cx - w / 2 + 70 + valW + 40, cy + 35);
++    ctx.stroke();
+ 
+-    // Sub Stat (Pace)
+-    ctx.fillStyle = 'rgba(255,255,255,0.8)'; // white/80%
+-    ctx.font = `italic 900 85px ${sysFont}`; // text-3xl
+-    const subX = cx - w / 2 + 80 + valW + 110;
+-    ctx.fillText(sub.value, subX, cy - 10);
++    // 3. Data Right Half
++    const subX = cx - w / 2 + 70 + valW + 80;
++    ctx.fillStyle = textColor;
++    ctx.font = `italic 900 68px ${sysFont}`;
++    ctx.fillText(p2Value, subX, cy - 12);
+ 
+-    // Sub Unit (PACE label)
+-    ctx.font = `900 20px ${sysFont}`;
+-    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+-    if (typeof ctx.letterSpacing !== 'undefined') ctx.letterSpacing = "8px";
+-    ctx.fillText((sub.label || sub.unit || "PACE").toUpperCase(), subX, cy + 60);
+-    ctx.letterSpacing = "0px";
++    ctx.font = `800 13px ${sysFont}`;
++    ctx.fillStyle = accentColor;
++    setLetterSpacing(ctx, "3px");
++    ctx.fillText(`${p2Label} ${p2Unit}`.toUpperCase(), subX, cy + 38);
++    setLetterSpacing(ctx, "0px");
+ 
+     ctx.restore();
+ }
+@@ -2205,47 +2378,85 @@ export function drawTrackRecord(ctx: CanvasRenderingContext2D, stats: any, textC
+ 
+ 
+ export function drawMonoSplit(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+-    const sysFont = "'Plus Jakarta Sans', sans-serif";
+-    const p = stats.dataPoints || [];
+-    const p1 = p[0] || { value: '0.00', label: 'Dist', unit: 'km' };
+-    const p2 = p[1] || { value: '0:00', label: 'Pace', unit: '/km' };
++    const { solid, trans, label: labelColor, accent: accentColor } = buildColors(textColor);
++    const isDarkAccent = isColorDark(accentColor);
++    const sysFont = "'Outfit', sans-serif";
+ 
+     const cx = 540;
+     const cy = 1750;
+-    const w = 880;
+-    const h = 160;
+-    const radius = 20;
++    const w = 800; // slightly more compact
++    const h = 140; // slightly more compact
++    const radius = 24;
+ 
+-    // Left Half (White)
++    const isWorkout = stats.type?.toLowerCase().includes('workout') || stats.type?.toLowerCase().includes('training') || stats.type?.toLowerCase().includes('gym') || !stats.hasDistance;
++    const isRide = stats.type === 'Ride' || stats.type === 'EBikeRide';
++
++    const p1Value = (isWorkout ? (stats.timeStr || '0:00') : (stats.distanceVal || '0.00')).toUpperCase();
++    const p1Label = isWorkout ? 'DURATION' : 'DISTANCE';
++    const p1Unit = isWorkout ? '' : 'KM';
++
++    const p2Value = (isWorkout ? (stats.avgHeartrate ? `${stats.avgHeartrate}` : (stats.calories ? `${stats.calories}` : 'WORKOUT')) : (stats.subValue || '0:00').split(' ')[0]).toUpperCase();
++    const p2Label = isWorkout ? (stats.avgHeartrate ? 'HEART RATE' : 'CALORIES') : (isRide ? 'AVG SPEED' : 'PACE');
++    const p2Unit = isWorkout ? (stats.avgHeartrate ? 'BPM' : 'KCAL') : (stats.subValue || '').split(' ')[1] || '/KM';
++
++    ctx.save();
++    applyAntiGhostingShadow(ctx, textColor);
++
++    // 1. Left Half Background (Accent Color)
+     ctx.beginPath();
+     ctx.roundRect(cx - w / 2, cy - h / 2, w / 2, h, [radius, 0, 0, radius]);
+-    ctx.fillStyle = textColor === 'black' ? 'white' : 'black';
++    ctx.fillStyle = accentColor;
+     ctx.fill();
+ 
+-    // Right Half (Black/Transparent)
++    // 2. Right Half Background (Theme Contrast)
++    const isLightTextTheme = textColor === 'black';
++    const rightBg = isLightTextTheme ? '#ffffff' : '#1c1c1e';
+     ctx.beginPath();
+     ctx.roundRect(cx, cy - h / 2, w / 2, h, [0, radius, radius, 0]);
+-    ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
++    ctx.fillStyle = rightBg;
+     ctx.fill();
+ 
+-    // Left Data
+-    ctx.textAlign = 'center';
++    // Draw container border
++    ctx.strokeStyle = textColor === 'black' ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.12)';
++    ctx.lineWidth = 1.5;
++    ctx.beginPath();
++    ctx.roundRect(cx - w / 2, cy - h / 2, w, h, radius);
++    ctx.stroke();
++
+     ctx.textBaseline = 'middle';
+-    ctx.fillStyle = textColor === 'black' ? 'black' : 'white';
+-    ctx.font = `600 55px ${sysFont}`;
+-    ctx.fillText(p1.value, cx - w / 4, cy - 20);
+-    ctx.font = `800 24px ${sysFont}`;
+-    if (typeof ctx.letterSpacing !== 'undefined') ctx.letterSpacing = "6px";
+-    ctx.fillText((p1.unit || p1.label).toUpperCase(), cx - w / 4, cy + 35);
+-
+-    // Right Data
+-    ctx.fillStyle = textColor === 'black' ? 'white' : 'black';
+-    ctx.font = `600 55px ${sysFont}`;
+-    ctx.fillText(p2.value, cx + w / 4, cy - 20);
+-    ctx.font = `800 24px ${sysFont}`;
+-    if (typeof ctx.letterSpacing !== 'undefined') ctx.letterSpacing = "6px";
+-    ctx.fillText(p2.label.toUpperCase(), cx + w / 4, cy + 35);
+-    ctx.letterSpacing = "0px";
++    ctx.textAlign = 'center';
++    ctx.shadowBlur = 0;
++    ctx.shadowOffsetY = 0;
++
++    // --- LEFT SIDE DATA ---
++    ctx.fillStyle = isDarkAccent ? '#ffffff' : '#111111';
++    
++    // Value
++    ctx.font = `italic 900 52px ${sysFont}`;
++    const leftValStr = p1Unit ? `${p1Value} ${p1Unit}` : p1Value;
++    ctx.fillText(leftValStr, cx - w / 4, cy - 18);
++
++    // Label
++    ctx.font = `800 13px ${sysFont}`;
++    setLetterSpacing(ctx, '3px');
++    ctx.fillText(p1Label, cx - w / 4, cy + 30);
++
++    // --- RIGHT SIDE DATA ---
++    ctx.fillStyle = isLightTextTheme ? '#111111' : '#ffffff';
++
++    // Value
++    ctx.font = `italic 900 52px ${sysFont}`;
++    const rightValStr = p2Unit ? `${p2Value} ${p2Unit}` : p2Value;
++    setLetterSpacing(ctx, '0px');
++    ctx.fillText(rightValStr, cx + w / 4, cy - 18);
++
++    // Label
++    ctx.font = `800 13px ${sysFont}`;
++    setLetterSpacing(ctx, '3px');
++    ctx.fillText(p2Label, cx + w / 4, cy + 30);
++    setLetterSpacing(ctx, '0px');
++
++    ctx.restore();
+ }
+ 
+ export function drawEditorialArchive(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+@@ -2723,9 +2934,10 @@ export function drawNarrativeHighlight(ctx: CanvasRenderingContext2D, stats: any
+         if (highlight) {
+             ctx.save();
+             ctx.fillStyle = highlightColor;
+-            const hH = baseFontSize * 1.05; // Thicker highlight
+-            // Slightly irregular highlight for "marker" feel
+-            ctx.fillRect(x - 8, y - hH / 2 + 5, width + 16, hH);
++            const hH = baseFontSize * 0.85; // Perfect marker proportions
++            ctx.beginPath();
++            ctx.roundRect(x - 8, y - hH / 2, width + 16, hH, 8); // Elegant rounded highlighter cap
++            ctx.fill();
+             ctx.restore();
+         }
+         ctx.fillStyle = textCol;
+@@ -2755,89 +2967,104 @@ export function drawNarrativeHighlight(ctx: CanvasRenderingContext2D, stats: any
+  * Uses stacked metrics with high-contrast typography and specific sub-labels.
+  */
+ export function drawCondesaStack(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+-    const cy = 960;
+-    const startX = 110; // Studio Standard Left Alignment
+-    const rightCol = 580;
+-
+-    // 1. Unified Sizing Constants (v13.0 Solid Unification)
+-    const HEADER_SIZE = 90;
+-    const DATA_SIZE = 65; // Universal scale for all metrics
+-    const UNIT_SIZE = 24;
+-    const UNIT_OFFSET = 100;
+-    const ROW_GAP = 220;
++    const { solid, trans, label: labelColor, accent: accentColor } = buildColors(textColor);
+ 
+-    const isDarkStr = textColor === 'white';
+-    const baseColor = isDarkStr ? '#FFFFFF' : '#000000'; // 100% Solid
++    const boxX = 80;
++    const boxY = 1450;
++    const boxW = 920;
++    const boxH = 360;
+ 
+-    // 2. Data Intelligence
+-    const rawDate = stats.rawDate ? new Date(stats.rawDate) : new Date();
+-    const weekday = new Intl.DateTimeFormat('es-ES', { weekday: 'long' }).format(rawDate).toUpperCase();
+-    const dayNum = rawDate.getDate().toString().padStart(2, '0');
+-    const startTimeResult = (stats.startTime || '10:24 PM').toUpperCase();
+     const isWorkout = stats.type?.toLowerCase().includes('workout') || stats.type?.toLowerCase().includes('training') || stats.type?.toLowerCase().includes('gym') || !stats.hasDistance;
+-    const distValueResult = isWorkout ? (stats.timeStr || '0m') : (stats.distanceVal || '0.00');
+-    const distUnitResult = isWorkout ? 'DURATION' : (parseFloat(distValueResult) === 1 ? 'KILOMETER' : 'KILOMETERS');
+-    const paceValueResult = (stats.subValue || '').split(' ')[0] || '0:00';
+-    const paceUnitResult = (stats.subValue || '').split(' ')[1] || (stats.type === 'Ride' ? 'KM/H' : '/KM');
+-    const paceLabelResult = (stats.subLabel || (stats.type === 'Ride' ? 'Avg Speed' : 'Pace')).toUpperCase();
+-    const locationNameResult = (stats.location || 'MEXICO').toUpperCase();
+-
+-    // 3. Rendering Engine
++    const isRide = stats.type === 'Ride' || stats.type === 'EBikeRide';
++
+     ctx.save();
++    applyAntiGhostingShadow(ctx, textColor);
+ 
+-    // NO SHADOWS, NO TRANSPARENCY - 100% FLAT STICKER LOOK
+-    ctx.shadowColor = 'transparent';
+-    ctx.shadowBlur = 0;
+-    ctx.shadowOffsetX = 0;
+-    ctx.shadowOffsetY = 0;
++    // 1. Draw rounded container (condesa stack card)
++    ctx.strokeStyle = textColor === 'black' ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.15)';
++    ctx.lineWidth = 2;
++    ctx.fillStyle = textColor === 'black' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(28, 28, 30, 0.75)';
++    ctx.beginPath();
++    ctx.roundRect(boxX, boxY, boxW, boxH, 16); // 16px corner radius
++    ctx.fill();
++    ctx.stroke();
+ 
+-    ctx.textAlign = 'left';
+-    ctx.textBaseline = 'top';
+-    ctx.fillStyle = baseColor;
++    // Data Intelligence
++    const dateObj = stats.rawDate ? new Date(stats.rawDate) : new Date();
++    const dayLabel = (stats.dayName || dateObj.toLocaleDateString('en-US', { weekday: 'long' })).toUpperCase();
++    const dayNum = String(dateObj.getDate()).padStart(2, '0');
++    const monthLabel = dateObj.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
++    const headerTitle = `${dayLabel} ${dayNum} ${monthLabel}`;
+ 
+-    function renderSolidItem(text: string, x: number, y: number, size: number, weight = '900', spacing = '-0.05em') {
+-        ctx.font = `${weight} ${size}px 'Inter', sans-serif`;
+-        (ctx as any).letterSpacing = spacing;
+-        ctx.fillText(text, x, y);
+-    }
++    const startTimeVal = (stats.startTime || '10:24 PM').toUpperCase();
++    const distVal = isWorkout ? (stats.timeStr || '0:00') : (stats.distanceVal || '0.00');
++    const distLabel = isWorkout ? 'DURATION' : 'DISTANCE';
++    const distUnit = isWorkout ? '' : 'KM';
+ 
+-    function renderSolidUnit(text: string, x: number, y: number) {
+-        ctx.font = `800 ${UNIT_SIZE}px 'Inter', sans-serif`;
+-        (ctx as any).letterSpacing = "0.15em";
+-        ctx.fillText(text, x, y);
+-    }
++    const paceLabel = isWorkout ? 'HEART RATE' : (isRide ? 'AVG SPEED' : 'PACE');
++    const paceVal = isWorkout ? (stats.avgHeartrate ? `${stats.avgHeartrate} BPM` : 'N/A') : (stats.subValue || 'N/A').toUpperCase();
++    const locationVal = (stats.location || 'MEXICO').toUpperCase();
++
++    // 2. Render Header (EB Garamond)
++    ctx.textAlign = 'left';
++    ctx.textBaseline = 'top';
++    ctx.fillStyle = textColor;
++    ctx.font = `italic 700 38px 'EB Garamond', serif`;
++    ctx.fillText(headerTitle, boxX + 45, boxY + 45);
+ 
+-    let currY = cy - 500;
++    // Subtle horizontal divider under header
++    ctx.strokeStyle = textColor === 'black' ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.1)';
++    ctx.lineWidth = 1;
++    ctx.beginPath();
++    ctx.moveTo(boxX + 45, boxY + 105);
++    ctx.lineTo(boxX + boxW - 45, boxY + 105);
++    ctx.stroke();
+ 
+-    // A. HEADER: DAY + NUMBER (Solid & Identical)
+-    renderSolidItem(weekday, startX, currY, HEADER_SIZE, '800', '-0.06em');
+-    currY += 90;
+-    renderSolidItem(dayNum, startX, currY, HEADER_SIZE, '800', '-0.06em');
+-    currY += 240;
++    // 3. Grid Columns (2x2 Grid)
++    const col1X = boxX + 45;
++    const col2X = boxX + boxW / 2 + 15;
++    const row1Y = boxY + 130;
++    const row2Y = boxY + 235;
+ 
+-    // B. GRID ROW 1: TIME | DISTANCE
+-    renderSolidItem(startTimeResult, startX, currY, DATA_SIZE, '900', '-0.05em');
+-    renderSolidUnit("LOCAL TIME", startX, currY + UNIT_OFFSET);
++    const drawGridItem = (x: number, y: number, label: string, val: string, unit = '') => {
++        ctx.textAlign = 'left';
++        ctx.textBaseline = 'top';
+ 
+-    renderSolidItem(distValueResult, rightCol, currY, DATA_SIZE, '900', '-0.05em');
+-    renderSolidUnit(distUnitResult, rightCol, currY + UNIT_OFFSET);
++        // Label (Outfit)
++        ctx.fillStyle = accentColor;
++        ctx.font = `800 13px 'Outfit', sans-serif`;
++        setLetterSpacing(ctx, '2px');
++        ctx.fillText(label, x, y);
++        setLetterSpacing(ctx, '0px');
+ 
+-    currY += ROW_GAP;
++        // Value (EB Garamond / Outfit pairing)
++        ctx.fillStyle = textColor;
++        ctx.font = `italic 700 38px 'EB Garamond', serif`;
++        const displayVal = unit ? `${val} ` : val;
++        ctx.fillText(displayVal, x, y + 25);
+ 
+-    // C. GRID ROW 2: PACE | LOCATION
+-    renderSolidItem(paceValueResult, startX, currY, DATA_SIZE, '900', '-0.05em');
+-    renderSolidUnit(`${paceLabelResult} (${paceUnitResult})`, startX, currY + UNIT_OFFSET);
++        if (unit) {
++            const valW = ctx.measureText(displayVal).width;
++            ctx.font = `800 15px 'Outfit', sans-serif`;
++            ctx.fillStyle = trans;
++            ctx.fillText(unit, x + valW, y + 45);
++        }
++    };
+ 
+-    // Location with Smart Scaling
+-    const locMaxW = 400; // Available space in the right column
+-    ctx.font = `900 ${DATA_SIZE}px 'Inter', sans-serif`;
+-    let locFontSize = DATA_SIZE;
+-    const locWidth = ctx.measureText(locationNameResult).width;
+-    if (locWidth > locMaxW) {
+-        locFontSize = Math.floor(DATA_SIZE * (locMaxW / locWidth));
++    // Row 1
++    drawGridItem(col1X, row1Y, "LOCAL TIME", startTimeVal);
++    drawGridItem(col2X, row1Y, distLabel, distVal, distUnit);
++
++    // Row 2
++    drawGridItem(col1X, row2Y, paceLabel, paceVal);
++    // Location with auto-scale
++    const locMaxW = 380;
++    ctx.font = `italic 700 38px 'EB Garamond', serif`;
++    let locVal = locationVal;
++    if (ctx.measureText(locVal).width > locMaxW) {
++        locVal = locVal.substring(0, 16) + '…';
+     }
+-    renderSolidItem(locationNameResult, rightCol, currY, locFontSize, '900', '-0.05em');
+-    renderSolidUnit("LOCATION", rightCol, currY + UNIT_OFFSET);
++    drawGridItem(col2X, row2Y, "LOCATION", locVal);
+ 
+     ctx.restore();
+ }
+@@ -2973,57 +3200,79 @@ export function drawThinPath(ctx: CanvasRenderingContext2D, stats: any, textColo
+     const { s1, s2, s3, hasMap } = getDynamicStats(stats);
+ 
+     const cx = 540;
+-    const cy = 1000;
+-    const serifFont = "'Playfair Display', serif";
+-    const sansFont = "'Plus Jakarta Sans', sans-serif";
++    const cardY = 1380;
++    const cardH = 450;
++    const cy = cardY + cardH / 2; // 1605
++    const serifFont = "'EB Garamond', serif";
++    const sansFont = "'Outfit', sans-serif";
+ 
+     ctx.save();
+-    // 1. Header (Top, Small Sans, Wide)
+-    ctx.font = `800 24px ${sansFont}`;
+-    ctx.fillStyle = colors.label;
+-    ctx.globalAlpha = 0.6;
+-    setLetterSpacing(ctx, "0.5em");
+-    ctx.fillText((stats.title || "Activity").toUpperCase(), cx, cy - 400);
+-    setLetterSpacing(ctx, "0px");
+-    ctx.globalAlpha = 1.0;
++    applyAntiGhostingShadow(ctx, textColor);
+ 
+-    // 2. Map Backdrop (Massive) - Only if exists
+-    if (hasMap) {
+-        ctx.globalAlpha = 0.45; // Increased visibility from 0.2
+-        drawRoutePath(ctx, stats.polyline, cx, cy, 600, {
+-            color: colors.solid,
+-            strokeWidth: 2
++    // 1. Draw rounded glass background panel
++    ctx.strokeStyle = textColor === 'black' ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.15)';
++    ctx.lineWidth = 2;
++    ctx.fillStyle = textColor === 'black' ? 'rgba(255, 255, 255, 0.75)' : 'rgba(28, 28, 30, 0.7)';
++    ctx.beginPath();
++    ctx.roundRect(80, cardY, 920, cardH, 24);
++    ctx.fill();
++    ctx.stroke();
++
++    // Clip route map within the card boundary so it doesn't bleed out
++    ctx.save();
++    ctx.beginPath();
++    ctx.roundRect(80, cardY, 920, cardH, 24);
++    ctx.clip();
++
++    // 2. Map Backdrop (Thicker & contained)
++    if (hasMap && stats.polyline) {
++        ctx.globalAlpha = 0.85; // High visibility
++        drawRoutePath(ctx, stats.polyline, cx, cy, 380, {
++            color: textColor === 'black' ? 'rgba(0, 0, 0, 0.18)' : 'rgba(255, 255, 255, 0.22)',
++            strokeWidth: 6
+         });
+         ctx.globalAlpha = 1.0;
+     }
++    ctx.restore(); // end clip
++
++    // 3. Header (Top of card)
++    ctx.font = `800 20px ${sansFont}`;
++    ctx.fillStyle = textColor === 'black' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(255, 255, 255, 0.6)';
++    setLetterSpacing(ctx, "0.4em");
++    ctx.fillText((stats.title || "Activity").toUpperCase(), cx, cardY + 50);
++    setLetterSpacing(ctx, "0px");
++
++    // 4. Hero Value (EB Garamond / Outfit pairing)
++    let vFontSize = 140;
++    ctx.font = `italic 800 ${vFontSize}px ${serifFont}`;
++    const valText = s1.value;
++    const unitText = s1.label;
+ 
+-    // 3. Hero Value - Dynamic scaling for large distances (Studio Precision)
+-    let vFontSize = 480;
+-    ctx.font = `italic 500 ${vFontSize}px ${serifFont}`;
+-    const vWidth = ctx.measureText(s1.value).width;
+-    ctx.font = `italic 700 80px ${serifFont}`;
+-    const uWidth = ctx.measureText(s1.label).width;
+-    const totalW = vWidth + 30 + uWidth;
++    const valWidth = ctx.measureText(valText).width;
++    ctx.font = `800 32px ${sansFont}`;
++    const unitWidth = ctx.measureText(unitText).width;
++    const totalW = valWidth + 15 + unitWidth;
+ 
+-    if (totalW > 960) {
+-        vFontSize = Math.floor(vFontSize * (960 / totalW));
++    const maxW = 800;
++    if (totalW > maxW) {
++        vFontSize = Math.floor(vFontSize * (maxW / totalW));
+     }
+ 
+-    drawStatWithUnit(ctx, cx, cy, s1.value, s1.label, {
+-        valueFont: `italic 500 ${vFontSize}px ${serifFont}`,
+-        unitFont: `italic 700 ${Math.max(40, Math.floor(vFontSize * 0.16))}px ${serifFont}`,
+-        valueColor: colors.solid,
+-        unitColor: colors.trans,
+-        gap: Math.max(10, Math.floor(vFontSize * 0.06)),
++    drawStatWithUnit(ctx, cx, cy - 10, valText, unitText, {
++        valueFont: `italic 800 ${vFontSize}px ${serifFont}`,
++        unitFont: `800 ${Math.max(24, Math.floor(vFontSize * 0.22))}px ${sansFont}`,
++        valueColor: textColor,
++        unitColor: textColor === 'black' ? 'rgba(0, 0, 0, 0.6)' : 'rgba(255, 255, 255, 0.7)',
++        gap: 15,
+         align: 'center'
+     });
+ 
+-    // 4. Footer Row - Increased visibility
+-    const footY = cy + 300;
+-    ctx.font = `italic 500 60px ${serifFont}`;
+-    ctx.fillStyle = colors.solid; // Solid
+-    setLetterSpacing(ctx, "0.15em");
+-    const footerText = `${s2.value} ${s2.label} / ${s3.value} ${s3.label}`;
++    // 5. Footer Row (EB Garamond Italic numbers / Outfit labels)
++    const footY = cardY + cardH - 60;
++    ctx.font = `italic 700 36px ${serifFont}`;
++    ctx.fillStyle = textColor;
++    setLetterSpacing(ctx, "0.05em");
++    const footerText = `${s2.value} ${s2.label}   /   ${s3.value} ${s3.label}`;
+     ctx.fillText(footerText.toUpperCase(), cx, footY);
+     setLetterSpacing(ctx, "0px");
+ 
+@@ -3454,45 +3703,66 @@ export function drawPureMap(ctx: CanvasRenderingContext2D, stats: any, textColor
+ export function drawProVertical(ctx: CanvasRenderingContext2D, stats: any, textColor = 'white') {
+     const c = buildColors(textColor);
+ 
+-    ctx.textAlign = 'left';
+-    ctx.textBaseline = 'alphabetic';
++    const boxX = 80;
++    const boxY = 1380;
++    const boxW = 920;
++    const boxH = 360;
++
++    ctx.save();
++    applyAntiGhostingShadow(ctx, textColor);
++
++    // 1. Sleek glassmorphic card backdrop
++    ctx.strokeStyle = textColor === 'black' ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.15)';
++    ctx.lineWidth = 2;
++    ctx.fillStyle = textColor === 'black' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(28, 28, 30, 0.7)';
++    ctx.beginPath();
++    ctx.roundRect(boxX, boxY, boxW, boxH, 20);
++    ctx.fill();
++    ctx.stroke();
+ 
+-    // Left Border 
++    // 2. Accent Bar on the Left (inside card)
+     ctx.fillStyle = c.accent;
+-    ctx.fillRect(80, 1400, 16, 320);
++    ctx.beginPath();
++    ctx.roundRect(boxX + 30, boxY + 40, 14, boxH - 80, 7);
++    ctx.fill();
++
++    ctx.textAlign = 'left';
++    ctx.textBaseline = 'middle';
++    ctx.shadowBlur = 0;
++    ctx.shadowOffsetY = 0;
+ 
+-    const mainVal = stats.mainValue ? stats.mainValue.replace(/[a-zA-Z]/g, '').trim() : stats.distanceVal || '0.00';
+-    const mainUnit = stats.mainValue ? stats.mainValue.replace(/[0-9.]/g, '').trim() || (stats.hasDistance ? 'km' : 'm') : 'km';
++    // 3. Main Value & Unit
++    const isWorkout = stats.type?.toLowerCase().includes('workout') || stats.type?.toLowerCase().includes('training') || stats.type?.toLowerCase().includes('gym') || !stats.hasDistance;
++    const mainVal = (isWorkout ? (stats.timeStr || '0:00') : (stats.distanceVal || '0.00')).toUpperCase();
++    const mainUnit = isWorkout ? 'DURATION' : 'KM';
+ 
+-    ctx.font = "italic 900 180px 'Plus Jakarta Sans'";
+-    ctx.fillStyle = c.solid;
+-    ctx.fillText(mainVal, 140, 1580);
++    const valX = boxX + 70;
++    const valY = boxY + 130;
++
++    ctx.font = "italic 900 130px 'Plus Jakarta Sans'";
++    ctx.fillStyle = textColor;
++    ctx.fillText(mainVal, valX, valY);
+ 
+     const valW = ctx.measureText(mainVal).width;
+ 
+-    ctx.font = "900 60px 'Plus Jakarta Sans'";
+-    ctx.fillStyle = c.trans;
+-    ctx.fillText(mainUnit.toUpperCase(), 140 + valW + 20, 1580);
++    ctx.font = "800 36px 'Plus Jakarta Sans'";
++    ctx.fillStyle = c.accent;
++    ctx.fillText(mainUnit, valX + valW + 20, valY + 30);
+ 
+-    // Sub grid
+-    ctx.font = "800 35px 'Plus Jakarta Sans'";
+-    if ((ctx as any).letterSpacing !== undefined) {
+-        (ctx as any).letterSpacing = "6px";
+-    }
+-    // Using opacity
++    // 4. Metadata Line (Time, Pace, HR, Location)
++    const isRide = stats.type === 'Ride' || stats.type === 'EBikeRide';
++    const paceLabel = isWorkout ? "HEART RATE" : (isRide ? "AVG SPEED" : "PACE");
++    const paceVal = isWorkout ? (stats.avgHeartrate ? `${stats.avgHeartrate} BPM` : 'WORKOUT') : (stats.subValue || '0:00 /KM').toUpperCase();
++
++    const subString = `${paceLabel}: ${paceVal}   ·   ${(stats.startTime || '00:00 AM').toUpperCase()}   ·   ${(stats.location || 'OUTDOORS').toUpperCase()}`;
++    ctx.font = "800 20px 'Plus Jakarta Sans'";
++    ctx.fillStyle = textColor;
+     ctx.globalAlpha = 0.8;
+-    ctx.fillStyle = c.accent;
++    setLetterSpacing(ctx, "3px");
++    ctx.fillText(subString, valX, boxY + 270);
++    setLetterSpacing(ctx, "0px");
+ 
+-    // Split subValue (e.g. "4:27 /km") into its parts to avoid double-appending the unit.
+-    const subParts = (stats.subValue || '').trim().split(' ');
+-    const subVal = subParts[0] || '';
+-    const subUnit = subParts[1] || (subVal.includes(':') ? '/km' : '');
+-    const subString = `${subVal} ${subUnit}  ·  ${stats.startTime || ''}`.toUpperCase();
+-    ctx.fillText(subString, 140, 1680);
+-    ctx.globalAlpha = 1.0;
+-    if ((ctx as any).letterSpacing !== undefined) {
+-        (ctx as any).letterSpacing = "0px";
+-    }
++    ctx.restore();
+ }
+ 
+ // ─── SCORA 20 COLLECTION ────────────────────────────────────────────────────────
+@@ -3706,52 +3976,58 @@ export function drawStatement(ctx: CanvasRenderingContext2D, stats: any, textCol
+ 
+ 
+ export function drawBrutalistLetters(ctx: CanvasRenderingContext2D, stats: any, textColor = 'white') {
+-    const isDark = textColor === 'white';
+-    const cSolid = isDark ? '#ffffff' : '#000000';
+-    const cOpposite = isDark ? '#000000' : '#ffffff';
++    const { solid, trans, label: labelColor, accent: accentColor } = buildColors(textColor);
++    const isDarkAccent = isColorDark(accentColor);
+ 
+     const rawVal = stats.mainValue || stats.distanceVal || '0.00';
+-    const displayVal = String(rawVal).trim();
++    const displayVal = String(rawVal).trim().toUpperCase();
+ 
+     let type = stats.type || stats.activityType || 'Run';
+     const baseActivity = normalizeSport(type);
+-    type = applyActivityCasing(baseActivity, 'brutalist-letters');
++    type = applyActivityCasing(baseActivity, 'brutalist-letters').toUpperCase();
++
++    const cx = 540;
++    const cy = 1680;
++
++    ctx.save();
++    applyAntiGhostingShadow(ctx, textColor);
+ 
++    // 1. Giant Background Type (Swiss Poster Style)
++    ctx.globalAlpha = 0.25;
++    ctx.fillStyle = textColor;
+     ctx.textAlign = 'center';
+     ctx.textBaseline = 'middle';
+ 
+-    // Giant Background Type
+-    ctx.globalAlpha = 0.5;
+-    ctx.fillStyle = cSolid;
+-
+-    // Dynamic Scale for large labels (WORKOUT is longer than RUN)
+-    let fontSize = 380;
++    let fontSize = 240;
+     ctx.font = `900 ${fontSize}px 'Plus Jakarta Sans'`;
+     if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "-0.05em"; }
+     let textWidth = ctx.measureText(type).width;
+-    const maxW = 980; // 1080 - 100 margin
++    const maxW = 980;
+ 
+     if (textWidth > maxW) {
+         fontSize = Math.floor(fontSize * (maxW / textWidth));
+         ctx.font = `900 ${fontSize}px 'Plus Jakarta Sans'`;
+     }
+ 
+-    ctx.fillText(type, 540, 960);
++    ctx.fillText(type, cx, cy - 40);
+     if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0px"; }
+     ctx.globalAlpha = 1.0;
+ 
+-    // Foreground Box
+-    ctx.font = "italic 900 80px 'Plus Jakarta Sans'";
++    // 2. Foreground Solid Accent Box for Value
++    ctx.font = "italic 900 68px 'Plus Jakarta Sans'";
+     if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "-0.05em"; }
+     const txtW = ctx.measureText(displayVal).width;
+-    const txtH = 100;
++    const txtH = 96;
+ 
+-    ctx.fillStyle = cSolid;
+-    ctx.fillRect(540 - (txtW / 2) - 40, 960 + 50, txtW + 80, txtH);
++    ctx.fillStyle = accentColor;
++    ctx.fillRect(cx - (txtW / 2) - 30, cy + 30, txtW + 60, txtH);
+ 
+-    ctx.fillStyle = cOpposite;
+-    ctx.fillText(displayVal, 540, 960 + 105);
++    // Text on accent box
++    ctx.fillStyle = isDarkAccent ? '#ffffff' : '#111111';
++    ctx.fillText(displayVal, cx, cy + 30 + txtH / 2);
+     if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0px"; }
++
++    ctx.restore();
+ }
+ 
+ export function drawTinyGPS(ctx: CanvasRenderingContext2D, stats: any, textColor = 'white') {
+@@ -4328,46 +4604,61 @@ export function drawBrutalSlash(ctx: CanvasRenderingContext2D, stats: any, textC
+ }
+ 
+ export function drawMonoMinimal(ctx: CanvasRenderingContext2D, stats: any, textColor = 'white') {
+-    const isDark = textColor === 'white';
+-    const bgFill = isDark ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.7)';
+-    const cSolid = isDark ? '#ffffff' : '#000000';
+-    const borderFill = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+-
+-    ctx.textAlign = 'center';
+-    ctx.textBaseline = 'middle';
++    const { solid, trans, label: labelColor, accent: accentColor } = buildColors(textColor);
+ 
+-    const displayVal = (stats.mainValue || stats.distanceVal || '0.00').toString().trim();
+-    ctx.font = "italic 300 85px 'JetBrains Mono'";
+-    const txtW = ctx.measureText(displayVal).width;
+-    const boxW = Math.max(txtW + 120, 340);
+-    const boxH = 180;
+     const cx = 540;
+-    const cy = 960;
++    const cy = 1680;
++    const w = 600;
++    const h = 140;
+ 
+-    // Box
+-    ctx.fillStyle = bgFill;
++    ctx.save();
++    applyAntiGhostingShadow(ctx, textColor);
++
++    // 1. Draw rounded container (tech spec plate)
++    ctx.strokeStyle = textColor === 'black' ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.15)';
++    ctx.lineWidth = 1.5;
++    ctx.fillStyle = textColor === 'black' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(28, 28, 30, 0.75)';
+     ctx.beginPath();
+-    ctx.rect(cx - boxW / 2, cy - boxH / 2, boxW, boxH);
++    ctx.roundRect(cx - w / 2, cy - h / 2, w, h, 8); // Technical sharp 8px corners
+     ctx.fill();
+-
+-    ctx.strokeStyle = borderFill;
+-    ctx.lineWidth = 2;
+     ctx.stroke();
+ 
+-    let type = stats.type || stats.activityType || 'Run';
+-    type = applyActivityCasing(normalizeSport(type), 'mono-minimal');
++    // Subtle side accent line on the left
++    ctx.fillStyle = accentColor;
++    ctx.fillRect(cx - w / 2 + 10, cy - h / 2 + 15, 4, h - 30);
+ 
+-    // Text
+-    ctx.fillStyle = cSolid;
+-    ctx.globalAlpha = 0.3;
+-    ctx.font = "400 20px 'JetBrains Mono'";
+-    if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0.2em"; }
+-    ctx.fillText(type, cx, cy - 35);
+-    if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = "0px"; }
++    ctx.textBaseline = 'middle';
++    ctx.shadowBlur = 0;
++    ctx.shadowOffsetY = 0;
+ 
+-    ctx.globalAlpha = 1.0;
+-    ctx.font = "italic 300 85px 'JetBrains Mono'";
+-    ctx.fillText(displayVal, cx, cy + 30);
++    // 2. Left Column: Label / Details
++    ctx.textAlign = 'left';
++    ctx.fillStyle = textColor;
++    
++    // Sub-title
++    ctx.font = "800 13px 'JetBrains Mono'";
++    setLetterSpacing(ctx, "0.15em");
++    ctx.fillText("SPECIFICATION", cx - w / 2 + 30, cy - 25);
++
++    // Main Activity
++    const isWorkout = stats.type?.toLowerCase().includes('workout') || stats.type?.toLowerCase().includes('training') || stats.type?.toLowerCase().includes('gym') || !stats.hasDistance;
++    const type = applyActivityCasing(normalizeSport(stats.type || 'Run'), 'mono-minimal').toUpperCase();
++    ctx.font = "500 20px 'JetBrains Mono'";
++    setLetterSpacing(ctx, "0.05em");
++    ctx.fillText(type, cx - w / 2 + 30, cy + 15);
++    setLetterSpacing(ctx, "0px");
++
++    // 3. Right Column: Metric
++    ctx.textAlign = 'right';
++    const rawVal = stats.mainValue || stats.distanceVal || '0.00';
++    const valStr = String(rawVal).trim().toUpperCase();
++    const unit = isWorkout ? '' : 'KM';
++    const displayVal = unit ? `${valStr} ${unit}` : valStr;
++
++    ctx.font = "italic 800 48px 'JetBrains Mono'";
++    ctx.fillText(displayVal, cx + w / 2 - 30, cy);
++
++    ctx.restore();
+ }
+ 
+ export function drawSwissMinimal(ctx: CanvasRenderingContext2D, stats: any, textColor = 'white') {
+@@ -4520,132 +4811,31 @@ export function drawMapPinIcon(ctx: CanvasRenderingContext2D, x: number, y: numb
+     ctx.restore();
+ }
+ 
+-/**
+- * Dynamic Greeting based on start time string (e.g. "9:00 AM")
+- */
+-function getGreeting(startTimeStr: string): string {
+-    if (!startTimeStr) return "GOOD MORNING";
+-    const [time, ampm] = startTimeStr.split(' ');
+-    const [hour] = time.split(':').map(Number);
+-
+-    let h24 = hour;
+-    if (ampm === 'PM' && hour !== 12) h24 += 12;
+-    if (ampm === 'AM' && hour === 12) h24 = 0;
+-
+-    if (h24 >= 5 && h24 < 12) return "GOOD MORNING";
+-    if (h24 >= 12 && h24 < 19) return "GOOD AFTERNOON";
+-    return "GOOD NIGHT";
+-}
+-
+-export function drawEditorialStrip(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+-    const c = buildColors(textColor);
+-    ctx.textBaseline = 'middle';
++export function drawSciencePro(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
++    const accent = '#A3FFD6';
++    ctx.textAlign = 'center';
+ 
+-    // 1. Top Section (Weather/Time)
+-    ctx.textAlign = 'right';
+-    ctx.fillStyle = c.solid;
++    // 1. Header (Ultra-Compact + Scaled)
++    const title = (stats.title || normalizeSport(stats.type) || 'Activity').toUpperCase();
++    let titleFontSize = 82;
++    ctx.font = `400 ${titleFontSize}px 'Michroma'`;
++    const maxTitleW = 900;
+ 
+-    if (stats.avgTemp) {
+-        ctx.font = "900 64px 'Inter'";
+-        ctx.fillText(stats.avgTemp + '°', 1000, 150);
++    // Auto-Scaling for Title
++    while (ctx.measureText(title).width > maxTitleW && titleFontSize > 30) {
++        titleFontSize -= 2;
++        ctx.font = `400 ${titleFontSize}px 'Michroma'`;
+     }
+ 
+-    ctx.font = "900 24px 'Plus Jakarta Sans'";
+-    ctx.fillStyle = c.trans;
+-    ctx.fillText('LOCAL TIME', 1000, 220);
+-
+-    ctx.font = "700 32px 'Plus Jakarta Sans'";
+-    ctx.fillStyle = c.solid;
+-    const timeDisplay = (stats.startTime || '--:--').toUpperCase();
+-    const durDisplay = stats.timeStr ? ` | ${stats.timeStr.toUpperCase()}` : '';
+-    ctx.fillText(`${timeDisplay}${durDisplay}`, 1000, 265);
+-
+-    // 2. Vertical Day Headline
+-    ctx.save();
+-    ctx.translate(900, 1000);
+-    ctx.rotate(-Math.PI / 2);
+-    ctx.textAlign = 'center';
+-
+-    // Dynamic Greeting
+-    ctx.font = "900 28px 'Inter'";
+-    ctx.fillStyle = c.trans;
+-    setLetterSpacing(ctx, '12px');
+-    ctx.fillText(getGreeting(stats.startTime), 0, -290);
+-    setLetterSpacing(ctx, '0px');
+-
+-    // Massive Rotated Day
+-    const dayStr = (stats.dayName || 'FRIDAY').toUpperCase();
+-    let fontSize = 320;
+-    ctx.font = `900 ${fontSize}px 'Inter'`;
+-    let dayWidth = ctx.measureText(dayStr).width;
+-
+-    if (dayWidth > 1100) {
+-        fontSize = Math.floor(320 * (1100 / dayWidth));
+-        ctx.font = `900 ${fontSize}px 'Inter'`;
+-    }
+-
+-    const dayGrad = ctx.createLinearGradient(-500, 0, 500, 0);
+-    dayGrad.addColorStop(0, textColor === 'black' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)');
+-    dayGrad.addColorStop(1, textColor === 'black' ? 'rgba(0,0,0,0.9)' : 'rgba(255,255,255,0.9)');
+-    ctx.fillStyle = dayGrad;
+-    ctx.fillText(dayStr, 0, -125);
+-    ctx.restore();
+-
+-    // 3. Bottom Section (Location/Stats)
+-    const bottomY = 1730; // 1750 -> 1730
+-    ctx.textAlign = 'left';
+-
+-    ctx.strokeStyle = c.trans;
+-    ctx.lineWidth = 1;
+-    ctx.beginPath(); ctx.moveTo(80, bottomY - 50); ctx.lineTo(1000, bottomY - 50); ctx.stroke();
+-
+-    // Location
+-    drawMapPinIcon(ctx, 100, bottomY, 24, c.accent);
+-    ctx.font = "900 24px 'Plus Jakarta Sans'";
+-    ctx.fillStyle = c.trans;
+-    setLetterSpacing(ctx, '4px');
+-    ctx.fillText((stats.location || 'MEXICO CITY').toUpperCase(), 130, bottomY);
+-    setLetterSpacing(ctx, '0px');
+-
+-    // Main Stat (Distance/Duration)
+-    const mainVal = stats.hasDistance ? stats.distanceVal : stats.mainValue;
+-    const mainUnit = stats.hasDistance ? 'KM' : 'TIME';
+-
+-    drawStatWithUnit(ctx, 100, bottomY + 70, mainVal, mainUnit, { // 80 -> 70
+-        valueFont: "900 84px 'Inter'",
+-        unitFont: "700 32px 'Plus Jakarta Sans'",
+-        valueColor: c.solid,
+-        unitColor: c.trans,
+-        gap: 20,
+-        align: 'left'
+-    });
+-}
+-
+-export function drawSciencePro(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+-    const accent = '#A3FFD6';
+-    ctx.textAlign = 'center';
+-
+-    // 1. Header (Ultra-Compact + Scaled)
+-    const title = (stats.title || normalizeSport(stats.type) || 'Activity').toUpperCase();
+-    let titleFontSize = 82;
+-    ctx.font = `400 ${titleFontSize}px 'Michroma'`;
+-    const maxTitleW = 900;
+-
+-    // Auto-Scaling for Title
+-    while (ctx.measureText(title).width > maxTitleW && titleFontSize > 30) {
+-        titleFontSize -= 2;
+-        ctx.font = `400 ${titleFontSize}px 'Michroma'`;
+-    }
+-
+-    ctx.fillStyle = accent;
+-    ctx.fillText(title, 540, 700);
++    ctx.fillStyle = accent;
++    ctx.fillText(title, 540, 700);
+ 
+     const isWorkout = stats.type?.toLowerCase().includes('workout') || stats.type?.toLowerCase().includes('training') || stats.type?.toLowerCase().includes('gym') || !stats.hasDistance;
+     const mainDisplayVal = isWorkout ? (stats.timeStr || '0:00') : (stats.distanceVal || stats.mainValue || '0.00');
+     const mainUnit = isWorkout ? 'DURATION' : 'KM';
+ 
+     ctx.font = "400 32px 'Michroma'";
+-    const meta = `${(stats.location || 'MEXICO CITY').toUpperCase()} — ${mainDisplayVal} ${mainUnit}`;
++    const meta = `${(stats.location || 'MEXICO').toUpperCase()} — ${mainDisplayVal} ${mainUnit}`;
+     ctx.globalAlpha = 0.8;
+     setLetterSpacing(ctx, '4px');
+     ctx.fillText(meta, 540, 745);
+@@ -4737,6 +4927,198 @@ export function drawSciencePro(ctx: CanvasRenderingContext2D, stats: any, textCo
+     ctx.fillText(tempVal + '°C TRACKED', 540, 1160);
+ }
+ 
++/**
++ * Dynamic Greeting based on start time string (e.g. "9:00 AM")
++ */
++function getGreeting(startTimeStr: string): string {
++    if (!startTimeStr) return "GOOD MORNING";
++    const [time, ampm] = startTimeStr.split(' ');
++    const [hour] = time.split(':').map(Number);
++
++    let h24 = hour;
++    if (ampm === 'PM' && hour !== 12) h24 += 12;
++    if (ampm === 'AM' && hour === 12) h24 = 0;
++
++    if (h24 >= 5 && h24 < 12) return "GOOD MORNING";
++    if (h24 >= 12 && h24 < 19) return "GOOD AFTERNOON";
++    return "GOOD NIGHT";
++}
++
++export function drawEditorialStrip(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
++    const c = buildColors(textColor);
++    ctx.textBaseline = 'middle';
++
++    // 1. Top Section (Weather/Time)
++    ctx.textAlign = 'right';
++    ctx.fillStyle = c.solid;
++
++    if (stats.avgTemp) {
++        ctx.font = "900 64px 'Inter'";
++        ctx.fillText(stats.avgTemp + '°', 1000, 150);
++    }
++
++    ctx.font = "900 24px 'Plus Jakarta Sans'";
++    ctx.fillStyle = c.trans;
++    ctx.fillText('LOCAL TIME', 1000, 220);
++
++    ctx.font = "700 32px 'Plus Jakarta Sans'";
++    ctx.fillStyle = c.solid;
++    const timeDisplay = (stats.startTime || '--:--').toUpperCase();
++    const durDisplay = stats.timeStr ? ` | ${stats.timeStr.toUpperCase()}` : '';
++    ctx.fillText(`${timeDisplay}${durDisplay}`, 1000, 265);
++
++    // 2. Vertical Day Headline
++    ctx.save();
++    ctx.translate(940, 960);
++    ctx.rotate(-Math.PI / 2);
++    ctx.textAlign = 'center';
++    ctx.textBaseline = 'middle';
++
++    // Dynamic Greeting
++    ctx.font = "900 28px 'Inter'";
++    ctx.fillStyle = c.trans;
++    setLetterSpacing(ctx, '12px');
++    ctx.fillText(getGreeting(stats.startTime), 0, -180);
++    setLetterSpacing(ctx, '0px');
++
++    // Massive Rotated Day
++    const dayStr = (stats.dayName || 'FRIDAY').toUpperCase();
++    let fontSize = 320;
++    ctx.font = `900 ${fontSize}px 'Inter'`;
++    let dayWidth = ctx.measureText(dayStr).width;
++
++    if (dayWidth > 1100) {
++        fontSize = Math.floor(320 * (1100 / dayWidth));
++        ctx.font = `900 ${fontSize}px 'Inter'`;
++    }
++
++    const dayGrad = ctx.createLinearGradient(-500, 0, 500, 0);
++    dayGrad.addColorStop(0, textColor === 'black' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)');
++    dayGrad.addColorStop(1, textColor === 'black' ? 'rgba(0,0,0,0.9)' : 'rgba(255,255,255,0.9)');
++    ctx.fillStyle = dayGrad;
++    ctx.fillText(dayStr, 0, 0);
++    ctx.restore();
++
++    // 3. Bottom Section (Location/Stats)
++    const bottomY = 1730; // 1750 -> 1730
++    ctx.textAlign = 'left';
++
++    ctx.strokeStyle = c.trans;
++    ctx.lineWidth = 1;
++    ctx.beginPath(); ctx.moveTo(80, bottomY - 50); ctx.lineTo(1000, bottomY - 50); ctx.stroke();
++
++    // Location
++    drawMapPinIcon(ctx, 100, bottomY, 24, c.accent);
++    ctx.font = "900 24px 'Plus Jakarta Sans'";
++    ctx.fillStyle = c.trans;
++    setLetterSpacing(ctx, '4px');
++    ctx.fillText((stats.location || 'MEXICO CITY').toUpperCase(), 130, bottomY);
++    setLetterSpacing(ctx, '0px');
++
++    // Main Stat (Distance/Duration)
++    const mainVal = stats.hasDistance ? stats.distanceVal : stats.mainValue;
++    const mainUnit = stats.hasDistance ? 'KM' : 'TIME';
++
++    drawStatWithUnit(ctx, 100, bottomY + 70, mainVal, mainUnit, { // 80 -> 70
++        valueFont: "900 84px 'Inter'",
++        unitFont: "700 32px 'Plus Jakarta Sans'",
++        valueColor: c.solid,
++        unitColor: c.trans,
++        gap: 20,
++        align: 'left'
++    });
++}
++
++    ctx.strokeStyle = accent;
++    ctx.lineWidth = 2;
++    ctx.strokeRect(boxX, boxY, boxW, boxH);
++
++    // Dynamic glassmorphic fill
++    ctx.fillStyle = textColor === 'black' ? 'rgba(0, 0, 0, 0.03)' : 'rgba(255, 255, 255, 0.05)';
++    ctx.fillRect(boxX, boxY, boxW, boxH);
++
++    // Technical corner hashes/ticks
++    ctx.lineWidth = 4;
++    const tickLen = 15;
++    // Top-Left corner ticks
++    ctx.beginPath();
++    ctx.moveTo(boxX - 5, boxY + tickLen); ctx.lineTo(boxX - 5, boxY - 5); ctx.lineTo(boxX + tickLen, boxY - 5);
++    // Top-Right corner ticks
++    ctx.moveTo(boxX + boxW + 5, boxY + tickLen); ctx.lineTo(boxX + boxW + 5, boxY - 5); ctx.lineTo(boxX + boxW - tickLen, boxY - 5);
++    // Bottom-Left corner ticks
++    ctx.moveTo(boxX - 5, boxY + boxH - tickLen); ctx.lineTo(boxX - 5, boxY + boxH + 5); ctx.lineTo(boxX + tickLen, boxY + boxH + 5);
++    // Bottom-Right corner ticks
++    ctx.moveTo(boxX + boxW + 5, boxY + boxH - tickLen); ctx.lineTo(boxX + boxW + 5, boxY + boxH + 5); ctx.lineTo(boxX + boxW - tickLen, boxY + boxH + 5);
++    ctx.stroke();
++
++    // 2. Technical Left graphic (Dial/Globe)
++    const dialX = boxX + 160;
++    const dialY = boxY + boxH / 2;
++    
++    // Outer dial circle
++    ctx.lineWidth = 1.5;
++    ctx.strokeStyle = accent;
++    ctx.beginPath();
++    ctx.arc(dialX, dialY, 80, 0, Math.PI * 2);
++    ctx.stroke();
++
++    // Crosshairs inside dial
++    ctx.beginPath();
++    ctx.moveTo(dialX - 90, dialY); ctx.lineTo(dialX + 90, dialY);
++    ctx.moveTo(dialX, dialY - 90); ctx.lineTo(dialX, dialY + 90);
++    ctx.stroke();
++
++    // Inner wireframe globe or target chevron
++    ctx.beginPath();
++    ctx.ellipse(dialX, dialY, 30, 80, 0, 0, Math.PI * 2);
++    ctx.ellipse(dialX, dialY, 60, 80, 0, 0, Math.PI * 2);
++    ctx.stroke();
++
++    // 3. Right side Stats
++    const statsX = boxX + 340;
++    ctx.textAlign = 'left';
++    ctx.textBaseline = 'top';
++
++    // Title / Sport (in Michroma)
++    const title = (stats.title || stats.type || 'Activity').toUpperCase();
++    ctx.fillStyle = accent;
++    ctx.font = "700 32px 'Michroma'";
++    let titleSize = 32;
++    while (ctx.measureText(title).width > 500 && titleSize > 18) {
++        titleSize -= 2;
++        ctx.font = `700 ${titleSize}px 'Michroma'`;
++    }
++    ctx.fillText(title, statsX, boxY + 45);
++
++    // Meta-Text Line 1: Primary Value
++    const mainDisplayVal = isWorkout ? (stats.timeStr || '0:00') : (stats.distanceVal || stats.mainValue || '0.00');
++    const mainUnit = isWorkout ? 'DURATION' : 'KM';
++    ctx.fillStyle = textColor;
++    ctx.font = "800 48px 'Space Grotesk'";
++    ctx.fillText(`${mainDisplayVal} ${mainUnit}`, statsX, boxY + 110);
++
++    // Meta-Text Line 2: Secondary Metric
++    const paceVal = (isWorkout ? (stats.calories ? `${stats.calories} KCAL` : 'WORKOUT') : (stats.subValue || '0:00 /KM')).toUpperCase();
++    const paceLabel = isWorkout ? 'ENERGY' : 'PACE';
++    ctx.font = "500 28px 'Space Grotesk'";
++    ctx.fillStyle = c.trans;
++    ctx.fillText(`${paceLabel}: ${paceVal}`, statsX, boxY + 185);
++
++    // Meta-Text Line 3: Heart Rate & Temperature (or location)
++    const hrVal = stats.avgHeartrate ? `${stats.avgHeartrate} BPM` : (stats.location || 'MEXICO CITY').toUpperCase();
++    const hrLabel = stats.avgHeartrate ? 'HEART RATE' : 'LOC';
++    const tempVal = stats.avgTemp ? ` | TEMP: ${stats.avgTemp}°C` : '';
++    ctx.fillText(`${hrLabel}: ${hrVal}${tempVal}`, statsX, boxY + 235);
++
++    // Small Technical Footer
++    ctx.font = "700 16px 'Space Grotesk'";
++    ctx.fillStyle = accent;
++    ctx.globalAlpha = 0.5;
++    ctx.fillText(`OSD // SYS.ACTIVE // GPS.LOCK // © ${new Date().getFullYear()}`, statsX, boxY + 300);
++
++    ctx.restore();
++}
++
+ 
+ // ─── The Final Three Suite ──────────────────────────────────────────────────
+ 
+@@ -4975,26 +5357,52 @@ export function drawGraffitiExpo(ctx: CanvasRenderingContext2D, stats: any, text
+ 
+     const lineColor = textColor.startsWith('#') ? textColor : (textColor === 'black' ? '#000000' : '#ffffff');
+     const secondaryColor = textColor === 'black' ? '#000000' : '#ffffff';
+-    const isDarkAccent = isColorDark(accentColor);
+-    const isDarkSecondary = isColorDark(secondaryColor);
+ 
+-    // 1. Enhanced Spray Map (Higher, leave space for text)
+-    if (stats.polyline) {
++    const boxX = 80;
++    const boxY = 180;
++    const boxW = 920;
++    const boxH = 360;
++    const startX = boxX + 40;
++
++    const isWorkout = stats.type?.toLowerCase().includes('workout') || stats.type?.toLowerCase().includes('training') || stats.type?.toLowerCase().includes('gym') || !stats.hasDistance;
++    const isRide = stats.type === 'Ride' || stats.type === 'EBikeRide';
++
++    ctx.save();
++    ctx.fillStyle = textColor;
++    applyAntiGhostingShadow(ctx, textColor);
++
++    // Clean border with street-art stencil vibes
++    ctx.strokeStyle = accentColor;
++    ctx.lineWidth = 3;
++    ctx.strokeRect(boxX, boxY, boxW, boxH);
++
++    const hasMap = stats.polyline && stats.polyline.length > 20;
++
++    if (hasMap) {
++        // Draw pocket map on the left
++        const mapW = 280;
++        const mapH = 280;
++        const mapX = startX;
++        const mapY = boxY + 40;
++
++        // Draw a light frame for the map
++        ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.05)';
++        ctx.fillRect(mapX, mapY, mapW, mapH);
++        ctx.strokeStyle = textColor === 'black' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.15)';
++        ctx.strokeRect(mapX, mapY, mapW, mapH);
++
+         const coords = decodePolyline(stats.polyline);
+         if (coords && coords.length > 0) {
+-            const mapBox = { x: 100, y: 150, w: 880, h: 1050 };
+-
+             let minLat = coords[0][0], maxLat = minLat, minLng = coords[0][1], maxLng = minLng;
+             coords.forEach((p: any) => {
+                 if (p[0] < minLat) minLat = p[0]; if (p[0] > maxLat) maxLat = p[0];
+                 if (p[1] < minLng) minLng = p[1]; if (p[1] > maxLng) maxLng = p[1];
+             });
+ 
+-            const scale = Math.min(mapBox.w / (maxLng - minLng), mapBox.h / (maxLat - minLat));
+-
++            const scale = Math.min((mapW - 40) / (maxLng - minLng), (mapH - 40) / (maxLat - minLat));
+             const getXY = (p: [number, number]) => {
+-                const x = mapBox.x + (p[1] - minLng) * scale + (mapBox.w - ((maxLng - minLng) * scale)) / 2;
+-                const y = mapBox.y + mapBox.h - ((p[0] - minLat) * scale) - (mapBox.h - ((maxLat - minLat) * scale)) / 2;
++                const x = mapX + (p[1] - minLng) * scale + (mapW - ((maxLng - minLng) * scale)) / 2;
++                const y = mapY + mapH - ((p[0] - minLat) * scale) - (mapH - ((maxLat - minLat) * scale)) / 2;
+                 return { x, y };
+             };
+ 
+@@ -5003,55 +5411,86 @@ export function drawGraffitiExpo(ctx: CanvasRenderingContext2D, stats: any, text
+             drawSprayPath(ctx, coords, getXY, lineColor);
+             ctx.restore();
+         }
+-    }
+ 
+-    // 2. Aesthetic Typography (Bottom)
+-    ctx.textAlign = 'center';
+-    ctx.textBaseline = 'alphabetic';
++        // Draw stats on the right
++        const statsX = startX + 320;
++        
++        // Hero Distance
++        const distNum = (isWorkout ? (stats.timeStr || '0:00') : (stats.distanceVal || '0.00')).toUpperCase();
++        const distUnit = isWorkout ? "DURATION" : "KILOMETERS";
+ 
+-    // Custom color from map
+-    const customColor = lineColor;
+-    const sport = normalizeSport(stats.type);
++        ctx.textAlign = 'left';
++        ctx.textBaseline = 'top';
++        ctx.fillStyle = textColor;
++        ctx.font = `800 75px 'Russo One'`;
++        ctx.fillText(distNum, statsX, boxY + 45);
+ 
+-    // Distance (Data - 85% Opacity)
+-    const distNum = stats.distanceVal || '0.00';
+-    ctx.save();
+-    ctx.globalAlpha = 0.85;
+-    ctx.font = "900 140px 'BBH Bartle'";
+-    ctx.fillStyle = customColor;
+-    ctx.fillText(distNum, 540, 1460);
+-    ctx.restore();
++        ctx.fillStyle = accentColor;
++        ctx.font = `800 16px 'Michroma'`;
++        ctx.fillText(distUnit, statsX, boxY + 130);
++
++        // Sub stats (Pace and Time) side-by-side
++        const sub1Val = (isWorkout ? (stats.avgHeartrate ? `${stats.avgHeartrate} BPM` : 'WORKOUT') : (stats.subValue || '0:00 /KM')).toUpperCase();
++        const sub1Label = isWorkout ? 'HEART RATE' : (isRide ? 'AVG. SPEED' : 'PACE');
++        
++        ctx.fillStyle = textColor;
++        ctx.font = `800 36px 'Russo One'`;
++        ctx.fillText(sub1Val, statsX, boxY + 185);
++        ctx.fillStyle = accentColor;
++        ctx.font = `800 14px 'Michroma'`;
++        ctx.fillText(sub1Label, statsX, boxY + 235);
+ 
+-    // Units (Solid - 100% Opacity)
+-    ctx.save();
+-    ctx.font = "800 32px 'Plus Jakarta Sans'";
+-    ctx.fillStyle = secondaryColor;
+-    ctx.globalAlpha = 1.0;
+-    if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "15px";
+-    ctx.fillText("KILOMETERS", 540, 1515);
+-    if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "0px";
+-    ctx.restore();
++        const sub2Val = (isWorkout ? (stats.calories ? `${stats.calories} KCAL` : 'ACTIVE') : (stats.timeStr || '0h 0m')).toUpperCase();
++        const sub2Label = isWorkout ? 'ENERGY' : 'DURATION';
+ 
+-    // Secondary Data (Pace & Time - 85% Opacity)
+-    ctx.save();
+-    ctx.globalAlpha = 0.85;
+-    ctx.font = "900 55px 'BBH Bartle'";
+-    ctx.fillStyle = customColor;
+-    ctx.fillText(stats.subValue || '0:00 /km', 310, 1700);
+-    ctx.fillText(stats.timeStr || '0h 00m', 770, 1700);
+-    ctx.restore();
++        ctx.fillStyle = textColor;
++        ctx.font = `800 36px 'Russo One'`;
++        ctx.fillText(sub2Val, statsX + 260, boxY + 185);
++        ctx.fillStyle = accentColor;
++        ctx.font = `800 14px 'Michroma'`;
++        ctx.fillText(sub2Label, statsX + 260, boxY + 235);
++    } else {
++        // No map fallback: center-align all stats
++        const centerX = boxX + boxW / 2;
+ 
+-    // Labels (Solid - 100% Opacity)
+-    ctx.save();
+-    ctx.font = "800 24px 'Plus Jakarta Sans'";
+-    ctx.fillStyle = secondaryColor;
+-    ctx.globalAlpha = 1.0;
+-    if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "10px";
++        const distNum = (isWorkout ? (stats.timeStr || '0:00') : (stats.distanceVal || '0.00')).toUpperCase();
++        const distUnit = isWorkout ? "DURATION" : "KILOMETERS";
++
++        ctx.textAlign = 'center';
++        ctx.textBaseline = 'top';
++        ctx.fillStyle = textColor;
++        ctx.font = `800 85px 'Russo One'`;
++        ctx.fillText(distNum, centerX, boxY + 45);
++
++        ctx.fillStyle = accentColor;
++        ctx.font = `800 18px 'Michroma'`;
++        ctx.fillText(distUnit, centerX, boxY + 140);
++
++        // Sub stats columns
++        const col1X = boxX + boxW / 4;
++        const col2X = boxX + 3 * boxW / 4;
++
++        const sub1Val = (isWorkout ? (stats.avgHeartrate ? `${stats.avgHeartrate} BPM` : 'WORKOUT') : (stats.subValue || '0:00 /KM')).toUpperCase();
++        const sub1Label = isWorkout ? 'HEART RATE' : (isRide ? 'AVG. SPEED' : 'PACE');
++
++        ctx.fillStyle = textColor;
++        ctx.font = `800 44px 'Russo One'`;
++        ctx.fillText(sub1Val, col1X, boxY + 205);
++        ctx.fillStyle = accentColor;
++        ctx.font = `800 14px 'Michroma'`;
++        ctx.fillText(sub1Label, col1X, boxY + 260);
++
++        const sub2Val = (isWorkout ? (stats.calories ? `${stats.calories} KCAL` : 'ACTIVE') : (stats.timeStr || '0h 0m')).toUpperCase();
++        const sub2Label = isWorkout ? 'ENERGY' : 'DURATION';
++
++        ctx.fillStyle = textColor;
++        ctx.font = `800 44px 'Russo One'`;
++        ctx.fillText(sub2Val, col2X, boxY + 205);
++        ctx.fillStyle = accentColor;
++        ctx.font = `800 14px 'Michroma'`;
++        ctx.fillText(sub2Label, col2X, boxY + 260);
++    }
+ 
+-    const paceLabel = sport === 'Ride' ? 'AVG. SPEED' : 'PACE';
+-    ctx.fillText(paceLabel, 310, 1740);
+-    ctx.fillText("TOTAL DURATION", 770, 1740);
+-    if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "0px";
+     ctx.restore();
+ }
+ 
+@@ -5060,210 +5499,245 @@ export function drawGraffitiExpo(ctx: CanvasRenderingContext2D, stats: any, text
+  * Surgical centering within an imagined 1x2 layout grid.
+  */
+ export function drawGraffitiBrand(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+-    const { accent: accentColor } = buildColors(textColor);
+-    const isDarkAccent = isColorDark(accentColor);
++    const { solid, trans, label: labelColor, accent: accentColor } = buildColors(textColor);
+ 
+-    // Canvas Constants
+-    const midX = 540;
+-    const colX1 = 270; // Center of Left Box (540/2)
+-    const colX2 = 810; // Center of Right Box (540 + 270)
++    const boxX = 80;
++    const boxY = 180;
++    const boxW = 920;
++    const boxH = 360;
+ 
+-    // Vertical Box Targets
+-    let heroY = 280;
+-    let row2Y = 580;
++    const isWorkout = stats.type?.toLowerCase().includes('workout') || stats.type?.toLowerCase().includes('training') || stats.type?.toLowerCase().includes('gym') || !stats.hasDistance;
++    const isRide = stats.type === 'Ride' || stats.type === 'EBikeRide';
+ 
+-    ctx.textAlign = 'center';
+-    ctx.textBaseline = 'alphabetic';
++    ctx.save();
++    ctx.fillStyle = textColor;
++    applyAntiGhostingShadow(ctx, textColor);
+ 
+-    const applyDeepShadow = (blur = 30) => {
+-        // Shadow removed as requested
+-    };
++    // Street-art/technical stencil border badge
++    ctx.strokeStyle = accentColor;
++    ctx.lineWidth = 3;
++    ctx.strokeRect(boxX, boxY, boxW, boxH);
+ 
+-    // 3. Logic: Check if Workout/Non-Distance
+-    const isWorkout = stats.type?.toLowerCase().includes('workout') || stats.type?.toLowerCase().includes('training') || stats.type?.toLowerCase().includes('gym') || !stats.hasDistance;
++    // Subtle glassmorphic fill
++    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.05)';
++    ctx.fillRect(boxX, boxY, boxW, boxH);
+ 
+-    // 1. Hero Metric (BOX 1 - Centered)
+-    const heroVal = (isWorkout ? (stats.timeStr || '0:00') : (stats.distanceVal || '0.00')).toUpperCase();
+-    ctx.save();
+-    applyDeepShadow(35);
+-    ctx.globalAlpha = 1.0;
+-    ctx.font = "900 135px 'BBH Bartle'";
+-    ctx.fillStyle = accentColor;
+-    ctx.fillText(heroVal, midX, heroY);
+-    ctx.restore();
++    // Vertical dividers
++    ctx.strokeStyle = textColor === 'black' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.15)';
++    ctx.lineWidth = 1.5;
++    ctx.beginPath();
++    ctx.moveTo(boxX + boxW / 3, boxY + 40);
++    ctx.lineTo(boxX + boxW / 3, boxY + boxH - 40);
++    ctx.moveTo(boxX + 2 * boxW / 3, boxY + 40);
++    ctx.lineTo(boxX + 2 * boxW / 3, boxY + boxH - 40);
++    ctx.stroke();
+ 
+-    // 2. Main Unit (BOX 1 - Sub label)
+-    const heroLabel = isWorkout ? "DURATION" : "KILOMETERS";
+-    ctx.save();
+-    applyDeepShadow(15);
+-    ctx.font = "800 32px 'Michroma'";
+-    ctx.fillStyle = accentColor;
+-    ctx.globalAlpha = 1.0;
+-    if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "15px";
+-    ctx.fillText(heroLabel, midX, heroY + 65);
+-    ctx.restore();
++    // Stats layout
++    const colW = boxW / 3;
++    const col1X = boxX + colW / 2;
++    const col2X = boxX + colW + colW / 2;
++    const col3X = boxX + 2 * colW + colW / 2;
+ 
+-    // 3. Activity Statistics (Data Prep)
+-    const isRide = stats.type === 'Ride' || stats.type === 'EBikeRide';
++    const yVal = boxY + 80;
++    const yLabel = boxY + 230;
+ 
+-    let m1Value = ''; let m1Label = '';
+-    let m2Value = ''; let m2Label = '';
++    // Col 1: Distance / Duration
++    const m1Val = (isWorkout ? (stats.timeStr || '0:00') : (stats.distanceVal || '0.00')).toUpperCase();
++    const m1Label = isWorkout ? 'DURATION' : 'KILOMETERS';
+ 
+-    if (isWorkout) {
+-        m1Value = stats.avgHeartrate ? `${stats.avgHeartrate} BPM` : (stats.calories ? `${stats.calories} KCAL` : 'WORKOUT');
+-        m1Label = stats.avgHeartrate ? 'AVG HEART RATE' : (stats.calories ? 'CALORIES' : 'SESSION');
+-        m2Value = stats.calories && stats.avgHeartrate ? `${stats.calories} KCAL` : (stats.date || 'TODAY').toUpperCase();
+-        m2Label = stats.calories && stats.avgHeartrate ? 'CALORIES' : 'DATE';
+-    } else {
+-        m1Value = (stats.subValue || '0:00 /KM').toUpperCase();
+-        m1Label = isRide ? 'AVG. SPEED' : 'PACE';
+-        m2Value = (stats.timeStr || '0M').toUpperCase();
+-        m2Label = 'TOTAL DURATION';
+-    }
++    // Col 2: Pace / Heart Rate
++    const m2Val = (isWorkout ? (stats.avgHeartrate ? `${stats.avgHeartrate} BPM` : 'WORKOUT') : (stats.subValue || '0:00 /KM')).toUpperCase();
++    const m2Label = isWorkout ? 'HEART RATE' : (isRide ? 'AVG. SPEED' : 'PACE');
+ 
+-    // 4. Sub-Metrics (BOX 2 & 3 - Column Centering)
+-    const maxSubW = 500; // Allow slightly more width since we are centered perfectly
++    // Col 3: Duration / Calories
++    const m3Val = (isWorkout ? (stats.calories ? `${stats.calories} KCAL` : 'ACTIVE') : (stats.timeStr || '0H 0M')).toUpperCase();
++    const m3Label = isWorkout ? 'ENERGY' : 'DURATION';
+ 
+-    const drawGridMetric = (val: string, label: string, x: number, y: number) => {
+-        // Value
+-        ctx.save();
+-        applyDeepShadow();
+-        ctx.fillStyle = accentColor;
+-        ctx.globalAlpha = 1.0;
++    ctx.textAlign = 'center';
++    ctx.textBaseline = 'top';
+ 
+-        let subFontSize = 85;
+-        ctx.font = `900 ${subFontSize}px 'BBH Bartle'`;
+-        // Safety Auto-Scaling
+-        while (ctx.measureText(val).width > maxSubW && subFontSize > 40) {
+-            subFontSize -= 2;
+-            ctx.font = `900 ${subFontSize}px 'BBH Bartle'`;
++    const drawMetric = (val: string, label: string, x: number) => {
++        // Value
++        ctx.fillStyle = textColor;
++        ctx.font = `800 58px 'Russo One'`;
++        
++        // Auto-scale value if too long
++        let fontSize = 58;
++        while (ctx.measureText(val).width > colW - 30 && fontSize > 28) {
++            fontSize -= 2;
++            ctx.font = `800 ${fontSize}px 'Russo One'`;
+         }
+-        ctx.fillText(val, x, y);
+-        ctx.restore();
++        ctx.fillText(val, x, yVal + (58 - fontSize) / 2);
+ 
+         // Label
+-        ctx.save();
+-        applyDeepShadow(10);
+-        ctx.font = "800 24px 'Michroma'";
+         ctx.fillStyle = accentColor;
+-        ctx.globalAlpha = 1.0;
+-        ctx.fillText(label, x, y + 55);
+-        ctx.restore();
++        ctx.font = `800 14px 'Michroma'`;
++        ctx.fillText(label, x, yLabel);
+     };
+ 
+-    drawGridMetric(m1Value, m1Label, colX1, row2Y);
+-    drawGridMetric(m2Value, m2Label, colX2, row2Y);
++    drawMetric(m1Val, m1Label, col1X);
++    drawMetric(m2Val, m2Label, col2X);
++    drawMetric(m3Val, m3Label, col3X);
++
++    ctx.restore();
+ }
+ 
+-/**
+- * Renders the "Journal Grid" sticker.
+- * A high-fidelity, data-dense variant with top-aligned stats and a large Day indicator.
+- */
+ export function drawJournalGrid(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+-    const c = buildColors(textColor);
+-    const lineColor = textColor.startsWith('#') ? textColor : (textColor === 'black' ? '#000000' : '#ffffff');
+-    const isDark = isColorDark(lineColor);
+-    const sport = normalizeSport(stats.type);
++    const { solid, trans, label: labelColor, accent: accentColor } = buildColors(textColor);
+ 
+-    ctx.save();
+-    ctx.globalAlpha = 0.9;
++    const boxX = 80;
++    const boxY = 1450;
++    const boxW = 920;
++    const boxH = 360;
++
++    const isWorkout = stats.type?.toLowerCase().includes('workout') || stats.type?.toLowerCase().includes('training') || stats.type?.toLowerCase().includes('gym') || !stats.hasDistance;
++    const isRide = stats.type === 'Ride' || stats.type === 'EBikeRide';
+ 
+-    // Apply Bi-Directional Readability Shadow (Anti-Ghosting)
+     ctx.save();
+-    ctx.shadowColor = isDark ? 'rgba(255, 255, 255, 0.45)' : 'rgba(0, 0, 0, 0.6)';
+-    ctx.shadowBlur = 20;
+-    ctx.shadowOffsetY = 4;
++    applyAntiGhostingShadow(ctx, textColor);
+ 
+-    // 1. DAY Indicator (Top Left) - Moved down to sit under default logo
+-    ctx.textAlign = 'left';
+-    ctx.textBaseline = 'top';
+-    ctx.fillStyle = lineColor;
++    // 1. Draw outer frame
++    ctx.strokeStyle = textColor === 'black' ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.15)';
++    ctx.lineWidth = 2;
++    ctx.strokeRect(boxX, boxY, boxW, boxH);
+ 
+-    // Day Name (e.g., TUESDAY) under logo
+-    const dayLabel = (stats.dayName || "ACTIVITY").toUpperCase();
+-    ctx.font = "800 52px 'Merriweather'";
+-    ctx.fillText(dayLabel, 60, 190);
++    // Dynamic glassmorphic fill
++    ctx.fillStyle = textColor === 'black' ? 'rgba(0, 0, 0, 0.03)' : 'rgba(255, 255, 255, 0.04)';
++    ctx.fillRect(boxX, boxY, boxW, boxH);
+ 
+-    // Month Day (e.g., 24) under Day Name
+-    const monthDay = stats.rawDate ? new Date(stats.rawDate).getDate() : "1";
+-    ctx.font = "900 170px 'Merriweather'";
+-    ctx.fillText(String(monthDay), 60, 240);
++    // Date calculations
++    const dateObj = stats.rawDate ? new Date(stats.rawDate) : new Date();
++    const dayLabel = (stats.dayName || dateObj.toLocaleDateString('en-US', { weekday: 'long' })).toUpperCase();
++    const dayNum = dateObj.getDate();
++    const monthLabel = dateObj.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
++    const yearLabel = dateObj.getFullYear();
+ 
+-    // 2. Stats Grid (Top Right)
+-    const gridX = 540;
+-    const gridY = 80;
+-    const col2X = 810;
+-    const rowHeight = 90;
++    const hasMap = stats.polyline && stats.polyline.length > 20;
+ 
+-    ctx.textAlign = 'left';
++    // Define column widths
++    const col1W = boxW * 0.28;
++    const col3W = hasMap ? boxW * 0.28 : 0;
++    const col2W = boxW - col1W - col3W;
+ 
+-    const drawGridItem = (x: number, y: number, label: string, value: string, unit: string) => {
+-        // Label
+-        ctx.font = "700 22px 'Plus Jakarta Sans'"; // Labels stay clean sans-serif for contrast
+-        ctx.globalAlpha = 0.6;
+-        ctx.fillText(label.toUpperCase(), x, y);
++    const col1X = boxX;
++    const col2X = boxX + col1W;
++    const col3X = boxX + col1W + col2W;
+ 
+-        // Value with Smart Scaling
+-        ctx.globalAlpha = 0.9;
+-        const baseSize = 42;
+-        ctx.font = `bold ${baseSize}px 'Merriweather'`;
++    // Draw vertical dividers
++    ctx.strokeStyle = textColor === 'black' ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.12)';
++    ctx.lineWidth = 1.5;
++    ctx.beginPath();
++    ctx.moveTo(col2X, boxY + 40);
++    ctx.lineTo(col2X, boxY + boxH - 40);
++    if (hasMap) {
++        ctx.moveTo(col3X, boxY + 40);
++        ctx.lineTo(col3X, boxY + boxH - 40);
++    }
++    ctx.stroke();
++
++    // ── COLUMN 1: Date Block ──
++    ctx.textAlign = 'center';
++    ctx.textBaseline = 'middle';
++    ctx.fillStyle = textColor;
+ 
+-        let fontSize = baseSize;
+-        const maxW = 250; // Grid column limit
+-        let valWidth = ctx.measureText(value).width;
++    // Day Name
++    ctx.font = `italic 800 24px 'EB Garamond', serif`;
++    ctx.fillText(dayLabel, col1X + col1W / 2, boxY + 70);
+ 
+-        if (valWidth > maxW) {
+-            fontSize = Math.floor(baseSize * (maxW / valWidth));
+-            ctx.font = `bold ${fontSize}px 'Merriweather'`;
+-            valWidth = ctx.measureText(value).width;
+-        }
++    // Day Number
++    ctx.font = `800 110px 'EB Garamond', serif`;
++    ctx.fillText(String(dayNum), col1X + col1W / 2, boxY + 175);
++
++    // Month + Year
++    ctx.font = `800 16px 'Plus Jakarta Sans'`;
++    ctx.fillStyle = accentColor;
++    setLetterSpacing(ctx, '4px');
++    ctx.fillText(`${monthLabel} ${yearLabel}`, col1X + col1W / 2, boxY + 285);
++    setLetterSpacing(ctx, '0px');
++
++    // ── COLUMN 2: Stats Grid (2x2) ──
++    const statsX = col2X + 40;
++    const statsColW = (col2W - 80) / 2;
++    const row1Y = boxY + 60;
++    const row2Y = boxY + 210;
++
++    // Metrics Prep
++    const elevPoint = stats.dataPoints?.find(p => p.label.toLowerCase().includes('elevation')) || { value: '0', unit: 'm' };
++
++    const paceLabel = isWorkout ? 'HEART RATE' : (isRide ? 'AVG. SPEED' : 'PACE');
++    const paceVal = isWorkout ? (stats.avgHeartrate ? `${stats.avgHeartrate}` : '-') : ((stats.subValue || "").split(' ')[0] || "0:00");
++    const paceUnit = isWorkout ? 'bpm' : (isRide ? 'km/h' : '/km');
++
++    const distLabel = isWorkout ? 'DURATION' : 'DISTANCE';
++    const distVal = isWorkout ? (stats.timeStr || '0:00') : (stats.distanceVal || '0.00');
++    const distUnit = isWorkout ? '' : 'km';
+ 
+-        ctx.fillText(value, x, y + 30);
++    const secLabel = isWorkout ? 'ENERGY' : 'DURATION';
++    const secVal = isWorkout ? (stats.calories && stats.calories !== '0' ? `${stats.calories}` : '-') : (stats.timeStr || '0:00');
++    const secUnit = isWorkout ? 'kcal' : '';
++
++    const altLabel = isWorkout ? 'LOCATION' : 'ALTITUDE';
++    const altVal = isWorkout ? (stats.location || 'Scora') : (elevPoint.value || '0');
++    const altUnit = isWorkout ? '' : 'm';
++
++    const drawJournalStat = (x: number, y: number, label: string, value: string, unit: string) => {
++        ctx.textAlign = 'left';
++        ctx.textBaseline = 'top';
++
++        // Label
++        ctx.font = `800 13px 'Plus Jakarta Sans'`;
++        ctx.fillStyle = accentColor;
++        setLetterSpacing(ctx, '2px');
++        ctx.fillText(label.toUpperCase(), x, y);
++        setLetterSpacing(ctx, '0px');
++
++        // Value
++        ctx.font = `italic 700 44px 'EB Garamond', serif`;
++        ctx.fillStyle = textColor;
++        ctx.fillText(value, x, y + 25);
+ 
+         // Unit
+         if (unit) {
+-            ctx.font = "700 20px 'Plus Jakarta Sans'";
+-            ctx.fillText(unit, x + valWidth + 8, y + 45);
++            const valW = ctx.measureText(value).width;
++            ctx.font = `800 15px 'Plus Jakarta Sans'`;
++            ctx.fillStyle = trans;
++            ctx.fillText(unit, x + valW + 6, y + 48);
+         }
+     };
+ 
+-    // Find Elevation in dataPoints
+-    const elevPoint = stats.dataPoints?.find(p => p.label.toLowerCase().includes('elevation')) || { value: '0', unit: 'm' };
+-
+-    // HR Logic: Explicitly prioritize Avg over Max for the Journal entry
+-    const hrPoint = stats.dataPoints?.find(p => p.label.toLowerCase().includes('avg')) ||
+-        { value: stats.avgHeartrate || (stats.dataPoints?.find(p => p.label.includes('HR'))?.value) || '-', unit: 'bpm' };
++    // Row 1
++    drawJournalStat(statsX, row1Y, distLabel, distVal, distUnit);
++    drawJournalStat(statsX + statsColW, row1Y, paceLabel, paceVal, paceUnit);
+ 
+-    const paceLabel = sport === 'Ride' ? 'AVG. SPEED' : 'PACE';
+-    const paceUnit = sport === 'Ride' ? 'km/h' : '/km';
++    // Row 2
++    drawJournalStat(statsX, row2Y, secLabel, secVal, secUnit);
++    // Alt / Location can grow
++    const finalAltVal = altVal.length > 15 ? altVal.slice(0, 15) + "…" : altVal;
++    drawJournalStat(statsX + statsColW, row2Y, altLabel, finalAltVal, altUnit);
+ 
+-    // Row 1: Distance | Pace
+-    drawGridItem(gridX, gridY, "DISTANCE", stats.distanceVal || "0.00", "km");
+-    drawGridItem(col2X, gridY, paceLabel, (stats.subValue || "").split(' ')[0] || "0:00", paceUnit);
++    // ── COLUMN 3: Framed Pocket Route Map ──
++    if (hasMap && stats.polyline) {
++        const mapSize = 250;
++        const mapX = col3X + (col3W - mapSize) / 2;
++        const mapY = boxY + (boxH - mapSize) / 2;
+ 
+-    // Row 2: Moving Time | Elevation
+-    drawGridItem(gridX, gridY + rowHeight, "TIME", stats.timeStr || "0:00", "");
+-    drawGridItem(col2X, gridY + rowHeight, "ELEVATION", elevPoint.value, "m");
++        // Draw framed map box
++        ctx.strokeStyle = textColor === 'black' ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.08)';
++        ctx.lineWidth = 1;
++        ctx.strokeRect(mapX, mapY, mapSize, mapSize);
+ 
+-    // Row 3: Location | bpm
+-    const locationStr = stats.location?.length > 15 ? stats.location.slice(0, 15) + "…" : stats.location;
+-    drawGridItem(gridX, gridY + rowHeight * 2, "LOCATION", locationStr || "Scora", "");
+-    drawGridItem(col2X, gridY + rowHeight * 2, "HEART RATE", hrPoint.value, "bpm");
++        // Fill background behind map slightly to lift it
++        ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.02)';
++        ctx.fillRect(mapX, mapY, mapSize, mapSize);
+ 
+-    // 3. Map (Top-Right Pocket - under stats)
+-    if (stats.polyline) {
+-        ctx.shadowBlur = 0; // Disable shadow for map to keep it clean
++        ctx.save();
++        ctx.shadowBlur = 0;
+         ctx.shadowOffsetY = 0;
+-
+-        const mapSize = 450;
+-        const mapX = 780;
+-        const mapY = 650;
+-
+-        // Draw map with slightly thicker stroke
+         drawRoutePath(ctx, stats.polyline, mapX, mapY, mapSize, {
+-            color: lineColor,
+-            strokeWidth: 9
++            color: textColor === 'black' ? '#000000' : '#ffffff',
++            strokeWidth: 6
+         });
++        ctx.restore();
+     }
+ 
+     ctx.restore();
+@@ -5380,74 +5854,53 @@ export function drawFinishLine(ctx: CanvasRenderingContext2D, stats: any, textCo
+ export function drawUltraDetail(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+     const { solid, trans, label: labelColor, accent: accentColor } = buildColors(textColor);
+ 
+-    const secondaryColor = textColor === 'black' ? '#000000' : '#ffffff';
+-    const isDarkAccent = isColorDark(accentColor);
+-    const isDarkSecondary = isColorDark(secondaryColor);
+-
+     ctx.save();
+-    ctx.textBaseline = 'alphabetic';
+-    ctx.textAlign = 'left';
+ 
+-    const startX = 70; // Shifted left for more gutter
+-    let currentY = 320;
++    // Bounding box dimensions under the logo
++    const w = 920;
++    const h = 240;
++    const startX = 80;
++    const startY = 180;
++    const centerY = startY + h / 2;
++    const r = 24;
++
++    // 1. Draw Glassmorphic Card Background
++    ctx.beginPath();
++    ctx.roundRect(startX, startY, w, h, r);
++    ctx.fillStyle = textColor === 'black' ? 'rgba(255, 255, 255, 0.85)' : 'rgba(28, 28, 30, 0.75)';
++    ctx.fill();
++    ctx.strokeStyle = textColor === 'black' ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.15)';
++    ctx.lineWidth = 1.5;
++    ctx.stroke();
+ 
++    // Subtle colored left accent stripe inside the card
++    ctx.fillStyle = accentColor;
++    ctx.beginPath();
++    ctx.roundRect(startX + 15, startY + 20, 8, h - 40, 4);
++    ctx.fill();
++
++    // Determine values
+     const isWorkout = stats.type?.toLowerCase().includes('workout') || stats.type?.toLowerCase().includes('training') || stats.type?.toLowerCase().includes('gym') || !stats.hasDistance;
+     const isRide = stats.type === 'Ride' || stats.type === 'EBikeRide';
+ 
+-    // ── 1. Hero Block (Level 2) ──────────────────────────────────────────────
++    // ── 1. Hero Block (Primary Metric) ──────────────────
+     let heroValue = stats.distanceVal || '0.00';
+-    let heroUnit = (stats.distanceUnit || 'kilometers').toUpperCase();
++    let heroUnit = (stats.distanceUnit || 'KM').toUpperCase();
++    if (heroUnit === 'KILOMETERS') heroUnit = 'KM';
++    if (heroUnit === 'MILES') heroUnit = 'MI';
+ 
+     if (isWorkout) {
+         heroValue = stats.timeStr || '0m';
+         heroUnit = 'DURATION';
+     }
+ 
+-    // Hero Data (Distance/Duration - 85% Opacity)
+-    let heroFontSize = 210; // Reduced from 240
+-    if (heroValue.length > 4) heroFontSize = 170; // Earlier trigger for 99.99
+-    if (heroValue.length > 6) heroFontSize = 130;
+-    if (heroValue.length > 8) heroFontSize = 110;
+-
+-    ctx.save();
+-    ctx.shadowColor = isDarkAccent ? 'rgba(255, 255, 255, 0.45)' : 'rgba(0, 0, 0, 0.6)';
+-    ctx.shadowBlur = 20;
+-    ctx.shadowOffsetY = 4;
+-    ctx.globalAlpha = 0.85;
+-    ctx.font = `800 ${heroFontSize}px 'Russo One'`;
+-    ctx.fillStyle = accentColor;
+-    ctx.fillText(heroValue, startX, currentY);
+-    ctx.restore();
+-
+-    // Hero Unit (Medium, Ultra)
+-    currentY += 80;
+-    ctx.save();
+-    ctx.font = "800 65px 'Russo One'";
+-    ctx.fillStyle = secondaryColor;
+-    ctx.globalAlpha = 1.0;
+-    ctx.shadowColor = isDarkSecondary ? 'rgba(255, 255, 255, 0.45)' : 'rgba(0, 0, 0, 0.6)';
+-    ctx.shadowBlur = 15;
+-    ctx.shadowOffsetY = 3;
+-    if (typeof (ctx as any).letterSpacing !== 'undefined') {
+-        (ctx as any).letterSpacing = "4px";
+-    }
+-    ctx.fillText(heroUnit, startX, currentY);
+-    if (typeof (ctx as any).letterSpacing !== 'undefined') {
+-        (ctx as any).letterSpacing = "0px";
+-    }
+-    ctx.restore();
+-
+-    // ── 2. Grid Row (Level 3) ────────────────────────────────────────────────
+-    // Side-by-side metrics row starting below the Hero block
+-    currentY += 180;
+-
+-    // Metric 1: Pace/Speed or HR
++    // ── 2. Metric 1 (Pace / HR) ─────────────────────────
+     let m1Value = '';
+     let m1Unit = '';
+     let m1Label = '';
+ 
+     if (isWorkout) {
+-        m1Value = stats.avgHeartrate ? String(stats.avgHeartrate) : (stats.calories || '0');
++        m1Value = stats.avgHeartrate ? String(stats.avgHeartrate) : (stats.calories ? String(stats.calories) : '0');
+         m1Unit = stats.avgHeartrate ? 'BPM' : 'KCAL';
+         m1Label = stats.avgHeartrate ? 'AVG HEART RATE' : 'CALORIES';
+     } else {
+@@ -5456,51 +5909,7 @@ export function drawUltraDetail(ctx: CanvasRenderingContext2D, stats: any, textC
+         m1Label = isRide ? 'AVG. SPEED' : 'PACE';
+     }
+ 
+-    // Value 1 (Data - 85% Opacity)
+-    ctx.save();
+-    ctx.shadowColor = isDarkAccent ? 'rgba(255, 255, 255, 0.45)' : 'rgba(0, 0, 0, 0.6)';
+-    ctx.shadowBlur = 18;
+-    ctx.shadowOffsetY = 4;
+-    ctx.globalAlpha = 0.85;
+-    ctx.font = "800 100px 'Russo One'";
+-    ctx.fillStyle = accentColor;
+-    ctx.fillText(m1Value.toUpperCase(), startX, currentY);
+-    const m1ValW = ctx.measureText(m1Value.toUpperCase()).width;
+-    ctx.restore();
+-
+-    // Unit 1
+-    if (m1Unit) {
+-        ctx.save();
+-        ctx.font = "800 48px 'Russo One'";
+-        ctx.fillStyle = secondaryColor;
+-        ctx.globalAlpha = 1.0;
+-        ctx.shadowColor = isDarkSecondary ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.6)';
+-        ctx.shadowBlur = 15;
+-        ctx.shadowOffsetY = 3;
+-        ctx.fillText(m1Unit.toUpperCase(), startX + m1ValW + 15, currentY);
+-        ctx.restore();
+-    }
+-
+-    // Label 1
+-    ctx.save();
+-    ctx.font = "800 26px 'Russo One'";
+-    ctx.fillStyle = secondaryColor;
+-    ctx.globalAlpha = 1.0;
+-    ctx.shadowColor = isDarkSecondary ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.6)';
+-    ctx.shadowBlur = 15;
+-    ctx.shadowOffsetY = 3;
+-    if (typeof (ctx as any).letterSpacing !== 'undefined') {
+-        (ctx as any).letterSpacing = "2px";
+-    }
+-    ctx.fillText(m1Label, startX, currentY + 45);
+-    if (typeof (ctx as any).letterSpacing !== 'undefined') {
+-        (ctx as any).letterSpacing = "0px";
+-    }
+-    ctx.restore();
+-
+-    // Metric 2: Duration or meta (Shift horizontally)
+-    const midX = 570; // Shifted right for more gutter
+-
++    // ── 3. Metric 2 (Duration / Calories / Date) ────────
+     let m2Value = '';
+     let m2Unit = '';
+     let m2Label = '';
+@@ -5512,57 +5921,96 @@ export function drawUltraDetail(ctx: CanvasRenderingContext2D, stats: any, textC
+     } else {
+         const fullTime = stats.timeStr || '0m';
+         if (fullTime.includes('h')) {
+-            // Complex duration like "1h 30m" -> Keep as one string in Value
+             m2Value = fullTime.toUpperCase();
+             m2Unit = '';
+         } else {
+-            // Simple duration like "42m" -> "42" and "M"
+             m2Value = fullTime.replace(/[a-zA-Z]+$/, '').trim();
+             m2Unit = (fullTime.match(/[a-zA-Z]+$/)?.[0] || 'm').toUpperCase();
+         }
+         m2Label = 'TOTAL DURATION';
+     }
+ 
+-    // Value 2 (Data - 85% Opacity)
+-    ctx.save();
+-    ctx.shadowColor = isDarkAccent ? 'rgba(255, 255, 255, 0.45)' : 'rgba(0, 0, 0, 0.6)';
+-    ctx.shadowBlur = 18;
+-    ctx.shadowOffsetY = 4;
+-    ctx.globalAlpha = 0.85;
+-    ctx.font = "800 100px 'Russo One'";
++    // Clear shadow settings for background partitions
++    ctx.shadowBlur = 0;
++    ctx.shadowOffsetY = 0;
++
++    // Draw dividers
++    ctx.beginPath();
++    ctx.moveTo(startX + 370, startY + 40);
++    ctx.lineTo(startX + 370, startY + h - 40);
++    ctx.moveTo(startX + 650, startY + 40);
++    ctx.lineTo(startX + 650, startY + h - 40);
++    ctx.strokeStyle = textColor === 'black' ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.1)';
++    ctx.lineWidth = 1;
++    ctx.stroke();
++
++    // Now, apply the premium anti-ghosting shadows for text rendering
++    applyAntiGhostingShadow(ctx, textColor);
++
++    // Left Column X: startX + 45
++    const col1X = startX + 45;
++    // Middle Column X: startX + 400
++    const col2X = startX + 400;
++    // Right Column X: startX + 680
++    const col3X = startX + 680;
++
++    ctx.textAlign = 'left';
++
++    // ───────────────── COLUMN 1: HERO ─────────────────
++    // Label
++    ctx.font = "800 13px 'Outfit'";
+     ctx.fillStyle = accentColor;
+-    ctx.fillText(m2Value.toUpperCase(), midX, currentY);
+-    const m2ValW = ctx.measureText(m2Value.toUpperCase()).width;
+-    ctx.restore();
++    setLetterSpacing(ctx, '2px');
++    ctx.textBaseline = 'middle';
++    ctx.fillText(heroUnit, col1X, centerY - 50);
++    setLetterSpacing(ctx, '0px');
+ 
+-    // Unit 2
+-    if (m2Unit) {
+-        ctx.save();
+-        ctx.font = "800 48px 'Russo One'";
+-        ctx.fillStyle = secondaryColor;
+-        ctx.globalAlpha = 1.0;
+-        ctx.shadowColor = isDarkSecondary ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.6)';
+-        ctx.shadowBlur = 15;
+-        ctx.shadowOffsetY = 3;
+-        ctx.fillText(m2Unit.toUpperCase(), midX + m2ValW + 15, currentY);
+-        ctx.restore();
+-    }
++    // Value
++    let heroFontSize = 76;
++    if (heroValue.length > 5) heroFontSize = 64;
++    if (heroValue.length > 7) heroFontSize = 52;
++    ctx.font = `italic 900 ${heroFontSize}px 'Russo One'`;
++    ctx.fillStyle = textColor;
++    ctx.fillText(heroValue, col1X, centerY + 15);
+ 
+-    // Label 2
+-    ctx.save();
+-    ctx.font = "800 26px 'Russo One'";
+-    ctx.fillStyle = secondaryColor;
+-    ctx.globalAlpha = 1.0;
+-    ctx.shadowColor = isDarkSecondary ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.6)';
+-    ctx.shadowBlur = 15;
+-    ctx.shadowOffsetY = 3;
+-    if (typeof (ctx as any).letterSpacing !== 'undefined') {
+-        (ctx as any).letterSpacing = "2px";
++    // ───────────────── COLUMN 2: METRIC 1 ─────────────
++    // Label
++    ctx.font = "800 13px 'Outfit'";
++    ctx.fillStyle = accentColor;
++    setLetterSpacing(ctx, '2px');
++    ctx.fillText(m1Label, col2X, centerY - 50);
++    setLetterSpacing(ctx, '0px');
++
++    // Value + Unit
++    ctx.font = "italic 900 56px 'Russo One'";
++    ctx.fillStyle = textColor;
++    ctx.fillText(m1Value, col2X, centerY + 15);
++    const m1ValW = ctx.measureText(m1Value).width;
++    if (m1Unit) {
++        ctx.font = "800 20px 'Outfit'";
++        ctx.fillStyle = accentColor;
++        ctx.fillText(m1Unit, col2X + m1ValW + 8, centerY + 25);
+     }
+-    ctx.fillText(m2Label, midX, currentY + 45);
+-    if (typeof (ctx as any).letterSpacing !== 'undefined') {
+-        (ctx as any).letterSpacing = "0px";
++
++    // ───────────────── COLUMN 3: METRIC 2 ─────────────
++    // Label
++    ctx.font = "800 13px 'Outfit'";
++    ctx.fillStyle = accentColor;
++    setLetterSpacing(ctx, '2px');
++    ctx.fillText(m2Label, col3X, centerY - 50);
++    setLetterSpacing(ctx, '0px');
++
++    // Value + Unit
++    ctx.font = "italic 900 56px 'Russo One'";
++    ctx.fillStyle = textColor;
++    ctx.fillText(m2Value, col3X, centerY + 15);
++    const m2ValW = ctx.measureText(m2Value).width;
++    if (m2Unit) {
++        ctx.font = "800 20px 'Outfit'";
++        ctx.fillStyle = accentColor;
++        ctx.fillText(m2Unit, col3X + m2ValW + 8, centerY + 25);
+     }
++
+     ctx.restore();
+ }
+ 
+@@ -5755,7 +6203,7 @@ export function drawNoteAccentSticker(ctx: CanvasRenderingContext2D, stats: any,
+     ctx.fillText(narrative, xL + paddingX, yBaseline + 2);
+ 
+     // 8. SCORA V18 "ACTION MENU" (The Floating Context Menu)
+-    // Replicating the NEW iOS "Glass Effect" (Border + Transparency)
++    // Replicating the "Liquid Glass Effect" (Glossy Gradient + Specular Highlights + Beveled Edge)
+     ctx.restore();
+     ctx.save();
+ 
+@@ -5764,26 +6212,65 @@ export function drawNoteAccentSticker(ctx: CanvasRenderingContext2D, stats: any,
+     const menuX = 540 - (menuW / 2);
+     const menuY = yBaseline + 160;
+ 
+-    // Draw Menu Shadow (iOS Depth)
+-    ctx.shadowColor = 'rgba(0,0,0,0.2)';
+-    ctx.shadowBlur = 50;
+-    ctx.shadowOffsetY = 25;
++    // A. Outer Shadow
++    ctx.shadowColor = 'rgba(0,0,0,0.3)';
++    ctx.shadowBlur = 35;
++    ctx.shadowOffsetY = 15;
++
++    // B. Base Liquid Glass Gradient Fill
++    const baseGrad = ctx.createLinearGradient(menuX, menuY, menuX, menuY + menuH);
++    const isLightTheme = textColor === 'black';
++    if (isLightTheme) {
++        baseGrad.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
++        baseGrad.addColorStop(0.3, 'rgba(240, 240, 245, 0.65)');
++        baseGrad.addColorStop(1, 'rgba(225, 225, 230, 0.85)');
++    } else {
++        baseGrad.addColorStop(0, 'rgba(255, 255, 255, 0.22)');
++        baseGrad.addColorStop(0.3, 'rgba(35, 35, 40, 0.65)');
++        baseGrad.addColorStop(1, 'rgba(15, 15, 18, 0.85)');
++    }
+ 
+-    // Draw Menu Body (Glass Effect)
+-    ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
++    ctx.fillStyle = baseGrad;
+     ctx.beginPath();
+     ctx.roundRect(menuX, menuY, menuW, menuH, menuH / 2);
+     ctx.fill();
+ 
+-    // Add the white border (iOS highlight)
++    // Disable shadow for internal drawings to avoid double-shadowing
+     ctx.shadowBlur = 0;
+     ctx.shadowOffsetY = 0;
+-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
++
++    // C. Specular Highlight / Glossy Top Half
++    ctx.save();
++    // Clip to the menu path so highlight doesn't bleed out
++    ctx.beginPath();
++    ctx.roundRect(menuX, menuY, menuW, menuH, menuH / 2);
++    ctx.clip();
++    
++    const glossGrad = ctx.createLinearGradient(menuX, menuY, menuX, menuY + menuH / 2);
++    glossGrad.addColorStop(0, isLightTheme ? 'rgba(255, 255, 255, 0.6)' : 'rgba(255, 255, 255, 0.35)');
++    glossGrad.addColorStop(1, 'rgba(255, 255, 255, 0.0)');
++    ctx.fillStyle = glossGrad;
++    ctx.fillRect(menuX, menuY, menuW, menuH / 2);
++    ctx.restore();
++
++    // D. Glossy Beveled Edge (Gradient Stroke)
++    const borderGrad = ctx.createLinearGradient(menuX, menuY, menuX, menuY + menuH);
++    if (isLightTheme) {
++        borderGrad.addColorStop(0, 'rgba(255, 255, 255, 0.7)');
++        borderGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.3)');
++        borderGrad.addColorStop(1, 'rgba(0, 0, 0, 0.12)');
++    } else {
++        borderGrad.addColorStop(0, 'rgba(255, 255, 255, 0.45)');
++        borderGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.15)');
++        borderGrad.addColorStop(1, 'rgba(255, 255, 255, 0.05)');
++    }
++    ctx.strokeStyle = borderGrad;
+     ctx.lineWidth = 2.5;
+     ctx.stroke();
+ 
+     // Draw Subtle Dividers
+-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.05)';
++    const dividerColor = isLightTheme ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.1)';
++    ctx.strokeStyle = dividerColor;
+     ctx.lineWidth = 2;
+ 
+     const items = ['Cut', 'Copy', 'Paste', 'AutoFill'];
+@@ -5798,7 +6285,8 @@ export function drawNoteAccentSticker(ctx: CanvasRenderingContext2D, stats: any,
+     }
+ 
+     // Draw Menu Labels
+-    ctx.fillStyle = '#111111';
++    const labelColor = isLightTheme ? '#111111' : '#ffffff';
++    ctx.fillStyle = labelColor;
+     ctx.font = `500 42px 'Plus Jakarta Sans'`;
+     ctx.textAlign = 'center';
+     ctx.textBaseline = 'middle';
+diff --git a/src/features/editor/StickerRegistry.ts b/src/features/editor/StickerRegistry.ts
+index d71cf7b..f3e5c9a 100644
+--- a/src/features/editor/StickerRegistry.ts
++++ b/src/features/editor/StickerRegistry.ts
+@@ -30,7 +30,6 @@ export const ACTIVE_STICKER_LIST: StickerDefinition[] = [
+     { id: 'brutalist-letters', category: 'all', supportsBlackText: true, compact: true, features: { distance: true, duration: true }, render: Renderers.drawBrutalistLetters },
+     { id: 'boxed-metric', category: 'distance', supportsBlackText: true, compact: true, features: { distance: true, duration: true }, render: Renderers.drawBoxedMetric },
+     { id: 'condesa-stack', category: 'all', supportsBlackText: true, features: { distance: true, paceSpeed: true, startTime: true, date: true }, expectedMetadata: ['location', 'LOCAL TIME', 'LOCATION'], render: Renderers.drawCondesaStack },
+-    { id: 'mono-minimal', category: 'all', supportsBlackText: true, compact: true, features: { distance: true, duration: true }, render: Renderers.drawMonoMinimal },
+     { id: 'split-badge', category: 'all', supportsBlackText: false, compact: true, features: { distance: true, paceSpeed: true, duration: true }, render: Renderers.drawSplitBadge },
+     { id: 'stacked-editorial', category: 'distance', supportsBlackText: true, features: { distance: true, paceSpeed: true, map: true }, render: Renderers.drawStackedEditorial },
+     { id: 'micro-serif', category: 'distance', supportsBlackText: true, features: { distance: true, paceSpeed: true, map: true }, render: Renderers.drawMicroSerif },
+@@ -42,7 +41,6 @@ export const ACTIVE_STICKER_LIST: StickerDefinition[] = [
+     { id: 'modern-pill', category: 'distance', supportsBlackText: false, preferredCase: 'title', features: { distance: true, paceSpeed: true }, render: Renderers.drawModernPill },
+     { id: 'info-glass', category: 'all', supportsBlackText: false, features: { distance: true, paceSpeed: true, duration: true }, render: Renderers.drawInfoGlass },
+     { id: 'workout-receipt', category: 'distance', supportsBlackText: false, features: { distance: true, paceSpeed: true, duration: true, date: true }, render: Renderers.drawWorkoutReceipt },
+-    { id: 'brutalist-bold', category: 'all', supportsBlackText: false, compact: true, features: { distance: true, paceSpeed: true, duration: true, heartRate: true }, render: Renderers.drawBrutalistBold },
+     { id: 'data-modular', category: 'distance', supportsBlackText: false, compact: true, features: { distance: true, paceSpeed: true, duration: true }, render: Renderers.drawDataModular },
+     { id: 'ultra-detail', category: 'all', supportsCustomColor: true, supportsBlackText: true, features: { distance: true, duration: true, paceSpeed: true, alwaysShowDuration: true }, render: Renderers.drawUltraDetail },
+     { id: 'stealth-bar', category: 'distance', supportsBlackText: false, features: { distance: true, paceSpeed: true, duration: true }, render: Renderers.drawStealthBar },
+@@ -55,6 +53,8 @@ export const ACTIVE_STICKER_LIST: StickerDefinition[] = [
+ // ─── 2. ARCHIVED / HIDDEN STICKERS ───────────────────────────────────────────
+ // These are preserved in the code but hidden from the main UI Gallery.
+ export const ARCHIVED_STICKER_LIST: StickerDefinition[] = [
++    { id: 'mono-minimal', category: 'all', supportsBlackText: true, compact: true, features: { distance: true, duration: true }, render: Renderers.drawMonoMinimal },
++    { id: 'brutalist-bold', category: 'all', supportsBlackText: false, compact: true, features: { distance: true, paceSpeed: true, duration: true, heartRate: true }, render: Renderers.drawBrutalistBold },
+     { id: 'step-master', category: 'all', supportsBlackText: true, compact: true, features: { distance: true, duration: true }, render: Renderers.drawStepMaster },
+     { id: 'dual-pill', category: 'all', supportsBlackText: true, compact: true, features: { distance: true, duration: true }, render: Renderers.drawDualPill },
+     { id: 'serif-float', category: 'distance', supportsBlackText: true, compact: true, features: { distance: true, duration: true }, render: Renderers.drawSerifFloat },
