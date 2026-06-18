@@ -3292,62 +3292,74 @@ export function drawThinPath(ctx: CanvasRenderingContext2D, stats: any, textColo
 }
 
 export function drawMicroSerif(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
-    const colors = getThemeColors(textColor);
     const { s1, s2, hasMap } = getDynamicStats(stats);
-
-    // Playfair Display for a more premium aesthetic
-    const serifFont = "'Playfair Display', serif";
-    const startX = 80; // Shifted left (was 120)
+    const mainColor = textColor;
+    
+    // Lora for a premium, slightly softer serif aesthetic
+    const serifFont = "'Lora', serif";
     const bottomY = 250;
-
+    
+    // Canvas is 1080 wide. 33% each = 360px per column
+    // Column centers: 180, 540, 900
     ctx.save();
 
-    // 1. Drop Shadow
-    ctx.shadowColor = 'rgba(0,0,0,0.8)';
-    ctx.shadowBlur = 12;
-    ctx.shadowOffsetY = 4;
+    // 1. Optional subtle shadow for premium readability
+    ctx.shadowColor = 'rgba(0,0,0,0.4)';
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetY = 2;
 
-    // 2. Measure for dynamic spacing
-    ctx.font = `normal 500 120px ${serifFont}`;
-    const v1W = ctx.measureText(s1.value).width;
-    const v2W = ctx.measureText(s2.value).width;
-    ctx.font = `400 48px ${serifFont}`;
-    const u1W = ctx.measureText(s1.label.toLowerCase()).width;
+    // Use a fixed font size that guarantees 99.99 fits in 340px without dynamic scaling!
+    // This ensures both Distance and Pace use the EXACT same font size, maintaining the editorial look.
+    const valFontSize = 90;
+    const unitFontSize = 36;
+    const vFont = `normal 500 ${valFontSize}px ${serifFont}`;
+    const uFont = `400 ${unitFontSize}px ${serifFont}`;
+
+    const calcBlockWidth = (valText: string | number, unitText: string) => {
+        ctx.font = vFont;
+        const vW = Math.max(1, ctx.measureText(String(valText)).width);
+        ctx.font = uFont;
+        const uW = ctx.measureText(String(unitText)).width;
+        return vW + 16 + uW; // 16px gap
+    };
+
+    // 2. Distance Block (Col 1: Center = 180)
+    const distVal = String(s1.value);
+    const distUnit = String(s1.label).toLowerCase();
+    const b1W = calcBlockWidth(distVal, distUnit);
+    const start1X = 180 - (b1W / 2);
+    drawMetricBlock(ctx, start1X, bottomY, 'Distance', distVal, distUnit, {
+        showLabel: false,
+        labelFont: `400 32px ${serifFont}`,
+        valueFont: vFont,
+        unitFont: uFont,
+        color: mainColor,
+        unitGap: 16
+    });
+
+    // 3. Pace/Speed Block (Col 2: Center = 540)
     const paceUnit = s2.label === 'TIME' ? '' : (s2.label === 'BPM' ? 'bpm' : (s2.label === 'KM/H' ? 'km/h' : '/km'));
-    const u2W = ctx.measureText(paceUnit).width;
-
-    const block1W = v1W + 20 + u1W;
-    const s2X = startX + block1W + 80; // 80px gap between blocks
-    const block2W = v2W + 20 + u2W;
-    const mapX = s2X + block2W + 80; // 80px gap before map
-
-    // 3. Distance Block
-    drawMetricBlock(ctx, startX, bottomY, 'Distance', s1.value, s1.label.toLowerCase(), {
+    const paceVal = String(s2.value);
+    const b2W = calcBlockWidth(paceVal, paceUnit);
+    const start2X = 540 - (b2W / 2);
+    drawMetricBlock(ctx, start2X, bottomY, s2.label, paceVal, paceUnit, {
         showLabel: false,
         labelFont: `400 32px ${serifFont}`,
-        valueFont: `normal 500 120px ${serifFont}`,
-        unitFont: `400 48px ${serifFont}`,
-        color: 'white',
-        unitGap: 20
+        valueFont: vFont,
+        unitFont: uFont,
+        color: mainColor,
+        unitGap: 16
     });
 
-    // 4. Pace/Speed Block
-    drawMetricBlock(ctx, s2X, bottomY, s2.label, s2.value, paceUnit, {
-        showLabel: false,
-        labelFont: `400 32px ${serifFont}`,
-        valueFont: `normal 500 120px ${serifFont}`,
-        unitFont: `400 48px ${serifFont}`,
-        color: 'white',
-        unitGap: 20
-    });
-
-    // 5. Map Route Block (Moved Below with massive scale)
-    if (hasMap) {
+    // 4. Map Route Block (Col 3: Center = 900)
+    if (hasMap && stats.polyline) {
         ctx.save();
         ctx.globalAlpha = 0.9;
-        drawRoutePath(ctx, stats.polyline, startX + 250, bottomY + 280, 500, {
-            color: 'white',
-            strokeWidth: 6
+        // Center at 900 horizontally.
+        // The text baseline is 250. Text height is ~90px, so vertical center is ~215.
+        drawRoutePath(ctx, stats.polyline, 900, 215, 260, {
+            color: mainColor,
+            strokeWidth: 5
         });
         ctx.restore();
     }
@@ -5398,10 +5410,10 @@ export function drawGraffitiBrand(ctx: CanvasRenderingContext2D, stats: any, tex
     const colX2 = 540 + (safeW / 4); // Center of right half
     
     // Push layout as high as possible to minimize vertical footprint
-    const startY = 220;
+    const startY = 220; // Intended visual top of the sticker
 
     ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
+    ctx.textBaseline = 'alphabetic'; // Safari safe: prevents 'top' bounding box inconsistencies
 
     // 1. Logic: Check if Workout/Non-Distance
     const isWorkout = stats.type?.toLowerCase().includes('workout') || stats.type?.toLowerCase().includes('training') || stats.type?.toLowerCase().includes('gym') || !stats.hasDistance;
@@ -5420,7 +5432,10 @@ export function drawGraffitiBrand(ctx: CanvasRenderingContext2D, stats: any, tex
     
     ctx.font = `400 ${heroSize}px 'Bungee'`;
     ctx.fillStyle = accentColor;
-    ctx.fillText(heroVal, midX, startY);
+    
+    // Calculate exact alphabetic baseline. Bungee's baseline is approx 85% of font size.
+    const heroBaseline = startY + (heroSize * 0.85);
+    ctx.fillText(heroVal, midX, heroBaseline);
     ctx.restore();
 
     // 3. Main Unit (Directly beneath hero)
@@ -5431,9 +5446,9 @@ export function drawGraffitiBrand(ctx: CanvasRenderingContext2D, stats: any, tex
     ctx.globalAlpha = 1.0;
     if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "10px";
     
-    // Collapse tightly under the visual height of Bungee (approx 85% of font size)
-    const labelY = startY + (heroSize * 0.85);
-    ctx.fillText(heroLabel, midX, labelY);
+    // Place unit baseline exactly 40px below the hero baseline
+    const labelBaseline = heroBaseline + 40;
+    ctx.fillText(heroLabel, midX, labelBaseline);
     ctx.restore();
 
     // 4. Activity Statistics (Data Prep)
@@ -5455,10 +5470,10 @@ export function drawGraffitiBrand(ctx: CanvasRenderingContext2D, stats: any, tex
     }
 
     // 5. 50/50 Sub-Metrics
-    // Collapse tightly under the main unit label
-    const row2Y = labelY + 65; // Slightly more spacing for the larger label
+    // Place the top of the sub-metrics about 25px below the main unit label baseline
+    const row2YTop = labelBaseline + 25; 
 
-    const drawGridMetric = (val: string, label: string, x: number, y: number) => {
+    const drawGridMetric = (val: string, label: string, x: number, yTop: number) => {
         // Value
         ctx.save();
         ctx.fillStyle = accentColor;
@@ -5472,20 +5487,23 @@ export function drawGraffitiBrand(ctx: CanvasRenderingContext2D, stats: any, tex
             mSize -= 2;
             ctx.font = `400 ${mSize}px 'Bungee'`;
         }
-        ctx.fillText(val, x, y);
+        
+        const valBaseline = yTop + (mSize * 0.85);
+        ctx.fillText(val, x, valBaseline);
 
         // Label
-        ctx.font = "800 36px 'Space Grotesk'"; // Increased from 22px
-        ctx.globalAlpha = 1.0; // Increased from 0.8
+        ctx.font = "800 36px 'Space Grotesk'"; 
+        ctx.globalAlpha = 1.0; 
         if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "4px";
         
-        // Stack tightly under the sub-metric value
-        ctx.fillText(label, x, y + (mSize * 0.85) + 8);
+        // Stack tightly under the sub-metric value (36px font + 12px gap)
+        const subLabelBaseline = valBaseline + 36 + 12;
+        ctx.fillText(label, x, subLabelBaseline);
         ctx.restore();
     };
 
-    drawGridMetric(String(m1Value), String(m1Label), colX1, row2Y);
-    drawGridMetric(String(m2Value), String(m2Label), colX2, row2Y);
+    drawGridMetric(String(m1Value), String(m1Label), colX1, row2YTop);
+    drawGridMetric(String(m2Value), String(m2Label), colX2, row2YTop);
 }
 
 export function drawJournalGrid(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
@@ -6652,16 +6670,19 @@ export function drawGraffitiMap(ctx: CanvasRenderingContext2D, stats: any, textC
     }
 
     ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
+    ctx.textBaseline = 'alphabetic'; // Safari safe: prevents 'top' bounding box inconsistencies
 
     const safeW = 960; 
     
+    const unitText = "KM";
     ctx.font = "400 100px 'Permanent Marker'";
     const refWidthNum = ctx.measureText("999.99").width;
     const maxNumSize = Math.floor(100 * (safeW / refWidthNum));
 
-    const refWidthUnit = ctx.measureText("KILOMETERS").width;
-    const maxUnitSize = Math.floor(100 * (safeW / refWidthUnit));
+    const refWidthUnit = ctx.measureText(unitText).width;
+    // Cap the KM unit size so it doesn't become comically huge (e.g. max 300px)
+    let maxUnitSize = Math.floor(100 * (safeW / refWidthUnit));
+    if (maxUnitSize > 300) maxUnitSize = 300;
 
     const distNum = stats.distanceVal || '0.00';
     
@@ -6680,14 +6701,18 @@ export function drawGraffitiMap(ctx: CanvasRenderingContext2D, stats: any, textC
     // Snap text tightly beneath the actual physical map (with 40px breathing room)
     const textStartY = (stats._dynamicMapEndY || 250) + 40;
     
-    ctx.fillText(distNum, 540, textStartY);
+    // Calculate exact alphabetic baseline. Permanent Marker baseline is approx 85% of font size.
+    const numBaseline = textStartY + (finalNumSize * 0.85);
+    ctx.fillText(distNum, 540, numBaseline);
     ctx.restore();
 
     ctx.save();
     ctx.font = `400 ${maxUnitSize}px 'Permanent Marker'`;
     ctx.fillStyle = secondaryColor;
     ctx.globalAlpha = 1.0;
-    // Snap KILOMETERS tightly beneath the number
-    ctx.fillText("KILOMETERS", 540, textStartY + (finalNumSize * 0.8));
+    // Snap KM tightly beneath the number
+    const unitTop = textStartY + (finalNumSize * 0.8);
+    const unitBaseline = unitTop + (maxUnitSize * 0.85);
+    ctx.fillText(unitText, 540, unitBaseline);
     ctx.restore();
 }
