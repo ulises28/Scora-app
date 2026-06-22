@@ -6984,6 +6984,20 @@ export function drawWavyQuote(ctx: CanvasRenderingContext2D, stats: any, textCol
                 }
             }
 
+            // Draw the actual route line (spine)
+            ctx.beginPath();
+            ctx.strokeStyle = mainColor;
+            ctx.globalAlpha = 0.3;
+            ctx.lineWidth = 4;
+            ctx.lineJoin = 'round';
+            ctx.lineCap = 'round';
+            pts.forEach((p: any, i: number) => {
+                if (i === 0) ctx.moveTo(p.x, p.y);
+                else ctx.lineTo(p.x, p.y);
+            });
+            ctx.stroke();
+            ctx.globalAlpha = 1.0;
+
             // The data string to repeat
             const dataStr = `${stats.shortTitle || 'ACTIVITY'} • ${stats.distanceVal ? stats.distanceVal + ' KM' : ''} • DUR ${stats.timeStr || ''} • PACE ${stats.subValue || ''} • `.toUpperCase();
             
@@ -7028,7 +7042,7 @@ export function drawWavyQuote(ctx: CanvasRenderingContext2D, stats: any, textCol
                 ctx.translate(charX, charY);
                 // We add PI to angle if the text would be drawn upside down, but for artistic maps, raw angle is fine
                 ctx.rotate(activeSeg.angle);
-                ctx.fillText(char, 0, 0);
+                ctx.fillText(char, 0, -14); // Offset perpendicular to the path
                 ctx.restore();
                 
                 currentDist += advance;
