@@ -6716,3 +6716,129 @@ export function drawGraffitiMap(ctx: CanvasRenderingContext2D, stats: any, textC
     ctx.fillText(unitText, 540, unitBaseline);
     ctx.restore();
 }
+
+/**
+ * ☕ COFFEE CLUB STICKER
+ * Aesthetic: A hand-drawn poster vibe with cursive titles, typewriter data, and a sketched map.
+ * Background: Semi-transparent pale yellow.
+ */
+export function drawCoffeeClub(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const cursiveFont = "'Shadows Into Light Two', cursive";
+    const monoFont = "'Roboto Mono', monospace";
+    
+    // The texts and color (No background, just transparent)
+    ctx.save();
+    const mainColor = textColor.startsWith('#') ? textColor : (textColor === 'white' ? '#ffffff' : '#080706');
+    ctx.fillStyle = mainColor;
+
+    // 1. Big Cursive Title
+    let titleText = (stats.title || 'Morning Run').trim();
+    if (!titleText) titleText = 'Coffee Club';
+    
+    // Handle multi-word titles for the cursive font nicely
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    let titleFontSize = 240;
+    ctx.font = `400 ${titleFontSize}px ${cursiveFont}`;
+    
+    // Simple wrap logic: Split by space, max 2 lines
+    const words = titleText.split(' ');
+    let line1 = words[0];
+    let line2 = words.slice(1).join(' ');
+    
+    if (words.length > 3) {
+        line1 = words.slice(0, 2).join(' ');
+        line2 = words.slice(2).join(' ');
+    }
+    if (!line2) {
+        line1 = titleText;
+        line2 = '';
+    }
+
+    // Auto-scale lines
+    while (ctx.measureText(line1).width > 800 && titleFontSize > 80) {
+        titleFontSize -= 10;
+        ctx.font = `400 ${titleFontSize}px ${cursiveFont}`;
+    }
+    
+    const titleY = 220; // Pushed down to avoid Scora logo
+    ctx.fillText(line1, 80, titleY);
+    
+    if (line2) {
+        // slightly offset line 2
+        ctx.fillText(line2, 100, titleY + titleFontSize * 0.9);
+    }
+
+    // Stack all data on the left
+    ctx.font = `400 48px ${monoFont}`;
+    ctx.textAlign = 'left';
+    
+    // 2. Date & Time
+    const dateText = (stats.date || 'TODAY').toUpperCase();
+    const startTime = (stats.startTime || '00:00 AM').toUpperCase();
+    
+    const midY = 800;
+    ctx.fillText(dateText, 80, midY);
+    ctx.fillText(startTime, 80, midY + 60);
+    
+    // 3. Pace & Duration
+    const paceVal = (stats.subValue || '').split(' ')[0] || '0:00';
+    const hasDist = stats.hasDistance !== false;
+    let sec1 = hasDist ? `PACE ${paceVal}` : `AVG HR ${stats.avgHeartrate || '0'}`;
+    let sec2 = `DUR ${(stats.timeStr || '0:00')}`.toUpperCase();
+    
+    const botY = 1100;
+    ctx.fillText(sec1, 80, botY);
+    ctx.fillText(sec2, 80, botY + 60);
+    
+    // 4. Distance / Calories
+    const distVal = stats.distanceVal || '0.00';
+    let primaryMetric1 = hasDist ? `${distVal} KM` : `${stats.calories || '0'} KCAL`;
+    
+    const distY = 1400;
+    ctx.fillText(primaryMetric1, 80, distY);
+    
+    // 5. The Doodle Area (Hand-drawn mini-map)
+    if (stats.polyline) {
+        const coords = decodePolyline(stats.polyline);
+        if (coords && coords.length > 0) {
+            const mapBox = { x: 500, y: 1000, w: 450, h: 600 };
+            let minLat = coords[0][0], maxLat = minLat, minLng = coords[0][1], maxLng = minLng;
+            coords.forEach((p: any) => {
+                if (p[0] < minLat) minLat = p[0]; if (p[0] > maxLat) maxLat = p[0];
+                if (p[1] < minLng) minLng = p[1]; if (p[1] > maxLng) maxLng = p[1];
+            });
+            const scale = Math.min(mapBox.w / (maxLng - minLng), mapBox.h / (maxLat - minLat));
+            
+            const getXY = (p: [number, number]) => {
+                const x = mapBox.x + (p[1] - minLng) * scale + (mapBox.w - ((maxLng - minLng) * scale)) / 2;
+                const y = mapBox.y + mapBox.h - ((p[0] - minLat) * scale) - (mapBox.h - ((maxLat - minLat) * scale)) / 2;
+                return { x, y };
+            };
+            
+            ctx.save();
+            ctx.beginPath();
+            ctx.strokeStyle = mainColor; // Apply dynamic color to map too
+            ctx.lineWidth = 5;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            coords.forEach((p: any, i: number) => {
+                const pt = getXY(p);
+                if (i === 0) ctx.moveTo(pt.x, pt.y);
+                else ctx.lineTo(pt.x, pt.y);
+            });
+            ctx.stroke();
+            
+            // Draw a dot at the start
+            const startPt = getXY(coords[0]);
+            ctx.beginPath();
+            ctx.fillStyle = mainColor;
+            ctx.arc(startPt.x, startPt.y, 10, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.restore();
+        }
+    }
+
+    ctx.restore();
+}
