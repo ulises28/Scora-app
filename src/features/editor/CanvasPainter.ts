@@ -5545,7 +5545,15 @@ export function drawJournalGrid(ctx: CanvasRenderingContext2D, stats: any, textC
 
     // Day Name (e.g., TUESDAY) under logo
     const dayLabel = (stats.dayName || "ACTIVITY").toUpperCase();
-    ctx.font = "900 80px 'Merriweather'"; // Massively increased
+    
+    let dayFontSize = 80;
+    ctx.font = `900 ${dayFontSize}px 'Merriweather'`;
+    // Proportional dynamic scaling loop
+    while (ctx.measureText(dayLabel).width > 440 && dayFontSize > 30) {
+        dayFontSize -= 2;
+        ctx.font = `900 ${dayFontSize}px 'Merriweather'`;
+    }
+    
     ctx.fillText(dayLabel, 55, 180);
 
     // Month Day (e.g., 24) under Day Name
@@ -6840,5 +6848,377 @@ export function drawCoffeeClub(ctx: CanvasRenderingContext2D, stats: any, textCo
         }
     }
 
+    ctx.restore();
+}
+
+export function drawTempoGraph(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const sysFont = "'Inter', sans-serif";
+    
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.15)';
+    ctx.shadowBlur = 40;
+    ctx.shadowOffsetY = 15;
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)'; // 50% opacity as requested
+    
+    const w = 900;
+    const h = 300;
+    const x = 540 - w/2;
+    const y = 200; 
+    
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, 30);
+    ctx.fill();
+    
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+    
+    ctx.fillStyle = '#333333';
+    ctx.font = `500 32px ${sysFont}`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText(stats.shortTitle || 'Activity', x + 40, y + 40);
+    
+    ctx.font = `800 46px ${sysFont}`;
+    ctx.fillStyle = '#000000';
+    ctx.fillText(stats.timeStr || '0:00', x + 160, y + 100);
+    
+    ctx.globalAlpha = 0.4;
+    ctx.fillText(stats.distanceVal ? `${stats.distanceVal} km` : '- km', x + 450, y + 100);
+    ctx.globalAlpha = 1.0;
+    
+    const tssVal = stats.avgHeartrate ? `${stats.avgHeartrate} BPM` : (stats.subValue || '0:00/km');
+    ctx.fillText(tssVal, x + 680, y + 100);
+    
+    // Draw Graph
+    const gX = x + 40;
+    const gY = y + 260; // bottom baseline
+    const gW = w - 80;
+    const maxH = 80;
+    
+    ctx.fillStyle = '#c8d2e0'; // The grayish blue from image
+    
+    if (stats.splits && stats.splits.length > 0) {
+        // ACTUAL SPLITS DATA
+        let maxSec = 0;
+        stats.splits.forEach((s: any) => { if(s.seconds > maxSec) maxSec = s.seconds; });
+        
+        const barW = (gW / stats.splits.length) - 4;
+        stats.splits.forEach((s: any, i: number) => {
+            let barH = (s.seconds / maxSec) * maxH;
+            if (barH < 5) barH = 5;
+            ctx.fillRect(gX + i * (barW + 4), gY - barH, barW, barH);
+        });
+    } else if (stats.polyline) {
+        // ROUTE FINGERPRINT (Real data visualization)
+        // If no splits, we map their route's latitude variance into an aesthetic curve graph
+        const coords = decodePolyline(stats.polyline);
+        if (coords && coords.length > 0) {
+            let minLat = coords[0][0], maxLat = minLat;
+            coords.forEach((p: any) => {
+                if (p[0] < minLat) minLat = p[0]; if (p[0] > maxLat) maxLat = p[0];
+            });
+            const latRange = maxLat - minLat || 1;
+            
+            ctx.beginPath();
+            ctx.moveTo(gX, gY);
+            coords.forEach((p: any, i: number) => {
+                const px = gX + (i / coords.length) * gW;
+                // Normalize latitude to a height (0 to maxH)
+                const py = gY - ((p[0] - minLat) / latRange) * maxH;
+                ctx.lineTo(px, py);
+            });
+            ctx.lineTo(gX + gW, gY);
+            ctx.closePath();
+            
+            // Premium gradient fill
+            const grad = ctx.createLinearGradient(0, gY - maxH, 0, gY);
+            grad.addColorStop(0, 'rgba(1, 73, 187, 0.4)');
+            grad.addColorStop(1, 'rgba(1, 73, 187, 0)');
+            ctx.fillStyle = grad;
+            ctx.fill();
+            
+            ctx.strokeStyle = '#0149bb';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+        }
+    } else {
+        // Absolute fallback if absolutely no data is present
+        ctx.fillRect(gX, gY - 4, gW, 4);
+    }
+    
+    ctx.restore();
+}
+
+export function drawWavyQuote(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    // ROUTE PATH TYPOGRAPHY - Writing text perfectly along the Strava polyline
+    const mainColor = textColor.startsWith('#') ? textColor : (textColor === 'black' ? '#000000' : '#ffffff');
+    ctx.save();
+    
+    if (stats.polyline) {
+        const coords = decodePolyline(stats.polyline);
+        if (coords && coords.length > 1) {
+            // Setup map bounds to fill the center of the screen
+            const mapBox = { x: 100, y: 300, w: 880, h: 1000 };
+            let minLat = coords[0][0], maxLat = minLat, minLng = coords[0][1], maxLng = minLng;
+            coords.forEach((p: any) => {
+                if (p[0] < minLat) minLat = p[0]; if (p[0] > maxLat) maxLat = p[0];
+                if (p[1] < minLng) minLng = p[1]; if (p[1] > maxLng) maxLng = p[1];
+            });
+            const scale = Math.min(mapBox.w / (maxLng - minLng), mapBox.h / (maxLat - minLat));
+            const pts = coords.map((p: any) => ({
+                x: mapBox.x + (p[1] - minLng) * scale + (mapBox.w - ((maxLng - minLng) * scale)) / 2,
+                y: mapBox.y + mapBox.h - ((p[0] - minLat) * scale) - (mapBox.h - ((maxLat - minLat) * scale)) / 2
+            }));
+
+            // Calculate total distance of the polyline in pixels
+            let totalPathDist = 0;
+            const segments = [];
+            for(let i=0; i<pts.length-1; i++) {
+                const dx = pts[i+1].x - pts[i].x;
+                const dy = pts[i+1].y - pts[i].y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                if (dist > 0.1) {
+                    const angle = Math.atan2(dy, dx);
+                    segments.push({ ...pts[i], dist, angle, dx, dy });
+                    totalPathDist += dist;
+                }
+            }
+
+            // The data string to repeat
+            const dataStr = `${stats.shortTitle || 'ACTIVITY'} • ${stats.distanceVal ? stats.distanceVal + ' KM' : ''} • DUR ${stats.timeStr || ''} • PACE ${stats.subValue || ''} • `.toUpperCase();
+            
+            ctx.font = `800 24px 'Inter', sans-serif`;
+            ctx.fillStyle = mainColor;
+            ctx.textBaseline = 'middle';
+            ctx.textAlign = 'center';
+            
+            let currentDist = 0;
+            let charIdx = 0;
+            let segIdx = 0;
+            
+            // Draw chars along path
+            while (currentDist < totalPathDist && segIdx < segments.length) {
+                const char = dataStr[charIdx % dataStr.length];
+                const charW = ctx.measureText(char).width;
+                const advance = charW + 4; // letter spacing
+                
+                // Find which segment we are currently on based on currentDist
+                let accumulated = 0;
+                let activeSeg = segments[0];
+                let distIntoSeg = 0;
+                
+                for (let i = 0; i < segments.length; i++) {
+                    if (currentDist >= accumulated && currentDist <= accumulated + segments[i].dist) {
+                        activeSeg = segments[i];
+                        distIntoSeg = currentDist - accumulated;
+                        segIdx = i;
+                        break;
+                    }
+                    accumulated += segments[i].dist;
+                }
+                
+                if (accumulated + activeSeg.dist < currentDist) break; // Reached end
+                
+                // Interpolate exact X/Y
+                const ratio = distIntoSeg / activeSeg.dist;
+                const charX = activeSeg.x + activeSeg.dx * ratio;
+                const charY = activeSeg.y + activeSeg.dy * ratio;
+                
+                ctx.save();
+                ctx.translate(charX, charY);
+                // We add PI to angle if the text would be drawn upside down, but for artistic maps, raw angle is fine
+                ctx.rotate(activeSeg.angle);
+                ctx.fillText(char, 0, 0);
+                ctx.restore();
+                
+                currentDist += advance;
+                charIdx++;
+            }
+        }
+    } else {
+        // Fallback if no polyline: standard title
+        ctx.fillStyle = mainColor;
+        ctx.font = `800 60px 'Inter', sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText("NO ROUTE DATA", 540, 960);
+    }
+    
+    ctx.restore();
+}
+
+export function drawRetroDistance(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const mainColor = textColor.startsWith('#') ? textColor : (textColor === 'white' ? '#ffffff' : '#042a9b');
+    
+    ctx.save();
+    
+    // RUNNER'S BIB AESTHETIC at the bottom
+    const cardW = 960;
+    const cardH = 600;
+    const cX = 60;
+    const cY = 1260; // Bottom anchored
+    
+    // Bib Paper
+    ctx.fillStyle = 'rgba(249, 246, 240, 0.5)'; // 50% opacity off-white
+    ctx.shadowColor = 'rgba(0,0,0,0.3)';
+    ctx.shadowBlur = 40;
+    ctx.shadowOffsetY = 20;
+    ctx.beginPath();
+    ctx.roundRect(cX, cY, cardW, cardH, 20);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+    
+    // Bib Inner Border
+    ctx.strokeStyle = '#111111';
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.roundRect(cX + 20, cY + 20, cardW - 40, cardH - 40, 10);
+    ctx.stroke();
+    
+    // Grid Dividers
+    ctx.beginPath();
+    ctx.moveTo(cX + 20, cY + 400);
+    ctx.lineTo(cX + cardW - 20, cY + 400); // Horizontal split
+    ctx.moveTo(cX + cardW/3, cY + 400);
+    ctx.lineTo(cX + cardW/3, cY + cardH - 20); // Vert split 1
+    ctx.moveTo(cX + (cardW/3)*2, cY + 400);
+    ctx.lineTo(cX + (cardW/3)*2, cY + cardH - 20); // Vert split 2
+    ctx.stroke();
+    
+    let mainValue = stats.distanceVal || '0.0';
+    let mainLabel = "KILOMETERS";
+    let cell2Label = "TIME";
+    let cell2Value = stats.timeStr || '0:00';
+    
+    // If it's a workout with no distance, feature the duration instead
+    if (!stats.distanceVal || parseFloat(stats.distanceVal) === 0) {
+        mainValue = stats.timeStr || '0:00';
+        mainLabel = "DURATION";
+        cell2Label = "ACTIVITY";
+        cell2Value = normalizeSport(stats.activityType || 'WORKOUT').toUpperCase();
+    }
+    
+    // Distance/Duration (Main Block)
+    ctx.fillStyle = mainColor; // Use dynamic color instead of hardcoded red
+    ctx.font = `800 280px 'Asset', sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(mainValue, cX + cardW/2, cY + 200, cardW - 120);
+    
+    ctx.fillStyle = '#111111';
+    ctx.font = `400 40px 'Inter', sans-serif`;
+    ctx.fillText(mainLabel, cX + cardW/2, cY + 350);
+    
+    // Bottom Cells
+    ctx.textBaseline = 'top';
+    ctx.textAlign = 'left';
+    ctx.font = `800 24px 'Inter', sans-serif`;
+    
+    // Cell 1: Date
+    ctx.fillText("DATE", cX + 40, cY + 420);
+    ctx.font = `400 42px 'Syne', sans-serif`;
+    ctx.fillText((stats.dayAndNumber || 'APR 2').toUpperCase(), cX + 40, cY + 460, 260);
+    
+    // Cell 2: Time / Activity
+    ctx.font = `800 24px 'Inter', sans-serif`;
+    ctx.fillText(cell2Label, cX + cardW/3 + 20, cY + 420);
+    ctx.font = `400 42px 'Syne', sans-serif`;
+    ctx.fillText(cell2Value, cX + cardW/3 + 20, cY + 460);
+    
+    // Cell 3: Pace
+    ctx.font = `800 24px 'Inter', sans-serif`;
+    ctx.fillText("PACE", cX + (cardW/3)*2 + 20, cY + 420);
+    ctx.font = `400 42px 'Syne', sans-serif`;
+    ctx.fillText(stats.subValue || '0:00', cX + (cardW/3)*2 + 20, cY + 460);
+    
+    ctx.restore();
+}
+
+export function drawWaveTitle(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    // FROSTED GLASSMORPHISM PLATE
+    // Default to dark text (#111111) since the glass is now white
+    const mainColor = textColor.startsWith('#') ? textColor : (textColor === 'white' ? '#111111' : '#111111');
+    ctx.save();
+    
+    const cardW = 960;
+    const cardH = 560; // Slightly taller to fit title safely
+    const cX = 60;
+    const cY = 1260; // Shifted up slightly
+    
+    // Glass Pane (Light / White)
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)'; 
+    ctx.shadowColor = 'rgba(0,0,0,0.15)';
+    ctx.shadowBlur = 40;
+    ctx.shadowOffsetY = 20;
+    ctx.beginPath();
+    ctx.roundRect(cX, cY, cardW, cardH, 40);
+    ctx.fill();
+    
+    // Glass Border
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)'; // Bright white specular edge
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    
+    // Typography
+    
+    // Top Massive Title
+    ctx.fillStyle = mainColor; // Dynamic color
+    ctx.font = `800 120px 'Unbounded', sans-serif`; // Replaced Slack Sans Notch
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(normalizeSport(stats.activityType || 'RUN').toUpperCase(), 540, cY + 120, cardW - 80);
+    
+    // Separator line
+    ctx.globalAlpha = 0.2;
+    ctx.fillStyle = mainColor;
+    ctx.fillRect(cX + 60, cY + 220, cardW - 120, 2);
+    ctx.globalAlpha = 1.0;
+    
+    ctx.textBaseline = 'top';
+    const rowY = cY + 260;
+    
+    // Date
+    ctx.textAlign = 'left';
+    ctx.font = `700 32px 'Inter', sans-serif`;
+    ctx.fillText((stats.dayAndNumber || 'APR 2').toUpperCase(), cX + 60, rowY, 300);
+    
+    // Distance (Placed perfectly in the right available space)
+    if (stats.distanceVal && parseFloat(stats.distanceVal) > 0) {
+        ctx.textAlign = 'right';
+        ctx.font = `600 24px 'Inter', sans-serif`;
+        ctx.fillText("DISTANCE", cX + cardW - 60, rowY);
+        ctx.font = `800 40px 'Inter', sans-serif`;
+        ctx.fillText(stats.distanceVal + ' km', cX + cardW - 60, rowY + 30);
+    } else if (stats.calories && stats.calories > 0) {
+        ctx.textAlign = 'right';
+        ctx.font = `600 24px 'Inter', sans-serif`;
+        ctx.fillText("CALORIES", cX + cardW - 60, rowY);
+        ctx.font = `800 40px 'Inter', sans-serif`;
+        ctx.fillText(stats.calories + ' kcal', cX + cardW - 60, rowY + 30);
+    }
+    
+    // Title (Moved to its own line to prevent overlap)
+    const titleY = rowY + 60;
+    ctx.textAlign = 'left'; // Fix alignment bug
+    ctx.font = `800 48px 'Inter', sans-serif`;
+    // Added maxWidth (cardW - 120) to ensure long titles shrink to fit
+    ctx.fillText(stats.shortTitle || 'WORKSHOP', cX + 60, titleY, cardW - 120); 
+    
+    // Bottom Details
+    const row2Y = titleY + 90;
+    ctx.textAlign = 'left';
+    ctx.font = `600 24px 'Inter', sans-serif`;
+    ctx.fillText("DURATION", cX + 60, row2Y);
+    ctx.font = `800 40px 'Inter', sans-serif`;
+    ctx.fillText(stats.timeStr || '1:20', cX + 60, row2Y + 30);
+    
+    ctx.textAlign = 'right';
+    ctx.font = `600 24px 'Inter', sans-serif`;
+    ctx.fillText((stats.subLabel || "AVG PACE").toUpperCase(), cX + cardW - 60, row2Y);
+    ctx.font = `800 40px 'Inter', sans-serif`;
+    ctx.fillText(stats.subValue || '0:00', cX + cardW - 60, row2Y + 30);
+    
     ctx.restore();
 }
