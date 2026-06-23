@@ -88,14 +88,14 @@ export default async function handler(req, res) {
                     url: process.env.UPSTASH_REDIS_REST_URL,
                     token: process.env.UPSTASH_REDIS_REST_TOKEN
                 });
-                // Save the active token with a 10-minute safety expiry (TTL)
-                await redis.set('strava:active_token', data.access_token, { ex: 600 });
+                // Save the active token without expiry so it can always be found by the Admin Reset
+                await redis.set('strava:active_token', data.access_token);
                 // 🔑 Refresh the lock TTL to 120s so it doesn't expire during the fetch phase.
                 if (sessionId && sessionId !== 'fallback') {
                     await redis.set(LOCK_KEY, sessionId, { ex: 120 });
                     console.log('[Queue] Lock TTL refreshed to 120s after successful token exchange.');
                 }
-                console.log('[Queue] Saved active token to Redis with 10m TTL');
+                console.log('[Queue] Saved active token to Redis without TTL to prevent deadlock');
             } catch (kvError) {
                 console.warn('[Queue] Failed to save active token or refresh lock:', kvError.message);
             }
