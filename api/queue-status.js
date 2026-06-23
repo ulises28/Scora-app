@@ -39,6 +39,23 @@ export default async function handler(req, res) {
                 await redis.lpop(QUEUE_KEY);
                 await redis.set(LOCK_KEY, sessionId, { ex: 30 });
                 console.log(`[Queue] Session ${sessionId} advanced from queue to lock holder.`);
+                
+                // Proactively clear any left-over token before they go to Strava
+                try {
+                    const orphanedToken = await redis.get('strava:active_token');
+                    if (orphanedToken) {
+                        console.log('[Queue Status] Found orphaned token. Deauthorizing proactively...');
+                        await fetch('https://www.strava.com/oauth/deauthorize', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ access_token: orphanedToken })
+                        });
+                        await redis.del('strava:active_token');
+                    }
+                } catch (e) {
+                    console.error('[Queue Status] Cleanup error:', e);
+                }
+
                 return res.status(200).json({ sessionId, position: 0, estimatedWait: 0 });
             }
         }
