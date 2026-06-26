@@ -7506,28 +7506,33 @@ export function drawNeonGlow(ctx: CanvasRenderingContext2D, stats: StickerStats,
             ctx.shadowColor = accentColor;
             
             // 1. Broad soft glow
-            ctx.shadowBlur = 60;
-            ctx.lineWidth = 20;
+            ctx.shadowBlur = 80;
+            ctx.lineWidth = 32;
             ctx.globalAlpha = 0.4;
             drawPath();
             
             // 2. Tighter, brighter glow
-            ctx.shadowBlur = 25;
-            ctx.lineWidth = 16;
-            ctx.globalAlpha = 0.8;
+            ctx.shadowBlur = 30;
+            ctx.lineWidth = 32;
+            ctx.globalAlpha = 0.7;
             drawPath();
             
             // 3. Solid color tube (Glass)
             ctx.shadowBlur = 0;
-            ctx.lineWidth = 12;
+            ctx.lineWidth = 32;
             ctx.globalAlpha = 1.0;
             drawPath();
             
-            // 4. White hot center
+            // 4. Thick White-Hot Center
             ctx.strokeStyle = '#ffffff';
             ctx.shadowColor = accentColor;
-            ctx.shadowBlur = 10;
-            ctx.lineWidth = 4;
+            ctx.shadowBlur = 15;
+            ctx.lineWidth = 16;
+            drawPath();
+            
+            // 5. Absolute bright core
+            ctx.shadowBlur = 0;
+            ctx.lineWidth = 8;
             drawPath();
             
             ctx.globalAlpha = 1.0;
