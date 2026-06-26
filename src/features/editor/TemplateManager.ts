@@ -200,9 +200,6 @@ export function initTemplateManager(onChange: OnChangeCallback) {
 
     initToggle('logo-toggle', (isOff) => {
         currentShowLogo = !isOff;
-        const config = STICKER_REGISTRY[currentTemplate];
-        const activeColor = config?.supportsCustomColor ? currentMapColor : currentTextColor;
-        currentActiveColor = activeColor;
         onChange(currentTemplate, currentActiveColor, currentShowLogo);
     });
 

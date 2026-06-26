@@ -706,7 +706,7 @@ export function drawChromeHighContrastSticker(ctx, stats, textColor, showLogo = 
         if (p[1] < minLng) minLng = p[1]; if (p[1] > maxLng) maxLng = p[1];
     });
 
-    const mapBox = { x: 90, y: 500, w: 900, h: 1000 };
+    const mapBox = { x: 50, y: 550, w: 980, h: 1000 };
     const scale = Math.min(mapBox.w / (maxLng - minLng), mapBox.h / (maxLat - minLat));
 
     coords.forEach((p, i) => {
@@ -732,7 +732,7 @@ export function drawChromeHighContrastSticker(ctx, stats, textColor, showLogo = 
     // 3. Draw Distance Text on Mask (will become Liquid Metal)
     const distText = stats.distanceVal || '0.00';
     const text = `${distText} KM`;
-    const targetWidth = 900; // From x=90 to x=990
+    const targetWidth = 980; // Make the numbers massively huge horizontally
     const baseFontSize = 100;
     mctx.font = `400 ${baseFontSize}px 'Sekuya', sans-serif`;
     const metrics = mctx.measureText(text);
@@ -740,7 +740,7 @@ export function drawChromeHighContrastSticker(ctx, stats, textColor, showLogo = 
     
     mctx.textBaseline = 'middle';
     mctx.font = `400 ${fontSize}px 'Sekuya', sans-serif`;
-    mctx.fillText(text, 90, 400);
+    mctx.fillText(text, 50, 420);
 
     // Run the WebGL Pipeline asynchronously
     const runWebGL = async () => {

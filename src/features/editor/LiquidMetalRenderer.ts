@@ -167,7 +167,13 @@ interface SparsePixelData {
   neighborIndices: Int32Array;
 }
 
+const POISSON_CACHE = new Map<string, { imageData: ImageData; pngBlob: Blob }>();
+
 export function toProcessedLiquidMetal(file: File | string): Promise<{ imageData: ImageData; pngBlob: Blob }> {
+  if (typeof file === 'string' && POISSON_CACHE.has(file)) {
+      return Promise.resolve(POISSON_CACHE.get(file)!);
+  }
+
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
   
@@ -298,7 +304,12 @@ export function toProcessedLiquidMetal(file: File | string): Promise<{ imageData
       ctx.putImageData(outImg, 0, 0);
       
       canvas.toBlob((blob) => {
-        resolve({ imageData: outImg, pngBlob: blob! });
+        if (!blob) return reject(new Error('Failed to create blob'));
+        const result = { imageData: outImg, pngBlob: blob };
+        if (typeof file === 'string') {
+            POISSON_CACHE.set(file, result);
+        }
+        resolve(result);
       }, 'image/png');
     };
 
@@ -397,7 +408,7 @@ function createShader(gl: WebGL2RenderingContext, type: number, source: string) 
   return shader;
 }
 
-export async function applyLiquidMetalEffect(sourceDataURL: string, width: number, height: number, theme: 'silver' | 'gold' | 'rosegold' | 'bronze' | 'obsidian' | 'emerald' | 'sapphire' = 'rosegold'): Promise<HTMLCanvasElement> {
+export async function applyLiquidMetalEffect(sourceDataURL: string, width: number, height: number, theme: 'silver' | 'gold' | 'rosegold' | 'bronze' | 'obsidian' | 'emerald' | 'sapphire' | 'rubi' = 'rosegold'): Promise<HTMLCanvasElement> {
   // 1. Calculate Poisson distance field
   const { imageData } = await toProcessedLiquidMetal(sourceDataURL);
   
@@ -469,14 +480,17 @@ export async function applyLiquidMetalEffect(sourceDataURL: string, width: numbe
       colorDark = [0.15, 0.08, 0.02]; 
       colorLight = [0.8, 0.5, 0.2];  
   } else if (theme === 'obsidian') {
-      colorDark = [0.0, 0.0, 0.0]; // Pure black shadows
-      colorLight = [0.15, 0.15, 0.15]; // Very dark base metal, allows specular to pop
+      colorDark = [0.0, 0.0, 0.0]; // Pitch black shadows
+      colorLight = [0.05, 0.05, 0.05]; // Near-black base to let the pure white specular highlights pop exactly like the image
   } else if (theme === 'emerald') {
       colorDark = [0.0, 0.12, 0.05]; 
       colorLight = [0.3, 0.9, 0.5];  
   } else if (theme === 'sapphire') {
       colorDark = [0.0, 0.05, 0.15]; 
       colorLight = [0.3, 0.6, 1.0];  
+  } else if (theme === 'rubi') {
+      colorDark = [0.15, 0.0, 0.02]; 
+      colorLight = [0.95, 0.05, 0.1]; // Deep, rich blood-red metallic
   }
   gl.uniform3f(gl.getUniformLocation(program, "u_metalColorDark"), colorDark[0], colorDark[1], colorDark[2]);
   gl.uniform3f(gl.getUniformLocation(program, "u_metalColorLight"), colorLight[0], colorLight[1], colorLight[2]);
