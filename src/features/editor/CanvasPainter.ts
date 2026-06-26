@@ -7490,7 +7490,8 @@ export function drawNeonGlow(ctx: CanvasRenderingContext2D, stats: StickerStats,
                 ctx.beginPath();
                 coords.forEach((p, i) => {
                     const x = mapBox.x + (p[1] - minLng) * scale + (mapBox.w - ((maxLng - minLng) * scale)) / 2;
-                    const y = mapBox.y + mapBox.h - ((p[0] - minLat) * scale) - (mapBox.h - ((maxLat - minLat) * scale)) / 2;
+                    // Align map to the top of the box (with 40px padding) rather than vertical center
+                    const y = mapBox.y + ((maxLat - p[0]) * scale) + 40;
                     if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
                 });
                 ctx.stroke();
@@ -7499,53 +7500,34 @@ export function drawNeonGlow(ctx: CanvasRenderingContext2D, stats: StickerStats,
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
             
-            // Ultra-Realistic Physical Neon Tube Setup (Scaled for 1080p canvas)
+            // Standard Elegant Neon Setup
             ctx.globalCompositeOperation = 'source-over';
-            
-            // Massive thickness to replicate physical neon glass
-            const tubeWidth = 70;
-            const coreWidth = 30;
-
-            // 1. Smooth Ambient Glow
             ctx.strokeStyle = accentColor;
             ctx.shadowColor = accentColor;
             
-            const auraLayers = [
-                { blur: 150, alpha: 0.3 },
-                { blur: 90, alpha: 0.5 },
-                { blur: 40, alpha: 0.8 },
-                { blur: 20, alpha: 1.0 }
-            ];
-            
-            auraLayers.forEach(layer => {
-                ctx.shadowBlur = layer.blur;
-                ctx.globalAlpha = layer.alpha;
-                ctx.lineWidth = tubeWidth;
-                drawPath();
-            });
-            
-            // 2. The Physical Glass Tube
-            ctx.shadowBlur = 0;
-            ctx.globalAlpha = 1.0;
-            ctx.lineWidth = tubeWidth;
+            // 1. Broad soft glow
+            ctx.shadowBlur = 60;
+            ctx.lineWidth = 20;
+            ctx.globalAlpha = 0.4;
             drawPath();
             
-            // 3. Searing White-Hot Core
-            // Replicate the inner electrical gas which has an orange/yellow tint in red tubes
-            // For a generic accentColor, we blend a slightly tinted core up to pure white
+            // 2. Tighter, brighter glow
+            ctx.shadowBlur = 25;
+            ctx.lineWidth = 16;
+            ctx.globalAlpha = 0.8;
+            drawPath();
+            
+            // 3. Solid color tube (Glass)
+            ctx.shadowBlur = 0;
+            ctx.lineWidth = 12;
+            ctx.globalAlpha = 1.0;
+            drawPath();
+            
+            // 4. White hot center
             ctx.strokeStyle = '#ffffff';
             ctx.shadowColor = accentColor;
-            
-            const coreLayers = [20, 10, 0]; 
-            coreLayers.forEach(blur => {
-                ctx.shadowBlur = blur;
-                ctx.lineWidth = coreWidth;
-                drawPath();
-            });
-            
-            // Absolute center sharp white line
-            ctx.shadowBlur = 0;
-            ctx.lineWidth = coreWidth / 2;
+            ctx.shadowBlur = 10;
+            ctx.lineWidth = 4;
             drawPath();
             
             ctx.globalAlpha = 1.0;
