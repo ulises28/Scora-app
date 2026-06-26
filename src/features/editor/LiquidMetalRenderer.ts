@@ -389,7 +389,7 @@ function createShader(gl: WebGL2RenderingContext, type: number, source: string) 
   return shader;
 }
 
-export async function applyLiquidMetalEffect(sourceDataURL: string, width: number, height: number, theme: 'silver' | 'gold' | 'rosegold' | 'bronze' = 'silver'): Promise<HTMLCanvasElement> {
+export async function applyLiquidMetalEffect(sourceDataURL: string, width: number, height: number, theme: 'silver' | 'gold' | 'rosegold' | 'bronze' | 'obsidian' | 'emerald' | 'sapphire' = 'rosegold'): Promise<HTMLCanvasElement> {
   // 1. Calculate Poisson distance field
   const { imageData } = await toProcessedLiquidMetal(sourceDataURL);
   
@@ -460,6 +460,15 @@ export async function applyLiquidMetalEffect(sourceDataURL: string, width: numbe
   } else if (theme === 'bronze') {
       colorDark = [0.15, 0.08, 0.02]; 
       colorLight = [0.8, 0.5, 0.2];  
+  } else if (theme === 'obsidian') {
+      colorDark = [0.0, 0.0, 0.0]; // Pure black shadows
+      colorLight = [0.15, 0.15, 0.15]; // Very dark base metal, allows specular to pop
+  } else if (theme === 'emerald') {
+      colorDark = [0.0, 0.12, 0.05]; 
+      colorLight = [0.3, 0.9, 0.5];  
+  } else if (theme === 'sapphire') {
+      colorDark = [0.0, 0.05, 0.15]; 
+      colorLight = [0.3, 0.6, 1.0];  
   }
   gl.uniform3f(gl.getUniformLocation(program, "u_metalColorDark"), colorDark[0], colorDark[1], colorDark[2]);
   gl.uniform3f(gl.getUniformLocation(program, "u_metalColorLight"), colorLight[0], colorLight[1], colorLight[2]);

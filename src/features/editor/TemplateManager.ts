@@ -24,8 +24,9 @@ export function initTemplateManager(onChange: OnChangeCallback) {
     let currentTemplates = [...TEMPLATES];
     let currentTemplate = currentTemplates[0] || 'note-minimal';
     let currentTextColor = 'white';
-    let currentMapColor = '#ffffff';
+    let currentMapColor = '#10B981';
     let currentShowLogo = true;
+    let currentActiveColor = 'white';
 
     const galleryContainer = document.getElementById('sticker-gallery');
     const dotsContainer = document.getElementById('template-dots');
@@ -125,7 +126,7 @@ export function initTemplateManager(onChange: OnChangeCallback) {
             colorToggleGroup?.classList.add('hidden');
             mapColorGroup?.classList.add('hidden');
             chromeMaterialGroup?.classList.remove('hidden');
-            activeColor = chromeMaterialSelect ? chromeMaterialSelect.value : 'silver';
+            activeColor = chromeMaterialSelect ? chromeMaterialSelect.value : 'rosegold';
         } else if (config?.supportsCustomColor) {
             colorToggleGroup?.classList.add('hidden');
             mapColorGroup?.classList.remove('hidden');
@@ -139,7 +140,8 @@ export function initTemplateManager(onChange: OnChangeCallback) {
         }
 
         const activeShowLogo = config?.supportsCustomColor ? currentShowLogo : currentShowLogo; // Keep logic consistent
-        onChange(currentTemplate, activeColor, currentShowLogo);
+        currentActiveColor = activeColor;
+        onChange(currentTemplate, currentActiveColor, currentShowLogo);
     }
 
     function initToggle(id: string, onToggle: (isRight: boolean) => void) {
@@ -192,14 +194,16 @@ export function initTemplateManager(onChange: OnChangeCallback) {
 
     initToggle('color-toggle', (isBlack) => {
         currentTextColor = isBlack ? 'black' : 'white';
-        onChange(currentTemplate, currentTextColor, currentShowLogo);
+        currentActiveColor = currentTextColor;
+        onChange(currentTemplate, currentActiveColor, currentShowLogo);
     });
 
     initToggle('logo-toggle', (isOff) => {
         currentShowLogo = !isOff;
         const config = STICKER_REGISTRY[currentTemplate];
         const activeColor = config?.supportsCustomColor ? currentMapColor : currentTextColor;
-        onChange(currentTemplate, activeColor, currentShowLogo);
+        currentActiveColor = activeColor;
+        onChange(currentTemplate, currentActiveColor, currentShowLogo);
     });
 
     const mapColorPicker = document.getElementById('map-color-picker') as HTMLInputElement | null;
@@ -220,7 +224,8 @@ export function initTemplateManager(onChange: OnChangeCallback) {
 
         const config = STICKER_REGISTRY[currentTemplate];
         if (!skipChange && config?.supportsCustomColor) {
-            onChange(currentTemplate, currentMapColor, currentShowLogo);
+            currentActiveColor = currentMapColor;
+            onChange(currentTemplate, currentActiveColor, currentShowLogo);
         }
     }
 
@@ -229,7 +234,7 @@ export function initTemplateManager(onChange: OnChangeCallback) {
             const val = (e.target as HTMLInputElement).value;
             currentMapColor = val;
             updateMapColorUI(val, false);
-            onChange(currentTemplate, currentMapColor, currentShowLogo);
+            onChange(currentTemplate, currentActiveColor, currentShowLogo);
         });
     }
 
@@ -237,6 +242,7 @@ export function initTemplateManager(onChange: OnChangeCallback) {
     if (chromeMaterialSelect) {
         chromeMaterialSelect.addEventListener('change', (e) => {
             const val = (e.target as HTMLSelectElement).value;
+            currentActiveColor = val;
             onChange(currentTemplate, val, currentShowLogo);
         });
     }
@@ -248,10 +254,7 @@ export function initTemplateManager(onChange: OnChangeCallback) {
 
     return {
         get template() { return currentTemplate; },
-        get color() { 
-            const config = STICKER_REGISTRY[currentTemplate];
-            return config?.supportsCustomColor ? currentMapColor : currentTextColor; 
-        },
+        get color() { return currentActiveColor; },
         get showLogo() { return currentShowLogo; },
         setTemplate,
         filterByActivity: (stats: any) => {
