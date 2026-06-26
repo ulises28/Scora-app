@@ -7486,53 +7486,66 @@ export function drawNeonGlow(ctx: CanvasRenderingContext2D, stats: StickerStats,
 
             const scale = Math.min(mapBox.w / (maxLng - minLng), mapBox.h / (maxLat - minLat));
 
-            const drawPath = () => {
+            const drawPath = (offsetX: number = 0) => {
                 ctx.beginPath();
                 coords.forEach((p, i) => {
                     const x = mapBox.x + (p[1] - minLng) * scale + (mapBox.w - ((maxLng - minLng) * scale)) / 2;
-                    // Align map to the top of the box (with 40px padding) rather than vertical center
                     const y = mapBox.y + ((maxLat - p[0]) * scale) + 40;
-                    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                    if (i === 0) ctx.moveTo(x - offsetX, y); else ctx.lineTo(x - offsetX, y);
                 });
                 ctx.stroke();
             };
 
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
-            
-            // 1. Massive Multi-Layer Glow (Pure Light Emission)
             ctx.globalCompositeOperation = 'source-over';
+            
+            const coreWidth = 26; // Bold core
+            const OFFSET = 9999;
+
+            // 1. PURE FLAWLESS AURA (The Offset Shadow Trick)
+            // Draws the stroke off-screen and projects only the pure Gaussian shadow back onto the map.
             ctx.strokeStyle = accentColor;
             ctx.shadowColor = accentColor;
-            
-            const coreWidth = 24; // The core energy line
+            ctx.shadowOffsetX = OFFSET;
+            ctx.shadowOffsetY = 0;
             
             const auraLayers = [
-                { blur: 180, alpha: 0.2 },
-                { blur: 120, alpha: 0.4 },
-                { blur: 70, alpha: 0.6 },
-                { blur: 40, alpha: 0.8 },
-                { blur: 15, alpha: 1.0 } // Tight intense color bleed
+                { blur: 140, alpha: 0.3 },
+                { blur: 80, alpha: 0.5 },
+                { blur: 40, alpha: 0.7 },
+                { blur: 15, alpha: 0.9 }
             ];
             
             auraLayers.forEach(layer => {
                 ctx.shadowBlur = layer.blur;
                 ctx.globalAlpha = layer.alpha;
-                ctx.lineWidth = coreWidth; 
-                drawPath();
+                ctx.lineWidth = coreWidth;
+                drawPath(OFFSET);
             });
             
-            // 2. The Burning White Core
-            ctx.strokeStyle = '#ffffff';
-            ctx.shadowColor = accentColor;
-            ctx.shadowBlur = 10;
-            ctx.globalAlpha = 1.0;
-            ctx.lineWidth = coreWidth - 6; // Leave a tiny rim of intense color
+            // Reset offset for actual drawing
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 0;
+            
+            // 2. TIGHT COLORED PLASMA SHELL
+            ctx.strokeStyle = accentColor;
+            ctx.shadowBlur = 0;
+            ctx.globalAlpha = 0.5;
+            ctx.lineWidth = coreWidth;
             drawPath();
             
-            // 3. Absolute sharp center
+            // 3. BLINDING WHITE CORE
+            ctx.strokeStyle = '#ffffff';
+            ctx.globalAlpha = 1.0;
+            ctx.shadowColor = '#ffffff';
+            ctx.shadowBlur = 5; // Tiny white bleed into the plasma
+            ctx.lineWidth = coreWidth * 0.4; // Usually around 10px
+            drawPath();
+            
+            // 4. Absolute Micro-Core
             ctx.shadowBlur = 0;
-            ctx.lineWidth = coreWidth / 2;
+            ctx.lineWidth = coreWidth * 0.15;
             drawPath();
             
             ctx.globalAlpha = 1.0;
