@@ -7486,12 +7486,12 @@ export function drawNeonGlow(ctx: CanvasRenderingContext2D, stats: StickerStats,
 
             const scale = Math.min(mapBox.w / (maxLng - minLng), mapBox.h / (maxLat - minLat));
 
-            const drawPath = (offsetX: number = 0) => {
+            const drawPath = (offsetX: number = 0, offsetY: number = 0) => {
                 ctx.beginPath();
                 coords.forEach((p, i) => {
                     const x = mapBox.x + (p[1] - minLng) * scale + (mapBox.w - ((maxLng - minLng) * scale)) / 2;
                     const y = mapBox.y + ((maxLat - p[0]) * scale) + 40;
-                    if (i === 0) ctx.moveTo(x - offsetX, y); else ctx.lineTo(x - offsetX, y);
+                    if (i === 0) ctx.moveTo(x + offsetX, y + offsetY); else ctx.lineTo(x + offsetX, y + offsetY);
                 });
                 ctx.stroke();
             };
@@ -7500,53 +7500,42 @@ export function drawNeonGlow(ctx: CanvasRenderingContext2D, stats: StickerStats,
             ctx.lineJoin = 'round';
             ctx.globalCompositeOperation = 'source-over';
             
-            const coreWidth = 26; // Bold core
-            const OFFSET = 9999;
+            const coreWidth = 26; // Thickness of the line
+            const depth = 15; // Depth of the 3D extrusion (isometric down-right)
 
-            // 1. PURE FLAWLESS AURA (The Offset Shadow Trick)
-            // Draws the stroke off-screen and projects only the pure Gaussian shadow back onto the map.
+            // 1. Massive Glowing Aura (at the base of the 3D shape)
             ctx.strokeStyle = accentColor;
             ctx.shadowColor = accentColor;
-            ctx.shadowOffsetX = OFFSET;
-            ctx.shadowOffsetY = 0;
             
             const auraLayers = [
-                { blur: 140, alpha: 0.3 },
-                { blur: 80, alpha: 0.5 },
+                { blur: 150, alpha: 0.3 },
+                { blur: 90, alpha: 0.5 },
                 { blur: 40, alpha: 0.7 },
-                { blur: 15, alpha: 0.9 }
+                { blur: 20, alpha: 1.0 }
             ];
             
             auraLayers.forEach(layer => {
                 ctx.shadowBlur = layer.blur;
                 ctx.globalAlpha = layer.alpha;
                 ctx.lineWidth = coreWidth;
-                drawPath(OFFSET);
+                drawPath(depth, depth); // Cast from the deepest layer
             });
             
-            // Reset offset for actual drawing
-            ctx.shadowOffsetX = 0;
-            ctx.shadowOffsetY = 0;
-            
-            // 2. TIGHT COLORED PLASMA SHELL
-            ctx.strokeStyle = accentColor;
+            // 2. 3D Extrusion (Solid colored sides)
             ctx.shadowBlur = 0;
-            ctx.globalAlpha = 0.5;
-            ctx.lineWidth = coreWidth;
-            drawPath();
-            
-            // 3. BLINDING WHITE CORE
-            ctx.strokeStyle = '#ffffff';
             ctx.globalAlpha = 1.0;
-            ctx.shadowColor = '#ffffff';
-            ctx.shadowBlur = 5; // Tiny white bleed into the plasma
-            ctx.lineWidth = coreWidth * 0.4; // Usually around 10px
-            drawPath();
+            ctx.strokeStyle = accentColor;
             
-            // 4. Absolute Micro-Core
-            ctx.shadowBlur = 0;
-            ctx.lineWidth = coreWidth * 0.15;
-            drawPath();
+            // Draw bottom-up to layer perfectly
+            for (let d = depth; d >= 1; d -= 1) {
+                ctx.lineWidth = coreWidth;
+                drawPath(d, d);
+            }
+            
+            // 3. Front Face (Pure White)
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = coreWidth;
+            drawPath(0, 0); // Top layer (no offset)
             
             ctx.globalAlpha = 1.0;
         }
