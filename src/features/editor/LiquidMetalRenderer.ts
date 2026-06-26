@@ -66,6 +66,7 @@ uniform vec2 u_resolution;
 uniform bool u_isImage;
 uniform vec3 u_metalColorDark;
 uniform vec3 u_metalColorLight;
+uniform float u_holoIntensity;
 
 in vec2 v_uv;
 out vec4 fragColor;
@@ -119,7 +120,7 @@ void main() {
     // Y2K Chromatic Iridescence (Thin-film interference)
     // Applied via Fresnel so it only blooms intensely on the curves, leaving the face clean!
     vec3 holo = 0.5 + 0.5 * cos(vec3(0.0, 2.0, 4.0) + (N.x + N.y) * 5.0 - u_time * 2.0);
-    color += holo * fresnel * 0.4; // Premium physical pearlescent coating
+    color += holo * fresnel * u_holoIntensity; // Premium physical pearlescent coating
     
     // Add sharp metallic rim lighting
     color += u_metalColorLight * pow(fresnel, 4.0) * 0.8;
@@ -134,7 +135,7 @@ void main() {
     
     // Chromatic dispersion for the outer glow (Rainbow halo)
     vec3 chromaticGlow = 0.5 + 0.5 * cos(vec3(0.0, 2.0, 4.0) + (N.x - N.y) * 8.0);
-    color += chromaticGlow * spec2 * 0.5; 
+    color += chromaticGlow * spec2 * (u_holoIntensity > 0.0 ? 0.5 : 0.0); 
     color += vec3(1.0) * spec1 * 1.5; // Core white highlight
     
     // 5. Y2K Starburst Flare (Procedural Sparkles on the highlights)
@@ -480,8 +481,8 @@ export async function applyLiquidMetalEffect(sourceDataURL: string, width: numbe
       colorDark = [0.15, 0.08, 0.02]; 
       colorLight = [0.8, 0.5, 0.2];  
   } else if (theme === 'obsidian') {
-      colorDark = [0.0, 0.0, 0.0]; // Pitch black shadows
-      colorLight = [0.05, 0.05, 0.05]; // Near-black base to let the pure white specular highlights pop exactly like the image
+      colorDark = [0.0, 0.0, 0.0]; // Pitch black crevices and shadows
+      colorLight = [0.45, 0.42, 0.4]; // Warm dark-silver sweeps to replicate the broad gray reflections in the image, allowing pure white specular to sit on top
   } else if (theme === 'emerald') {
       colorDark = [0.0, 0.12, 0.05]; 
       colorLight = [0.3, 0.9, 0.5];  
@@ -494,6 +495,10 @@ export async function applyLiquidMetalEffect(sourceDataURL: string, width: numbe
   }
   gl.uniform3f(gl.getUniformLocation(program, "u_metalColorDark"), colorDark[0], colorDark[1], colorDark[2]);
   gl.uniform3f(gl.getUniformLocation(program, "u_metalColorLight"), colorLight[0], colorLight[1], colorLight[2]);
+  
+  const holoIntensity = theme === 'obsidian' ? 0.0 : 0.4;
+  const locHolo = gl.getUniformLocation(program, "u_holoIntensity");
+  if (locHolo) gl.uniform1f(locHolo, holoIntensity);
   
   // Tweak these values for the perfect "Liquid Chrome" look
   gl.uniform1f(gl.getUniformLocation(program, "u_softness"), 1.2); // Smoother gradients
