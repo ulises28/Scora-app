@@ -7414,7 +7414,7 @@ export function drawWaveTitle(ctx: CanvasRenderingContext2D, stats: any, textCol
 
 // ── Template: Neon Glow ────────────────────────────────────────────────────
 export function drawNeonGlow(ctx: CanvasRenderingContext2D, stats: StickerStats, textColor: string = 'white', showLogo: boolean = true) {
-    const accentColor = textColor === 'black' ? '#ffffff' : textColor; // If black is selected, default to white for glow
+    const accentColor = textColor === 'black' ? '#ffffff' : textColor; 
     
     // Layout geometry
     const canvasWidth = 1080;
@@ -7423,9 +7423,8 @@ export function drawNeonGlow(ctx: CanvasRenderingContext2D, stats: StickerStats,
     
     ctx.save();
 
-    // Setup Text glowing style
-    ctx.shadowColor = accentColor;
-    ctx.shadowBlur = stats.polyline ? 15 : 25; // More text glow if no map
+    // Setup Text (No shadow as requested)
+    ctx.shadowBlur = 0;
     ctx.fillStyle = accentColor;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
@@ -7444,20 +7443,18 @@ export function drawNeonGlow(ctx: CanvasRenderingContext2D, stats: StickerStats,
     let items: { val: string, hide: boolean }[] = [];
     
     if (stats.polyline) {
-        // Activity with distance
         items = [
             { val: locationStr, hide: false },
             { val: `${monthStr}, ${dayStr} ${dayNumStr}`, hide: false },
             { val: timeRaw, hide: false },
             { val: `${stats.distanceVal || '0.00'} ${stats.distanceUnit || 'KM'}`, hide: false },
-            { val: `${stats.subValue || '0:00'}`, hide: false }, // Pace
-            { val: `${stats.timeStr || '0:00'}`, hide: false }   // Duration
+            { val: `${stats.subValue || '0:00'}`, hide: false },
+            { val: `${stats.timeStr || '0:00'}`, hide: false }
         ];
     } else {
-        // Workout (No map/distance)
         items = [
             { val: `${monthStr}, ${dayStr} ${dayNumStr}`, hide: false },
-            { val: `${stats.timeStr || stats.mainValue || '0:00'}`, hide: false }, // Duration
+            { val: `${stats.timeStr || stats.mainValue || '0:00'}`, hide: false },
             { val: `${stats.avgHeartrate || '--'} BPM`, hide: !stats.avgHeartrate }
         ];
     }
@@ -7474,15 +7471,6 @@ export function drawNeonGlow(ctx: CanvasRenderingContext2D, stats: StickerStats,
     });
     
     dataY += 20; // Place map much closer to data
-    
-    // 4. Scora Logo
-    if (showLogo) {
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'alphabetic';
-        ctx.font = "800 30px 'Plus Jakarta Sans', sans-serif";
-        ctx.shadowBlur = 10;
-        ctx.fillText("SCORA", canvasWidth / 2, 1850);
-    }
     
     // 5. Draw Glowing Map (if present)
     if (stats.polyline) {
@@ -7511,22 +7499,22 @@ export function drawNeonGlow(ctx: CanvasRenderingContext2D, stats: StickerStats,
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
             
-            // Ultra-Realistic Physical Neon Tube Setup (Smooth Gradient)
+            // Ultra-Realistic Physical Neon Tube Setup (Scaled for 1080p canvas)
             ctx.globalCompositeOperation = 'source-over';
             
-            const tubeWidth = 32;
-            const coreWidth = 14;
+            // Massive thickness to replicate physical neon glass
+            const tubeWidth = 70;
+            const coreWidth = 30;
 
-            // 1. Smooth Ambient Glow (No hard stroke stepping)
+            // 1. Smooth Ambient Glow
             ctx.strokeStyle = accentColor;
             ctx.shadowColor = accentColor;
             
-            // Build the glow smoothly outward from the exact same tube width
             const auraLayers = [
-                { blur: 100, alpha: 0.3 },
-                { blur: 60, alpha: 0.5 },
-                { blur: 30, alpha: 0.8 },
-                { blur: 15, alpha: 1.0 }
+                { blur: 150, alpha: 0.3 },
+                { blur: 90, alpha: 0.5 },
+                { blur: 40, alpha: 0.8 },
+                { blur: 20, alpha: 1.0 }
             ];
             
             auraLayers.forEach(layer => {
@@ -7536,24 +7524,30 @@ export function drawNeonGlow(ctx: CanvasRenderingContext2D, stats: StickerStats,
                 drawPath();
             });
             
-            // 2. The Physical Glass Tube (Solid core of color)
+            // 2. The Physical Glass Tube
             ctx.shadowBlur = 0;
             ctx.globalAlpha = 1.0;
             ctx.lineWidth = tubeWidth;
             drawPath();
             
-            // 3. Searing White-Hot Core (The electrical arc)
+            // 3. Searing White-Hot Core
+            // Replicate the inner electrical gas which has an orange/yellow tint in red tubes
+            // For a generic accentColor, we blend a slightly tinted core up to pure white
             ctx.strokeStyle = '#ffffff';
-            ctx.shadowColor = 'rgba(255, 255, 255, 0.9)';
+            ctx.shadowColor = accentColor;
             
-            const coreLayers = [15, 5, 0]; // Soft glow to sharp center
+            const coreLayers = [20, 10, 0]; 
             coreLayers.forEach(blur => {
                 ctx.shadowBlur = blur;
                 ctx.lineWidth = coreWidth;
                 drawPath();
             });
             
-            // Reset state
+            // Absolute center sharp white line
+            ctx.shadowBlur = 0;
+            ctx.lineWidth = coreWidth / 2;
+            drawPath();
+            
             ctx.globalAlpha = 1.0;
         }
     }
