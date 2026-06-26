@@ -7502,41 +7502,44 @@ export function drawNeonGlow(ctx: CanvasRenderingContext2D, stats: StickerStats,
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
             
-            // Ultra-Realistic 5-Layer Neon Glow Setup
-            ctx.globalCompositeOperation = 'screen'; // Creates intense light accumulation
+            // Ultra-Realistic Physical Neon Tube Setup
+            // 1. Ambient Light (Screen blend for intense light accumulation)
+            ctx.globalCompositeOperation = 'screen';
             
-            // Layer 1: Huge faint ambient halo
             ctx.strokeStyle = accentColor;
             ctx.shadowColor = accentColor;
-            ctx.shadowBlur = 120;
-            ctx.lineWidth = 50;
+            ctx.shadowBlur = 150;
+            ctx.lineWidth = 90;
             ctx.globalAlpha = 0.3;
             drawPath();
             
-            // Layer 2: Wide outer glow
-            ctx.shadowBlur = 60;
-            ctx.lineWidth = 30;
+            ctx.shadowBlur = 80;
+            ctx.lineWidth = 60;
             ctx.globalAlpha = 0.5;
             drawPath();
             
-            // Layer 3: Medium intense glow
-            ctx.shadowBlur = 30;
-            ctx.lineWidth = 16;
-            ctx.globalAlpha = 0.8;
-            drawPath();
-            
-            // Layer 4: Tight inner color core
-            ctx.shadowBlur = 15;
-            ctx.lineWidth = 8;
+            // 2. The Physical Glass Tube & Gas (Solid color)
+            ctx.globalCompositeOperation = 'source-over';
             ctx.globalAlpha = 1.0;
+            
+            ctx.shadowBlur = 40;
+            ctx.lineWidth = 36;
             drawPath();
             
-            // Layer 5: Searing white-hot center
-            ctx.globalCompositeOperation = 'source-over'; // Reset to standard for the white core
+            ctx.shadowBlur = 20;
+            ctx.lineWidth = 24;
+            drawPath();
+            
+            // 3. Searing White-Hot Core (The electrical arc)
             ctx.strokeStyle = '#ffffff';
-            ctx.shadowColor = accentColor;
-            ctx.shadowBlur = 10;
-            ctx.lineWidth = 4;
+            ctx.shadowColor = '#ffffff'; // White shadow for intense core brightness
+            ctx.shadowBlur = 12;
+            ctx.lineWidth = 12; // Much thicker core
+            drawPath();
+            
+            // Final micro-core for absolute brightness
+            ctx.shadowBlur = 0;
+            ctx.lineWidth = 6;
             drawPath();
             
             // Reset state
