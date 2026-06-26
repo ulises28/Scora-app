@@ -11,6 +11,8 @@ import * as Renderers from './CanvasPainter';
 // ─── 1. ACTIVE PRODUCTIVE STICKERS ───────────────────────────────────────────
 // These are visible in the Studio UI Gallery.
 export const ACTIVE_STICKER_LIST: StickerDefinition[] = [
+    { id: 'chrome-v1', category: 'distance', features: { map: true }, render: Renderers.drawChromeHighContrastSticker },
+    { id: 'chrome-v2', category: 'distance', features: { map: true }, render: Renderers.drawChromeLiquidMercurySticker },
     { id: 'coffee_club', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, duration: true, paceSpeed: true, date: true, location: true, map: true }, render: Renderers.drawCoffeeClub },
     { id: 'tempo_graph', category: 'all', supportsBlackText: true, features: { distance: true, duration: true, paceSpeed: true, map: true }, render: Renderers.drawTempoGraph },
     { id: 'wavy_quote', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: false, map: true }, render: Renderers.drawWavyQuote },
