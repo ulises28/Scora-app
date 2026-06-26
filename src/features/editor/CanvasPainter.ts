@@ -7441,19 +7441,28 @@ export function drawNeonGlow(ctx: CanvasRenderingContext2D, stats: StickerStats,
     const dayNumStr = d.getDate().toString();
     const locationStr = (stats.location || 'LOCAL').toUpperCase();
     
-    const items = [
-        { val: monthStr, hide: false },
-        { val: locationStr, hide: false },
-        { val: dayStr, hide: false },
-        { val: dayNumStr, hide: false },
-        { val: timeRaw, hide: false },
-        { val: stats.polyline ? `${stats.distanceVal || '0.00'} ${stats.distanceUnit || 'KM'}` : `${stats.mainValue || '0m'}`, hide: false },
-        { val: `${stats.subValue || '0:00'}`, hide: !stats.polyline }, // Pace correctly formatted from subValue
-        { val: `${stats.timeStr || '0:00'}`, hide: !stats.polyline }, // Hide duplicate time for workouts
-        { val: `${stats.title || 'WORKOUT'}`.toUpperCase(), hide: !!stats.polyline }, // Show title for workouts to replace empty space
-        { val: `${elevVal} M`, hide: parseFloat(elevVal) === 0 && !elevPoint },
-        { val: `${stats.avgHeartrate || '--'} BPM`, hide: !stats.avgHeartrate } // Replaced calories with strict HR check
-    ].filter(i => !i.hide);
+    let items: { val: string, hide: boolean }[] = [];
+    
+    if (stats.polyline) {
+        // Activity with distance
+        items = [
+            { val: locationStr, hide: false },
+            { val: `${monthStr}, ${dayStr} ${dayNumStr}`, hide: false },
+            { val: timeRaw, hide: false },
+            { val: `${stats.distanceVal || '0.00'} ${stats.distanceUnit || 'KM'}`, hide: false },
+            { val: `${stats.subValue || '0:00'}`, hide: false }, // Pace
+            { val: `${stats.timeStr || '0:00'}`, hide: false }   // Duration
+        ];
+    } else {
+        // Workout (No map/distance)
+        items = [
+            { val: `${monthStr}, ${dayStr} ${dayNumStr}`, hide: false },
+            { val: `${stats.timeStr || stats.mainValue || '0:00'}`, hide: false }, // Duration
+            { val: `${stats.avgHeartrate || '--'} BPM`, hide: !stats.avgHeartrate }
+        ];
+    }
+    
+    items = items.filter(i => !i.hide);
     
     ctx.font = "800 65px 'Plus Jakarta Sans', sans-serif";
     const startX = 80;
