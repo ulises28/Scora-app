@@ -7502,22 +7502,25 @@ export function drawNeonGlow(ctx: CanvasRenderingContext2D, stats: StickerStats,
             
             // Standard Elegant Neon Setup
             ctx.globalCompositeOperation = 'source-over';
+            // 1. Massive Smooth Gradient Aura
             ctx.strokeStyle = accentColor;
             ctx.shadowColor = accentColor;
             
-            // 1. Broad soft glow
-            ctx.shadowBlur = 60;
-            ctx.lineWidth = 24;
-            ctx.globalAlpha = 0.4;
-            drawPath();
+            const auraLayers = [
+                { blur: 150, alpha: 0.2 },
+                { blur: 100, alpha: 0.3 },
+                { blur: 60, alpha: 0.5 },
+                { blur: 30, alpha: 0.8 }
+            ];
             
-            // 2. Tighter, brighter glow
-            ctx.shadowBlur = 25;
-            ctx.lineWidth = 24;
-            ctx.globalAlpha = 0.7;
-            drawPath();
+            auraLayers.forEach(layer => {
+                ctx.shadowBlur = layer.blur;
+                ctx.globalAlpha = layer.alpha;
+                ctx.lineWidth = 24; // Tied to tube width to prevent hard banding
+                drawPath();
+            });
             
-            // 3. Solid color tube (Glass)
+            // 2. Solid color tube (Glass)
             ctx.shadowBlur = 0;
             ctx.lineWidth = 24;
             ctx.globalAlpha = 1.0;
