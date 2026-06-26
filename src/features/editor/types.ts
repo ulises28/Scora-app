@@ -38,5 +38,5 @@ export interface StickerDefinition {
     expectedLabels?: string[];
     /** Skip from gallery display */
     hidden?: boolean;
-    render: (ctx: CanvasRenderingContext2D, stats: any, textColor: string) => void;
+    render: (ctx: CanvasRenderingContext2D, stats: any, textColor: string, showLogo?: boolean) => void;
 }

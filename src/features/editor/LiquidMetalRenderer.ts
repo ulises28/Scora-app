@@ -64,6 +64,8 @@ uniform sampler2D u_image;
 uniform float u_time;
 uniform vec2 u_resolution;
 uniform bool u_isImage;
+uniform vec3 u_metalColorDark;
+uniform vec3 u_metalColorLight;
 
 in vec2 v_uv;
 out vec4 fragColor;
@@ -89,8 +91,8 @@ void main() {
     float dX = (hL - hR) * 1.5;
     float dY = (hD - hU) * 1.5;
     
-    // Z controls how "inflated" or flat the normal is
-    vec3 N = normalize(vec3(dX, dY, 0.08));
+    // Z controls how "inflated" or flat the normal is (lower = puffier foil balloon look)
+    vec3 N = normalize(vec3(dX, dY, 0.04));
     
     // 2. Setup Camera and Reflections
     vec3 viewDir = vec3(0.0, 0.0, 1.0);
@@ -106,17 +108,34 @@ void main() {
     light += smoothstep(0.8, 0.9, matcapUV.y) * 0.8; // Top edge light
     light += smoothstep(0.3, 0.1, matcapUV.y) * 0.3; // Bottom rim light
     
-    // Base metal colors (dark steel to pure white)
-    vec3 color = mix(vec3(0.1, 0.12, 0.15), vec3(1.0, 1.0, 1.0), light);
+    // Base metal colors (dark steel to pure white, or bronze to gold)
+    vec3 color = mix(u_metalColorDark, u_metalColorLight, light);
     
-    // Add subtle iridescent/chromatic tint to the edges based on normals
+    // Y2K Chromatic Iridescence (Holographic rainbow sheen on the metal)
+    vec3 holo = 0.5 + 0.5 * cos(vec3(0.0, 2.0, 4.0) + (N.x + N.y) * 5.0 - u_time * 2.0);
+    color += holo * 0.15; // Subtle rainbow mix
+    
+    // Add sharp metallic rim lighting to simulate foil balloon edges
     float fresnel = 1.0 - max(dot(N, viewDir), 0.0);
-    color += vec3(0.2, 0.5, 1.0) * pow(fresnel, 3.0) * 0.3; // Blueish rim
+    color += u_metalColorLight * pow(fresnel, 4.0) * 0.8;
     
-    // 4. Strong Specular Highlight (The "Gloss")
+    // 4. Strong Specular Highlight & Glow (The "Gloss")
     vec3 lightDir = normalize(vec3(0.5, 0.8, 1.0));
-    float spec = pow(max(dot(N, lightDir), 0.0), 30.0);
-    color += vec3(1.0) * spec;
+    float spec1 = pow(max(dot(N, lightDir), 0.0), 80.0); // Tight core highlight
+    float spec2 = pow(max(dot(N, lightDir), 0.0), 15.0); // Soft outer glow
+    
+    // Chromatic dispersion for the outer glow (Rainbow halo)
+    vec3 chromaticGlow = 0.5 + 0.5 * cos(vec3(0.0, 2.0, 4.0) + (N.x - N.y) * 8.0);
+    color += chromaticGlow * spec2 * 0.6; 
+    color += vec3(1.0) * spec1 * 1.5; // Core white highlight
+    
+    // 5. Y2K Starburst Flare (Procedural Sparkles on the highlights)
+    vec2 nd = N.xy - (lightDir.xy * 0.6); // Center the flare on the light vector
+    float streak1 = pow(max(1.0 - abs(nd.x + nd.y) * 8.0, 0.0), 4.0);
+    float streak2 = pow(max(1.0 - abs(nd.x - nd.y) * 8.0, 0.0), 4.0);
+    float flareBase = pow(max(dot(N, lightDir), 0.0), 3.0); // Constrain flare length
+    vec3 flareColor = mix(vec3(1.0), holo, 0.4); // Flares have a slight rainbow tint
+    color += flareColor * (streak1 + streak2) * flareBase * 2.5;
     
     // Output
     fragColor = vec4(color, opacity);
@@ -370,7 +389,7 @@ function createShader(gl: WebGL2RenderingContext, type: number, source: string) 
   return shader;
 }
 
-export async function applyLiquidMetalEffect(sourceDataURL: string, width: number, height: number): Promise<HTMLCanvasElement> {
+export async function applyLiquidMetalEffect(sourceDataURL: string, width: number, height: number, theme: 'silver' | 'gold' | 'rosegold' | 'bronze' = 'silver'): Promise<HTMLCanvasElement> {
   // 1. Calculate Poisson distance field
   const { imageData } = await toProcessedLiquidMetal(sourceDataURL);
   
@@ -429,6 +448,21 @@ export async function applyLiquidMetalEffect(sourceDataURL: string, width: numbe
   
   gl.uniform4f(gl.getUniformLocation(program, "u_colorBack"), 0, 0, 0, 0); // Transparent background
   gl.uniform4f(gl.getUniformLocation(program, "u_colorTint"), 1, 1, 1, 0); // No tint
+  
+  let colorDark = [0.1, 0.12, 0.15];
+  let colorLight = [1.0, 1.0, 1.0];
+  if (theme === 'gold') {
+      colorDark = [0.25, 0.18, 0.05]; 
+      colorLight = [1.0, 0.85, 0.5];  
+  } else if (theme === 'rosegold') {
+      colorDark = [0.25, 0.1, 0.12]; 
+      colorLight = [1.0, 0.75, 0.8];  
+  } else if (theme === 'bronze') {
+      colorDark = [0.15, 0.08, 0.02]; 
+      colorLight = [0.8, 0.5, 0.2];  
+  }
+  gl.uniform3f(gl.getUniformLocation(program, "u_metalColorDark"), colorDark[0], colorDark[1], colorDark[2]);
+  gl.uniform3f(gl.getUniformLocation(program, "u_metalColorLight"), colorLight[0], colorLight[1], colorLight[2]);
   
   // Tweak these values for the perfect "Liquid Chrome" look
   gl.uniform1f(gl.getUniformLocation(program, "u_softness"), 1.2); // Smoother gradients

@@ -297,7 +297,7 @@ export async function drawTemplate(
     ctx.clearRect(0, 0, TARGET_W, TARGET_H);
 
     // ── Optional SCORA branding ──────────────────────────────────────────────
-    if (showLogo) {
+    if (showLogo && !templateType.startsWith('chrome')) {
         ctx.textAlign = 'left';
         ctx.fillStyle = '#80cbc4';
         ctx.beginPath();
@@ -311,7 +311,7 @@ export async function drawTemplate(
 
     // ── Unified Registry Lookup ──────────────────────────────────────────────
     const sticker = STICKER_REGISTRY[templateType] || STICKER_REGISTRY['minimal'];
-    sticker.render(ctx, stats, textColor);
+    sticker.render(ctx, stats, textColor, showLogo);
 
     ctx.restore();
 
@@ -680,7 +680,7 @@ export function drawMap(ctx, coords, mapBox) {
 
 // ─── Chrome Map Variations ──────────────────────────────────────────────────
 
-export function drawChromeHighContrastSticker(ctx, stats, textColor) {
+export function drawChromeHighContrastSticker(ctx, stats, textColor, showLogo = true) {
     const coords = decodePolyline(stats.polyline);
     const w = 1080;
     const h = 1920;
@@ -718,14 +718,16 @@ export function drawChromeHighContrastSticker(ctx, stats, textColor) {
     mctx.stroke();
 
     // 2. Draw Scora Logo on Mask (will become Liquid Metal)
-    const logoY = 200;
-    mctx.fillStyle = '#ffffff';
-    mctx.beginPath();
-    mctx.arc(100, logoY - 10, 10, 0, Math.PI * 2);
-    mctx.fill();
-    mctx.textAlign = 'left';
-    mctx.font = "900 40px 'Plus Jakarta Sans'";
-    mctx.fillText("SCORA", 130, logoY);
+    if (showLogo) {
+        const logoY = 200;
+        mctx.fillStyle = '#ffffff';
+        mctx.beginPath();
+        mctx.arc(100, logoY - 10, 10, 0, Math.PI * 2);
+        mctx.fill();
+        mctx.textAlign = 'left';
+        mctx.font = "900 40px 'Plus Jakarta Sans'";
+        mctx.fillText("SCORA", 130, logoY);
+    }
     
     // 3. Draw Distance Text on Mask (will become Liquid Metal)
     const distText = stats.distanceVal || '0.00';
@@ -743,8 +745,19 @@ export function drawChromeHighContrastSticker(ctx, stats, textColor) {
     // Run the WebGL Pipeline asynchronously
     const runWebGL = async () => {
         try {
+            // SYNC DRAW: Instantly draw the flat white mask to the screen to prevent a blank flash/jump!
+            // This acts as a cool loading state (flat -> 3D pop)
+            ctx.save();
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            const maskScaleX = ctx.canvas.width / w;
+            const maskScaleY = ctx.canvas.height / h;
+            ctx.scale(maskScaleX, maskScaleY);
+            ctx.drawImage(maskCanvas, 0, 0, w, h);
+            ctx.restore();
+
             const dataUrl = maskCanvas.toDataURL('image/png');
-            const glCanvas = await applyLiquidMetalEffect(dataUrl, w, h);
+            const theme = textColor; // Contains 'silver', 'gold', 'rosegold', etc.
+            const glCanvas = await applyLiquidMetalEffect(dataUrl, w, h, theme as any);
             
             // Clear the canvas and draw the WebGL output
             ctx.clearRect(0, 0, w, h);
