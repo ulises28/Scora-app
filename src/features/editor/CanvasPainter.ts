@@ -7511,40 +7511,47 @@ export function drawNeonGlow(ctx: CanvasRenderingContext2D, stats: StickerStats,
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
             
-            // Ultra-Realistic Physical Neon Tube Setup (Bold & Thick)
-            ctx.globalCompositeOperation = 'source-over'; // Screen blend fails on light backgrounds
+            // Ultra-Realistic Physical Neon Tube Setup (Smooth Gradient)
+            ctx.globalCompositeOperation = 'source-over';
             
-            // 1. Ambient Light (Wide Halos)
+            const tubeWidth = 32;
+            const coreWidth = 14;
+
+            // 1. Smooth Ambient Glow (No hard stroke stepping)
             ctx.strokeStyle = accentColor;
             ctx.shadowColor = accentColor;
             
-            ctx.shadowBlur = 100;
-            ctx.lineWidth = 80;
-            ctx.globalAlpha = 0.3;
-            drawPath();
+            // Build the glow smoothly outward from the exact same tube width
+            const auraLayers = [
+                { blur: 100, alpha: 0.3 },
+                { blur: 60, alpha: 0.5 },
+                { blur: 30, alpha: 0.8 },
+                { blur: 15, alpha: 1.0 }
+            ];
             
-            ctx.shadowBlur = 50;
-            ctx.lineWidth = 60;
-            ctx.globalAlpha = 0.6;
-            drawPath();
+            auraLayers.forEach(layer => {
+                ctx.shadowBlur = layer.blur;
+                ctx.globalAlpha = layer.alpha;
+                ctx.lineWidth = tubeWidth;
+                drawPath();
+            });
             
-            // 2. The Physical Glass Tube (Solid, thick color block)
-            ctx.shadowBlur = 10;
-            ctx.lineWidth = 45; // Extremely thick outer tube
+            // 2. The Physical Glass Tube (Solid core of color)
+            ctx.shadowBlur = 0;
             ctx.globalAlpha = 1.0;
+            ctx.lineWidth = tubeWidth;
             drawPath();
             
             // 3. Searing White-Hot Core (The electrical arc)
             ctx.strokeStyle = '#ffffff';
-            ctx.shadowColor = 'rgba(255, 255, 255, 0.8)'; // Slight white glow
-            ctx.shadowBlur = 5;
-            ctx.lineWidth = 20; // Very thick white core
-            drawPath();
+            ctx.shadowColor = 'rgba(255, 255, 255, 0.9)';
             
-            // 4. Final micro-core for absolute sharpness
-            ctx.shadowColor = 'transparent';
-            ctx.lineWidth = 10;
-            drawPath();
+            const coreLayers = [15, 5, 0]; // Soft glow to sharp center
+            coreLayers.forEach(blur => {
+                ctx.shadowBlur = blur;
+                ctx.lineWidth = coreWidth;
+                drawPath();
+            });
             
             // Reset state
             ctx.globalAlpha = 1.0;
