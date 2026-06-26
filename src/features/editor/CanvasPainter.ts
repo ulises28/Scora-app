@@ -7461,7 +7461,7 @@ export function drawNeonGlow(ctx: CanvasRenderingContext2D, stats: StickerStats,
     
     items = items.filter(i => !i.hide);
     
-    ctx.font = "800 65px 'Plus Jakarta Sans', sans-serif";
+    ctx.font = "800 65px 'Andika', sans-serif";
     const startX = 80;
     dataY = 180;
     
