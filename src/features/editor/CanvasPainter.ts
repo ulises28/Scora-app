@@ -7500,42 +7500,39 @@ export function drawNeonGlow(ctx: CanvasRenderingContext2D, stats: StickerStats,
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
             
-            // Standard Elegant Neon Setup
+            // 1. Massive Multi-Layer Glow (Pure Light Emission)
             ctx.globalCompositeOperation = 'source-over';
-            // 1. Massive Smooth Gradient Aura
             ctx.strokeStyle = accentColor;
             ctx.shadowColor = accentColor;
             
+            const coreWidth = 24; // The core energy line
+            
             const auraLayers = [
-                { blur: 150, alpha: 0.2 },
-                { blur: 100, alpha: 0.3 },
-                { blur: 60, alpha: 0.5 },
-                { blur: 30, alpha: 0.8 }
+                { blur: 180, alpha: 0.2 },
+                { blur: 120, alpha: 0.4 },
+                { blur: 70, alpha: 0.6 },
+                { blur: 40, alpha: 0.8 },
+                { blur: 15, alpha: 1.0 } // Tight intense color bleed
             ];
             
             auraLayers.forEach(layer => {
                 ctx.shadowBlur = layer.blur;
                 ctx.globalAlpha = layer.alpha;
-                ctx.lineWidth = 24; // Tied to tube width to prevent hard banding
+                ctx.lineWidth = coreWidth; 
                 drawPath();
             });
             
-            // 2. Solid color tube (Glass)
-            ctx.shadowBlur = 0;
-            ctx.lineWidth = 24;
-            ctx.globalAlpha = 1.0;
-            drawPath();
-            
-            // 4. Balanced White-Hot Center
+            // 2. The Burning White Core
             ctx.strokeStyle = '#ffffff';
             ctx.shadowColor = accentColor;
             ctx.shadowBlur = 10;
-            ctx.lineWidth = 8;
+            ctx.globalAlpha = 1.0;
+            ctx.lineWidth = coreWidth - 6; // Leave a tiny rim of intense color
             drawPath();
             
-            // 5. Absolute bright core
+            // 3. Absolute sharp center
             ctx.shadowBlur = 0;
-            ctx.lineWidth = 4;
+            ctx.lineWidth = coreWidth / 2;
             drawPath();
             
             ctx.globalAlpha = 1.0;
