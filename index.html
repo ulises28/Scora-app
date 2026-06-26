@@ -12,6 +12,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Elms+Sans:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Andika:ital,wght@0,400;0,700;1,400;1,700&family=Sekuya&display=swap" rel="stylesheet">
     <link
         href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;500;700;800&family=Outfit:wght@300;400;500;700;800&family=Playfair+Display:ital,wght@0,500;1,500;1,900&family=Merriweather:ital,wght@0,400;0,700;0,900;1,700&family=Press+Start+2P&family=EB+Garamond:ital,wght@0,400;0,500;1,500&family=Inter:wght@400;700;800;900&family=Space+Grotesk:wght@400;700&family=Space+Mono:wght@400;700&family=Orbitron:wght@400;700;900&family=DotGothic16&family=Doto:wght@100..900&family=Rubik+Spray+Paint&family=BBH+Bartle&family=Permanent+Marker&family=Archivo+Black&family=Bungee&family=Syncopate:wght@400;700&family=Belleza&family=Libertinus+Math&family=Cinzel:wght@400..900&family=Bitcount+Single:wght@100..900&family=Michroma&family=Russo+One&family=Audiowide&family=Boldonse&family=IBM+Plex+Serif:ital,wght@0,100;0,400;0,700;1,400&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,700&family=Shadows+Into+Light+Two&family=Roboto+Mono:wght@400;700&family=Unbounded:wght@200..900&family=Syne:wght@400..800&family=Asset&display=swap"
         rel="stylesheet">
@@ -22,6 +23,8 @@
 <body>
     <!-- Font Preloader for Safari Canvas compatibility -->
     <div style="position: absolute; top: -9999px; left: -9999px; opacity: 0.01; pointer-events: none;" aria-hidden="true">
+        <span style="font-family: 'Andika';">Andika</span>
+        <span style="font-family: 'Sekuya';">Sekuya</span>
         <span style="font-family: 'Elms Sans';">Elms Sans</span>
         <span style="font-family: 'Asset';">Asset</span>
         <span style="font-family: 'Unbounded';">Unbounded</span>
@@ -138,6 +141,24 @@
                                 <span class="toggle-opt active" data-value="white">White</span>
                                 <span class="toggle-opt" data-value="black">Black</span>
                                 <span class="toggle-thumb"></span>
+                            </div>
+                        </div>
+
+                        <!-- Chrome Material Toggle -->
+                        <div class="toggle-group hidden" id="chrome-material-group">
+                            <span class="controls-label">Material</span>
+                            <div class="material-select-wrapper">
+                                <select id="chrome-material-select" class="scora-select" data-testid="chrome-material">
+                                    <option value="rosegold">Rose Gold</option>
+                                    <option value="silver">Silver</option>
+                                    <option value="gold">Gold</option>
+                                    <option value="bronze">Bronze</option>
+                                    <option value="obsidian">Black Chrome</option>
+                                    <option value="emerald">Emerald</option>
+                                    <option value="sapphire">Sapphire</option>
+                                    <option value="rubi">Rubi</option>
+                                    <option value="titanium">Titanium</option>
+                                </select>
                             </div>
                         </div>
 

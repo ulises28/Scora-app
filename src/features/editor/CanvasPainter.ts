@@ -10,6 +10,7 @@
  */
 
 import { getThemeColors, drawStatWithUnit, setLetterSpacing, drawRoutePath, decodePolyline, getDynamicStats, drawMetricBlock, parseDurationParts, drawDurationSequence, normalizeSport } from './CanvasUtils';
+import { applyLiquidMetalEffect } from './LiquidMetalRenderer';
 import { StickerStats } from '../../api/strava';
 import { STICKER_REGISTRY } from './StickerRegistry';
 
@@ -296,7 +297,7 @@ export async function drawTemplate(
     ctx.clearRect(0, 0, TARGET_W, TARGET_H);
 
     // ── Optional SCORA branding ──────────────────────────────────────────────
-    if (showLogo) {
+    if (showLogo && !templateType.startsWith('chrome')) {
         ctx.textAlign = 'left';
         ctx.fillStyle = '#80cbc4';
         ctx.beginPath();
@@ -310,7 +311,7 @@ export async function drawTemplate(
 
     // ── Unified Registry Lookup ──────────────────────────────────────────────
     const sticker = STICKER_REGISTRY[templateType] || STICKER_REGISTRY['minimal'];
-    sticker.render(ctx, stats, textColor);
+    sticker.render(ctx, stats, textColor, showLogo);
 
     ctx.restore();
 
@@ -677,7 +678,181 @@ export function drawMap(ctx, coords, mapBox) {
     ctx.shadowBlur = 0;
 }
 
-// ─── Gym templates ────────────────────────────────────────────────────────────
+// ─── Chrome Map Variations ──────────────────────────────────────────────────
+
+export function drawChromeHighContrastSticker(ctx, stats, textColor, showLogo = true) {
+    const coords = decodePolyline(stats.polyline);
+    const w = 1080;
+    const h = 1920;
+    
+    // Create an off-screen canvas to draw the raw flat shapes
+    const maskCanvas = document.createElement('canvas');
+    maskCanvas.width = w;
+    maskCanvas.height = h;
+    const mctx = maskCanvas.getContext('2d');
+    
+    if (!mctx) return;
+
+    // 1. Draw Map on Mask
+    mctx.beginPath();
+    mctx.strokeStyle = '#ffffff'; // Pure white mask for Poisson solver
+    mctx.lineWidth = 40; // Base thickness of the chrome tube
+    mctx.lineCap = 'round';
+    mctx.lineJoin = 'round';
+    
+    let minLat = coords[0][0], maxLat = minLat, minLng = coords[0][1], maxLng = minLng;
+    coords.forEach(p => {
+        if (p[0] < minLat) minLat = p[0]; if (p[0] > maxLat) maxLat = p[0];
+        if (p[1] < minLng) minLng = p[1]; if (p[1] > maxLng) maxLng = p[1];
+    });
+
+    const mapBox = { x: 50, y: 550, w: 980, h: 1000 };
+    const scale = Math.min(mapBox.w / (maxLng - minLng), mapBox.h / (maxLat - minLat));
+
+    coords.forEach((p, i) => {
+        const px = mapBox.x + (p[1] - minLng) * scale + (mapBox.w - ((maxLng - minLng) * scale)) / 2;
+        // Top-align the map to always start exactly at mapBox.y, instead of centering it in the vertical space
+        const py = mapBox.y + ((maxLat - p[0]) * scale);
+        if (i === 0) mctx.moveTo(px, py); else mctx.lineTo(px, py);
+    });
+    mctx.stroke();
+
+    // 2. Draw Scora Logo on Mask (will become Liquid Metal)
+    if (showLogo) {
+        const logoY = 200;
+        mctx.fillStyle = '#ffffff';
+        mctx.beginPath();
+        mctx.arc(100, logoY - 10, 10, 0, Math.PI * 2);
+        mctx.fill();
+        mctx.textAlign = 'left';
+        mctx.font = "900 40px 'Plus Jakarta Sans'";
+        mctx.fillText("SCORA", 130, logoY);
+    }
+    
+    // 3. Draw Distance Text on Mask (will become Liquid Metal)
+    const distText = stats.distanceVal || '0.00';
+    const text = `${distText} KM`;
+    const targetWidth = 980; // Make the numbers massively huge horizontally
+    const baseFontSize = 100;
+    mctx.font = `400 ${baseFontSize}px 'Sekuya', sans-serif`;
+    const metrics = mctx.measureText(text);
+    const fontSize = (targetWidth / metrics.width) * baseFontSize;
+    
+    mctx.textBaseline = 'middle';
+    mctx.font = `400 ${fontSize}px 'Sekuya', sans-serif`;
+    mctx.fillText(text, 50, 420);
+
+    // Run the WebGL Pipeline asynchronously
+    const runWebGL = async () => {
+        try {
+            // SYNC DRAW: Instantly draw the flat white mask to the screen to prevent a blank flash/jump!
+            // This acts as a cool loading state (flat -> 3D pop)
+            ctx.save();
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            const maskScaleX = ctx.canvas.width / w;
+            const maskScaleY = ctx.canvas.height / h;
+            ctx.scale(maskScaleX, maskScaleY);
+            ctx.drawImage(maskCanvas, 0, 0, w, h);
+            ctx.restore();
+
+            const dataUrl = maskCanvas.toDataURL('image/png');
+            const theme = textColor; // Contains 'silver', 'gold', 'rosegold', etc.
+            const glCanvas = await applyLiquidMetalEffect(dataUrl, w, h, theme as any);
+            
+            // Clear the canvas and draw the WebGL output
+            ctx.clearRect(0, 0, w, h);
+            
+            // Restore context scale to 1:1 before drawing full size WebGL canvas
+            ctx.save();
+            ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform to default
+            
+            // If the canvas is 1080x1920, we just draw. If it's a thumbnail (300px), we scale it down.
+            const scaleX = ctx.canvas.width / w;
+            const scaleY = ctx.canvas.height / h;
+            ctx.scale(scaleX, scaleY);
+            
+            ctx.drawImage(glCanvas, 0, 0, w, h);
+
+            ctx.restore();
+        } catch (e: any) {
+            alert("WebGL Error: " + (e?.message || e));
+            console.error("Failed to render liquid metal:", e);
+        }
+    };
+
+    runWebGL();
+}
+
+// V1: High-Contrast Chrome (Balloon-like reflection)
+export function drawChromeMapHighContrast(ctx, coords, mapBox) {
+    if (!coords || coords.length === 0) return;
+    let minLat = coords[0][0], maxLat = minLat, minLng = coords[0][1], maxLng = minLng;
+    coords.forEach(p => {
+        if (p[0] < minLat) minLat = p[0]; if (p[0] > maxLat) maxLat = p[0];
+        if (p[1] < minLng) minLng = p[1]; if (p[1] > maxLng) maxLng = p[1];
+    });
+
+    const scale = Math.min(mapBox.w / (maxLng - minLng), mapBox.h / (maxLat - minLat));
+
+    const drawPath = (offsetX = 0, offsetY = 0) => {
+        ctx.beginPath();
+        coords.forEach((p, i) => {
+            const x = mapBox.x + (p[1] - minLng) * scale + (mapBox.w - ((maxLng - minLng) * scale)) / 2 + offsetX;
+            const y = mapBox.y + mapBox.h - ((p[0] - minLat) * scale) - (mapBox.h - ((maxLat - minLat) * scale)) / 2 + offsetY;
+            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+    };
+
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    // 1. Heavy Drop Shadow (Pop off the screen)
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+    ctx.shadowBlur = 40;
+    ctx.shadowOffsetY = 25;
+    ctx.strokeStyle = '#111111';
+    ctx.lineWidth = 60; // MASSIVELY THICK
+    drawPath();
+
+    // Reset shadow for inner layers
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+    ctx.shadowColor = 'transparent';
+
+    // 2. Base Dark Edge (Thick)
+    ctx.strokeStyle = '#1a1a1a';
+    ctx.lineWidth = 60;
+    drawPath();
+
+    // 3. Dark mid-tone (gives depth to the edge)
+    ctx.strokeStyle = '#444444';
+    ctx.lineWidth = 46;
+    drawPath();
+
+    // 4. Silver core
+    ctx.strokeStyle = '#999999';
+    ctx.lineWidth = 32;
+    drawPath();
+
+    // 5. Bright Silver center
+    ctx.strokeStyle = '#e0e0e0';
+    ctx.lineWidth = 18;
+    drawPath();
+
+    // 6. Specular Highlight (Pure White, offset up-left for lighting direction)
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 6;
+    drawPath(-5, -6);
+
+    // 7. Environment Reflection (Soft gray, offset down-right to look like ground bounce)
+    ctx.strokeStyle = '#888888';
+    ctx.lineWidth = 4;
+    drawPath(6, 6);
+}
+
+
+
 
 
 // ── Template 1: Minimal — Duration as hero ────────────────────────────────────
@@ -2406,7 +2581,7 @@ export function drawMonoSplit(ctx: CanvasRenderingContext2D, stats: any, textCol
 
     // --- LEFT SIDE DATA ---
     ctx.fillStyle = isDarkAccent ? '#ffffff' : '#111111';
-    
+
     // Value
     ctx.font = `normal 900 52px ${sysFont}`;
     const leftValStr = p1Unit ? `${p1Value} ${p1Unit}` : p1Value;
@@ -3052,17 +3227,17 @@ export function drawStackedEditorial(ctx: CanvasRenderingContext2D, stats: any, 
     const { s1, s2, s3, hasMap } = getDynamicStats(stats);
     // The user's selected color drives the map. Text is always white.
     const { accent: accentColor } = buildColors(textColor);
-    
+
     const cx = 540;
     const safeW = 960;
-    
+
     // Parse the day name from the raw date
     const dateStrRaw = stats.rawDate || '';
     const rawDate = dateStrRaw ? new Date(dateStrRaw.replace('Z', '')) : new Date();
     const dayLabel = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(rawDate).toUpperCase();
 
     ctx.save();
-    
+
     // NO SHADOWS - pure flat editorial style
     ctx.shadowColor = 'transparent';
     ctx.shadowBlur = 0;
@@ -3074,7 +3249,7 @@ export function drawStackedEditorial(ctx: CanvasRenderingContext2D, stats: any, 
             strokeWidth: 20
         });
     }
-    
+
     const mainFont = "'Archivo Black', sans-serif";
     ctx.fillStyle = '#ffffff'; // Text is permanently white
     ctx.textAlign = 'center';
@@ -3086,20 +3261,20 @@ export function drawStackedEditorial(ctx: CanvasRenderingContext2D, stats: any, 
     const topW = Math.max(1, ctx.measureText(dayLabel).width);
     let topSize = Math.floor(100 * (safeW / topW));
     if (!isFinite(topSize) || topSize > 400) topSize = 400; // Cap height
-    
+
     ctx.font = `900 ${topSize}px ${mainFont}`;
     ctx.fillText(dayLabel, cx, 750);
-    
+
     // 3. Giant Distance at Bottom (Squeezed up to y=1150)
     const valText = String(s1.value);
     const unitText = String(s1.label);
     const distText = `${valText} ${unitText}`;
-    
+
     ctx.font = `900 100px ${mainFont}`;
     const botW = Math.max(1, ctx.measureText(distText).width);
     let botSize = Math.floor(100 * (safeW / botW));
     if (!isFinite(botSize) || botSize > 400) botSize = 400; // Cap height
-    
+
     ctx.font = `900 ${botSize}px ${mainFont}`;
     ctx.fillText(distText, cx, 1150);
 
@@ -3107,7 +3282,7 @@ export function drawStackedEditorial(ctx: CanvasRenderingContext2D, stats: any, 
     const subText = `${s2.value} ${s2.label}   /   ${s3.value} ${s3.label}`.toUpperCase();
     ctx.font = `900 36px ${mainFont}`;
     // Force sub-metrics to be white too, per instruction: "the letter should stay white"
-    ctx.fillStyle = '#ffffff'; 
+    ctx.fillStyle = '#ffffff';
     if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "4px";
     ctx.fillText(subText, cx, 1220);
     if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "0px";
@@ -3193,7 +3368,7 @@ export function drawThinPath(ctx: CanvasRenderingContext2D, stats: any, textColo
     if (hasMap && stats.polyline) {
         ctx.globalAlpha = 0.4; // Fainter visibility for white map
         // Center the map at cy=350 so it sits perfectly behind the compressed text block
-        drawRoutePath(ctx, stats.polyline, cx, 350, 850, { 
+        drawRoutePath(ctx, stats.polyline, cx, 350, 850, {
             color: '#ffffff', // Remain white to not clash with colored text
             strokeWidth: 20 // Slightly thinner map stroke
         });
@@ -3206,14 +3381,14 @@ export function drawThinPath(ctx: CanvasRenderingContext2D, stats: any, textColo
     ctx.fillStyle = textColor; // 1.0 opacity
     ctx.globalAlpha = 1.0;
     if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "6px";
-    
+
     // Parse the day name from the raw date
     const dateStrRaw = stats.rawDate || '';
     const rawDate = dateStrRaw ? new Date(dateStrRaw.replace('Z', '')) : new Date();
     const dayName = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(rawDate).toUpperCase();
-    
+
     const titleText = dayName;
-    
+
     // Scale down only if it exceeds 960px (activity name might be big but we cap it)
     let measuredTitleW = Math.max(1, ctx.measureText(titleText).width);
     while (measuredTitleW > 960 && titleFontSize > 15) {
@@ -3221,7 +3396,7 @@ export function drawThinPath(ctx: CanvasRenderingContext2D, stats: any, textColo
         ctx.font = `700 ${titleFontSize}px ${mainFont}`;
         measuredTitleW = ctx.measureText(titleText).width;
     }
-    
+
     ctx.fillText(titleText, cx, startY);
     if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "0px";
 
@@ -3232,13 +3407,13 @@ export function drawThinPath(ctx: CanvasRenderingContext2D, stats: any, textColo
     // Calculate scaling to perfectly fit 960px
     ctx.font = `700 100px ${mainFont}`;
     const baseW = Math.max(1, ctx.measureText(valText).width);
-    
+
     ctx.font = `700 40px ${mainFont}`; // Unit is proportionally smaller
     const unitBaseW = Math.max(1, ctx.measureText(unitText).width);
-    
+
     const gap = 20;
     const totalBaseW = baseW + gap + unitBaseW;
-    
+
     const heroScale = 960 / totalBaseW;
     let vFontSize = Math.floor(100 * heroScale);
     let uFontSize = Math.floor(40 * heroScale);
@@ -3255,7 +3430,7 @@ export function drawThinPath(ctx: CanvasRenderingContext2D, stats: any, textColo
     ctx.font = `700 ${uFontSize}px ${mainFont}`;
     const finalUnitW = ctx.measureText(unitText).width;
     const finalTotalW = finalValW + gap + finalUnitW;
-    
+
     // Draw Value
     const valStartX = cx - (finalTotalW / 2);
     ctx.textAlign = 'left';
@@ -3277,13 +3452,13 @@ export function drawThinPath(ctx: CanvasRenderingContext2D, stats: any, textColo
 
     // 4. Footer Row (Compressed)
     const footY = heroY + (vFontSize * 0.8) + 20; // Tightly beneath hero
-    
+
     // Minimum 36px rule
     ctx.font = `700 36px ${mainFont}`;
     ctx.textAlign = 'center';
     ctx.fillStyle = textColor;
     if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "2px";
-    
+
     const footerText = `${s2.value} ${s2.label}   /   ${s3.value} ${s3.label}`;
     ctx.fillText(footerText.toUpperCase(), cx, footY);
     if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "0px";
@@ -3294,11 +3469,11 @@ export function drawThinPath(ctx: CanvasRenderingContext2D, stats: any, textColo
 export function drawMicroSerif(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
     const { s1, s2, hasMap } = getDynamicStats(stats);
     const mainColor = textColor;
-    
+
     // Lora for a premium, slightly softer serif aesthetic
     const serifFont = "'Lora', serif";
     const bottomY = 250;
-    
+
     // Canvas is 1080 wide. 33% each = 360px per column
     // Column centers: 180, 540, 900
     ctx.save();
@@ -4674,7 +4849,7 @@ export function drawMonoMinimal(ctx: CanvasRenderingContext2D, stats: any, textC
     // 2. Left Column: Label / Details
     ctx.textAlign = 'left';
     ctx.fillStyle = textColor;
-    
+
     // Sub-title
     ctx.font = "800 13px 'JetBrains Mono'";
     setLetterSpacing(ctx, "0.15em");
@@ -4763,11 +4938,11 @@ export function drawEditorialRow(ctx: CanvasRenderingContext2D, stats: any, text
     const isDark = !isDarkText;
 
     ctx.save();
-    
+
     // Brutalist Box
     ctx.fillStyle = isDark ? 'rgba(255,255,255,0.95)' : 'rgba(0,0,0,0.85)';
     ctx.fillRect(0, bannerY, 1080, bannerH);
-    
+
     // Accent Top Border
     ctx.fillStyle = accent;
     ctx.fillRect(0, bannerY, 1080, 8);
@@ -4790,7 +4965,7 @@ export function drawEditorialRow(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.fillText(s1.value, 540, bannerY + bannerH / 2);
     ctx.font = "800 20px 'Space Grotesk'";
     const valW = ctx.measureText(s1.value).width;
-    ctx.fillText(s1.label.toUpperCase(), 540 + valW/2 + 30, bannerY + bannerH / 2);
+    ctx.fillText(s1.label.toUpperCase(), 540 + valW / 2 + 30, bannerY + bannerH / 2);
 
     // Divider
     ctx.fillStyle = isDark ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.2)';
@@ -5408,7 +5583,7 @@ export function drawGraffitiBrand(ctx: CanvasRenderingContext2D, stats: any, tex
     // 50/50 split columns
     const colX1 = 540 - (safeW / 4); // Center of left half
     const colX2 = 540 + (safeW / 4); // Center of right half
-    
+
     // Push layout as high as possible to minimize vertical footprint
     const startY = 220; // Intended visual top of the sticker
 
@@ -5420,19 +5595,19 @@ export function drawGraffitiBrand(ctx: CanvasRenderingContext2D, stats: any, tex
 
     // 2. Hero Metric (Top, Max Width)
     const heroVal = String(isWorkout ? (stats.timeStr || '0:00') : (stats.distanceVal || '0.00')).toUpperCase();
-    
+
     ctx.save();
     ctx.globalAlpha = 1.0;
     ctx.font = "400 100px 'Bungee'";
-    
+
     // Scale hero text to fill 960px perfectly (protect against 0 width crashing canvas)
     const baseW = Math.max(1, ctx.measureText(heroVal).width);
     let heroSize = Math.floor(100 * (safeW / baseW));
     if (!isFinite(heroSize) || heroSize > 600) heroSize = 600; // Hard cap
-    
+
     ctx.font = `400 ${heroSize}px 'Bungee'`;
     ctx.fillStyle = accentColor;
-    
+
     // Calculate exact alphabetic baseline. Bungee's baseline is approx 85% of font size.
     const heroBaseline = startY + (heroSize * 0.85);
     ctx.fillText(heroVal, midX, heroBaseline);
@@ -5445,7 +5620,7 @@ export function drawGraffitiBrand(ctx: CanvasRenderingContext2D, stats: any, tex
     ctx.fillStyle = accentColor;
     ctx.globalAlpha = 1.0;
     if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "10px";
-    
+
     // Place unit baseline exactly 40px below the hero baseline
     const labelBaseline = heroBaseline + 40;
     ctx.fillText(heroLabel, midX, labelBaseline);
@@ -5471,7 +5646,7 @@ export function drawGraffitiBrand(ctx: CanvasRenderingContext2D, stats: any, tex
 
     // 5. 50/50 Sub-Metrics
     // Place the top of the sub-metrics about 25px below the main unit label baseline
-    const row2YTop = labelBaseline + 25; 
+    const row2YTop = labelBaseline + 25;
 
     const drawGridMetric = (val: string, label: string, x: number, yTop: number) => {
         // Value
@@ -5481,21 +5656,21 @@ export function drawGraffitiBrand(ctx: CanvasRenderingContext2D, stats: any, tex
 
         let mSize = 80;
         ctx.font = `400 ${mSize}px 'Bungee'`;
-        
+
         // Scale to fit half column (480px) with 40px padding
         while (ctx.measureText(val).width > 440 && mSize > 30) {
             mSize -= 2;
             ctx.font = `400 ${mSize}px 'Bungee'`;
         }
-        
+
         const valBaseline = yTop + (mSize * 0.85);
         ctx.fillText(val, x, valBaseline);
 
         // Label
-        ctx.font = "800 36px 'Space Grotesk'"; 
-        ctx.globalAlpha = 1.0; 
+        ctx.font = "800 36px 'Space Grotesk'";
+        ctx.globalAlpha = 1.0;
         if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "4px";
-        
+
         // Stack tightly under the sub-metric value (36px font + 12px gap)
         const subLabelBaseline = valBaseline + 36 + 12;
         ctx.fillText(label, x, subLabelBaseline);
@@ -5518,8 +5693,8 @@ export function drawJournalGrid(ctx: CanvasRenderingContext2D, stats: any, textC
     // Apply Bi-Directional Readability Shadow (Anti-Ghosting)
     ctx.save();
     ctx.shadowColor = isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.7)'; // Stronger contrast shadow
-    ctx.shadowBlur = 14; 
-    ctx.shadowOffsetY = 3; 
+    ctx.shadowBlur = 14;
+    ctx.shadowOffsetY = 3;
 
     // Refined Grid Aesthetics
     ctx.beginPath();
@@ -5545,7 +5720,7 @@ export function drawJournalGrid(ctx: CanvasRenderingContext2D, stats: any, textC
 
     // Day Name (e.g., TUESDAY) under logo
     const dayLabel = (stats.dayName || "ACTIVITY").toUpperCase();
-    
+
     let dayFontSize = 80;
     ctx.font = `900 ${dayFontSize}px 'Merriweather'`;
     // Proportional dynamic scaling loop
@@ -5553,7 +5728,7 @@ export function drawJournalGrid(ctx: CanvasRenderingContext2D, stats: any, textC
         dayFontSize -= 2;
         ctx.font = `900 ${dayFontSize}px 'Merriweather'`;
     }
-    
+
     ctx.fillText(dayLabel, 55, 180);
 
     // Month Day (e.g., 24) under Day Name
@@ -5573,7 +5748,7 @@ export function drawJournalGrid(ctx: CanvasRenderingContext2D, stats: any, textC
         // Value with Smart Scaling
         ctx.globalAlpha = 1.0; // PURE SOLID
         const baseSize = 55; // Much larger values
-        ctx.font = `900 ${baseSize}px 'Merriweather'`; 
+        ctx.font = `900 ${baseSize}px 'Merriweather'`;
 
         let fontSize = baseSize;
         const maxW = 260; // Grid column limit
@@ -5658,7 +5833,7 @@ export function drawFinishLine(ctx: CanvasRenderingContext2D, stats: any, textCo
     ctx.shadowColor = 'rgba(0,0,0,0.8)';
     ctx.shadowBlur = 50;
     // Permanently dark liquid glass background
-    ctx.fillStyle = 'rgba(0,0,0,0.8)'; 
+    ctx.fillStyle = 'rgba(0,0,0,0.8)';
     ctx.beginPath();
     ctx.roundRect(cx - boxW / 2, boxY - boxH / 2, boxW, boxH, 210); // Full pill shape (boxH / 2)
     ctx.fill();
@@ -5678,7 +5853,7 @@ export function drawFinishLine(ctx: CanvasRenderingContext2D, stats: any, textCo
     // Apply Neon Glow for 'Next Level' aesthetic
     ctx.shadowColor = lineColor;
     // Since background is ALWAYS dark, we can ALWAYS apply the glow, even if lineColor is black (though black glow is subtle)
-    ctx.shadowBlur = isDark ? 10 : 25; 
+    ctx.shadowBlur = isDark ? 10 : 25;
 
     let timeFontSize = timeVal.length > 7 ? 160 : 230;
     const safeW = 820; // Internal padding safety
@@ -6146,7 +6321,7 @@ export function drawNoteAccentSticker(ctx: CanvasRenderingContext2D, stats: any,
     ctx.beginPath();
     ctx.roundRect(menuX, menuY, menuW, menuH, menuH / 2);
     ctx.clip();
-    
+
     const glossGrad = ctx.createLinearGradient(menuX, menuY, menuX, menuY + menuH / 2);
     glossGrad.addColorStop(0, isLightTheme ? 'rgba(255, 255, 255, 0.6)' : 'rgba(255, 255, 255, 0.35)');
     glossGrad.addColorStop(1, 'rgba(255, 255, 255, 0.0)');
@@ -6503,7 +6678,7 @@ export function drawStudioPrecision(ctx: CanvasRenderingContext2D, stats: any, t
     let fontSize = Math.floor(100 * (960 / baseW));
 
     ctx.font = `400 ${fontSize}px ${mainFont}`;
-    
+
     // Fallback logic for Safari baseline issues if needed, but top works best for Archivo Black
     ctx.fillText(heroText, 540, startY);
 
@@ -6544,7 +6719,7 @@ export function drawStudioPrecision(ctx: CanvasRenderingContext2D, stats: any, t
     }
 
     // Collapse vertical space by squeezing exactly beneath the visual height of Archivo Black (approx 75%)
-    const rowY = startY + (fontSize * 0.75) + 30; 
+    const rowY = startY + (fontSize * 0.75) + 30;
     const colW = (endX - startX) / 3;
 
     metrics.forEach((m, i) => {
@@ -6559,7 +6734,7 @@ export function drawStudioPrecision(ctx: CanvasRenderingContext2D, stats: any, t
 
         ctx.globalAlpha = 1.0;
         let mSize = 68;
-        ctx.font = `400 ${mSize}px ${mainFont}`; 
+        ctx.font = `400 ${mSize}px ${mainFont}`;
 
         while (ctx.measureText(m.val).width > (colW - 10) && mSize > 30) {
             mSize -= 2;
@@ -6657,7 +6832,7 @@ export function drawGraffitiMap(ctx: CanvasRenderingContext2D, stats: any, textC
             });
 
             // Cap the scale so extremely vertical routes don't break the screen, but fit within width 880
-            const maxH = 800; 
+            const maxH = 800;
             const scale = Math.min(mapBox.w / (maxLng - minLng), maxH / (maxLat - minLat));
             const actualMapHeight = (maxLat - minLat) * scale;
 
@@ -6680,8 +6855,8 @@ export function drawGraffitiMap(ctx: CanvasRenderingContext2D, stats: any, textC
     ctx.textAlign = 'center';
     ctx.textBaseline = 'alphabetic'; // Safari safe: prevents 'top' bounding box inconsistencies
 
-    const safeW = 960; 
-    
+    const safeW = 960;
+
     const unitText = "KM";
     ctx.font = "400 100px 'Permanent Marker'";
     const refWidthNum = ctx.measureText("999.99").width;
@@ -6693,22 +6868,22 @@ export function drawGraffitiMap(ctx: CanvasRenderingContext2D, stats: any, textC
     if (maxUnitSize > 300) maxUnitSize = 300;
 
     const distNum = stats.distanceVal || '0.00';
-    
+
     ctx.save();
     ctx.globalAlpha = 0.85;
-    
+
     let finalNumSize = maxNumSize;
     ctx.font = `400 ${finalNumSize}px 'Permanent Marker'`;
     if (ctx.measureText(distNum).width > safeW) {
         finalNumSize = Math.floor(finalNumSize * (safeW / ctx.measureText(distNum).width));
     }
-    
+
     ctx.font = `400 ${finalNumSize}px 'Permanent Marker'`;
     ctx.fillStyle = lineColor;
-    
+
     // Snap text tightly beneath the actual physical map (with 40px breathing room)
     const textStartY = (stats._dynamicMapEndY || 250) + 40;
-    
+
     // Calculate exact alphabetic baseline. Permanent Marker baseline is approx 85% of font size.
     const numBaseline = textStartY + (finalNumSize * 0.85);
     ctx.fillText(distNum, 540, numBaseline);
@@ -6733,7 +6908,7 @@ export function drawGraffitiMap(ctx: CanvasRenderingContext2D, stats: any, textC
 export function drawCoffeeClub(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
     const cursiveFont = "'Shadows Into Light Two', cursive";
     const monoFont = "'Roboto Mono', monospace";
-    
+
     // The texts and color (No background, just transparent)
     ctx.save();
     const mainColor = textColor.startsWith('#') ? textColor : (textColor === 'white' ? '#ffffff' : '#080706');
@@ -6742,18 +6917,18 @@ export function drawCoffeeClub(ctx: CanvasRenderingContext2D, stats: any, textCo
     // 1. Big Cursive Title
     let titleText = (stats.title || 'Morning Run').trim();
     if (!titleText) titleText = 'Coffee Club';
-    
+
     // Handle multi-word titles for the cursive font nicely
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
     let titleFontSize = 240;
     ctx.font = `400 ${titleFontSize}px ${cursiveFont}`;
-    
+
     // Simple wrap logic: Split by space, max 2 lines
     const words = titleText.split(' ');
     let line1 = words[0];
     let line2 = words.slice(1).join(' ');
-    
+
     if (words.length > 3) {
         line1 = words.slice(0, 2).join(' ');
         line2 = words.slice(2).join(' ');
@@ -6768,10 +6943,10 @@ export function drawCoffeeClub(ctx: CanvasRenderingContext2D, stats: any, textCo
         titleFontSize -= 10;
         ctx.font = `400 ${titleFontSize}px ${cursiveFont}`;
     }
-    
+
     const titleY = 220; // Pushed down to avoid Scora logo
     ctx.fillText(line1, 80, titleY);
-    
+
     if (line2) {
         // slightly offset line 2
         ctx.fillText(line2, 100, titleY + titleFontSize * 0.9);
@@ -6780,32 +6955,32 @@ export function drawCoffeeClub(ctx: CanvasRenderingContext2D, stats: any, textCo
     // Stack all data on the left
     ctx.font = `400 48px ${monoFont}`;
     ctx.textAlign = 'left';
-    
+
     // 2. Date & Time
     const dateText = (stats.date || 'TODAY').toUpperCase();
     const startTime = (stats.startTime || '00:00 AM').toUpperCase();
-    
+
     const midY = 800;
     ctx.fillText(dateText, 80, midY);
     ctx.fillText(startTime, 80, midY + 60);
-    
+
     // 3. Pace & Duration
     const paceVal = (stats.subValue || '').split(' ')[0] || '0:00';
     const hasDist = stats.hasDistance !== false;
     let sec1 = hasDist ? `PACE ${paceVal}` : `AVG HR ${stats.avgHeartrate || '0'}`;
     let sec2 = `DUR ${(stats.timeStr || '0:00')}`.toUpperCase();
-    
+
     const botY = 1100;
     ctx.fillText(sec1, 80, botY);
     ctx.fillText(sec2, 80, botY + 60);
-    
+
     // 4. Distance / Calories
     const distVal = stats.distanceVal || '0.00';
     let primaryMetric1 = hasDist ? `${distVal} KM` : `${stats.calories || '0'} KCAL`;
-    
+
     const distY = 1400;
     ctx.fillText(primaryMetric1, 80, distY);
-    
+
     // 5. The Doodle Area (Hand-drawn mini-map)
     if (stats.polyline) {
         const coords = decodePolyline(stats.polyline);
@@ -6817,13 +6992,13 @@ export function drawCoffeeClub(ctx: CanvasRenderingContext2D, stats: any, textCo
                 if (p[1] < minLng) minLng = p[1]; if (p[1] > maxLng) maxLng = p[1];
             });
             const scale = Math.min(mapBox.w / (maxLng - minLng), mapBox.h / (maxLat - minLat));
-            
+
             const getXY = (p: [number, number]) => {
                 const x = mapBox.x + (p[1] - minLng) * scale + (mapBox.w - ((maxLng - minLng) * scale)) / 2;
                 const y = mapBox.y + mapBox.h - ((p[0] - minLat) * scale) - (mapBox.h - ((maxLat - minLat) * scale)) / 2;
                 return { x, y };
             };
-            
+
             ctx.save();
             ctx.beginPath();
             ctx.strokeStyle = mainColor; // Apply dynamic color to map too
@@ -6836,14 +7011,14 @@ export function drawCoffeeClub(ctx: CanvasRenderingContext2D, stats: any, textCo
                 else ctx.lineTo(pt.x, pt.y);
             });
             ctx.stroke();
-            
+
             // Draw a dot at the start
             const startPt = getXY(coords[0]);
             ctx.beginPath();
             ctx.fillStyle = mainColor;
             ctx.arc(startPt.x, startPt.y, 10, 0, Math.PI * 2);
             ctx.fill();
-            
+
             ctx.restore();
         }
     }
@@ -6853,55 +7028,55 @@ export function drawCoffeeClub(ctx: CanvasRenderingContext2D, stats: any, textCo
 
 export function drawTempoGraph(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
     const sysFont = "'Inter', sans-serif";
-    
+
     ctx.save();
     ctx.shadowColor = 'rgba(0,0,0,0.15)';
     ctx.shadowBlur = 40;
     ctx.shadowOffsetY = 15;
     ctx.fillStyle = 'rgba(255, 255, 255, 0.5)'; // 50% opacity as requested
-    
+
     const w = 900;
     const h = 300;
-    const x = 540 - w/2;
-    const y = 200; 
-    
+    const x = 540 - w / 2;
+    const y = 200;
+
     ctx.beginPath();
     ctx.roundRect(x, y, w, h, 30);
     ctx.fill();
-    
+
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
-    
+
     ctx.fillStyle = '#333333';
     ctx.font = `500 32px ${sysFont}`;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
     ctx.fillText(stats.shortTitle || 'Activity', x + 40, y + 40);
-    
+
     ctx.font = `800 46px ${sysFont}`;
     ctx.fillStyle = '#000000';
     ctx.fillText(stats.timeStr || '0:00', x + 160, y + 100);
-    
+
     ctx.globalAlpha = 0.4;
     ctx.fillText(stats.distanceVal ? `${stats.distanceVal} km` : '- km', x + 450, y + 100);
     ctx.globalAlpha = 1.0;
-    
+
     const tssVal = stats.avgHeartrate ? `${stats.avgHeartrate} BPM` : (stats.subValue || '0:00/km');
     ctx.fillText(tssVal, x + 680, y + 100);
-    
+
     // Draw Graph
     const gX = x + 40;
     const gY = y + 260; // bottom baseline
     const gW = w - 80;
     const maxH = 80;
-    
+
     ctx.fillStyle = '#c8d2e0'; // The grayish blue from image
-    
+
     if (stats.splits && stats.splits.length > 0) {
         // ACTUAL SPLITS DATA
         let maxSec = 0;
-        stats.splits.forEach((s: any) => { if(s.seconds > maxSec) maxSec = s.seconds; });
-        
+        stats.splits.forEach((s: any) => { if (s.seconds > maxSec) maxSec = s.seconds; });
+
         const barW = (gW / stats.splits.length) - 4;
         stats.splits.forEach((s: any, i: number) => {
             let barH = (s.seconds / maxSec) * maxH;
@@ -6918,7 +7093,7 @@ export function drawTempoGraph(ctx: CanvasRenderingContext2D, stats: any, textCo
                 if (p[0] < minLat) minLat = p[0]; if (p[0] > maxLat) maxLat = p[0];
             });
             const latRange = maxLat - minLat || 1;
-            
+
             ctx.beginPath();
             ctx.moveTo(gX, gY);
             coords.forEach((p: any, i: number) => {
@@ -6929,14 +7104,14 @@ export function drawTempoGraph(ctx: CanvasRenderingContext2D, stats: any, textCo
             });
             ctx.lineTo(gX + gW, gY);
             ctx.closePath();
-            
+
             // Premium gradient fill
             const grad = ctx.createLinearGradient(0, gY - maxH, 0, gY);
             grad.addColorStop(0, 'rgba(1, 73, 187, 0.4)');
             grad.addColorStop(1, 'rgba(1, 73, 187, 0)');
             ctx.fillStyle = grad;
             ctx.fill();
-            
+
             ctx.strokeStyle = '#0149bb';
             ctx.lineWidth = 3;
             ctx.stroke();
@@ -6945,7 +7120,7 @@ export function drawTempoGraph(ctx: CanvasRenderingContext2D, stats: any, textCo
         // Absolute fallback if absolutely no data is present
         ctx.fillRect(gX, gY - 4, gW, 4);
     }
-    
+
     ctx.restore();
 }
 
@@ -6953,7 +7128,7 @@ export function drawWavyQuote(ctx: CanvasRenderingContext2D, stats: any, textCol
     // ROUTE PATH TYPOGRAPHY - Writing text perfectly along the Strava polyline
     const mainColor = textColor.startsWith('#') ? textColor : (textColor === 'black' ? '#000000' : '#ffffff');
     ctx.save();
-    
+
     if (stats.polyline) {
         const coords = decodePolyline(stats.polyline);
         if (coords && coords.length > 1) {
@@ -6973,10 +7148,10 @@ export function drawWavyQuote(ctx: CanvasRenderingContext2D, stats: any, textCol
             // Calculate total distance of the polyline in pixels
             let totalPathDist = 0;
             const segments = [];
-            for(let i=0; i<pts.length-1; i++) {
-                const dx = pts[i+1].x - pts[i].x;
-                const dy = pts[i+1].y - pts[i].y;
-                const dist = Math.sqrt(dx*dx + dy*dy);
+            for (let i = 0; i < pts.length - 1; i++) {
+                const dx = pts[i + 1].x - pts[i].x;
+                const dy = pts[i + 1].y - pts[i].y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
                 if (dist > 0.1) {
                     const angle = Math.atan2(dy, dx);
                     segments.push({ ...pts[i], dist, angle, dx, dy });
@@ -7000,27 +7175,27 @@ export function drawWavyQuote(ctx: CanvasRenderingContext2D, stats: any, textCol
 
             // The data string to repeat
             const dataStr = `${stats.shortTitle || 'ACTIVITY'} • ${stats.distanceVal ? stats.distanceVal + ' KM' : ''} • DUR ${stats.timeStr || ''} • PACE ${stats.subValue || ''} • `.toUpperCase();
-            
+
             ctx.font = `800 24px 'Inter', sans-serif`;
             ctx.fillStyle = mainColor;
             ctx.textBaseline = 'middle';
             ctx.textAlign = 'center';
-            
+
             let currentDist = 0;
             let charIdx = 0;
             let segIdx = 0;
-            
+
             // Draw chars along path
             while (currentDist < totalPathDist && segIdx < segments.length) {
                 const char = dataStr[charIdx % dataStr.length];
                 const charW = ctx.measureText(char).width;
                 const advance = charW + 4; // letter spacing
-                
+
                 // Find which segment we are currently on based on currentDist
                 let accumulated = 0;
                 let activeSeg = segments[0];
                 let distIntoSeg = 0;
-                
+
                 for (let i = 0; i < segments.length; i++) {
                     if (currentDist >= accumulated && currentDist <= accumulated + segments[i].dist) {
                         activeSeg = segments[i];
@@ -7030,21 +7205,21 @@ export function drawWavyQuote(ctx: CanvasRenderingContext2D, stats: any, textCol
                     }
                     accumulated += segments[i].dist;
                 }
-                
+
                 if (accumulated + activeSeg.dist < currentDist) break; // Reached end
-                
+
                 // Interpolate exact X/Y
                 const ratio = distIntoSeg / activeSeg.dist;
                 const charX = activeSeg.x + activeSeg.dx * ratio;
                 const charY = activeSeg.y + activeSeg.dy * ratio;
-                
+
                 ctx.save();
                 ctx.translate(charX, charY);
                 // We add PI to angle if the text would be drawn upside down, but for artistic maps, raw angle is fine
                 ctx.rotate(activeSeg.angle);
                 ctx.fillText(char, 0, -14); // Offset perpendicular to the path
                 ctx.restore();
-                
+
                 currentDist += advance;
                 charIdx++;
             }
@@ -7056,21 +7231,21 @@ export function drawWavyQuote(ctx: CanvasRenderingContext2D, stats: any, textCol
         ctx.textAlign = 'center';
         ctx.fillText("NO ROUTE DATA", 540, 960);
     }
-    
+
     ctx.restore();
 }
 
 export function drawRetroDistance(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
     const mainColor = textColor.startsWith('#') ? textColor : (textColor === 'white' ? '#ffffff' : '#042a9b');
-    
+
     ctx.save();
-    
+
     // RUNNER'S BIB AESTHETIC at the bottom
     const cardW = 960;
     const cardH = 600;
     const cX = 60;
     const cY = 1260; // Bottom anchored
-    
+
     // Bib Paper
     ctx.fillStyle = 'rgba(249, 246, 240, 0.5)'; // 50% opacity off-white
     ctx.shadowColor = 'rgba(0,0,0,0.3)';
@@ -7081,29 +7256,29 @@ export function drawRetroDistance(ctx: CanvasRenderingContext2D, stats: any, tex
     ctx.fill();
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
-    
+
     // Bib Inner Border
     ctx.strokeStyle = '#111111';
     ctx.lineWidth = 6;
     ctx.beginPath();
     ctx.roundRect(cX + 20, cY + 20, cardW - 40, cardH - 40, 10);
     ctx.stroke();
-    
+
     // Grid Dividers
     ctx.beginPath();
     ctx.moveTo(cX + 20, cY + 400);
     ctx.lineTo(cX + cardW - 20, cY + 400); // Horizontal split
-    ctx.moveTo(cX + cardW/3, cY + 400);
-    ctx.lineTo(cX + cardW/3, cY + cardH - 20); // Vert split 1
-    ctx.moveTo(cX + (cardW/3)*2, cY + 400);
-    ctx.lineTo(cX + (cardW/3)*2, cY + cardH - 20); // Vert split 2
+    ctx.moveTo(cX + cardW / 3, cY + 400);
+    ctx.lineTo(cX + cardW / 3, cY + cardH - 20); // Vert split 1
+    ctx.moveTo(cX + (cardW / 3) * 2, cY + 400);
+    ctx.lineTo(cX + (cardW / 3) * 2, cY + cardH - 20); // Vert split 2
     ctx.stroke();
-    
+
     let mainValue = stats.distanceVal || '0.0';
     let mainLabel = "KILOMETERS";
     let cell2Label = "TIME";
     let cell2Value = stats.timeStr || '0:00';
-    
+
     // If it's a workout with no distance, feature the duration instead
     if (!stats.distanceVal || parseFloat(stats.distanceVal) === 0) {
         mainValue = stats.timeStr || '0:00';
@@ -7111,40 +7286,40 @@ export function drawRetroDistance(ctx: CanvasRenderingContext2D, stats: any, tex
         cell2Label = "ACTIVITY";
         cell2Value = normalizeSport(stats.activityType || 'WORKOUT').toUpperCase();
     }
-    
+
     // Distance/Duration (Main Block)
     ctx.fillStyle = mainColor; // Use dynamic color instead of hardcoded red
     ctx.font = `800 280px 'Asset', sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(mainValue, cX + cardW/2, cY + 200, cardW - 120);
-    
+    ctx.fillText(mainValue, cX + cardW / 2, cY + 200, cardW - 120);
+
     ctx.fillStyle = '#111111';
     ctx.font = `400 40px 'Inter', sans-serif`;
-    ctx.fillText(mainLabel, cX + cardW/2, cY + 350);
-    
+    ctx.fillText(mainLabel, cX + cardW / 2, cY + 350);
+
     // Bottom Cells
     ctx.textBaseline = 'top';
     ctx.textAlign = 'left';
     ctx.font = `800 24px 'Inter', sans-serif`;
-    
+
     // Cell 1: Date
     ctx.fillText("DATE", cX + 40, cY + 420);
     ctx.font = `400 42px 'Syne', sans-serif`;
     ctx.fillText((stats.dayAndNumber || 'APR 2').toUpperCase(), cX + 40, cY + 460, 260);
-    
+
     // Cell 2: Time / Activity
     ctx.font = `800 24px 'Inter', sans-serif`;
-    ctx.fillText(cell2Label, cX + cardW/3 + 20, cY + 420);
+    ctx.fillText(cell2Label, cX + cardW / 3 + 20, cY + 420);
     ctx.font = `400 42px 'Syne', sans-serif`;
-    ctx.fillText(cell2Value, cX + cardW/3 + 20, cY + 460);
-    
+    ctx.fillText(cell2Value, cX + cardW / 3 + 20, cY + 460);
+
     // Cell 3: Pace
     ctx.font = `800 24px 'Inter', sans-serif`;
-    ctx.fillText("PACE", cX + (cardW/3)*2 + 20, cY + 420);
+    ctx.fillText("PACE", cX + (cardW / 3) * 2 + 20, cY + 420);
     ctx.font = `400 42px 'Syne', sans-serif`;
-    ctx.fillText(stats.subValue || '0:00', cX + (cardW/3)*2 + 20, cY + 460);
-    
+    ctx.fillText(stats.subValue || '0:00', cX + (cardW / 3) * 2 + 20, cY + 460);
+
     ctx.restore();
 }
 
@@ -7153,51 +7328,51 @@ export function drawWaveTitle(ctx: CanvasRenderingContext2D, stats: any, textCol
     // Default to dark text (#111111) since the glass is now white
     const mainColor = textColor.startsWith('#') ? textColor : (textColor === 'white' ? '#111111' : '#111111');
     ctx.save();
-    
+
     const cardW = 960;
     const cardH = 560; // Slightly taller to fit title safely
     const cX = 60;
     const cY = 1260; // Shifted up slightly
-    
+
     // Glass Pane (Light / White)
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)'; 
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
     ctx.shadowColor = 'rgba(0,0,0,0.15)';
     ctx.shadowBlur = 40;
     ctx.shadowOffsetY = 20;
     ctx.beginPath();
     ctx.roundRect(cX, cY, cardW, cardH, 40);
     ctx.fill();
-    
+
     // Glass Border
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)'; // Bright white specular edge
     ctx.lineWidth = 2;
     ctx.stroke();
-    
+
     // Typography
-    
+
     // Top Massive Title
     ctx.fillStyle = mainColor; // Dynamic color
     ctx.font = `800 120px 'Unbounded', sans-serif`; // Replaced Slack Sans Notch
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(normalizeSport(stats.activityType || 'RUN').toUpperCase(), 540, cY + 120, cardW - 80);
-    
+
     // Separator line
     ctx.globalAlpha = 0.2;
     ctx.fillStyle = mainColor;
     ctx.fillRect(cX + 60, cY + 220, cardW - 120, 2);
     ctx.globalAlpha = 1.0;
-    
+
     ctx.textBaseline = 'top';
     const rowY = cY + 260;
-    
+
     // Date
     ctx.textAlign = 'left';
     ctx.font = `700 32px 'Inter', sans-serif`;
     ctx.fillText((stats.dayAndNumber || 'APR 2').toUpperCase(), cX + 60, rowY, 300);
-    
+
     // Distance (Placed perfectly in the right available space)
     if (stats.distanceVal && parseFloat(stats.distanceVal) > 0) {
         ctx.textAlign = 'right';
@@ -7212,14 +7387,14 @@ export function drawWaveTitle(ctx: CanvasRenderingContext2D, stats: any, textCol
         ctx.font = `800 40px 'Inter', sans-serif`;
         ctx.fillText(stats.calories + ' kcal', cX + cardW - 60, rowY + 30);
     }
-    
+
     // Title (Moved to its own line to prevent overlap)
     const titleY = rowY + 60;
     ctx.textAlign = 'left'; // Fix alignment bug
     ctx.font = `800 48px 'Inter', sans-serif`;
     // Added maxWidth (cardW - 120) to ensure long titles shrink to fit
-    ctx.fillText(stats.shortTitle || 'WORKSHOP', cX + 60, titleY, cardW - 120); 
-    
+    ctx.fillText(stats.shortTitle || 'WORKSHOP', cX + 60, titleY, cardW - 120);
+
     // Bottom Details
     const row2Y = titleY + 90;
     ctx.textAlign = 'left';
@@ -7227,12 +7402,176 @@ export function drawWaveTitle(ctx: CanvasRenderingContext2D, stats: any, textCol
     ctx.fillText("DURATION", cX + 60, row2Y);
     ctx.font = `800 40px 'Inter', sans-serif`;
     ctx.fillText(stats.timeStr || '1:20', cX + 60, row2Y + 30);
-    
+
     ctx.textAlign = 'right';
     ctx.font = `600 24px 'Inter', sans-serif`;
     ctx.fillText((stats.subLabel || "AVG PACE").toUpperCase(), cX + cardW - 60, row2Y);
     ctx.font = `800 40px 'Inter', sans-serif`;
     ctx.fillText(stats.subValue || '0:00', cX + cardW - 60, row2Y + 30);
+
+    ctx.restore();
+}
+
+// ── Template: Neon Glow ────────────────────────────────────────────────────
+export function drawNeonGlow(ctx: CanvasRenderingContext2D, stats: StickerStats, textColor: string = 'white', showLogo: boolean = true) {
+    const accentColor = textColor === 'black' ? '#ffffff' : textColor; 
+    
+    // Layout geometry
+    const canvasWidth = 1080;
+    const padding = 100;
+    let dataY = 240;
+    
+    ctx.save();
+
+    // Setup Text (No shadow as requested)
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = accentColor;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    
+    // Data List Setup
+    const elevPoint = stats.dataPoints?.find(p => p.label.toUpperCase() === 'ELEVATION');
+    const elevVal = stats.elevation || elevPoint?.value || '0';
+    const timeRaw = (stats.startTime || '00:00 AM').toUpperCase();
+    
+    const d = new Date(stats.rawDate || Date.now());
+    const monthStr = d.toLocaleString('en-US', { month: 'long' }).toUpperCase();
+    const dayStr = d.toLocaleString('en-US', { weekday: 'long' }).toUpperCase();
+    const dayNumStr = d.getDate().toString();
+    const locationStr = (stats.location || 'LOCAL').toUpperCase();
+    
+    let items: { val: string, hide: boolean }[] = [];
+    
+    if (stats.polyline) {
+        items = [
+            { val: locationStr, hide: false },
+            { val: `${monthStr}, ${dayStr} ${dayNumStr}`, hide: false },
+            { val: timeRaw, hide: false },
+            { val: `${stats.distanceVal || '0.00'} ${stats.distanceUnit || 'KM'}`, hide: false },
+            { val: `${stats.subValue || '0:00'}`, hide: false },
+            { val: `${stats.timeStr || '0:00'}`, hide: false }
+        ];
+    } else {
+        items = [
+            { val: `${monthStr}, ${dayStr} ${dayNumStr}`, hide: false },
+            { val: `${stats.timeStr || stats.mainValue || '0:00'}`, hide: false },
+            { val: `${stats.avgHeartrate || '--'} BPM`, hide: !stats.avgHeartrate }
+        ];
+    }
+    
+    items = items.filter(i => !i.hide);
+    
+    ctx.font = "800 65px 'Andika', sans-serif";
+    const startX = 80;
+    dataY = 180;
+    
+    items.forEach(item => {
+        ctx.fillText(item.val.toUpperCase(), startX, dataY);
+        dataY += 75; // Line height
+    });
+    
+    dataY += 20; // Place map much closer to data
+    
+    // 5. Draw Glowing Map (if present)
+    if (stats.polyline) {
+        const coords = decodePolyline(stats.polyline);
+        if (coords && coords.length > 0) {
+            const mapBox = { x: padding, y: dataY, w: canvasWidth - padding * 2, h: 1800 - dataY - 120 };
+            
+            let minLat = coords[0][0], maxLat = minLat, minLng = coords[0][1], maxLng = minLng;
+            coords.forEach(p => {
+                if (p[0] < minLat) minLat = p[0]; if (p[0] > maxLat) maxLat = p[0];
+                if (p[1] < minLng) minLng = p[1]; if (p[1] > maxLng) maxLng = p[1];
+            });
+
+            const scale = Math.min(mapBox.w / (maxLng - minLng), mapBox.h / (maxLat - minLat));
+
+            const drawPath = (offsetX: number = 0, offsetY: number = 0) => {
+                ctx.beginPath();
+                coords.forEach((p, i) => {
+                    const x = mapBox.x + (p[1] - minLng) * scale + (mapBox.w - ((maxLng - minLng) * scale)) / 2;
+                    const y = mapBox.y + ((maxLat - p[0]) * scale) + 40;
+                    if (i === 0) ctx.moveTo(x + offsetX, y + offsetY); else ctx.lineTo(x + offsetX, y + offsetY);
+                });
+                ctx.stroke();
+            };
+
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.globalCompositeOperation = 'source-over';
+            
+            const coreWidth = 28; // Bold core
+            const depth = 16; // Depth of the 3D extrusion
+
+            // 1. Massive Glowing Aura (at the base of the 3D shape)
+            ctx.strokeStyle = accentColor;
+            ctx.shadowColor = accentColor;
+            
+            const auraLayers = [
+                { blur: 150, alpha: 0.3 },
+                { blur: 80, alpha: 0.5 },
+                { blur: 30, alpha: 0.8 },
+                { blur: 10, alpha: 1.0 } // Intense tight base glow
+            ];
+            
+            auraLayers.forEach(layer => {
+                ctx.shadowBlur = layer.blur;
+                ctx.globalAlpha = layer.alpha;
+                ctx.lineWidth = coreWidth;
+                drawPath(depth, depth); // Cast from the deepest layer
+            });
+            
+            // 2. 3D Extrusion (With Simulated Lighting/Shading)
+            ctx.shadowBlur = 0;
+            
+            for (let d = depth; d >= 1; d -= 1) {
+                ctx.lineWidth = coreWidth;
+                
+                // Base solid color
+                ctx.globalAlpha = 1.0;
+                ctx.strokeStyle = accentColor;
+                drawPath(d, d);
+                
+                // Add shading: Darken the base
+                if (d > depth * 0.6) {
+                    ctx.globalAlpha = ((d - depth * 0.6) / (depth * 0.4)) * 0.5; // Up to 50% black at the bottom
+                    ctx.strokeStyle = '#000000';
+                    drawPath(d, d);
+                }
+                
+                // Add highlight: Brighten the top edge connecting to the face
+                if (d < depth * 0.4) {
+                    ctx.globalAlpha = (1 - (d / (depth * 0.4))) * 0.6; // Up to 60% white at the top
+                    ctx.strokeStyle = '#ffffff';
+                    drawPath(d, d);
+                }
+            }
+            
+            // 3. Luminous Top Face
+            ctx.globalAlpha = 1.0;
+            
+            // Base glowing rim on the top face (blends the white into the extrusion)
+            ctx.strokeStyle = accentColor;
+            ctx.shadowColor = accentColor;
+            ctx.shadowBlur = 10;
+            ctx.lineWidth = coreWidth;
+            drawPath(0, 0);
+            
+            // True White Hot Core (Inset slightly to leave a glowing colored rim)
+            ctx.strokeStyle = '#ffffff';
+            ctx.shadowColor = '#ffffff';
+            ctx.shadowBlur = 5;
+            ctx.lineWidth = coreWidth - 10; // Leaves a 5px rim of pure accent color on the face
+            drawPath(0, 0);
+            
+            // Absolute Micro-Center
+            ctx.shadowBlur = 0;
+            ctx.lineWidth = coreWidth * 0.2;
+            drawPath(0, 0);
+            
+            ctx.globalAlpha = 1.0;
+        }
+    }
     
     ctx.restore();
 }

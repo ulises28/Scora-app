@@ -26,6 +26,7 @@ export function initTemplateManager(onChange: OnChangeCallback) {
     let currentTextColor = 'white';
     let currentMapColor = '#ffffff';
     let currentShowLogo = true;
+    let currentActiveColor = 'white';
 
     const galleryContainer = document.getElementById('sticker-gallery');
     const dotsContainer = document.getElementById('template-dots');
@@ -112,22 +113,35 @@ export function initTemplateManager(onChange: OnChangeCallback) {
             activeThumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
         }
 
-        // Show/Hide Color Controls (Sticker supports hex picker?)
+        // Show/Hide Color Controls
         const config = STICKER_REGISTRY[id];
         const colorToggleGroup = document.getElementById('color-toggle')?.parentElement;
         const mapColorGroup = document.getElementById('map-color-group');
+        const chromeMaterialGroup = document.getElementById('chrome-material-group');
+        const chromeMaterialSelect = document.getElementById('chrome-material-select') as HTMLSelectElement;
 
-        if (config?.supportsCustomColor) {
+        let activeColor = currentTextColor;
+
+        if (id.startsWith('chrome')) {
+            colorToggleGroup?.classList.add('hidden');
+            mapColorGroup?.classList.add('hidden');
+            chromeMaterialGroup?.classList.remove('hidden');
+            activeColor = chromeMaterialSelect ? chromeMaterialSelect.value : 'rosegold';
+        } else if (config?.supportsCustomColor) {
             colorToggleGroup?.classList.add('hidden');
             mapColorGroup?.classList.remove('hidden');
+            chromeMaterialGroup?.classList.add('hidden');
+            activeColor = currentMapColor;
             updateMapColorUI(currentMapColor, true);
         } else {
             colorToggleGroup?.classList.remove('hidden');
             mapColorGroup?.classList.add('hidden');
+            chromeMaterialGroup?.classList.add('hidden');
         }
 
-        const activeColor = config?.supportsCustomColor ? currentMapColor : currentTextColor;
-        onChange(currentTemplate, activeColor, currentShowLogo);
+        const activeShowLogo = config?.supportsCustomColor ? currentShowLogo : currentShowLogo; // Keep logic consistent
+        currentActiveColor = activeColor;
+        onChange(currentTemplate, currentActiveColor, currentShowLogo);
     }
 
     function initToggle(id: string, onToggle: (isRight: boolean) => void) {
@@ -180,14 +194,13 @@ export function initTemplateManager(onChange: OnChangeCallback) {
 
     initToggle('color-toggle', (isBlack) => {
         currentTextColor = isBlack ? 'black' : 'white';
-        onChange(currentTemplate, currentTextColor, currentShowLogo);
+        currentActiveColor = currentTextColor;
+        onChange(currentTemplate, currentActiveColor, currentShowLogo);
     });
 
     initToggle('logo-toggle', (isOff) => {
         currentShowLogo = !isOff;
-        const config = STICKER_REGISTRY[currentTemplate];
-        const activeColor = config?.supportsCustomColor ? currentMapColor : currentTextColor;
-        onChange(currentTemplate, activeColor, currentShowLogo);
+        onChange(currentTemplate, currentActiveColor, currentShowLogo);
     });
 
     const mapColorPicker = document.getElementById('map-color-picker') as HTMLInputElement | null;
@@ -197,18 +210,39 @@ export function initTemplateManager(onChange: OnChangeCallback) {
     function updateMapColorUI(color: string, skipChange = false) {
         currentMapColor = color;
         if (mapColorSwatch) mapColorSwatch.style.background = color;
+        const mapColorPicker = document.getElementById('map-color-picker') as HTMLInputElement;
+        const chromeMaterialSelect = document.getElementById('chrome-material-select') as HTMLSelectElement;
+
+        if (mapColorPicker) {
+            mapColorPicker.value = color;
+        }
+
         if (mapColorValue) mapColorValue.innerText = color.toUpperCase();
-        if (mapColorPicker) mapColorPicker.value = color;
 
         const config = STICKER_REGISTRY[currentTemplate];
         if (!skipChange && config?.supportsCustomColor) {
-            onChange(currentTemplate, currentMapColor, currentShowLogo);
+            currentActiveColor = currentMapColor;
+            onChange(currentTemplate, currentActiveColor, currentShowLogo);
         }
     }
 
-    mapColorPicker?.addEventListener('input', (e) => {
-        updateMapColorUI((e.target as HTMLInputElement).value);
-    });
+    if (mapColorPicker) {
+        mapColorPicker.addEventListener('input', (e) => {
+            const val = (e.target as HTMLInputElement).value;
+            currentMapColor = val;
+            updateMapColorUI(val, false);
+            onChange(currentTemplate, currentActiveColor, currentShowLogo);
+        });
+    }
+
+    const chromeMaterialSelect = document.getElementById('chrome-material-select') as HTMLSelectElement;
+    if (chromeMaterialSelect) {
+        chromeMaterialSelect.addEventListener('change', (e) => {
+            const val = (e.target as HTMLSelectElement).value;
+            currentActiveColor = val;
+            onChange(currentTemplate, val, currentShowLogo);
+        });
+    }
 
     // Initial State
     renderGallery();
@@ -217,10 +251,7 @@ export function initTemplateManager(onChange: OnChangeCallback) {
 
     return {
         get template() { return currentTemplate; },
-        get color() { 
-            const config = STICKER_REGISTRY[currentTemplate];
-            return config?.supportsCustomColor ? currentMapColor : currentTextColor; 
-        },
+        get color() { return currentActiveColor; },
         get showLogo() { return currentShowLogo; },
         setTemplate,
         filterByActivity: (stats: any) => {
