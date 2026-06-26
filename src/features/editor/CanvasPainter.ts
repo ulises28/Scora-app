@@ -7411,3 +7411,100 @@ export function drawWaveTitle(ctx: CanvasRenderingContext2D, stats: any, textCol
 
     ctx.restore();
 }
+
+// ── Template: Neon Glow ────────────────────────────────────────────────────
+export function drawNeonGlow(ctx: CanvasRenderingContext2D, stats: StickerStats, textColor: string = 'white', showLogo: boolean = true) {
+    const accentColor = textColor === 'black' ? '#ffffff' : textColor; // If black is selected, default to white for glow
+    
+    // Layout geometry
+    const canvasWidth = 1080;
+    const padding = 100;
+    let dataY = 240;
+    
+    ctx.save();
+
+    // Setup Text glowing style
+    ctx.shadowColor = accentColor;
+    ctx.shadowBlur = stats.polyline ? 15 : 25; // More text glow if no map
+    ctx.fillStyle = accentColor;
+    ctx.textAlign = 'center';
+    
+    // 1. Draw Title
+    ctx.font = "800 60px 'Plus Jakarta Sans', sans-serif";
+    ctx.fillText(applyActivityCasing(stats.title || 'WORKOUT', 'neon_glow'), canvasWidth / 2, dataY);
+    dataY += 160;
+    
+    // 2. Draw Distance / Main Value
+    ctx.font = "900 200px 'Plus Jakarta Sans', sans-serif";
+    const mainVal = stats.polyline ? `${stats.distanceVal || '0.00'}` : (stats.mainValue || '0m');
+    ctx.fillText(mainVal, canvasWidth / 2, dataY);
+    dataY += 90;
+    
+    // 3. Draw secondary stats
+    ctx.font = "700 45px 'Plus Jakarta Sans', sans-serif";
+    let secondaryText = '';
+    if (stats.polyline) {
+        secondaryText = `${stats.distanceUnit || 'KM'}  •  ${stats.timeStr || '0:00'}  •  ${stats.paceStr || '0:00'}/km`;
+    } else {
+        secondaryText = `${stats.subLabel || 'AVG HR'} ${stats.subValue || '--'}  •  ${stats.calories || '--'} CAL`;
+    }
+    ctx.fillText(secondaryText, canvasWidth / 2, dataY);
+    dataY += 120;
+    
+    // 4. Scora Logo
+    if (showLogo) {
+        ctx.font = "800 30px 'Plus Jakarta Sans', sans-serif";
+        ctx.shadowBlur = 10;
+        ctx.fillText("SCORA", canvasWidth / 2, 1850);
+    }
+    
+    // 5. Draw Glowing Map (if present)
+    if (stats.polyline) {
+        const coords = decodePolyline(stats.polyline);
+        if (coords && coords.length > 0) {
+            const mapBox = { x: padding, y: dataY, w: canvasWidth - padding * 2, h: 1800 - dataY - 120 };
+            
+            let minLat = coords[0][0], maxLat = minLat, minLng = coords[0][1], maxLng = minLng;
+            coords.forEach(p => {
+                if (p[0] < minLat) minLat = p[0]; if (p[0] > maxLat) maxLat = p[0];
+                if (p[1] < minLng) minLng = p[1]; if (p[1] > maxLng) maxLng = p[1];
+            });
+
+            const scale = Math.min(mapBox.w / (maxLng - minLng), mapBox.h / (maxLat - minLat));
+
+            const drawPath = () => {
+                ctx.beginPath();
+                coords.forEach((p, i) => {
+                    const x = mapBox.x + (p[1] - minLng) * scale + (mapBox.w - ((maxLng - minLng) * scale)) / 2;
+                    const y = mapBox.y + mapBox.h - ((p[0] - minLat) * scale) - (mapBox.h - ((maxLat - minLat) * scale)) / 2;
+                    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                });
+                ctx.stroke();
+            };
+
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            // Outer huge glow
+            ctx.strokeStyle = accentColor;
+            ctx.shadowColor = accentColor;
+            ctx.shadowBlur = 80;
+            ctx.lineWidth = 40;
+            drawPath();
+            
+            // Medium glow
+            ctx.shadowBlur = 30;
+            ctx.lineWidth = 20;
+            drawPath();
+            
+            // Inner core (white)
+            ctx.strokeStyle = '#ffffff';
+            ctx.shadowColor = accentColor;
+            ctx.shadowBlur = 10;
+            ctx.lineWidth = 8;
+            drawPath();
+        }
+    }
+    
+    ctx.restore();
+}
