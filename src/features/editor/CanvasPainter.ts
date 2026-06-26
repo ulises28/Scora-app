@@ -7456,7 +7456,7 @@ export function drawNeonGlow(ctx: CanvasRenderingContext2D, stats: StickerStats,
         dataY += 75; // Line height
     });
     
-    dataY += 80; // Extra padding below list before the map
+    dataY += 20; // Place map much closer to data
     
     // 4. Scora Logo
     if (showLogo) {
@@ -7494,24 +7494,45 @@ export function drawNeonGlow(ctx: CanvasRenderingContext2D, stats: StickerStats,
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
             
-            // Outer huge glow
+            // Ultra-Realistic 5-Layer Neon Glow Setup
+            ctx.globalCompositeOperation = 'screen'; // Creates intense light accumulation
+            
+            // Layer 1: Huge faint ambient halo
             ctx.strokeStyle = accentColor;
             ctx.shadowColor = accentColor;
-            ctx.shadowBlur = 80;
-            ctx.lineWidth = 40;
+            ctx.shadowBlur = 120;
+            ctx.lineWidth = 50;
+            ctx.globalAlpha = 0.3;
             drawPath();
             
-            // Medium glow
+            // Layer 2: Wide outer glow
+            ctx.shadowBlur = 60;
+            ctx.lineWidth = 30;
+            ctx.globalAlpha = 0.5;
+            drawPath();
+            
+            // Layer 3: Medium intense glow
             ctx.shadowBlur = 30;
-            ctx.lineWidth = 20;
+            ctx.lineWidth = 16;
+            ctx.globalAlpha = 0.8;
             drawPath();
             
-            // Inner core (white)
+            // Layer 4: Tight inner color core
+            ctx.shadowBlur = 15;
+            ctx.lineWidth = 8;
+            ctx.globalAlpha = 1.0;
+            drawPath();
+            
+            // Layer 5: Searing white-hot center
+            ctx.globalCompositeOperation = 'source-over'; // Reset to standard for the white core
             ctx.strokeStyle = '#ffffff';
             ctx.shadowColor = accentColor;
             ctx.shadowBlur = 10;
-            ctx.lineWidth = 8;
+            ctx.lineWidth = 4;
             drawPath();
+            
+            // Reset state
+            ctx.globalAlpha = 1.0;
         }
     }
     
