@@ -7511,44 +7511,39 @@ export function drawNeonGlow(ctx: CanvasRenderingContext2D, stats: StickerStats,
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
             
-            // Ultra-Realistic Physical Neon Tube Setup
-            // 1. Ambient Light (Screen blend for intense light accumulation)
-            ctx.globalCompositeOperation = 'screen';
+            // Ultra-Realistic Physical Neon Tube Setup (Bold & Thick)
+            ctx.globalCompositeOperation = 'source-over'; // Screen blend fails on light backgrounds
             
+            // 1. Ambient Light (Wide Halos)
             ctx.strokeStyle = accentColor;
             ctx.shadowColor = accentColor;
-            ctx.shadowBlur = 150;
-            ctx.lineWidth = 90;
+            
+            ctx.shadowBlur = 100;
+            ctx.lineWidth = 80;
             ctx.globalAlpha = 0.3;
             drawPath();
             
-            ctx.shadowBlur = 80;
+            ctx.shadowBlur = 50;
             ctx.lineWidth = 60;
-            ctx.globalAlpha = 0.5;
+            ctx.globalAlpha = 0.6;
             drawPath();
             
-            // 2. The Physical Glass Tube & Gas (Solid color)
-            ctx.globalCompositeOperation = 'source-over';
+            // 2. The Physical Glass Tube (Solid, thick color block)
+            ctx.shadowBlur = 10;
+            ctx.lineWidth = 45; // Extremely thick outer tube
             ctx.globalAlpha = 1.0;
-            
-            ctx.shadowBlur = 40;
-            ctx.lineWidth = 36;
-            drawPath();
-            
-            ctx.shadowBlur = 20;
-            ctx.lineWidth = 24;
             drawPath();
             
             // 3. Searing White-Hot Core (The electrical arc)
             ctx.strokeStyle = '#ffffff';
-            ctx.shadowColor = '#ffffff'; // White shadow for intense core brightness
-            ctx.shadowBlur = 12;
-            ctx.lineWidth = 12; // Much thicker core
+            ctx.shadowColor = 'rgba(255, 255, 255, 0.8)'; // Slight white glow
+            ctx.shadowBlur = 5;
+            ctx.lineWidth = 20; // Very thick white core
             drawPath();
             
-            // Final micro-core for absolute brightness
-            ctx.shadowBlur = 0;
-            ctx.lineWidth = 6;
+            // 4. Final micro-core for absolute sharpness
+            ctx.shadowColor = 'transparent';
+            ctx.lineWidth = 10;
             drawPath();
             
             // Reset state
