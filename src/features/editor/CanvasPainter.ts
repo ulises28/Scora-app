@@ -7500,8 +7500,8 @@ export function drawNeonGlow(ctx: CanvasRenderingContext2D, stats: StickerStats,
             ctx.lineJoin = 'round';
             ctx.globalCompositeOperation = 'source-over';
             
-            const coreWidth = 26; // Thickness of the line
-            const depth = 15; // Depth of the 3D extrusion (isometric down-right)
+            const coreWidth = 28; // Bold core
+            const depth = 16; // Depth of the 3D extrusion
 
             // 1. Massive Glowing Aura (at the base of the 3D shape)
             ctx.strokeStyle = accentColor;
@@ -7509,9 +7509,9 @@ export function drawNeonGlow(ctx: CanvasRenderingContext2D, stats: StickerStats,
             
             const auraLayers = [
                 { blur: 150, alpha: 0.3 },
-                { blur: 90, alpha: 0.5 },
-                { blur: 40, alpha: 0.7 },
-                { blur: 20, alpha: 1.0 }
+                { blur: 80, alpha: 0.5 },
+                { blur: 30, alpha: 0.8 },
+                { blur: 10, alpha: 1.0 } // Intense tight base glow
             ];
             
             auraLayers.forEach(layer => {
@@ -7521,21 +7521,53 @@ export function drawNeonGlow(ctx: CanvasRenderingContext2D, stats: StickerStats,
                 drawPath(depth, depth); // Cast from the deepest layer
             });
             
-            // 2. 3D Extrusion (Solid colored sides)
+            // 2. 3D Extrusion (With Simulated Lighting/Shading)
             ctx.shadowBlur = 0;
-            ctx.globalAlpha = 1.0;
-            ctx.strokeStyle = accentColor;
             
-            // Draw bottom-up to layer perfectly
             for (let d = depth; d >= 1; d -= 1) {
                 ctx.lineWidth = coreWidth;
+                
+                // Base solid color
+                ctx.globalAlpha = 1.0;
+                ctx.strokeStyle = accentColor;
                 drawPath(d, d);
+                
+                // Add shading: Darken the base
+                if (d > depth * 0.6) {
+                    ctx.globalAlpha = ((d - depth * 0.6) / (depth * 0.4)) * 0.5; // Up to 50% black at the bottom
+                    ctx.strokeStyle = '#000000';
+                    drawPath(d, d);
+                }
+                
+                // Add highlight: Brighten the top edge connecting to the face
+                if (d < depth * 0.4) {
+                    ctx.globalAlpha = (1 - (d / (depth * 0.4))) * 0.6; // Up to 60% white at the top
+                    ctx.strokeStyle = '#ffffff';
+                    drawPath(d, d);
+                }
             }
             
-            // 3. Front Face (Pure White)
-            ctx.strokeStyle = '#ffffff';
+            // 3. Luminous Top Face
+            ctx.globalAlpha = 1.0;
+            
+            // Base glowing rim on the top face (blends the white into the extrusion)
+            ctx.strokeStyle = accentColor;
+            ctx.shadowColor = accentColor;
+            ctx.shadowBlur = 10;
             ctx.lineWidth = coreWidth;
-            drawPath(0, 0); // Top layer (no offset)
+            drawPath(0, 0);
+            
+            // True White Hot Core (Inset slightly to leave a glowing colored rim)
+            ctx.strokeStyle = '#ffffff';
+            ctx.shadowColor = '#ffffff';
+            ctx.shadowBlur = 5;
+            ctx.lineWidth = coreWidth - 10; // Leaves a 5px rim of pure accent color on the face
+            drawPath(0, 0);
+            
+            // Absolute Micro-Center
+            ctx.shadowBlur = 0;
+            ctx.lineWidth = coreWidth * 0.2;
+            drawPath(0, 0);
             
             ctx.globalAlpha = 1.0;
         }
