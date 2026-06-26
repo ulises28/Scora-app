@@ -7434,17 +7434,25 @@ export function drawNeonGlow(ctx: CanvasRenderingContext2D, stats: StickerStats,
     const elevPoint = stats.dataPoints?.find(p => p.label.toUpperCase() === 'ELEVATION');
     const elevVal = stats.elevation || elevPoint?.value || '0';
     const timeRaw = (stats.startTime || '00:00 AM').toUpperCase();
-    const dateRaw = stats.date ? stats.date.toUpperCase() : 'JUN 24, 2026';
+    
+    const d = new Date(stats.rawDate || Date.now());
+    const monthStr = d.toLocaleString('en-US', { month: 'long' }).toUpperCase();
+    const dayStr = d.toLocaleString('en-US', { weekday: 'long' }).toUpperCase();
+    const dayNumStr = d.getDate().toString();
+    const locationStr = (stats.location || 'LOCAL').toUpperCase();
     
     const items = [
-        { val: dateRaw, hide: false },
+        { val: monthStr, hide: false },
+        { val: locationStr, hide: false },
+        { val: dayStr, hide: false },
+        { val: dayNumStr, hide: false },
         { val: timeRaw, hide: false },
         { val: stats.polyline ? `${stats.distanceVal || '0.00'} ${stats.distanceUnit || 'KM'}` : `${stats.mainValue || '0m'}`, hide: false },
-        { val: `${stats.paceStr || '0:00'}/${stats.distanceUnit || 'KM'}`, hide: !stats.polyline },
-        { val: `${stats.timeStr || '0:00'}`, hide: false },
+        { val: `${stats.subValue || '0:00'}`, hide: !stats.polyline }, // Pace correctly formatted from subValue
+        { val: `${stats.timeStr || '0:00'}`, hide: !stats.polyline }, // Hide duplicate time for workouts
+        { val: `${stats.title || 'WORKOUT'}`.toUpperCase(), hide: !!stats.polyline }, // Show title for workouts to replace empty space
         { val: `${elevVal} M`, hide: parseFloat(elevVal) === 0 && !elevPoint },
-        { val: `${stats.calories || '0'} CAL`, hide: !stats.calories || stats.calories === '0' },
-        { val: `${stats.subValue || '--'} BPM`, hide: !stats.subLabel?.toUpperCase().includes('HR') && !stats.subLabel?.toUpperCase().includes('BPM') }
+        { val: `${stats.avgHeartrate || '--'} BPM`, hide: !stats.avgHeartrate } // Replaced calories with strict HR check
     ].filter(i => !i.hide);
     
     ctx.font = "800 65px 'Plus Jakarta Sans', sans-serif";
