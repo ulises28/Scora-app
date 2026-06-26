@@ -409,7 +409,7 @@ function createShader(gl: WebGL2RenderingContext, type: number, source: string) 
   return shader;
 }
 
-export async function applyLiquidMetalEffect(sourceDataURL: string, width: number, height: number, theme: 'silver' | 'gold' | 'rosegold' | 'bronze' | 'obsidian' | 'emerald' | 'sapphire' | 'rubi' = 'rosegold'): Promise<HTMLCanvasElement> {
+export async function applyLiquidMetalEffect(sourceDataURL: string, width: number, height: number, theme: 'silver' | 'gold' | 'rosegold' | 'bronze' | 'obsidian' | 'emerald' | 'sapphire' | 'rubi' | 'titanium' = 'rosegold'): Promise<HTMLCanvasElement> {
   // 1. Calculate Poisson distance field
   const { imageData } = await toProcessedLiquidMetal(sourceDataURL);
   
@@ -492,11 +492,17 @@ export async function applyLiquidMetalEffect(sourceDataURL: string, width: numbe
   } else if (theme === 'rubi') {
       colorDark = [0.15, 0.0, 0.02]; 
       colorLight = [0.95, 0.05, 0.1]; // Deep, rich blood-red metallic
+  } else if (theme === 'titanium') {
+      colorDark = [0.0, 0.0, 0.0]; 
+      colorLight = [0.15, 0.15, 0.15]; // Dark base allows the intense rainbow holo to dominate
   }
   gl.uniform3f(gl.getUniformLocation(program, "u_metalColorDark"), colorDark[0], colorDark[1], colorDark[2]);
   gl.uniform3f(gl.getUniformLocation(program, "u_metalColorLight"), colorLight[0], colorLight[1], colorLight[2]);
   
-  const holoIntensity = theme === 'obsidian' ? 0.0 : 0.4;
+  let holoIntensity = 0.4;
+  if (theme === 'obsidian') holoIntensity = 0.0;
+  if (theme === 'titanium') holoIntensity = 1.0; // Super intense rainbow effect
+
   const locHolo = gl.getUniformLocation(program, "u_holoIntensity");
   if (locHolo) gl.uniform1f(locHolo, holoIntensity);
   
