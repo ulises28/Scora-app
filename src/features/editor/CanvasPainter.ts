@@ -783,12 +783,6 @@ export function drawChromeHighContrastSticker(ctx, stats, textColor, showLogo = 
     runWebGL();
 }
 
-export function drawChromeLiquidMercurySticker(ctx, stats, textColor) {
-    const coords = decodePolyline(stats.polyline);
-    // Draw centered on screen
-    drawChromeMapLiquidMercury(ctx, coords, { x: 90, y: 500, w: 900, h: 900 });
-}
-
 // V1: High-Contrast Chrome (Balloon-like reflection)
 export function drawChromeMapHighContrast(ctx, coords, mapBox) {
     if (!coords || coords.length === 0) return;
@@ -857,60 +851,7 @@ export function drawChromeMapHighContrast(ctx, coords, mapBox) {
     drawPath(6, 6);
 }
 
-// V2: Liquid Mercury Chrome (Smooth & Soft)
-export function drawChromeMapLiquidMercury(ctx, coords, mapBox) {
-    if (!coords || coords.length === 0) return;
-    let minLat = coords[0][0], maxLat = minLat, minLng = coords[0][1], maxLng = minLng;
-    coords.forEach(p => {
-        if (p[0] < minLat) minLat = p[0]; if (p[0] > maxLat) maxLat = p[0];
-        if (p[1] < minLng) minLng = p[1]; if (p[1] > maxLng) maxLng = p[1];
-    });
 
-    const scale = Math.min(mapBox.w / (maxLng - minLng), mapBox.h / (maxLat - minLat));
-
-    const drawPath = () => {
-        ctx.beginPath();
-        coords.forEach((p, i) => {
-            const x = mapBox.x + (p[1] - minLng) * scale + (mapBox.w - ((maxLng - minLng) * scale)) / 2;
-            const y = mapBox.y + mapBox.h - ((p[0] - minLat) * scale) - (mapBox.h - ((maxLat - minLat) * scale)) / 2;
-            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-        });
-        ctx.stroke();
-    };
-
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-
-    // 1. Soft White Glowing Shadow
-    ctx.shadowColor = 'rgba(255, 255, 255, 0.4)';
-    ctx.shadowBlur = 35;
-    ctx.strokeStyle = '#333333';
-    ctx.lineWidth = 55;
-    drawPath();
-
-    ctx.shadowBlur = 0;
-    ctx.shadowColor = 'transparent';
-
-    // 2. Mid Gray Layer
-    ctx.strokeStyle = '#777777';
-    ctx.lineWidth = 40;
-    drawPath();
-
-    // 3. Light Gray Layer
-    ctx.strokeStyle = '#aaaaaa';
-    ctx.lineWidth = 26;
-    drawPath();
-    
-    // 4. Very light gray core
-    ctx.strokeStyle = '#dddddd';
-    ctx.lineWidth = 14;
-    drawPath();
-
-    // 5. Thick Soft White Core
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 6;
-    drawPath();
-}
 
 
 
