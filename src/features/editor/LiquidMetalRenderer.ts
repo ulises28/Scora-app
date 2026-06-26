@@ -77,21 +77,23 @@ void main() {
   vec4 img = texture(u_image, texUV);
   float opacity = img.g;
   
-  if (u_isImage && opacity > 0.01) {
+  if (u_isImage) {
     // 1. Calculate Normals from the Height Map (img.r)
     vec2 texel = 1.0 / u_resolution;
     
-    // Sample neighbors to get gradient
-    float hL = texture(u_image, texUV - vec2(texel.x, 0.0)).r;
-    float hR = texture(u_image, texUV + vec2(texel.x, 0.0)).r;
-    float hD = texture(u_image, texUV - vec2(0.0, texel.y)).r;
-    float hU = texture(u_image, texUV + vec2(0.0, texel.y)).r;
+    // WIDE SAMPLING: By sampling further away, we average out the 8-bit stair-stepping 
+    // from the heightmap, completely eliminating the pixelated jagged banding!
+    float offset = 4.0; 
+    float hL = texture(u_image, texUV - vec2(texel.x * offset, 0.0)).r;
+    float hR = texture(u_image, texUV + vec2(texel.x * offset, 0.0)).r;
+    float hD = texture(u_image, texUV - vec2(0.0, texel.y * offset)).r;
+    float hU = texture(u_image, texUV + vec2(0.0, texel.y * offset)).r;
     
-    // Smooth the normals slightly for liquid look
-    float dX = (hL - hR) * 1.5;
-    float dY = (hD - hU) * 1.5;
+    // Smooth the normals slightly for liquid look (divide by offset to maintain correct slope)
+    float dX = (hL - hR) * (1.5 / offset);
+    float dY = (hD - hU) * (1.5 / offset);
     
-    // Z controls how "inflated" or flat the normal is (lower = puffier foil balloon look)
+    // Z controls how "inflated" or flat the normal is
     vec3 N = normalize(vec3(dX, dY, 0.04));
     
     // 2. Setup Camera and Reflections
@@ -102,43 +104,49 @@ void main() {
     float m = 2.0 * sqrt(ref.x*ref.x + ref.y*ref.y + (ref.z+1.0)*(ref.z+1.0));
     vec2 matcapUV = ref.xy / m + 0.5;
     
-    // Create horizontal studio lights
-    float light = smoothstep(0.4, 0.55, matcapUV.y) - smoothstep(0.55, 0.7, matcapUV.y); // Main bright band
-    light += (smoothstep(0.1, 0.2, matcapUV.y) - smoothstep(0.2, 0.3, matcapUV.y)) * 0.5; // Secondary band
-    light += smoothstep(0.8, 0.9, matcapUV.y) * 0.8; // Top edge light
-    light += smoothstep(0.3, 0.1, matcapUV.y) * 0.3; // Bottom rim light
+    // Create diffused horizontal studio lights (Premium softbox ripples)
+    float light = smoothstep(0.35, 0.55, matcapUV.y) - smoothstep(0.55, 0.75, matcapUV.y); // Main soft band
+    light += (smoothstep(0.1, 0.25, matcapUV.y) - smoothstep(0.25, 0.4, matcapUV.y)) * 0.5; // Secondary soft band
+    light += smoothstep(0.75, 0.95, matcapUV.y) * 0.8; // Top edge soft light
+    light += smoothstep(0.35, 0.05, matcapUV.y) * 0.3; // Bottom rim soft light
     
-    // Base metal colors (dark steel to pure white, or bronze to gold)
+    // Base metal colors
     vec3 color = mix(u_metalColorDark, u_metalColorLight, light);
     
-    // Y2K Chromatic Iridescence (Holographic rainbow sheen on the metal)
-    vec3 holo = 0.5 + 0.5 * cos(vec3(0.0, 2.0, 4.0) + (N.x + N.y) * 5.0 - u_time * 2.0);
-    color += holo * 0.15; // Subtle rainbow mix
-    
-    // Add sharp metallic rim lighting to simulate foil balloon edges
+    // Calculate Fresnel (glancing angle) for physical coatings
     float fresnel = 1.0 - max(dot(N, viewDir), 0.0);
+    
+    // Y2K Chromatic Iridescence (Thin-film interference)
+    // Applied via Fresnel so it only blooms intensely on the curves, leaving the face clean!
+    vec3 holo = 0.5 + 0.5 * cos(vec3(0.0, 2.0, 4.0) + (N.x + N.y) * 5.0 - u_time * 2.0);
+    color += holo * fresnel * 0.4; // Premium physical pearlescent coating
+    
+    // Add sharp metallic rim lighting
     color += u_metalColorLight * pow(fresnel, 4.0) * 0.8;
+    
+    // Edge Anti-Aliasing (Smooth out jagged pixels at the boundary)
+    float edgeAlpha = smoothstep(0.0, 0.15, opacity);
     
     // 4. Strong Specular Highlight & Glow (The "Gloss")
     vec3 lightDir = normalize(vec3(0.5, 0.8, 1.0));
-    float spec1 = pow(max(dot(N, lightDir), 0.0), 80.0); // Tight core highlight
-    float spec2 = pow(max(dot(N, lightDir), 0.0), 15.0); // Soft outer glow
+    float spec1 = pow(max(dot(N, lightDir), 0.0), 80.0) * edgeAlpha; // Tight core highlight (faded at extreme edge)
+    float spec2 = pow(max(dot(N, lightDir), 0.0), 15.0) * edgeAlpha; // Soft outer glow
     
     // Chromatic dispersion for the outer glow (Rainbow halo)
     vec3 chromaticGlow = 0.5 + 0.5 * cos(vec3(0.0, 2.0, 4.0) + (N.x - N.y) * 8.0);
-    color += chromaticGlow * spec2 * 0.6; 
+    color += chromaticGlow * spec2 * 0.5; 
     color += vec3(1.0) * spec1 * 1.5; // Core white highlight
     
     // 5. Y2K Starburst Flare (Procedural Sparkles on the highlights)
-    vec2 nd = N.xy - (lightDir.xy * 0.6); // Center the flare on the light vector
+    vec2 nd = N.xy - (lightDir.xy * 0.6); 
     float streak1 = pow(max(1.0 - abs(nd.x + nd.y) * 8.0, 0.0), 4.0);
     float streak2 = pow(max(1.0 - abs(nd.x - nd.y) * 8.0, 0.0), 4.0);
-    float flareBase = pow(max(dot(N, lightDir), 0.0), 3.0); // Constrain flare length
-    vec3 flareColor = mix(vec3(1.0), holo, 0.4); // Flares have a slight rainbow tint
-    color += flareColor * (streak1 + streak2) * flareBase * 2.5;
+    float flareBase = pow(max(dot(N, lightDir), 0.0), 3.0) * edgeAlpha; 
+    vec3 flareColor = mix(vec3(1.0), holo, 0.4); 
+    color += flareColor * (streak1 + streak2) * flareBase * 2.0;
     
-    // Output
-    fragColor = vec4(color, opacity);
+    // Output with smoothed alpha to prevent jagged borders
+    fragColor = vec4(color, opacity * edgeAlpha);
   } else {
     fragColor = vec4(0.0);
   }
