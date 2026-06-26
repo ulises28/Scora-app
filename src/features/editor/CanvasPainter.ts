@@ -7431,7 +7431,7 @@ export function drawNeonGlow(ctx: CanvasRenderingContext2D, stats: StickerStats,
     
     // Data List Setup
     const elevPoint = stats.dataPoints?.find(p => p.label.toUpperCase() === 'ELEVATION');
-    const elevVal = stats.elevation || elevPoint?.value || '0';
+    const elevVal = (stats as any).elevation || elevPoint?.value || '0';
     const timeRaw = (stats.startTime || '00:00 AM').toUpperCase();
     
     const d = new Date(stats.rawDate || Date.now());
@@ -7447,7 +7447,7 @@ export function drawNeonGlow(ctx: CanvasRenderingContext2D, stats: StickerStats,
             { val: locationStr, hide: false },
             { val: `${monthStr}, ${dayStr} ${dayNumStr}`, hide: false },
             { val: timeRaw, hide: false },
-            { val: `${stats.distanceVal || '0.00'} ${stats.distanceUnit || 'KM'}`, hide: false },
+            { val: `${stats.distanceVal || '0.00'} ${(stats as any).distanceUnit || 'KM'}`, hide: false },
             { val: `${stats.subValue || '0:00'}`, hide: false },
             { val: `${stats.timeStr || '0:00'}`, hide: false }
         ];
