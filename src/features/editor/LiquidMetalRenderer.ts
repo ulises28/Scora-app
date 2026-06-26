@@ -464,7 +464,7 @@ export async function applyLiquidMetalEffect(sourceDataURL: string, width: numbe
   gl.uniform1i(gl.getUniformLocation(program, "u_image"), 0);
   gl.uniform1f(gl.getUniformLocation(program, "u_imageAspectRatio"), width / height);
   gl.uniform2f(gl.getUniformLocation(program, "u_resolution"), width, height);
-  gl.uniform1f(gl.getUniformLocation(program, "u_time"), performance.now() / 1000);
+  gl.uniform1f(gl.getUniformLocation(program, "u_time"), 0.0); // Fixed time for static, consistent renders
   
   gl.uniform4f(gl.getUniformLocation(program, "u_colorBack"), 0, 0, 0, 0); // Transparent background
   gl.uniform4f(gl.getUniformLocation(program, "u_colorTint"), 1, 1, 1, 0); // No tint
