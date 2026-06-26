@@ -24,7 +24,7 @@ export function initTemplateManager(onChange: OnChangeCallback) {
     let currentTemplates = [...TEMPLATES];
     let currentTemplate = currentTemplates[0] || 'note-minimal';
     let currentTextColor = 'white';
-    let currentMapColor = '#10B981';
+    let currentMapColor = '#ffffff';
     let currentShowLogo = true;
     let currentActiveColor = 'white';
 

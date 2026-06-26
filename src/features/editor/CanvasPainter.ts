@@ -7427,32 +7427,41 @@ export function drawNeonGlow(ctx: CanvasRenderingContext2D, stats: StickerStats,
     ctx.shadowColor = accentColor;
     ctx.shadowBlur = stats.polyline ? 15 : 25; // More text glow if no map
     ctx.fillStyle = accentColor;
-    ctx.textAlign = 'center';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
     
-    // 1. Draw Title
-    ctx.font = "800 60px 'Plus Jakarta Sans', sans-serif";
-    ctx.fillText(applyActivityCasing(stats.title || 'WORKOUT', 'neon_glow'), canvasWidth / 2, dataY);
-    dataY += 160;
+    // Data List Setup
+    const elevPoint = stats.dataPoints?.find(p => p.label.toUpperCase() === 'ELEVATION');
+    const elevVal = stats.elevation || elevPoint?.value || '0';
+    const timeRaw = (stats.startTime || '00:00 AM').toUpperCase();
+    const dateRaw = stats.date ? stats.date.toUpperCase() : 'JUN 24, 2026';
     
-    // 2. Draw Distance / Main Value
-    ctx.font = "900 200px 'Plus Jakarta Sans', sans-serif";
-    const mainVal = stats.polyline ? `${stats.distanceVal || '0.00'}` : (stats.mainValue || '0m');
-    ctx.fillText(mainVal, canvasWidth / 2, dataY);
-    dataY += 90;
+    const items = [
+        { val: dateRaw, hide: false },
+        { val: timeRaw, hide: false },
+        { val: stats.polyline ? `${stats.distanceVal || '0.00'} ${stats.distanceUnit || 'KM'}` : `${stats.mainValue || '0m'}`, hide: false },
+        { val: `${stats.paceStr || '0:00'}/${stats.distanceUnit || 'KM'}`, hide: !stats.polyline },
+        { val: `${stats.timeStr || '0:00'}`, hide: false },
+        { val: `${elevVal} M`, hide: parseFloat(elevVal) === 0 && !elevPoint },
+        { val: `${stats.calories || '0'} CAL`, hide: !stats.calories || stats.calories === '0' },
+        { val: `${stats.subValue || '--'} BPM`, hide: !stats.subLabel?.toUpperCase().includes('HR') && !stats.subLabel?.toUpperCase().includes('BPM') }
+    ].filter(i => !i.hide);
     
-    // 3. Draw secondary stats
-    ctx.font = "700 45px 'Plus Jakarta Sans', sans-serif";
-    let secondaryText = '';
-    if (stats.polyline) {
-        secondaryText = `${stats.distanceUnit || 'KM'}  •  ${stats.timeStr || '0:00'}  •  ${stats.paceStr || '0:00'}/km`;
-    } else {
-        secondaryText = `${stats.subLabel || 'AVG HR'} ${stats.subValue || '--'}  •  ${stats.calories || '--'} CAL`;
-    }
-    ctx.fillText(secondaryText, canvasWidth / 2, dataY);
-    dataY += 120;
+    ctx.font = "800 65px 'Plus Jakarta Sans', sans-serif";
+    const startX = 80;
+    dataY = 180;
+    
+    items.forEach(item => {
+        ctx.fillText(item.val.toUpperCase(), startX, dataY);
+        dataY += 75; // Line height
+    });
+    
+    dataY += 80; // Extra padding below list before the map
     
     // 4. Scora Logo
     if (showLogo) {
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'alphabetic';
         ctx.font = "800 30px 'Plus Jakarta Sans', sans-serif";
         ctx.shadowBlur = 10;
         ctx.fillText("SCORA", canvasWidth / 2, 1850);
