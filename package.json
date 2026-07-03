@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "vite --port 3000",
-    "build": "cp src/config.example.ts src/config.ts || true && tsc && vite build",
+    "build": "cp src/config.example.ts src/config.ts || true && vite build",
     "cap:sync": "cap sync",
     "build:mobile": "pnpm run build && pnpm run cap:sync",
     "preview": "vite preview",
