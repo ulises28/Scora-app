@@ -4,55 +4,155 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Soporte y Privacidad - Scora</title>
-    <link rel="stylesheet" href="/src/styles/styles.css"> <!-- Will use existing styles if loaded via root, but for public it might miss Vite processing. Let's make it inline styled or minimal. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700;800&family=Playfair+Display:ital,wght@0,500;1,500;1,900&display=swap" rel="stylesheet">
     <style>
-        body {
-            background-color: #0d0d0d;
-            color: #ffffff;
-            font-family: 'Inter', sans-serif;
+        :root {
+            --bg-color: #050505;
+            --text-color: #eaeaea;
+            --accent-color: #ffffff;
+            --muted-color: #666666;
+            --border-color: #222222;
+        }
+        * {
+            box-sizing: border-box;
             margin: 0;
-            padding: 2rem;
+            padding: 0;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Outfit', -apple-system, sans-serif;
+            -webkit-font-smoothing: antialiased;
             line-height: 1.6;
+            overflow-x: hidden;
+            /* CRITICAL FIX: Ensure scrolling is enabled */
+            overflow-y: auto !important; 
+            position: relative !important;
+            height: auto !important;
+            min-height: 100dvh;
         }
         .container {
-            max-width: 600px;
+            max-width: 800px;
             margin: 0 auto;
+            padding: 4rem 2rem 8rem;
         }
-        h1 { color: #80cbc4; }
-        h2 { border-bottom: 1px solid #333; padding-bottom: 0.5rem; margin-top: 2rem; }
-        a { color: #fc4c02; text-decoration: none; }
-        a:hover { text-decoration: underline; }
-        .back-link { display: inline-block; margin-bottom: 2rem; color: #888; }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 4rem;
+            color: var(--muted-color);
+            text-decoration: none;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.1em;
+            transition: color 0.3s ease;
+        }
+        .back-link:hover {
+            color: var(--accent-color);
+        }
+        h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(3rem, 8vw, 5rem);
+            line-height: 1.1;
+            letter-spacing: -0.03em;
+            margin-bottom: 4rem;
+            font-weight: 500;
+        }
+        .section-block {
+            border-top: 1px solid var(--border-color);
+            padding: 4rem 0;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+        @media (min-width: 768px) {
+            .section-block {
+                grid-template-columns: 1fr 2fr;
+            }
+        }
+        .section-title {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--muted-color);
+            font-weight: 500;
+        }
+        .section-content {
+            font-size: 1.125rem;
+            color: #b0b0b0;
+        }
+        .section-content strong {
+            color: var(--accent-color);
+            font-weight: 500;
+        }
+        .section-content p {
+            margin-bottom: 1.5rem;
+        }
+        .section-content ul, .section-content ol {
+            margin-left: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .section-content li {
+            margin-bottom: 0.75rem;
+        }
+        a {
+            color: var(--accent-color);
+            text-decoration: none;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 2px;
+            transition: border-color 0.3s ease;
+        }
+        a:hover {
+            border-bottom-color: var(--accent-color);
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <a href="/" class="back-link">← Volver a Scora</a>
         
-        <h1>Soporte y Privacidad</h1>
+        <h1>Soporte &<br>Privacidad.</h1>
         
-        <h2>Contacto</h2>
-        <p>¿Tienes preguntas, sugerencias o necesitas ayuda con la aplicación? Contáctanos en:<br>
-        <strong>Email:</strong> <a href="mailto:support@scora.app">support@scora.app</a></p>
+        <div class="section-block">
+            <div class="section-title">01 / Contacto</div>
+            <div class="section-content">
+                <p>¿Tienes preguntas, sugerencias o necesitas ayuda con la aplicación? Contáctanos de forma directa.</p>
+                <p><strong>Email:</strong> <a href="mailto:support@scora.app">support@scora.app</a></p>
+            </div>
+        </div>
 
-        <h2>Política de Privacidad y Datos (Strava)</h2>
-        <p>En Scora, tu privacidad es nuestra prioridad absoluta. Hemos diseñado la aplicación para que funcione de manera <strong>estatal y efímera</strong>.</p>
-        <ul>
-            <li><strong>No almacenamos tus datos:</strong> Scora no guarda un historial de tus entrenamientos en ninguna base de datos.</li>
-            <li><strong>Desconexión Automática:</strong> Inmediatamente después de descargar tus últimos 10 entrenamientos para generar los stickers localmente en tu dispositivo, Scora revoca automáticamente el token de acceso con Strava.</li>
-            <li>No compartimos, vendemos, ni analizamos tu información personal.</li>
-        </ul>
+        <div class="section-block">
+            <div class="section-title">02 / Privacidad de Datos</div>
+            <div class="section-content">
+                <p>En Scora, tu privacidad es nuestra prioridad absoluta. Hemos diseñado la arquitectura de la aplicación para que funcione de manera <strong>estrictamente estatal y efímera</strong>.</p>
+                <ul>
+                    <li><strong>No almacenamos tus datos:</strong> Scora no guarda un historial de tus entrenamientos, perfiles ni datos biométricos en ninguna base de datos propietaria.</li>
+                    <li><strong>Desconexión Programática:</strong> Inmediatamente después de descargar tus últimos entrenamientos para generar los componentes visuales localmente en tu dispositivo, Scora revoca de manera automática el token de acceso con Strava.</li>
+                    <li><strong>Sin Rastreo:</strong> No compartimos, vendemos, ni analizamos tu información personal. La aplicación actúa únicamente como un conducto de renderizado visual.</li>
+                </ul>
+            </div>
+        </div>
 
-        <h2>Eliminación de Datos y Revocación de Acceso</h2>
-        <p>Dado que no almacenamos cuentas de usuario ni contraseñas, no hay un "perfil" que eliminar en Scora. Sin embargo, si deseas asegurarte de que Scora ya no tiene ningún tipo de acceso a tu cuenta de Strava, puedes revocar el acceso en cualquier momento desde la configuración de Strava:</p>
-        <ol>
-            <li>Inicia sesión en <a href="https://www.strava.com" target="_blank">Strava.com</a></li>
-            <li>Ve a <strong>Configuración</strong> > <strong>Mis Aplicaciones</strong>.</li>
-            <li>Busca "Scora" y haz clic en <strong>Revocar Acceso</strong>.</li>
-        </ol>
+        <div class="section-block">
+            <div class="section-title">03 / Revocación de Acceso</div>
+            <div class="section-content">
+                <p>Dado que la plataforma no cuenta con cuentas de usuario, no existe un "perfil" que eliminar. Sin embargo, para garantizar la terminación absoluta de cualquier vínculo de autorización, puedes revocar el acceso directamente desde Strava.</p>
+                <ol>
+                    <li>Inicia sesión en <a href="https://www.strava.com" target="_blank">Strava.com</a></li>
+                    <li>Navega a <strong>Configuración</strong> > <strong>Mis Aplicaciones</strong>.</li>
+                    <li>Busca "Scora" y selecciona <strong>Revocar Acceso</strong>.</li>
+                </ol>
+            </div>
+        </div>
 
-        <h2>Términos de Servicio</h2>
-        <p>Scora es una herramienta creativa. Las imágenes generadas son para tu uso personal. No nos hacemos responsables del uso indebido de las imágenes generadas. El uso de esta aplicación está sujeto a los <a href="https://www.strava.com/legal/api" target="_blank">Términos de la API de Strava</a>.</p>
+        <div class="section-block" style="border-bottom: 1px solid var(--border-color);">
+            <div class="section-title">04 / Términos de Uso</div>
+            <div class="section-content">
+                <p>Scora es una herramienta de composición creativa. Las imágenes generadas están destinadas para uso personal. El creador no asume responsabilidad por la distribución indebida del material generado.</p>
+                <p>El uso de esta interfaz está inherentemente sujeto a los <a href="https://www.strava.com/legal/api" target="_blank">Términos de la API de Strava</a>.</p>
+            </div>
+        </div>
     </div>
 </body>
 </html>

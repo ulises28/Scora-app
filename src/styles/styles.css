@@ -818,3 +818,36 @@ canvas { width: 100%; height: 100%; display: block; }
 .btn-text:hover {
     color: var(--text);
 }
+.support-links {
+    margin-top: 2rem;
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+}
+.support-links a {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-dim, #666);
+    text-decoration: none;
+    transition: color 0.3s ease;
+    position: relative;
+    padding-bottom: 2px;
+}
+.support-links a::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 1px;
+    background-color: var(--text, #fff);
+    transition: width 0.3s ease;
+}
+.support-links a:hover {
+    color: var(--text, #fff);
+}
+.support-links a:hover::after {
+    width: 100%;
+}
+
