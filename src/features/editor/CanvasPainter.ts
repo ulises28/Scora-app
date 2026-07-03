@@ -694,8 +694,8 @@ export function drawChromeHighContrastSticker(ctx: CanvasRenderingContext2D, sta
     if (!mctx) return;
 
     // 1. Draw Massive Ultra-Wide Hero Metric (Liquid Metal)
-    const distText = stats.distanceVal || '0.00';
-    const text = `${distText} KM`;
+    const { s1, s2, s3, type } = getDynamicStats(stats);
+    const text = `${s1.value} ${s1.label}`;
     const targetWidth = 980; 
     const baseFontSize = 100;
     
@@ -763,10 +763,44 @@ export function drawChromeHighContrastSticker(ctx: CanvasRenderingContext2D, sta
             ctx.drawImage(glCanvas, 0, 0, w, h);
 
             // --- V4 Data Pillars (Drawn FLAT on top of the liquid metal) ---
-            const pillarY = 1650;
-            const pillarCol = theme === 'silver' ? 'rgba(255,255,255,0.9)' : textColor;
+            const pillarY = 1700;
+            const pillarCol = '#ffffff'; // Keep high contrast white on chrome
+            
+            // Pillar 1: Dynamic s2
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'alphabetic';
             ctx.fillStyle = pillarCol;
-            ctx.textBaseline = 'bottom';
+            ctx.font = "800 60px 'Space Grotesk'";
+            ctx.fillText(String(s2.value), 60, pillarY);
+            ctx.font = "500 30px 'Plus Jakarta Sans'";
+            setLetterSpacing(ctx, '2px');
+            ctx.fillText(String(s2.label), 60, pillarY + 50);
+            setLetterSpacing(ctx, '0px');
+
+            // Pillar 2: Dynamic s3
+            ctx.textAlign = 'center';
+            ctx.font = "800 60px 'Space Grotesk'";
+            ctx.fillText(String(s3.value), w / 2, pillarY);
+            ctx.font = "500 30px 'Plus Jakarta Sans'";
+            setLetterSpacing(ctx, '2px');
+            ctx.fillText(String(s3.label), w / 2, pillarY + 50);
+            setLetterSpacing(ctx, '0px');
+
+            // Pillar 3: Dynamic Fallback
+            ctx.textAlign = 'right';
+            let p3Value = stats.dayAndNumber || 'N/A';
+            let p3Label = 'DATE';
+            if (s2.label === 'DATE' || s3.label === 'DATE') {
+                p3Value = type.toUpperCase();
+                p3Label = 'TYPE';
+            }
+            
+            ctx.font = "800 60px 'Space Grotesk'";
+            ctx.fillText(p3Value, w - 60, pillarY);
+            ctx.font = "500 30px 'Plus Jakarta Sans'";
+            setLetterSpacing(ctx, '2px');
+            ctx.fillText(p3Label, w - 60, pillarY + 50);
+            setLetterSpacing(ctx, '0px');
             
             // Draw Scora Logo Pill
             if (showLogo) {
