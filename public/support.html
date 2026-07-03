@@ -1,21 +1,25 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es-MX">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Soporte y Privacidad - Scora</title>
+    <title>Centro de Ayuda - Scora</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg: #000000;
+            --surface: #0a0a0a;
+            --surface-hover: #141414;
             --text-primary: #ffffff;
-            --text-secondary: rgba(255, 255, 255, 0.5);
+            --text-secondary: rgba(255, 255, 255, 0.6);
             --accent: #80cbc4;
-            --border: rgba(255, 255, 255, 0.15);
+            --border: rgba(255, 255, 255, 0.08);
             --font-main: 'Plus Jakarta Sans', sans-serif;
             --font-alt: 'Outfit', sans-serif;
+            --radius-lg: 24px;
+            --radius-md: 16px;
             --transit: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
         
@@ -29,220 +33,240 @@
             min-height: 100dvh;
         }
 
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-            padding: 2rem 5% 8rem;
-        }
-
         /* Nav */
         .nav {
-            padding-bottom: 4rem;
+            padding: 2rem 5%;
+            display: flex;
+            align-items: center;
         }
         .back-link {
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
             color: var(--text-secondary);
             text-decoration: none;
-            font-size: 0.75rem;
-            font-weight: 600;
+            font-size: 0.875rem;
+            font-weight: 500;
             text-transform: uppercase;
-            letter-spacing: 0.15em;
+            letter-spacing: 0.1em;
             transition: var(--transit);
         }
         .back-link:hover {
             color: var(--text-primary);
+            transform: translateX(-4px);
         }
 
         /* Hero */
         .hero {
-            padding-bottom: 6rem;
-            border-bottom: 1px solid var(--border);
+            padding: 4rem 5% 6rem;
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto;
         }
         .hero h1 {
-            font-size: clamp(3rem, 10vw, 6rem);
+            font-size: clamp(2.5rem, 6vw, 4.5rem);
             font-weight: 800;
-            line-height: 0.9;
-            letter-spacing: -0.05em;
-            text-transform: uppercase;
-            margin-bottom: 2rem;
-        }
-        
-        /* Contact Block (Replaces the fake search bar) */
-        .direct-contact {
-            display: inline-flex;
-            align-items: center;
-            gap: 1rem;
-            font-family: var(--font-alt);
-            font-size: 1.25rem;
-            color: var(--accent);
-            text-decoration: none;
-            border-bottom: 1px solid var(--accent);
-            padding-bottom: 0.25rem;
-            transition: var(--transit);
-        }
-        .direct-contact:hover {
-            color: var(--text-primary);
-            border-color: var(--text-primary);
-        }
-
-        /* Editorial Rows */
-        .editorial-list {
-            list-style: none;
-        }
-        
-        .row {
-            border-bottom: 1px solid var(--border);
-            padding: 4rem 0;
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 2rem;
-            transition: var(--transit);
-        }
-        @media (min-width: 768px) {
-            .row {
-                grid-template-columns: 250px 1fr;
-                gap: 4rem;
-            }
-        }
-        
-        .row:hover {
-            border-color: rgba(255, 255, 255, 0.4);
-        }
-
-        .row-meta {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-        
-        .row-num {
-            font-family: var(--font-alt);
-            font-size: 0.875rem;
-            color: var(--accent);
-            font-weight: 500;
-        }
-        
-        .row-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            letter-spacing: -0.02em;
-            line-height: 1.2;
-        }
-
-        .row-content {
-            font-family: var(--font-alt);
-            color: var(--text-secondary);
-            font-size: 1.125rem;
-            line-height: 1.7;
-            max-width: 65ch;
-            font-weight: 300;
-        }
-        
-        .row-content strong {
-            color: var(--text-primary);
-            font-weight: 500;
-        }
-        
-        .row-content p {
+            line-height: 1.1;
+            letter-spacing: -0.04em;
             margin-bottom: 1.5rem;
         }
-        .row-content p:last-child {
-            margin-bottom: 0;
+        .hero p {
+            font-family: var(--font-alt);
+            font-size: clamp(1rem, 2vw, 1.25rem);
+            color: var(--text-secondary);
+            margin-bottom: 3rem;
         }
         
-        .row-content ul, .row-content ol {
+        /* Email CTA (Changed icon so it doesn't look like a search bar) */
+        .search-cta {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            padding: 1rem 1.5rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            width: 100%;
+            max-width: 500px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: var(--transit);
+        }
+        .search-cta:hover {
+            border-color: var(--accent);
+            background: var(--surface-hover);
+            color: var(--text-primary);
+        }
+
+        /* Bento Grid */
+        .bento-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 5% 8rem;
+            display: grid;
+            grid-template-columns: 1fr;
+            grid-auto-flow: dense;
+            gap: 1.5rem;
+        }
+        @media (min-width: 768px) {
+            .bento-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        @media (min-width: 1024px) {
+            .bento-container {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            .card-large { grid-column: span 2; }
+            .card-tall { grid-row: span 2; }
+        }
+
+        /* Cards */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 2.5rem;
+            display: flex;
+            flex-direction: column;
+            transition: var(--transit);
+            position: relative;
+            overflow: hidden;
+        }
+        .card:hover {
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-4px);
+        }
+        
+        .card-icon {
+            width: 48px;
+            height: 48px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+            color: var(--accent);
+        }
+        
+        .card h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            letter-spacing: -0.02em;
+        }
+        
+        .card p, .card li {
+            font-family: var(--font-alt);
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+        
+        .card ul, .card ol {
             margin-left: 1.5rem;
             margin-bottom: 1.5rem;
         }
-        .row-content li {
-            margin-bottom: 0.5rem;
-        }
         
-        .row-content a {
-            color: var(--text-primary);
-            text-decoration: underline;
-            text-decoration-color: var(--border);
-            text-underline-offset: 4px;
-            transition: var(--transit);
-        }
-        .row-content a:hover {
-            text-decoration-color: var(--accent);
+        .card a {
             color: var(--accent);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 500;
+            margin-top: auto;
+        }
+        .card a:hover {
+            text-decoration: underline;
+        }
+
+        .card-accent {
+            background: linear-gradient(135deg, rgba(128,203,196,0.1) 0%, var(--surface) 100%);
+            border-color: rgba(128,203,196,0.2);
+        }
+        .card-accent:hover {
+            border-color: var(--accent);
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <nav class="nav">
-            <a href="/" class="back-link">Volver a Scora</a>
-        </nav>
+    <nav class="nav">
+        <a href="/" class="back-link">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            Volver a Scora
+        </a>
+    </nav>
 
-        <header class="hero">
-            <h1>Soporte &<br>Privacidad</h1>
-            <a href="mailto:support@scora.app" class="direct-contact">
-                support@scora.app
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
-            </a>
-        </header>
+    <header class="hero">
+        <h1>¿En qué podemos<br>ayudarte?</h1>
+        <p>Centro de Soporte y Privacidad de Scora.</p>
+        
+        <a href="mailto:support@scora.app" class="search-cta">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+            Contáctanos por correo...
+        </a>
+    </header>
 
-        <main>
-            <ul class="editorial-list">
-                
-                <li class="row">
-                    <div class="row-meta">
-                        <span class="row-num">01</span>
-                        <h2 class="row-title">Arquitectura Efímera</h2>
-                    </div>
-                    <div class="row-content">
-                        <p>En Scora, tu privacidad es nuestra prioridad absoluta. Hemos diseñado la aplicación para que funcione de manera estrictamente <strong>estatal y efímera</strong>.</p>
-                        <ul>
-                            <li><strong>Cero Almacenamiento:</strong> Scora no guarda un historial de tus entrenamientos en bases de datos propietarias.</li>
-                            <li><strong>Desconexión Programática:</strong> Inmediatamente después de generar los componentes visuales en tu dispositivo, Scora revoca automáticamente el token de acceso con Strava.</li>
-                            <li><strong>Sin Rastreo:</strong> No compartimos, vendemos, ni analizamos tu información personal. Actuamos únicamente como un puente de renderizado gráfico.</li>
-                        </ul>
-                    </div>
-                </li>
-
-                <li class="row">
-                    <div class="row-meta">
-                        <span class="row-num">02</span>
-                        <h2 class="row-title">Revocación de Acceso</h2>
-                    </div>
-                    <div class="row-content">
-                        <p>Para garantizar la terminación absoluta de cualquier vínculo, puedes revocar el acceso a nuestra aplicación directamente desde los ajustes de tu cuenta de Strava en cualquier momento.</p>
-                        <ol>
-                            <li>Inicia sesión en Strava.com</li>
-                            <li>Navega a <strong>Configuración > Mis Aplicaciones</strong>.</li>
-                            <li>Selecciona <strong>Revocar Acceso</strong> junto a Scora.</li>
-                        </ol>
-                    </div>
-                </li>
-
-                <li class="row">
-                    <div class="row-meta">
-                        <span class="row-num">03</span>
-                        <h2 class="row-title">Contacto Directo</h2>
-                    </div>
-                    <div class="row-content">
-                        <p>¿Tienes preguntas, sugerencias o encontraste un problema de renderizado con tus rutas?</p>
-                        <p>Nuestro equipo de soporte técnico y diseño está listo para ayudarte a solucionar cualquier inconveniente de manera rápida y directa. No utilizamos bots ni sistemas de tickets automatizados.</p>
-                        <p><a href="mailto:support@scora.app">Enviar correo a soporte</a></p>
-                    </div>
-                </li>
-
-                <li class="row">
-                    <div class="row-meta">
-                        <span class="row-num">04</span>
-                        <h2 class="row-title">Términos de Uso</h2>
-                    </div>
-                    <div class="row-content">
-                        <p>Las imágenes y gráficos generados están destinados para uso personal y recreativo. El uso de esta interfaz gráfica está inherentemente sujeto a los lineamientos oficiales establecidos por Strava para el uso de su plataforma para desarrolladores.</p>
-                        <p><a href="https://www.strava.com/legal/api" target="_blank">Leer Términos de API Strava</a></p>
-                    </div>
-                </li>
-
+    <main class="bento-container">
+        
+        <!-- Card 1: Privacy -->
+        <article class="card card-large card-accent">
+            <div class="card-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <h2>Privacidad de tus datos</h2>
+            <p>En Scora, tu privacidad es lo más importante. Diseñamos la aplicación para que sea <strong>100% segura y privada</strong>.</p>
+            <ul>
+                <li><strong>No guardamos nada:</strong> Scora no guarda el historial de tus entrenamientos ni tus datos personales en ninguna base de datos.</li>
+                <li><strong>Desconexión automática:</strong> Justo después de descargar tus entrenamientos para generar tu imagen, Scora se desconecta automáticamente de tu cuenta de Strava.</li>
+                <li><strong>No te rastreamos:</strong> No compartimos, vendemos, ni analizamos tu información personal.</li>
             </ul>
-        </main>
-    </div>
+        </article>
+
+        <!-- Card 2: Contact -->
+        <article class="card card-tall">
+            <div class="card-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            </div>
+            <h2>Contacto Directo</h2>
+            <p>¿Tienes dudas, sugerencias o tuviste algún problema al generar tu imagen?</p>
+            <p>Nuestro equipo está listo para ayudarte a solucionarlo rapidísimo. Te responderemos directamente.</p>
+            <a href="mailto:support@scora.app">
+                Enviar mensaje
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </a>
+        </article>
+
+        <!-- Card 3: Revocation -->
+        <article class="card">
+            <div class="card-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.36 6.64a9 9 0 1 1-12.73 0M12 2v10"/></svg>
+            </div>
+            <h2>Desconectar tu cuenta</h2>
+            <p>Si quieres asegurarte de que Scora ya no tenga acceso, puedes desconectarla directamente desde Strava.</p>
+            <ol>
+                <li>Inicia sesión en Strava.</li>
+                <li>Ve a <strong>Configuración > Mis Aplicaciones</strong>.</li>
+                <li>Haz clic en <strong>Revocar Acceso</strong> al lado de Scora.</li>
+            </ol>
+        </article>
+
+        <!-- Card 4: Legal -->
+        <article class="card">
+            <div class="card-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>
+            </div>
+            <h2>Condiciones de Uso</h2>
+            <p>Las imágenes generadas son para tu uso personal. El uso de esta plataforma está sujeto a los términos oficiales.</p>
+            <a href="https://www.strava.com/legal/api" target="_blank">
+                Términos de Strava
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg>
+            </a>
+        </article>
+        
+    </main>
 </body>
 </html>
