@@ -6,6 +6,26 @@ import { createActivityCard } from './components/ActivityCard.js';
 import { drawTemplate, exportCanvas } from './features/editor/CanvasPainter.js';
 import { initTemplateManager, TEMPLATES } from './features/editor/TemplateManager.js';
 import { MOCK_ACTIVITIES } from './api/mocks.js';
+import { Capacitor } from '@capacitor/core';
+import { App as CapApp, URLOpenListenerEvent } from '@capacitor/app';
+
+if (Capacitor.isNativePlatform()) {
+    CapApp.addListener('appUrlOpen', (event: URLOpenListenerEvent) => {
+        console.log('[Mobile] App opened with URL:', event.url);
+        try {
+            const url = new URL(event.url);
+            const authCode = url.searchParams.get('code');
+            const stateSid = url.searchParams.get('state');
+            
+            if (authCode) {
+                // Modify the current URL so the existing initApp logic picks it up
+                window.location.search = `?code=${authCode}&state=${stateSid || ''}`;
+            }
+        } catch (e) {
+            console.error('[Mobile] Error parsing deep link URL:', e);
+        }
+    });
+}
 
 // --- ELEMENTOS DE LA INTERFAZ ---
 const authSection = document.getElementById('auth-section');
@@ -713,7 +733,7 @@ if (goHomeEl) goHomeEl.addEventListener('click', () => {
     }
 });
 
-if (btnBack) btnBack.addEventListener('click', () => window.history.back());
+if (btnBack) btnBack.addEventListener('click', (e) => { e.preventDefault(); window.history.back(); });
 
 if (btnDownload) btnDownload.addEventListener('click', () => exportCanvas('storyCanvas'));
 

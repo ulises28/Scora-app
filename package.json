@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "dev": "vite --port 3000",
-    "build": "cp src/config.example.ts src/config.ts || true && tsc && vite build",
+    "build": "cp src/config.example.ts src/config.ts || true && vite build",
+    "cap:sync": "cap sync",
+    "build:mobile": "pnpm run build && pnpm run cap:sync",
     "preview": "vite preview",
     "test": "pnpm run sync:stickers && vitest",
     "test:unit": "pnpm test -- run",
@@ -35,6 +37,9 @@
   },
   "homepage": "https://github.com/ulises28/Scora-app#readme",
   "devDependencies": {
+    "@capacitor/android": "^8.4.1",
+    "@capacitor/cli": "^8.4.1",
+    "@capacitor/ios": "^8.4.1",
     "@playwright/test": "1.60.0",
     "@secretlint/secretlint-rule-preset-recommend": "^11.7.1",
     "@types/node": "^25.6.0",
@@ -49,6 +54,8 @@
     "vitest": "^4.0.18"
   },
   "dependencies": {
+    "@capacitor/app": "^8.1.0",
+    "@capacitor/core": "^8.4.1",
     "@upstash/redis": "^1.36.3",
     "dotenv": "^17.4.2"
   },

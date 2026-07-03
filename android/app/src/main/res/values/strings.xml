@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Scora</string>
+    <string name="title_activity_main">Scora</string>
+    <string name="package_name">com.scora.app</string>
+    <string name="custom_url_scheme">com.scora.app</string>
+</resources>

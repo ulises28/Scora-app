@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Centro de Ayuda - Scora</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/src/styles/styles.css">
+    <style>
+
+
+
+        /* Hero */
+        .hero {
+            padding: 2rem 5% 2rem;
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .hero h1 {
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-weight: 800;
+            line-height: 1.1;
+            letter-spacing: -0.04em;
+            margin-bottom: 1rem;
+        }
+        .hero p {
+            font-family: var(--font-alt);
+            font-size: clamp(1rem, 2vw, 1.15rem);
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+        }
+        
+        /* Email CTA (Changed icon so it doesn't look like a search bar) */
+        .search-cta {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            padding: 1rem 1.5rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            width: 100%;
+            max-width: 500px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: var(--transit);
+        }
+        .search-cta:hover {
+            border-color: var(--accent);
+            background: var(--surface-hover);
+            color: var(--text-primary);
+        }
+
+        /* Bento Grid */
+        .bento-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem 5% 4rem;
+            display: grid;
+            grid-template-columns: 1fr;
+            grid-auto-flow: dense;
+            gap: 1.5rem;
+        }
+        @media (min-width: 768px) {
+            .bento-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        @media (min-width: 1024px) {
+            .bento-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* Cards */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 2.5rem;
+            display: flex;
+            flex-direction: column;
+            transition: var(--transit);
+            position: relative;
+            overflow: hidden;
+        }
+        .card:hover {
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-4px);
+        }
+        
+        .card-icon {
+            width: 48px;
+            height: 48px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+            color: var(--accent);
+        }
+        
+        .card h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            letter-spacing: -0.02em;
+        }
+        
+        .card p, .card li {
+            font-family: var(--font-alt);
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+        
+        .card ul, .card ol {
+            margin-left: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .card a {
+            color: var(--accent);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 500;
+            margin-top: auto;
+        }
+        .card a:hover {
+            text-decoration: underline;
+        }
+
+        .card-accent {
+            background: linear-gradient(135deg, rgba(128,203,196,0.1) 0%, var(--surface) 100%);
+            border-color: rgba(128,203,196,0.2);
+        }
+        .card-accent:hover {
+            border-color: var(--accent);
+        }
+    </style>
+</head>
+<body>
+    <header class="main-header">
+        <a href="/" class="brand-logo" title="Ir al inicio">
+            <div class="logo-dot"></div>
+            SCORA<span>.</span>
+        </a>
+        <a href="/" class="btn-outline" id="btn-volver" style="display: none;" title="Volver a la página anterior">&larr; VOLVER</a>
+    </header>
+
+    <header class="hero">
+        <h1>¿En qué podemos<br>ayudarte?</h1>
+        <p>Centro de Soporte y Privacidad de Scora.</p>
+        
+        <a href="mailto:support@scora.app" class="search-cta">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+            Contáctanos por correo...
+        </a>
+    </header>
+
+    <main class="bento-container">
+        
+        <!-- Card 1: Privacy -->
+        <article class="card card-accent">
+            <div class="card-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <h2>Privacidad de tus datos</h2>
+            <p>En Scora, tu privacidad es lo más importante. Diseñamos la aplicación para que sea <strong>100% segura y privada</strong>.</p>
+            <ul>
+                <li><strong>No guardamos nada:</strong> Scora no guarda el historial de tus entrenamientos ni tus datos personales en ninguna base de datos.</li>
+                <li><strong>Desconexión automática:</strong> Justo después de descargar tus entrenamientos para generar tu imagen, Scora se desconecta automáticamente de tu cuenta de Strava.</li>
+                <li><strong>No te rastreamos:</strong> No compartimos, vendemos, ni analizamos tu información personal.</li>
+            </ul>
+        </article>
+
+        <!-- Card 2: Contact -->
+        <article class="card">
+            <div class="card-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            </div>
+            <h2>Contacto Directo</h2>
+            <p>¿Tienes dudas, sugerencias o tuviste algún problema al generar tu imagen?</p>
+            <p>Nuestro equipo está listo para ayudarte a solucionarlo rapidísimo. Te responderemos directamente.</p>
+            <a href="mailto:support@scora.app">
+                Enviar mensaje
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </a>
+        </article>
+
+        <!-- Card 3: Revocation -->
+        <article class="card">
+            <div class="card-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.36 6.64a9 9 0 1 1-12.73 0M12 2v10"/></svg>
+            </div>
+            <h2>Desconectar tu cuenta</h2>
+            <p>Si quieres asegurarte de que Scora ya no tenga acceso, puedes desconectarla directamente desde Strava.</p>
+            <ol>
+                <li>Inicia sesión en Strava.</li>
+                <li>Ve a <strong>Configuración > Mis Aplicaciones</strong>.</li>
+                <li>Haz clic en <strong>Revocar Acceso</strong> al lado de Scora.</li>
+            </ol>
+        </article>
+
+        <!-- Card 4: Legal -->
+        <article class="card">
+            <div class="card-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>
+            </div>
+            <h2>Condiciones de Uso</h2>
+            <p>Las imágenes generadas son para tu uso personal. El uso de esta plataforma está sujeto a los términos oficiales.</p>
+            <a href="https://www.strava.com/legal/api" target="_blank">
+                Términos de Strava
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg>
+            </a>
+        </article>
+        
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const backBtn = document.getElementById('btn-volver');
+            if (backBtn && document.referrer) {
+                try {
+                    const referrerUrl = new URL(document.referrer);
+                    // If the user came from our own app domain, show the back button
+                    if (referrerUrl.hostname === window.location.hostname) {
+                        backBtn.style.display = 'flex';
+                        backBtn.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            history.back();
+                        });
+                    }
+                } catch (e) {
+                    // Invalid URL or blocked referrer, default to hidden
+                }
+            }
+        });
+    </script>
+</body>
+</html>
