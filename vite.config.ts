@@ -7,4 +7,12 @@ export default defineConfig({
         port: 5500, // Change this to whatever port Strava expects!
         strictPort: true
     },
+    build: {
+        rollupOptions: {
+            input: {
+                main: 'index.html',
+                support: 'support.html'
+            }
+        }
+    }
 });
