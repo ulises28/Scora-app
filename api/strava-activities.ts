@@ -28,10 +28,15 @@ export default async function handler(req: any, res: any) {
                 headers: { 'Authorization': `Bearer ${access_token}` }
             });
             if (!detailResponse.ok) {
-                console.error(`[API Error] Strava Detail API returned ${detailResponse.status}`);
+                let errorDetails = '';
+                try {
+                    errorDetails = await detailResponse.text();
+                } catch (e) {}
+                console.error(`[API Error] Strava Detail API returned ${detailResponse.status}: ${errorDetails}`);
                 return res.status(detailResponse.status).json({
                     error: 'Strava Detail API Error',
-                    message: `Strava Detail API error: ${detailResponse.status}`
+                    message: `Strava Detail API error: ${detailResponse.status}`,
+                    details: errorDetails
                 });
             }
             responseData = { activity: await detailResponse.json() };
@@ -42,10 +47,15 @@ export default async function handler(req: any, res: any) {
                 headers: { 'Authorization': `Bearer ${access_token}` }
             });
             if (!activitiesResponse.ok) {
-                console.error(`[API Error] Strava API returned ${activitiesResponse.status}`);
+                let errorDetails = '';
+                try {
+                    errorDetails = await activitiesResponse.text();
+                } catch (e) {}
+                console.error(`[API Error] Strava API returned ${activitiesResponse.status}: ${errorDetails}`);
                 return res.status(activitiesResponse.status).json({
                     error: 'Strava API Error',
-                    message: `Strava API error: ${activitiesResponse.status}`
+                    message: `Strava API error: ${activitiesResponse.status}`,
+                    details: errorDetails
                 });
             }
             responseData = { activities: await activitiesResponse.json() };
