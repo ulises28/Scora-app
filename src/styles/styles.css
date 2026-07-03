@@ -143,6 +143,29 @@ body { background-color: var(--bg); color: var(--text); font-family: var(--font-
     display: none !important;
 }
 
+.btn-outline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 18px;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    background: transparent;
+    border-radius: 20px;
+    font-family: var(--font-alt);
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: var(--transit);
+    text-decoration: none;
+}
+.btn-outline:hover {
+    background: rgba(128, 203, 196, 0.15);
+    color: var(--accent);
+}
+
 .btn-strava {
     background: transparent;
     padding: 0;

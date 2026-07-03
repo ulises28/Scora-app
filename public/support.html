@@ -34,20 +34,7 @@
             min-height: 100dvh;
         }
 
-        /* Nav & Logo */
-        .nav {
-            height: 70px;
-            padding: 0 30px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-bottom: 1px solid var(--border);
-            position: relative;
-            z-index: 200;
-            background: rgba(0,0,0,0.4);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-        }
+
         
         .brand-logo {
             display: flex;
@@ -227,16 +214,15 @@
     </style>
 </head>
 <body>
-    <nav class="nav">
+    <header class="main-header">
         <a href="/" class="brand-logo" title="Ir al inicio">
             <div class="logo-dot"></div>
             SCORA<span>.</span>
         </a>
-        <a href="/" class="back-link">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-            Volver
+        <a href="/" class="btn-outline" id="btn-volver" style="display: none;" title="Volver a la página anterior">
+            &larr; VOLVER
         </a>
-    </nav>
+    </header>
 
     <header class="hero">
         <h1>¿En qué podemos<br>ayudarte?</h1>
@@ -306,5 +292,26 @@
         </article>
         
     </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const backBtn = document.getElementById('btn-volver');
+            if (backBtn && document.referrer) {
+                try {
+                    const referrerUrl = new URL(document.referrer);
+                    // If the user came from our own app domain, show the back button
+                    if (referrerUrl.hostname === window.location.hostname) {
+                        backBtn.style.display = 'flex';
+                        backBtn.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            history.back();
+                        });
+                    }
+                } catch (e) {
+                    // Invalid URL or blocked referrer, default to hidden
+                }
+            }
+        });
+    </script>
 </body>
 </html>
