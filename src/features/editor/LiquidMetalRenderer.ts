@@ -105,46 +105,88 @@ void main() {
     float m = 2.0 * sqrt(ref.x*ref.x + ref.y*ref.y + (ref.z+1.0)*(ref.z+1.0));
     vec2 matcapUV = ref.xy / m + 0.5;
     
-    // Create diffused horizontal studio lights (Premium softbox ripples)
-    float light = smoothstep(0.35, 0.55, matcapUV.y) - smoothstep(0.55, 0.75, matcapUV.y); // Main soft band
-    light += (smoothstep(0.1, 0.25, matcapUV.y) - smoothstep(0.25, 0.4, matcapUV.y)) * 0.5; // Secondary soft band
-    light += smoothstep(0.75, 0.95, matcapUV.y) * 0.8; // Top edge soft light
-    light += smoothstep(0.35, 0.05, matcapUV.y) * 0.3; // Bottom rim soft light
+    // Add procedural distortion to the reflection to simulate the complex, warped room environment
+    // This creates the chaotic black-and-white liquid streaks seen in premium chrome renders
+    vec2 warp = vec2(sin(N.x * 12.0 + N.z * 8.0), cos(N.y * 12.0 + N.z * 8.0)) * 0.06;
+    vec2 mUV = matcapUV + warp;
+    
+    // Create HIGH-CONTRAST sharp studio lighting (Realistic Chrome)
+    float light = smoothstep(0.48, 0.50, mUV.y) - smoothstep(0.50, 0.52, mUV.y); // Razor sharp horizon line
+    light += smoothstep(0.1, 0.2, mUV.y) - smoothstep(0.35, 0.45, mUV.y); // Sharp lower softbox reflection
+    light += smoothstep(0.85, 0.90, mUV.y) * 0.9; // Strong top rim light
+    light += smoothstep(0.15, 0.05, mUV.y) * 0.6; // Bottom bounce light
+    
+    // Add sharp vertical streaks (simulating reflecting windows or studio light stands)
+    light += smoothstep(0.92, 0.98, sin(mUV.x * 50.0)) * 0.8 * smoothstep(0.2, 0.8, mUV.y);
+    light += smoothstep(0.95, 0.99, cos(mUV.x * 80.0)) * 0.5; // Micro-streaks
+    
+    // Add negative contrast bands to deepen the shadows (reflecting a black studio wall)
+    float shadowBand = smoothstep(0.65, 0.60, mUV.y) - smoothstep(0.75, 0.70, mUV.y);
+    light = max(0.0, light - shadowBand);
     
     // Base metal colors
     vec3 color = mix(u_metalColorDark, u_metalColorLight, light);
     
+    // Add environmental occlusion (darker on steep edges to simulate depth)
+    // Pushing this to an extreme power curve makes the metal feel incredibly thick and heavy
+    float ao = mix(0.1, 1.0, pow(max(N.z, 0.0), 1.5));
+    color *= ao;
+    
     // Calculate Fresnel (glancing angle) for physical coatings
     float fresnel = 1.0 - max(dot(N, viewDir), 0.0);
     
-    // Y2K Chromatic Iridescence (Thin-film interference)
-    // Applied via Fresnel so it only blooms intensely on the curves, leaving the face clean!
-    vec3 holo = 0.5 + 0.5 * cos(vec3(0.0, 2.0, 4.0) + (N.x + N.y) * 5.0 - u_time * 2.0);
-    color += holo * fresnel * u_holoIntensity; // Premium physical pearlescent coating
+    // Smoothly fade out extreme edge fresnel to prevent harsh, unblended colored halos
+    float edgeFade = smoothstep(0.0, 0.2, opacity);
     
-    // Add sharp metallic rim lighting
-    color += u_metalColorLight * pow(fresnel, 4.0) * 0.8;
+    // Y2K Chromatic Iridescence (Thin-film interference)
+    // Upgraded to emulate the specific Cyan/Magenta split-lighting seen in premium Y2K renders
+    vec3 holoColor1 = vec3(0.0, 0.9, 1.0); // Cyan
+    vec3 holoColor2 = vec3(0.9, 0.1, 0.9); // Magenta
+    vec3 baseHolo = mix(holoColor1, holoColor2, smoothstep(-0.5, 0.5, N.x - N.y));
+    // Add the interference waves inside the neon bands
+    vec3 holo = baseHolo * (0.5 + 0.5 * cos(vec3(0.0, 2.0, 4.0) + (N.x + N.y) * 8.0 - u_time * 2.0));
+    color += holo * fresnel * u_holoIntensity * edgeFade * 1.5; // Boosted intensity for that glossy look
+    
+    // Add sharp metallic rim lighting, tapered off at the absolute boundary
+    color += u_metalColorLight * pow(fresnel, 5.0) * 1.5 * edgeFade;
     
     // Edge Anti-Aliasing (Smooth out jagged pixels at the boundary)
     float edgeAlpha = smoothstep(0.0, 0.15, opacity);
     
     // 4. Strong Specular Highlight & Glow (The "Gloss")
-    vec3 lightDir = normalize(vec3(0.5, 0.8, 1.0));
-    float spec1 = pow(max(dot(N, lightDir), 0.0), 80.0) * edgeAlpha; // Tight core highlight (faded at extreme edge)
-    float spec2 = pow(max(dot(N, lightDir), 0.0), 15.0) * edgeAlpha; // Soft outer glow
+    vec3 lightDir1 = normalize(vec3(0.5, 0.8, 1.0)); // Main high-angle light
+    vec3 lightDir2 = normalize(vec3(-0.6, 0.3, 0.8)); // Secondary cool rim light
+    
+    // Primary core highlight (Blinding white)
+    float spec1 = pow(max(dot(N, lightDir1), 0.0), 150.0) * edgeAlpha;
+    float spec2 = pow(max(dot(N, lightDir1), 0.0), 40.0) * edgeAlpha; 
+    
+    // Secondary edge highlight (Adds complex studio depth)
+    float spec3 = pow(max(dot(N, lightDir2), 0.0), 90.0) * edgeAlpha;
     
     // Chromatic dispersion for the outer glow (Rainbow halo)
     vec3 chromaticGlow = 0.5 + 0.5 * cos(vec3(0.0, 2.0, 4.0) + (N.x - N.y) * 8.0);
-    color += chromaticGlow * spec2 * (u_holoIntensity > 0.0 ? 0.5 : 0.0); 
-    color += vec3(1.0) * spec1 * 1.5; // Core white highlight
+    color += chromaticGlow * spec2 * (u_holoIntensity > 0.0 ? 0.4 : 0.0); 
     
-    // 5. Y2K Starburst Flare (Procedural Sparkles on the highlights)
-    vec2 nd = N.xy - (lightDir.xy * 0.6); 
-    float streak1 = pow(max(1.0 - abs(nd.x + nd.y) * 8.0, 0.0), 4.0);
-    float streak2 = pow(max(1.0 - abs(nd.x - nd.y) * 8.0, 0.0), 4.0);
-    float flareBase = pow(max(dot(N, lightDir), 0.0), 3.0) * edgeAlpha; 
-    vec3 flareColor = mix(vec3(1.0), holo, 0.4); 
-    color += flareColor * (streak1 + streak2) * flareBase * 2.0;
+    // Apply highlights
+    color += vec3(1.0) * spec1 * 3.0; // Extreme white core highlight
+    color += mix(u_metalColorLight, vec3(1.0), 0.5) * spec3 * 1.5; // Secondary metallic bounce
+    
+    // 5. Y2K Starburst Flare (Procedural 4-Point Star) - Mastered to match the Coca reference
+    vec2 nd = N.xy - (lightDir1.xy * 0.6); 
+    // Rotate the flare 45 degrees
+    float angle = 0.785398;
+    float s = sin(angle), c = cos(angle);
+    vec2 ndRot = vec2(nd.x * c - nd.y * s, nd.x * s + nd.y * c);
+    
+    // Extremely sharp, long streaks for the 4-point star
+    float streak1 = pow(max(1.0 - abs(ndRot.x) * 12.0, 0.0), 10.0);
+    float streak2 = pow(max(1.0 - abs(ndRot.y) * 12.0, 0.0), 10.0);
+    float flareBase = pow(max(dot(N, lightDir1), 0.0), 4.0) * edgeAlpha; 
+    
+    // Flare color tinted slightly purple/magenta as in the reference
+    vec3 flareColor = mix(vec3(1.0), vec3(0.8, 0.4, 1.0), 0.5); 
+    color += flareColor * (streak1 + streak2) * flareBase * 15.0; // Massive multiplier for the "bling"
     
     // Output with smoothed alpha to prevent jagged borders
     fragColor = vec4(color, opacity * edgeAlpha);
@@ -213,7 +255,9 @@ export function toProcessedLiquidMetal(file: File | string): Promise<{ imageData
       const interiorIndices: number[] = [];
 
       for (let i = 0, idx = 0; i < data.length; i += 4, idx++) {
-        shapeMask[idx] = data[i + 3] === 0 ? 0 : 1;
+        // Threshold at 128 (50% opacity) instead of 0 to prevent jagged edges from antialiasing,
+        // which causes the Poisson solver to generate lumpy, crumpled-foil distance fields.
+        shapeMask[idx] = data[i + 3] < 128 ? 0 : 1;
       }
 
       for (let y = 0; y < height; y++) {
@@ -499,9 +543,11 @@ export async function applyLiquidMetalEffect(sourceDataURL: string, width: numbe
   gl.uniform3f(gl.getUniformLocation(program, "u_metalColorDark"), colorDark[0], colorDark[1], colorDark[2]);
   gl.uniform3f(gl.getUniformLocation(program, "u_metalColorLight"), colorLight[0], colorLight[1], colorLight[2]);
   
-  let holoIntensity = 0.4;
+  // Base Holographic/Iridescence intensity
+  // Turned off for classic metals to preserve pure colors
+  let holoIntensity = 0.0;
+  if (theme === 'titanium') holoIntensity = 1.0; // Extreme neon split-lighting for Titanium
   if (theme === 'obsidian') holoIntensity = 0.0;
-  if (theme === 'titanium') holoIntensity = 1.0; // Super intense rainbow effect
 
   const locHolo = gl.getUniformLocation(program, "u_holoIntensity");
   if (locHolo) gl.uniform1f(locHolo, holoIntensity);
