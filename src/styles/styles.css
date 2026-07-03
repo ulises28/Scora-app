@@ -78,7 +78,6 @@ body { background-color: var(--bg); color: var(--text); font-family: var(--font-
 }
 .brand-logo span {
     color: var(--accent);
-    text-shadow: 0 0 15px var(--accent);
 }
 .logo-dot { width: 10px; height: 10px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 15px var(--accent); }
 

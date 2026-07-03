@@ -6,7 +6,7 @@
     <title>Centro de Ayuda - Scora</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;700;800&display=swap" rel="stylesheet">
     <link rel="icon" href="/assets/scora-favicon.png" type="image/png">
     <style>
         :root {
@@ -42,6 +42,11 @@
             align-items: center;
             justify-content: space-between;
             border-bottom: 1px solid var(--border);
+            position: relative;
+            z-index: 200;
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
         }
         
         .brand-logo {
@@ -61,7 +66,6 @@
         }
         .brand-logo span {
             color: var(--accent);
-            text-shadow: 0 0 15px var(--accent);
         }
         .logo-dot { 
             width: 10px; 
