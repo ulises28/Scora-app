@@ -612,21 +612,30 @@ async function initApp() {
                 `;
             } else if (status === 403 && authSection) {
                  if (activityListEl) {
-                    activityListEl.innerHTML = `
-                        <div class="error-container">
-                            <span class="error-title">⚡ SISTEMA BLOQUEADO</span>
-                            <p class='error-msg'>Un atleta está ocupando la conexión con Strava. ¿Quieres forzar la liberación para continuar?</p>
-                            <button id="btn-rescue-reset" data-testid="btn-admin-reset" class="btn-rescue">
-                                <span>🚨</span> EMERGENCY BUTTON
-                            </button>
-                        </div>
-                    `;
-                    const rescueBtn = document.getElementById('btn-rescue-reset');
-                    if (rescueBtn) {
-                        rescueBtn.onclick = async () => {
-                            rescueBtn.innerHTML = "<span>⏳</span> LIBERANDO...";
-                            await handleAdminReset();
-                        };
+                    const isAdmin = new URLSearchParams(window.location.search).get('admin') === 'scora';
+                    if (isAdmin) {
+                        activityListEl.innerHTML = `
+                            <div class="error-container">
+                                <span class="error-title">⚡ SISTEMA BLOQUEADO</span>
+                                <p class='error-msg'>Un atleta está ocupando la conexión con Strava. ¿Quieres forzar la liberación para continuar?</p>
+                                <button id="btn-rescue-reset" data-testid="btn-admin-reset" class="btn-rescue">
+                                    <span>🚨</span> EMERGENCY BUTTON
+                                </button>
+                            </div>
+                        `;
+                        const rescueBtn = document.getElementById('btn-rescue-reset');
+                        if (rescueBtn) {
+                            rescueBtn.onclick = async () => {
+                                rescueBtn.innerHTML = "<span>⏳</span> LIBERANDO...";
+                                await handleAdminReset();
+                            };
+                        }
+                    } else {
+                        activityListEl.innerHTML = `
+                            <div class="status-msg error-msg">
+                                <span>🔒</span> Se detectó una sesión activa en la pista. Por favor intenta de nuevo en unos minutos.
+                            </div>
+                        `;
                     }
                 }
             } else {
@@ -769,21 +778,30 @@ window.addEventListener('message', async (event) => {
                 if (activityListEl) activityListEl.innerHTML = `<p class='status-msg error-msg'>Internal server error. Connection failed.</p>`;
             } else if (status === 403) {
                 if (activityListEl) {
-                    activityListEl.innerHTML = `
-                        <div class="error-container">
-                            <span class="error-title">🔒 ACCESO RESTRINGIDO</span>
-                            <p class='error-msg'>Se detectó una sesión activa en la pista. Como administrador, puedes liberar el sistema ahora mismo.</p>
-                            <button id="btn-rescue-auth" data-testid="btn-admin-reset" class="btn-rescue">
-                                <span>🚨</span> EMERGENCY BUTTON
-                            </button>
-                        </div>
-                    `;
-                    const rescueBtn = document.getElementById('btn-rescue-auth');
-                    if (rescueBtn) {
-                        rescueBtn.onclick = async () => {
-                            rescueBtn.innerHTML = "<span>⏳</span> LIBERANDO SISTEMA...";
-                            await handleAdminReset();
-                        };
+                    const isAdmin = new URLSearchParams(window.location.search).get('admin') === 'scora';
+                    if (isAdmin) {
+                        activityListEl.innerHTML = `
+                            <div class="error-container">
+                                <span class="error-title">🔒 ACCESO RESTRINGIDO</span>
+                                <p class='error-msg'>Se detectó una sesión activa en la pista. Como administrador, puedes liberar el sistema ahora mismo.</p>
+                                <button id="btn-rescue-auth" data-testid="btn-admin-reset" class="btn-rescue">
+                                    <span>🚨</span> EMERGENCY BUTTON
+                                </button>
+                            </div>
+                        `;
+                        const rescueBtn = document.getElementById('btn-rescue-auth');
+                        if (rescueBtn) {
+                            rescueBtn.onclick = async () => {
+                                rescueBtn.innerHTML = "<span>⏳</span> LIBERANDO SISTEMA...";
+                                await handleAdminReset();
+                            };
+                        }
+                    } else {
+                        activityListEl.innerHTML = `
+                            <div class="status-msg error-msg">
+                                <span>🔒</span> Se detectó una sesión activa en la pista. Por favor intenta de nuevo en unos minutos.
+                            </div>
+                        `;
                     }
                 }
             } else {
