@@ -4,7 +4,18 @@ This document outlines the technical requirements, architectural changes, and st
 
 ---
 
-## 1. Hybrid App Shell: Capacitor by Ionic
+## 1. Single Repository Architecture (Web + Mobile)
+**Yes, it is highly recommended to keep everything in this exact same repository.**
+
+You do **not** need a separate repo. The entire purpose of **Ionic Capacitor** is to turn an existing web codebase into a mobile app without splitting repositories. 
+- **How it works:** Capacitor simply adds `ios/` and `android/` folders to your project root. When you run a build (`pnpm build`), Capacitor copies your web `dist` folder directly into the native mobile shells.
+- **Vercel (Web):** Vercel continues to deploy the web version exactly as it does today.
+- **Mobile (App Stores):** You use the same codebase to compile the iOS and Android apps.
+- **Conditional Logic:** In your code, you simply use `Capacitor.isNativePlatform()` to run specific code only on mobile (like deep-linking OAuth or native In-App Purchases) while keeping the standard web flow for browser users.
+
+---
+
+## 2. Hybrid App Shell: Capacitor by Ionic
 To wrap the current Vite/React/TypeScript web application into native iOS and Android projects, we recommend using **Ionic Capacitor**. 
 
 ### Setup Steps
