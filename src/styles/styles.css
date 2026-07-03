@@ -146,8 +146,11 @@ body { background-color: var(--bg); color: var(--text); font-family: var(--font-
 }
 
 .btn-outline {
+    -webkit-appearance: none;
+    appearance: none;
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
     padding: 8px 18px;
     border: 1px solid var(--accent);
@@ -157,6 +160,7 @@ body { background-color: var(--bg); color: var(--text); font-family: var(--font-
     font-family: var(--font-alt);
     font-weight: 600;
     font-size: 14px;
+    line-height: 1;
     letter-spacing: 1px;
     cursor: pointer;
     text-transform: uppercase;
