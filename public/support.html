@@ -33,12 +33,37 @@
             min-height: 100dvh;
         }
 
-        /* Nav */
+        /* Nav & Logo */
         .nav {
             padding: 2rem 5%;
             display: flex;
             align-items: center;
+            justify-content: space-between;
         }
+        
+        .brand-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: var(--font-alt);
+            font-size: 25px;
+            font-weight: 800;
+            color: var(--text-primary);
+            text-decoration: none;
+            letter-spacing: -0.5px;
+            transition: var(--transit);
+        }
+        .brand-logo:hover {
+            opacity: 0.8;
+        }
+        .logo-dot { 
+            width: 10px; 
+            height: 10px; 
+            background: var(--accent); 
+            border-radius: 50%; 
+            box-shadow: 0 0 15px var(--accent); 
+        }
+
         .back-link {
             display: inline-flex;
             align-items: center;
@@ -194,9 +219,13 @@
 </head>
 <body>
     <nav class="nav">
+        <a href="/" class="brand-logo" title="Ir al inicio">
+            <div class="logo-dot"></div>
+            Scora
+        </a>
         <a href="/" class="back-link">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-            Volver a Scora
+            Volver
         </a>
     </nav>
 
