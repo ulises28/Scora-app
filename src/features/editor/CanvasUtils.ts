@@ -319,7 +319,8 @@ export function getDynamicStats(stats: any) {
         pool.push({ value: timeText, label: 'TIME' });
     } else {
         pool.push({ value: timeText, label: 'DURATION' });
-        if (stats.avgHeartrate) pool.push({ value: `${stats.avgHeartrate}`, label: 'BPM' });
+        const hr = stats.hr || stats.avgHeartrate || (stats.average_heartrate ? Math.round(stats.average_heartrate) : null);
+        if (hr) pool.push({ value: `${hr}`, label: 'BPM' });
         if (stats.calories && stats.calories !== '0') pool.push({ value: `${stats.calories}`, label: 'KCAL' });
     }
 

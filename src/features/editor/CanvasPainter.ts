@@ -680,7 +680,7 @@ export function drawMap(ctx, coords, mapBox) {
 
 // ─── Chrome Map Variations ──────────────────────────────────────────────────
 
-export function drawChromeHighContrastSticker(ctx, stats, textColor, showLogo = true) {
+export function drawChromeHighContrastSticker(ctx: CanvasRenderingContext2D, stats: any, textColor: string, showLogo = true) {
     const coords = decodePolyline(stats.polyline);
     const w = 1080;
     const h = 1920;
@@ -693,60 +693,52 @@ export function drawChromeHighContrastSticker(ctx, stats, textColor, showLogo = 
     
     if (!mctx) return;
 
-    // 1. Draw Map on Mask
+    // 1. Draw Massive Ultra-Wide Hero Metric (Liquid Metal)
+    const distText = stats.distanceVal || '0.00';
+    const text = `${distText} KM`;
+    const targetWidth = 980; 
+    const baseFontSize = 100;
+    
+    // Fallback stack for ultra-wide premium fonts
+    mctx.font = `900 ${baseFontSize}px 'Monument Extended', 'Clash Display', 'Cabinet Grotesk Black', sans-serif`;
+    const metrics = mctx.measureText(text);
+    const fontSize = Math.floor((targetWidth / metrics.width) * baseFontSize);
+    
+    mctx.textBaseline = 'top';
+    mctx.fillStyle = '#ffffff';
+    mctx.font = `900 ${fontSize}px 'Monument Extended', 'Clash Display', 'Cabinet Grotesk Black', sans-serif`;
+    mctx.fillText(text, 50, 250);
+
+    // 2. Draw Map on Mask (Liquid Metal)
     mctx.beginPath();
     mctx.strokeStyle = '#ffffff'; // Pure white mask for Poisson solver
-    mctx.lineWidth = 40; // Base thickness of the chrome tube
+    mctx.lineWidth = 35; // Slightly thinner to balance massive text
     mctx.lineCap = 'round';
     mctx.lineJoin = 'round';
     
-    let minLat = coords[0][0], maxLat = minLat, minLng = coords[0][1], maxLng = minLng;
-    coords.forEach(p => {
-        if (p[0] < minLat) minLat = p[0]; if (p[0] > maxLat) maxLat = p[0];
-        if (p[1] < minLng) minLng = p[1]; if (p[1] > maxLng) maxLng = p[1];
-    });
+    if (coords && coords.length > 0) {
+        let minLat = coords[0][0], maxLat = minLat, minLng = coords[0][1], maxLng = minLng;
+        coords.forEach(p => {
+            if (p[0] < minLat) minLat = p[0]; if (p[0] > maxLat) maxLat = p[0];
+            if (p[1] < minLng) minLng = p[1]; if (p[1] > maxLng) maxLng = p[1];
+        });
 
-    const mapBox = { x: 50, y: 550, w: 980, h: 1000 };
-    const scale = Math.min(mapBox.w / (maxLng - minLng), mapBox.h / (maxLat - minLat));
+        // Push map down to make room for massive text
+        const mapBox = { x: 50, y: 550, w: 980, h: 900 };
+        const scale = Math.min(mapBox.w / (maxLng - minLng || 1), mapBox.h / (maxLat - minLat || 1));
 
-    coords.forEach((p, i) => {
-        const px = mapBox.x + (p[1] - minLng) * scale + (mapBox.w - ((maxLng - minLng) * scale)) / 2;
-        // Top-align the map to always start exactly at mapBox.y, instead of centering it in the vertical space
-        const py = mapBox.y + ((maxLat - p[0]) * scale);
-        if (i === 0) mctx.moveTo(px, py); else mctx.lineTo(px, py);
-    });
-    mctx.stroke();
-
-    // 2. Draw Scora Logo on Mask (will become Liquid Metal)
-    if (showLogo) {
-        const logoY = 200;
-        mctx.fillStyle = '#ffffff';
-        mctx.beginPath();
-        mctx.arc(100, logoY - 10, 10, 0, Math.PI * 2);
-        mctx.fill();
-        mctx.textAlign = 'left';
-        mctx.font = "900 40px 'Plus Jakarta Sans'";
-        mctx.fillText("SCORA", 130, logoY);
+        coords.forEach((p, i) => {
+            const px = mapBox.x + (p[1] - minLng) * scale + (mapBox.w - ((maxLng - minLng) * scale)) / 2;
+            const py = mapBox.y + ((maxLat - p[0]) * scale);
+            if (i === 0) mctx.moveTo(px, py); else mctx.lineTo(px, py);
+        });
+        mctx.stroke();
     }
-    
-    // 3. Draw Distance Text on Mask (will become Liquid Metal)
-    const distText = stats.distanceVal || '0.00';
-    const text = `${distText} KM`;
-    const targetWidth = 980; // Make the numbers massively huge horizontally
-    const baseFontSize = 100;
-    mctx.font = `400 ${baseFontSize}px 'Sekuya', sans-serif`;
-    const metrics = mctx.measureText(text);
-    const fontSize = (targetWidth / metrics.width) * baseFontSize;
-    
-    mctx.textBaseline = 'middle';
-    mctx.font = `400 ${fontSize}px 'Sekuya', sans-serif`;
-    mctx.fillText(text, 50, 420);
 
     // Run the WebGL Pipeline asynchronously
     const runWebGL = async () => {
         try {
-            // SYNC DRAW: Instantly draw the flat white mask to the screen to prevent a blank flash/jump!
-            // This acts as a cool loading state (flat -> 3D pop)
+            // SYNC DRAW: Instantly draw the flat white mask to prevent a blank flash/jump!
             ctx.save();
             ctx.setTransform(1, 0, 0, 1, 0, 0);
             const maskScaleX = ctx.canvas.width / w;
@@ -756,22 +748,44 @@ export function drawChromeHighContrastSticker(ctx, stats, textColor, showLogo = 
             ctx.restore();
 
             const dataUrl = maskCanvas.toDataURL('image/png');
-            const theme = textColor; // Contains 'silver', 'gold', 'rosegold', etc.
+            const theme = textColor; 
             const glCanvas = await applyLiquidMetalEffect(dataUrl, w, h, theme as any);
             
             // Clear the canvas and draw the WebGL output
             ctx.clearRect(0, 0, w, h);
             
-            // Restore context scale to 1:1 before drawing full size WebGL canvas
             ctx.save();
-            ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform to default
-            
-            // If the canvas is 1080x1920, we just draw. If it's a thumbnail (300px), we scale it down.
+            ctx.setTransform(1, 0, 0, 1, 0, 0); 
             const scaleX = ctx.canvas.width / w;
             const scaleY = ctx.canvas.height / h;
             ctx.scale(scaleX, scaleY);
             
             ctx.drawImage(glCanvas, 0, 0, w, h);
+
+            // --- V4 Data Pillars (Drawn FLAT on top of the liquid metal) ---
+            const pillarY = 1650;
+            const pillarCol = theme === 'silver' ? 'rgba(255,255,255,0.9)' : textColor;
+            ctx.fillStyle = pillarCol;
+            ctx.textBaseline = 'bottom';
+            
+            // Draw Scora Logo Pill
+            if (showLogo) {
+                ctx.beginPath();
+                ctx.roundRect(50, 100, 160, 50, 25);
+                ctx.fillStyle = 'rgba(0,0,0,0.8)';
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                ctx.fillStyle = '#ffffff';
+                ctx.font = "800 20px 'Space Grotesk'";
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                setLetterSpacing(ctx, '2px');
+                ctx.fillText("SCORA", 130, 125);
+            }
+
 
             ctx.restore();
         } catch (e: any) {
@@ -3382,12 +3396,10 @@ export function drawThinPath(ctx: CanvasRenderingContext2D, stats: any, textColo
     ctx.globalAlpha = 1.0;
     if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "6px";
 
-    // Parse the day name from the raw date
-    const dateStrRaw = stats.rawDate || '';
-    const rawDate = dateStrRaw ? new Date(dateStrRaw.replace('Z', '')) : new Date();
-    const dayName = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(rawDate).toUpperCase();
-
-    const titleText = dayName;
+    // Use location instead of day name
+    const locationStr = stats.location || 'UNKNOWN LOCATION';
+    // Clean up city/state if it's too long, but we scale it down anyway
+    const titleText = locationStr.toUpperCase();
 
     // Scale down only if it exceeds 960px (activity name might be big but we cap it)
     let measuredTitleW = Math.max(1, ctx.measureText(titleText).width);
@@ -5481,14 +5493,14 @@ export function drawGraffitiExpo(ctx: CanvasRenderingContext2D, stats: any, text
 
     const lineColor = textColor.startsWith('#') ? textColor : (textColor === 'black' ? '#000000' : '#ffffff');
     const secondaryColor = textColor === 'black' ? '#000000' : '#ffffff';
-    const isDarkAccent = isColorDark(accentColor);
-    const isDarkSecondary = isColorDark(secondaryColor);
+
+    let dynamicHeroY = 600; // Fallback if no map
 
     // 1. Enhanced Spray Map (Higher, leave space for text)
     if (stats.polyline) {
         const coords = decodePolyline(stats.polyline);
         if (coords && coords.length > 0) {
-            const mapBox = { x: 100, y: 180, w: 880, h: 700 };
+            const mapBox = { x: 100, y: 150, w: 880, h: 800 };
 
             let minLat = coords[0][0], maxLat = minLat, minLng = coords[0][1], maxLng = minLng;
             coords.forEach((p: any) => {
@@ -5496,13 +5508,19 @@ export function drawGraffitiExpo(ctx: CanvasRenderingContext2D, stats: any, text
                 if (p[1] < minLng) minLng = p[1]; if (p[1] > maxLng) maxLng = p[1];
             });
 
-            const scale = Math.min(mapBox.w / (maxLng - minLng), mapBox.h / (maxLat - minLat));
+            const scale = Math.min(mapBox.w / (maxLng - minLng || 1), mapBox.h / (maxLat - minLat || 1));
 
             const getXY = (p: [number, number]) => {
                 const x = mapBox.x + (p[1] - minLng) * scale + (mapBox.w - ((maxLng - minLng) * scale)) / 2;
-                const y = mapBox.y + mapBox.h - ((p[0] - minLat) * scale) - (mapBox.h - ((maxLat - minLat) * scale)) / 2;
+                // V4 Vertical Spacing Rule: Anchor to the top
+                const y = mapBox.y + ((maxLat - p[0]) * scale);
                 return { x, y };
             };
+            
+            // Calculate exact bottom of the rendered map
+            const mapBottom = mapBox.y + ((maxLat - minLat) * scale);
+            // Tight top-down stacking
+            dynamicHeroY = mapBottom + 200;
 
             ctx.save();
             ctx.globalAlpha = 0.85;
@@ -5520,53 +5538,74 @@ export function drawGraffitiExpo(ctx: CanvasRenderingContext2D, stats: any, text
         }
     }
 
-    // 2. Aesthetic Typography (Bottom)
-    ctx.textAlign = 'center';
+    // 2. Aesthetic Typography (Bottom Extreme Pillars)
     ctx.textBaseline = 'alphabetic';
 
-    // Custom color from map
     const customColor = lineColor;
     const sport = normalizeSport(stats.type);
 
-    // Distance (Data - 85% Opacity)
+    // V4 Massive Background-Aligned Hero Metric
     const distNum = stats.distanceVal || '0.00';
+    const heroText = `${distNum} KM`;
+    
     ctx.save();
-    ctx.globalAlpha = 0.85;
-    ctx.font = "900 140px 'BBH Bartle'";
+    applyAntiGhostingShadow(ctx, customColor);
+    
+    const targetW = 960;
+    const baseHeroSize = 200;
+    ctx.font = `900 ${baseHeroSize}px 'BBH Bartle', 'Cabinet Grotesk Black', sans-serif`;
+    const metrics = ctx.measureText(heroText);
+    const heroSize = Math.floor((targetW / (metrics.width || 1)) * baseHeroSize);
+    
+    ctx.globalAlpha = 0.95;
+    ctx.font = `900 ${heroSize}px 'BBH Bartle', 'Cabinet Grotesk Black', sans-serif`;
     ctx.fillStyle = customColor;
-    ctx.fillText(distNum, 540, 950);
+    
+    // Positioned tightly beneath the map
+    const heroY = dynamicHeroY;
+    ctx.textAlign = 'center';
+    ctx.fillText(heroText, 540, heroY);
     ctx.restore();
 
-    // Units (Solid - 100% Opacity)
+    // V4 Extreme Data Pillars underneath (tightened space)
     ctx.save();
-    ctx.font = "800 32px 'Plus Jakarta Sans'";
+    applyAntiGhostingShadow(ctx, secondaryColor);
     ctx.fillStyle = secondaryColor;
-    ctx.globalAlpha = 1.0;
-    if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "15px";
-    ctx.fillText("KILOMETERS", 540, 1000);
-    if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "0px";
-    ctx.restore();
-
-    // Secondary Data (Pace & Time - 85% Opacity)
-    ctx.save();
-    ctx.globalAlpha = 0.85;
-    ctx.font = "900 55px 'BBH Bartle'";
-    ctx.fillStyle = customColor;
-    ctx.fillText(stats.subValue || '0:00 /km', 310, 1100);
-    ctx.fillText(stats.timeStr || '0h 00m', 770, 1100);
-    ctx.restore();
-
-    // Labels (Solid - 100% Opacity)
-    ctx.save();
-    ctx.font = "800 24px 'Plus Jakarta Sans'";
-    ctx.fillStyle = secondaryColor;
-    ctx.globalAlpha = 1.0;
-    if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "10px";
-
+    
+    // Bring pillars very close to the hero text
+    const pillarY = heroY + 40;
+    const pace = (stats.subValue || '').split(' ')[0] || '0:00';
+    const time = stats.timeStr || '0m';
+    
+    // Replace Calories with Start Time
+    const startTimeStr = stats.rawDate ? new Date(stats.rawDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A';
+    const elev = stats.elevation ? `${stats.elevation}m` : startTimeStr;
+    
     const paceLabel = sport === 'Ride' ? 'AVG. SPEED' : 'PACE';
-    ctx.fillText(paceLabel, 310, 1140);
-    ctx.fillText("TOTAL DURATION", 770, 1140);
-    if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "0px";
+    const elevLabel = stats.elevation ? 'ELEVATION' : 'START TIME';
+
+    // Pillar 1 (Left)
+    ctx.textAlign = 'left';
+    ctx.font = "900 45px 'Space Grotesk'";
+    ctx.fillText(pace, 60, pillarY);
+    ctx.font = "800 24px 'Plus Jakarta Sans'";
+    setLetterSpacing(ctx, "4px");
+    ctx.fillText(paceLabel, 60, pillarY + 35);
+
+    // Pillar 2 (Center)
+    ctx.textAlign = 'center';
+    ctx.font = "900 45px 'Space Grotesk'";
+    ctx.fillText(time, 540, pillarY);
+    ctx.font = "800 24px 'Plus Jakarta Sans'";
+    ctx.fillText("DURATION", 540, pillarY + 35);
+
+    // Pillar 3 (Right)
+    ctx.textAlign = 'right';
+    ctx.font = "900 45px 'Space Grotesk'";
+    ctx.fillText(elev, 1020, pillarY);
+    ctx.font = "800 24px 'Plus Jakarta Sans'";
+    ctx.fillText(elevLabel, 1020, pillarY + 35);
+
     ctx.restore();
 }
 
@@ -6214,16 +6253,17 @@ export function drawNoteAccentSticker(ctx: CanvasRenderingContext2D, stats: any,
     const textWidth = ctx.measureText(narrative).width;
 
     const paddingX = 40;
-    const boxHeight = 110;
+    const boxHeight = 110; 
     const boxWidth = textWidth + (paddingX * 2);
 
     const xStart = 100;
-    const yBaseline = 400; // Moved down to avoid overlapping Scora logo
+    // Pushed down to 260. This guarantees yTop (which draws 30px higher) sits safely below the Scora logo.
+    const yBaseline = 260; 
 
     const xL = xStart;
     const xR = xStart + boxWidth;
 
-    const markerOffset = 45; // Much closer to the box as per reference
+    const markerOffset = 45; 
     const boxY = yBaseline - boxHeight / 2;
     const boxBottom = boxY + boxHeight;
 
@@ -6286,7 +6326,8 @@ export function drawNoteAccentSticker(ctx: CanvasRenderingContext2D, stats: any,
     const menuW = 920;
     const menuH = 135;
     const menuX = 540 - (menuW / 2);
-    const menuY = yBaseline + 160;
+    // Safe 50px gap below the bottom circle marker (which has a radius of 26)
+    const menuY = yBottom + 50; 
 
     // A. Outer Shadow
     ctx.shadowColor = 'rgba(0,0,0,0.3)';
@@ -6944,15 +6985,17 @@ export function drawCoffeeClub(ctx: CanvasRenderingContext2D, stats: any, textCo
         ctx.font = `400 ${titleFontSize}px ${cursiveFont}`;
     }
 
-    const titleY = 220; // Pushed down to avoid Scora logo
+    const titleY = 160; // Docked under Scora logo
     ctx.fillText(line1, 80, titleY);
 
+    let actualTitleHeight = titleFontSize;
     if (line2) {
         // slightly offset line 2
         ctx.fillText(line2, 100, titleY + titleFontSize * 0.9);
+        actualTitleHeight += titleFontSize * 0.9;
     }
 
-    // Stack all data on the left
+    // Stack all data on the left tightly
     ctx.font = `400 48px ${monoFont}`;
     ctx.textAlign = 'left';
 
@@ -6960,7 +7003,7 @@ export function drawCoffeeClub(ctx: CanvasRenderingContext2D, stats: any, textCo
     const dateText = (stats.date || 'TODAY').toUpperCase();
     const startTime = (stats.startTime || '00:00 AM').toUpperCase();
 
-    const midY = 800;
+    const midY = titleY + actualTitleHeight + 80;
     ctx.fillText(dateText, 80, midY);
     ctx.fillText(startTime, 80, midY + 60);
 
@@ -6970,7 +7013,7 @@ export function drawCoffeeClub(ctx: CanvasRenderingContext2D, stats: any, textCo
     let sec1 = hasDist ? `PACE ${paceVal}` : `AVG HR ${stats.avgHeartrate || '0'}`;
     let sec2 = `DUR ${(stats.timeStr || '0:00')}`.toUpperCase();
 
-    const botY = 1100;
+    const botY = midY + 160;
     ctx.fillText(sec1, 80, botY);
     ctx.fillText(sec2, 80, botY + 60);
 
@@ -6978,14 +7021,14 @@ export function drawCoffeeClub(ctx: CanvasRenderingContext2D, stats: any, textCo
     const distVal = stats.distanceVal || '0.00';
     let primaryMetric1 = hasDist ? `${distVal} KM` : `${stats.calories || '0'} KCAL`;
 
-    const distY = 1400;
+    const distY = botY + 160;
     ctx.fillText(primaryMetric1, 80, distY);
 
     // 5. The Doodle Area (Hand-drawn mini-map)
     if (stats.polyline) {
         const coords = decodePolyline(stats.polyline);
         if (coords && coords.length > 0) {
-            const mapBox = { x: 500, y: 1000, w: 450, h: 600 };
+            const mapBox = { x: 500, y: midY, w: 450, h: 600 };
             let minLat = coords[0][0], maxLat = minLat, minLng = coords[0][1], maxLng = minLng;
             coords.forEach((p: any) => {
                 if (p[0] < minLat) minLat = p[0]; if (p[0] > maxLat) maxLat = p[0];
@@ -6995,7 +7038,8 @@ export function drawCoffeeClub(ctx: CanvasRenderingContext2D, stats: any, textCo
 
             const getXY = (p: [number, number]) => {
                 const x = mapBox.x + (p[1] - minLng) * scale + (mapBox.w - ((maxLng - minLng) * scale)) / 2;
-                const y = mapBox.y + mapBox.h - ((p[0] - minLat) * scale) - (mapBox.h - ((maxLat - minLat) * scale)) / 2;
+                // V4 Vertical Spacing Rule: Anchor to the top
+                const y = mapBox.y + ((maxLat - p[0]) * scale);
                 return { x, y };
             };
 
@@ -7125,27 +7169,54 @@ export function drawTempoGraph(ctx: CanvasRenderingContext2D, stats: any, textCo
 }
 
 export function drawWavyQuote(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
-    // ROUTE PATH TYPOGRAPHY - Writing text perfectly along the Strava polyline
+    // ROUTE PATH TYPOGRAPHY + V4 Editorial
     const mainColor = textColor.startsWith('#') ? textColor : (textColor === 'black' ? '#000000' : '#ffffff');
     ctx.save();
 
+    // 1. Massive Editorial Day of Week
+    const d = new Date(stats.rawDate || Date.now());
+    const dayStr = d.toLocaleString('en-US', { weekday: 'long' }).toUpperCase();
+    
+    ctx.fillStyle = mainColor;
+    ctx.textBaseline = 'top';
+    ctx.textAlign = 'left';
+    ctx.font = `900 120px 'Monument Extended', 'Cabinet Grotesk Black', sans-serif`;
+    
+    // Scale to fill width
+    const metrics = ctx.measureText(dayStr);
+    const targetW = 960;
+    let fontSize = Math.floor((targetW / (metrics.width || 1)) * 120);
+    
+    // Cap font size to avoid extreme heights on short days like "FRIDAY"
+    if (fontSize > 200) fontSize = 200; 
+
+    ctx.font = `900 ${fontSize}px 'Monument Extended', 'Cabinet Grotesk Black', sans-serif`;
+    applyAntiGhostingShadow(ctx, mainColor);
+    ctx.fillText(dayStr, 60, 140);
+    ctx.restore();
+    ctx.save();
+
+    // 2. Wavy Text On Path
     if (stats.polyline) {
         const coords = decodePolyline(stats.polyline);
         if (coords && coords.length > 1) {
-            // Setup map bounds to fill the center of the screen
-            const mapBox = { x: 100, y: 300, w: 880, h: 1000 };
+            // Place map closer under the text
+            const mapY = 140 + fontSize + 20;
+            const mapBox = { x: 100, y: mapY, w: 880, h: 800 };
+            
             let minLat = coords[0][0], maxLat = minLat, minLng = coords[0][1], maxLng = minLng;
             coords.forEach((p: any) => {
                 if (p[0] < minLat) minLat = p[0]; if (p[0] > maxLat) maxLat = p[0];
                 if (p[1] < minLng) minLng = p[1]; if (p[1] > maxLng) maxLng = p[1];
             });
-            const scale = Math.min(mapBox.w / (maxLng - minLng), mapBox.h / (maxLat - minLat));
+            const scale = Math.min(mapBox.w / (maxLng - minLng || 1), mapBox.h / (maxLat - minLat || 1));
+            
+            // Align to top of mapBox to eliminate wasted vertical space
             const pts = coords.map((p: any) => ({
                 x: mapBox.x + (p[1] - minLng) * scale + (mapBox.w - ((maxLng - minLng) * scale)) / 2,
-                y: mapBox.y + mapBox.h - ((p[0] - minLat) * scale) - (mapBox.h - ((maxLat - minLat) * scale)) / 2
+                y: mapBox.y + ((maxLat - p[0]) * scale)
             }));
 
-            // Calculate total distance of the polyline in pixels
             let totalPathDist = 0;
             const segments = [];
             for (let i = 0; i < pts.length - 1; i++) {
@@ -7159,11 +7230,11 @@ export function drawWavyQuote(ctx: CanvasRenderingContext2D, stats: any, textCol
                 }
             }
 
-            // Draw the actual route line (spine)
+            // Draw the actual route line (spine) slightly visible
             ctx.beginPath();
             ctx.strokeStyle = mainColor;
-            ctx.globalAlpha = 0.3;
-            ctx.lineWidth = 4;
+            ctx.globalAlpha = 0.2;
+            ctx.lineWidth = 2;
             ctx.lineJoin = 'round';
             ctx.lineCap = 'round';
             pts.forEach((p: any, i: number) => {
@@ -7173,10 +7244,13 @@ export function drawWavyQuote(ctx: CanvasRenderingContext2D, stats: any, textCol
             ctx.stroke();
             ctx.globalAlpha = 1.0;
 
-            // The data string to repeat
-            const dataStr = `${stats.shortTitle || 'ACTIVITY'} • ${stats.distanceVal ? stats.distanceVal + ' KM' : ''} • DUR ${stats.timeStr || ''} • PACE ${stats.subValue || ''} • `.toUpperCase();
+            // Repeating Data String with detailed metrics
+            const startTimeStr = stats.rawDate ? new Date(stats.rawDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A';
+            const hrStr = stats.hr || stats.average_heartrate || 'N/A';
+            const dataStr = `DISTANCE: ${stats.distanceVal || '0.00'}KM • DURATION: ${stats.timeStr || '0M'} • PACE: ${stats.subValue || '0:00/KM'} • START: ${startTimeStr} • HR: ${hrStr} BPM • `.toUpperCase();
 
-            ctx.font = `800 24px 'Inter', sans-serif`;
+            // Smaller font for easier grouping/forming the map
+            ctx.font = `800 14px 'Inter', sans-serif`;
             ctx.fillStyle = mainColor;
             ctx.textBaseline = 'middle';
             ctx.textAlign = 'center';
@@ -7185,13 +7259,11 @@ export function drawWavyQuote(ctx: CanvasRenderingContext2D, stats: any, textCol
             let charIdx = 0;
             let segIdx = 0;
 
-            // Draw chars along path
             while (currentDist < totalPathDist && segIdx < segments.length) {
                 const char = dataStr[charIdx % dataStr.length];
                 const charW = ctx.measureText(char).width;
-                const advance = charW + 4; // letter spacing
+                const advance = charW + 4; 
 
-                // Find which segment we are currently on based on currentDist
                 let accumulated = 0;
                 let activeSeg = segments[0];
                 let distIntoSeg = 0;
@@ -7206,119 +7278,91 @@ export function drawWavyQuote(ctx: CanvasRenderingContext2D, stats: any, textCol
                     accumulated += segments[i].dist;
                 }
 
-                if (accumulated + activeSeg.dist < currentDist) break; // Reached end
+                if (accumulated + activeSeg.dist < currentDist) break; 
 
-                // Interpolate exact X/Y
                 const ratio = distIntoSeg / activeSeg.dist;
                 const charX = activeSeg.x + activeSeg.dx * ratio;
                 const charY = activeSeg.y + activeSeg.dy * ratio;
 
                 ctx.save();
                 ctx.translate(charX, charY);
-                // We add PI to angle if the text would be drawn upside down, but for artistic maps, raw angle is fine
                 ctx.rotate(activeSeg.angle);
-                ctx.fillText(char, 0, -14); // Offset perpendicular to the path
+                ctx.fillText(char, 0, -14); 
                 ctx.restore();
 
                 currentDist += advance;
                 charIdx++;
             }
         }
-    } else {
-        // Fallback if no polyline: standard title
-        ctx.fillStyle = mainColor;
-        ctx.font = `800 60px 'Inter', sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.fillText("NO ROUTE DATA", 540, 960);
-    }
+    } 
 
     ctx.restore();
 }
 
 export function drawRetroDistance(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
     const mainColor = textColor.startsWith('#') ? textColor : (textColor === 'white' ? '#ffffff' : '#042a9b');
+    const accentColor = textColor === 'white' ? '#042a9b' : '#ffffff';
 
     ctx.save();
 
-    // RUNNER'S BIB AESTHETIC at the bottom
-    const cardW = 960;
-    const cardH = 600;
-    const cX = 60;
-    const cY = 1260; // Bottom anchored
+    // V4 TERMINAL CHAT BUBBLE (Extreme Compaction)
+    // We group all the retro stats into a tight, dark, translucent terminal bubble at the top left.
+    
+    const cardW = 980;
+    const cardH = 200; // Massively compressed from 600
+    const cX = 50;
+    const cY = 160; 
 
-    // Bib Paper
-    ctx.fillStyle = 'rgba(249, 246, 240, 0.5)'; // 50% opacity off-white
-    ctx.shadowColor = 'rgba(0,0,0,0.3)';
+    // Terminal Bubble Glass
+    ctx.fillStyle = 'rgba(10, 10, 10, 0.85)'; // Dark terminal glass
+    ctx.shadowColor = 'rgba(0,0,0,0.5)';
     ctx.shadowBlur = 40;
     ctx.shadowOffsetY = 20;
     ctx.beginPath();
-    ctx.roundRect(cX, cY, cardW, cardH, 20);
+    ctx.roundRect(cX, cY, cardW, cardH, 40); // Pill-like rounded corners
     ctx.fill();
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
 
-    // Bib Inner Border
-    ctx.strokeStyle = '#111111';
-    ctx.lineWidth = 6;
-    ctx.beginPath();
-    ctx.roundRect(cX + 20, cY + 20, cardW - 40, cardH - 40, 10);
+    // Inner bright stroke
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.lineWidth = 2;
     ctx.stroke();
 
-    // Grid Dividers
-    ctx.beginPath();
-    ctx.moveTo(cX + 20, cY + 400);
-    ctx.lineTo(cX + cardW - 20, cY + 400); // Horizontal split
-    ctx.moveTo(cX + cardW / 3, cY + 400);
-    ctx.lineTo(cX + cardW / 3, cY + cardH - 20); // Vert split 1
-    ctx.moveTo(cX + (cardW / 3) * 2, cY + 400);
-    ctx.lineTo(cX + (cardW / 3) * 2, cY + cardH - 20); // Vert split 2
-    ctx.stroke();
-
-    let mainValue = stats.distanceVal || '0.0';
-    let mainLabel = "KILOMETERS";
-    let cell2Label = "TIME";
+    // Determine the main metric
+    let mainValue = stats.distanceVal ? `${stats.distanceVal} KM` : 'N/A';
     let cell2Value = stats.timeStr || '0:00';
+    let cell3Value = (stats.subValue || '').split(' ')[0] || '0:00';
 
-    // If it's a workout with no distance, feature the duration instead
     if (!stats.distanceVal || parseFloat(stats.distanceVal) === 0) {
         mainValue = stats.timeStr || '0:00';
-        mainLabel = "DURATION";
-        cell2Label = "ACTIVITY";
         cell2Value = normalizeSport(stats.activityType || 'WORKOUT').toUpperCase();
+        cell3Value = (stats.calories || '0') + ' KCAL';
     }
 
-    // Distance/Duration (Main Block)
-    ctx.fillStyle = mainColor; // Use dynamic color instead of hardcoded red
-    ctx.font = `800 280px 'Asset', sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(mainValue, cX + cardW / 2, cY + 200, cardW - 120);
-
-    ctx.fillStyle = '#111111';
-    ctx.font = `400 40px 'Inter', sans-serif`;
-    ctx.fillText(mainLabel, cX + cardW / 2, cY + 350);
-
-    // Bottom Cells
-    ctx.textBaseline = 'top';
+    // Terminal Monospace Typography
+    const textY = cY + cardH / 2;
+    
+    // Column 1: Main Metric
     ctx.textAlign = 'left';
-    ctx.font = `800 24px 'Inter', sans-serif`;
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = mainColor;
+    ctx.font = `800 90px 'VT323', 'Courier New', monospace`; 
+    ctx.fillText(mainValue, cX + 50, textY);
+    
+    // Column 2 & 3: Secondary Stats
+    ctx.fillStyle = 'rgba(255,255,255,0.9)'; // Bright white for terminal data
+    ctx.font = `500 36px 'VT323', 'Courier New', monospace`;
+    
+    // Use fixed positions to keep it structured like a terminal grid
+    ctx.fillText(`TIME_ ${cell2Value}`, cX + 520, textY - 25);
+    ctx.fillText(`PACE_ ${cell3Value}`, cX + 520, textY + 30);
 
-    // Cell 1: Date
-    ctx.fillText("DATE", cX + 40, cY + 420);
-    ctx.font = `400 42px 'Syne', sans-serif`;
-    ctx.fillText((stats.dayAndNumber || 'APR 2').toUpperCase(), cX + 40, cY + 460, 260);
-
-    // Cell 2: Time / Activity
-    ctx.font = `800 24px 'Inter', sans-serif`;
-    ctx.fillText(cell2Label, cX + cardW / 3 + 20, cY + 420);
-    ctx.font = `400 42px 'Syne', sans-serif`;
-    ctx.fillText(cell2Value, cX + cardW / 3 + 20, cY + 460);
-
-    // Cell 3: Pace
-    ctx.font = `800 24px 'Inter', sans-serif`;
-    ctx.fillText("PACE", cX + (cardW / 3) * 2 + 20, cY + 420);
-    ctx.font = `400 42px 'Syne', sans-serif`;
-    ctx.fillText(stats.subValue || '0:00', cX + (cardW / 3) * 2 + 20, cY + 460);
+    // Date Stamp in the corner
+    ctx.textAlign = 'right';
+    ctx.fillStyle = 'rgba(255,255,255,0.5)'; // Dimmed
+    ctx.font = `400 24px 'VT323', 'Courier New', monospace`;
+    ctx.fillText(`[${(stats.dayAndNumber || 'APR 2').toUpperCase()}]`, cX + cardW - 50, textY);
 
     ctx.restore();
 }
@@ -7413,62 +7457,98 @@ export function drawWaveTitle(ctx: CanvasRenderingContext2D, stats: any, textCol
 }
 
 // ── Template: Neon Glow ────────────────────────────────────────────────────
-export function drawNeonGlow(ctx: CanvasRenderingContext2D, stats: StickerStats, textColor: string = 'white', showLogo: boolean = true) {
+export function drawNeonGlow(ctx: CanvasRenderingContext2D, stats: any, textColor: string = 'white', showLogo: boolean = true) {
     const accentColor = textColor === 'black' ? '#ffffff' : textColor; 
-    
-    // Layout geometry
     const canvasWidth = 1080;
     const padding = 100;
-    let dataY = 240;
     
     ctx.save();
-
-    // Setup Text (No shadow as requested)
-    ctx.shadowBlur = 0;
-    ctx.fillStyle = accentColor;
-    ctx.textAlign = 'left';
+    
+    // --- V4 Massive Horizontal Hero Text ---
+    const { s1, s2, s3, type } = getDynamicStats(stats);
+    
+    // Hero Text automatically handles HR or Duration for workouts, Distance for runs
+    const heroText = `${s1.value} ${s1.label}`;
     ctx.textBaseline = 'top';
+    const baseFontSize = 100;
+    ctx.font = `900 ${baseFontSize}px 'Outfit', 'Space Grotesk', sans-serif`;
+    const metrics = ctx.measureText(heroText);
+    const targetWidth = 960;
+    const fontSize = Math.floor((targetWidth / (metrics.width || 1)) * baseFontSize);
     
-    // Data List Setup
-    const elevPoint = stats.dataPoints?.find(p => p.label.toUpperCase() === 'ELEVATION');
-    const elevVal = (stats as any).elevation || elevPoint?.value || '0';
-    const timeRaw = (stats.startTime || '00:00 AM').toUpperCase();
+    ctx.font = `900 ${fontSize}px 'Outfit', 'Space Grotesk', sans-serif`;
     
-    const d = new Date(stats.rawDate || Date.now());
-    const monthStr = d.toLocaleString('en-US', { month: 'long' }).toUpperCase();
-    const dayStr = d.toLocaleString('en-US', { weekday: 'long' }).toUpperCase();
-    const dayNumStr = d.getDate().toString();
-    const locationStr = (stats.location || 'LOCAL').toUpperCase();
+    // Improved Glowing text matching the map effect
+    ctx.fillStyle = accentColor;
+    ctx.shadowColor = accentColor;
     
-    let items: { val: string, hide: boolean }[] = [];
+    const auraLayers = [
+        { blur: 250, alpha: 0.4 }, // Broader, brighter outer glow
+        { blur: 120, alpha: 0.6 },
+        { blur: 60, alpha: 0.8 },
+        { blur: 25, alpha: 1.0 },
+        { blur: 5, alpha: 1.0 }  // Searing hot core
+    ];
     
-    if (stats.polyline) {
-        items = [
-            { val: locationStr, hide: false },
-            { val: `${monthStr}, ${dayStr} ${dayNumStr}`, hide: false },
-            { val: timeRaw, hide: false },
-            { val: `${stats.distanceVal || '0.00'} ${(stats as any).distanceUnit || 'KM'}`, hide: false },
-            { val: `${stats.subValue || '0:00'}`, hide: false },
-            { val: `${stats.timeStr || '0:00'}`, hide: false }
-        ];
-    } else {
-        items = [
-            { val: `${monthStr}, ${dayStr} ${dayNumStr}`, hide: false },
-            { val: `${stats.timeStr || stats.mainValue || '0:00'}`, hide: false },
-            { val: `${stats.avgHeartrate || '--'} BPM`, hide: !stats.avgHeartrate }
-        ];
-    }
-    
-    items = items.filter(i => !i.hide);
-    
-    ctx.font = "800 65px 'Andika', sans-serif";
-    const startX = 80;
-    dataY = 180;
-    
-    items.forEach(item => {
-        ctx.fillText(item.val.toUpperCase(), startX, dataY);
-        dataY += 75; // Line height
+    auraLayers.forEach(layer => {
+        ctx.shadowBlur = layer.blur;
+        ctx.globalAlpha = layer.alpha;
+        ctx.fillText(heroText, 60, 150);
     });
+
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1.0;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(heroText, 60, 150);
+    
+    // --- V4 Horizontal Data Pillars ---
+    const pillarY = 150 + fontSize + 40;
+    ctx.fillStyle = accentColor;
+    ctx.textBaseline = 'top';
+
+    // Pillar 1: Dynamic s2
+    ctx.textAlign = 'left';
+    ctx.font = "800 50px 'Space Grotesk'";
+    ctx.fillText(String(s2.value), 60, pillarY);
+    ctx.font = "500 24px 'Plus Jakarta Sans'";
+    setLetterSpacing(ctx, '2px');
+    ctx.fillText(String(s2.label), 60, pillarY + 60);
+    setLetterSpacing(ctx, '0px');
+
+    // Pillar 2: Dynamic s3
+    ctx.textAlign = 'center';
+    ctx.font = "800 50px 'Space Grotesk'";
+    ctx.fillText(String(s3.value), canvasWidth / 2, pillarY);
+    ctx.font = "500 24px 'Plus Jakarta Sans'";
+    setLetterSpacing(ctx, '2px');
+    ctx.fillText(String(s3.label), canvasWidth / 2, pillarY + 60);
+    setLetterSpacing(ctx, '0px');
+
+    // Pillar 3: Dynamic Fallback
+    ctx.textAlign = 'right';
+    let p3Value = stats.dayAndNumber || 'N/A';
+    let p3Label = 'DATE';
+    
+    // Avoid duplicating DATE if it was already used in s2 or s3
+    if (s2.label === 'DATE' || s3.label === 'DATE') {
+        if (stats.location && stats.location !== 'Unknown' && s2.label !== 'LOCATION' && s3.label !== 'LOCATION') {
+            p3Value = stats.location;
+            p3Label = 'LOCATION';
+        } else {
+            p3Value = type.toUpperCase();
+            p3Label = 'TYPE';
+        }
+    }
+
+    ctx.font = "800 50px 'Space Grotesk'";
+    ctx.fillText(p3Value, canvasWidth - 60, pillarY);
+    ctx.font = "500 24px 'Plus Jakarta Sans'";
+    setLetterSpacing(ctx, '2px');
+    ctx.fillText(p3Label, canvasWidth - 60, pillarY + 60);
+    setLetterSpacing(ctx, '0px');
+
+    let dataY = pillarY + 140; 
+
     
     dataY += 20; // Place map much closer to data
     
@@ -7508,16 +7588,17 @@ export function drawNeonGlow(ctx: CanvasRenderingContext2D, stats: StickerStats,
             ctx.shadowColor = accentColor;
             
             const auraLayers = [
-                { blur: 150, alpha: 0.3 },
-                { blur: 80, alpha: 0.5 },
-                { blur: 30, alpha: 0.8 },
-                { blur: 10, alpha: 1.0 } // Intense tight base glow
+                { blur: 250, alpha: 0.4 }, // Broader, brighter outer glow
+                { blur: 120, alpha: 0.6 },
+                { blur: 60, alpha: 0.8 },
+                { blur: 25, alpha: 1.0 },
+                { blur: 5, alpha: 1.0 }  // Searing hot core
             ];
             
             auraLayers.forEach(layer => {
                 ctx.shadowBlur = layer.blur;
                 ctx.globalAlpha = layer.alpha;
-                ctx.lineWidth = coreWidth;
+                ctx.lineWidth = coreWidth + 10; // Thicker glow base
                 drawPath(depth, depth); // Cast from the deepest layer
             });
             

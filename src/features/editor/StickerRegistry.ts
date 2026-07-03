@@ -12,6 +12,7 @@ import * as Renderers from './CanvasPainter';
 // These are visible in the Studio UI Gallery.
 export const ACTIVE_STICKER_LIST: StickerDefinition[] = [
     { id: 'neon_glow', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, duration: true, paceSpeed: true, date: true, location: true }, render: Renderers.drawNeonGlow },
+    { id: 'note-accent', supportsCustomColor: true, category: 'all', supportsBlackText: true, preferredCase: 'title', features: { distance: true, duration: true, paceSpeed: true }, render: Renderers.drawNoteAccentSticker },
     { id: 'chrome-v1', category: 'distance', features: { map: true }, render: Renderers.drawChromeHighContrastSticker },
     { id: 'coffee_club', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, duration: true, paceSpeed: true, date: true, location: true, map: true }, render: Renderers.drawCoffeeClub },
     { id: 'tempo_graph', category: 'all', supportsBlackText: true, features: { distance: true, duration: true, paceSpeed: true, map: true }, render: Renderers.drawTempoGraph },
@@ -21,7 +22,6 @@ export const ACTIVE_STICKER_LIST: StickerDefinition[] = [
     { id: 'social-chat', category: 'all', supportsBlackText: false, features: { distance: true, duration: true, paceSpeed: true, map: true }, render: Renderers.drawChatSticker },
     { id: 'graffiti-map', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, duration: true, map: true }, render: Renderers.drawGraffitiMap },
     { id: 'note-minimal', category: 'all', supportsBlackText: true, preferredCase: 'title', features: { distance: true, duration: true, paceSpeed: true }, render: Renderers.drawNoteSticker },
-    { id: 'note-accent', supportsCustomColor: true, category: 'all', supportsBlackText: true, preferredCase: 'title', features: { distance: true, duration: true, paceSpeed: true }, render: Renderers.drawNoteAccentSticker },
     { id: 'studio-precision', supportsCustomColor: true, category: 'distance', supportsBlackText: true, features: { distance: true, paceSpeed: true, duration: true, elevation: true }, seasonal: false, render: Renderers.drawStudioPrecision },
     { id: 'graffiti-expo', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { map: true }, render: Renderers.drawGraffitiExpo },
 
@@ -36,7 +36,7 @@ export const ACTIVE_STICKER_LIST: StickerDefinition[] = [
     { id: 'finish-line', supportsCustomColor: true, category: 'distance', supportsBlackText: false, features: { distance: true, duration: true, paceSpeed: true }, render: Renderers.drawFinishLine },
     { id: 'tiny-gps', supportsCustomColor: true, category: 'all', supportsBlackText: true, compact: true, preferredCase: 'title', features: { distance: true, duration: true, location: true }, render: Renderers.drawTinyGPS },
     { id: 'pulse-row', supportsCustomColor: true, category: 'all', supportsBlackText: false, features: { heartRate: true, heartRateType: 'max' }, render: Renderers.drawPulseRow },
-    { id: 'thin-path', supportsCustomColor: true, category: 'distance', supportsBlackText: true, features: { distance: true, paceSpeed: true, map: true }, render: Renderers.drawThinPath },
+    { id: 'thin-path', supportsCustomColor: true, category: 'distance', supportsBlackText: true, features: { distance: true, paceSpeed: true, map: true, location: true }, render: Renderers.drawThinPath },
     { id: 'boxed-metric', supportsCustomColor: true, category: 'distance', supportsBlackText: true, compact: true, features: { distance: true, duration: true }, render: Renderers.drawBoxedMetric },
     { id: 'condesa-stack', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, paceSpeed: true, startTime: true, date: true }, expectedMetadata: ['location', 'LOCAL TIME', 'LOCATION'], render: Renderers.drawCondesaStack },
     { id: 'split-badge', category: 'all', supportsBlackText: false, compact: true, features: { distance: true, paceSpeed: true, duration: true }, render: Renderers.drawSplitBadge },
