@@ -385,7 +385,8 @@ async function initApp() {
 
     // 🔄 POPUP FLOW: Strava sent the authCode to the popup, forward it to the parent window.
     if (authCode && window.opener) {
-        window.opener.postMessage({ type: 'strava_auth_success', code: authCode }, window.location.origin);
+        const scope = urlParams.get('scope') || '';
+        window.opener.postMessage({ type: 'strava_auth_success', code: authCode, scope }, window.location.origin);
         window.close();
         return;
     }
@@ -393,6 +394,7 @@ async function initApp() {
     // 🔄 REDIRECT FLOW: User came back from Strava via full-page redirect (Safari/queue polling).
     // The authCode is in the URL but there is no opener — handle it directly.
     if (authCode && !window.opener) {
+        const scope = urlParams.get('scope') || '';
         // Clean the URL immediately so refresh doesn't re-process the code.
         window.history.replaceState({ screen: 'screen-feed' }, document.title, window.location.pathname);
         
@@ -401,26 +403,69 @@ async function initApp() {
         if (activitySection) activitySection.classList.remove('hidden');
         if (activityListEl) activityListEl.innerHTML = "<p class='status-msg'>Sincronizando tus rutas...</p>";
         
+        if (scope && !scope.includes('activity:read')) {
+            if (activityListEl) {
+                activityListEl.innerHTML = `
+                    <div class="error-container">
+                        <span class="error-title">⚠️ PERMISO DENEGADO</span>
+                        <p class='error-msg'>No pudimos leer tus actividades. Asegúrate de marcar todas las casillas de permisos en Strava al autorizar la aplicación.</p>
+                        <button id="btn-retry-auth-redirect" class="btn-primary" style="margin-top: 1rem;">
+                            🔄 INTENTAR DE NUEVO
+                        </button>
+                    </div>`;
+                const retryBtn = document.getElementById('btn-retry-auth-redirect');
+                if (retryBtn) {
+                    retryBtn.onclick = () => window.location.reload();
+                }
+            }
+            return;
+        }
+
+        let tokenResponse;
         try {
             // 🛡️ SESSION RECOVERY: Instagram/Safari might wipe sessionStorage on redirect.
             // We use the 'state' parameter returned by Strava as our absolute truth.
             const sid = stateSid || sessionStorage.getItem('scora_queue_session_id') || 'fallback';
-            
-            const tokenResponse = await exchangeToken(authCode, sid);
+            tokenResponse = await exchangeToken(authCode, sid);
             saveStravaAuth(tokenResponse);
-            const accessToken = tokenResponse.access_token;
-            currentAccessToken = accessToken;
-            const activitiesData = await fetchStravaActivities(accessToken);
-            renderActivityFeed(activitiesData);
-        } catch (error: any) {
-            console.error("[App] Redirect auth error:", error);
-            const status = error?.status;
+        } catch (authError: any) {
+            console.error("[App] Redirect auth error:", authError);
+            const status = authError?.status;
             if (status === 403) {
                 if (activityListEl) activityListEl.innerHTML = `
                     <div class="error-container">
                         <span class="error-title">⚡ SISTEMA BLOQUEADO</span>
                         <p class='error-msg'>Un atleta está ocupando la conexión. El sistema está intentando auto-recuperarse. Intenta de nuevo en 30 segundos.</p>
                     </div>`;
+            } else {
+                if (activityListEl) activityListEl.innerHTML = `<p class='error-msg'>Error al conectar. Por favor intenta de nuevo.</p>`;
+            }
+            return;
+        }
+
+        try {
+            const accessToken = tokenResponse.access_token;
+            currentAccessToken = accessToken;
+            const activitiesData = await fetchStravaActivities(accessToken);
+            renderActivityFeed(activitiesData);
+        } catch (fetchError: any) {
+            console.error("[App] Redirect fetch error:", fetchError);
+            const status = fetchError?.status;
+            if (status === 403) {
+                if (activityListEl) {
+                    activityListEl.innerHTML = `
+                        <div class="error-container">
+                            <span class="error-title">⚠️ PERMISO DENEGADO</span>
+                            <p class='error-msg'>No pudimos leer tus actividades. Asegúrate de marcar todas las casillas de permisos en Strava al autorizar la aplicación.</p>
+                            <button id="btn-retry-auth-redirect" class="btn-primary" style="margin-top: 1rem;">
+                                🔄 INTENTAR DE NUEVO
+                            </button>
+                        </div>`;
+                    const retryBtn = document.getElementById('btn-retry-auth-redirect');
+                    if (retryBtn) {
+                        retryBtn.onclick = () => window.location.reload();
+                    }
+                }
             } else {
                 if (activityListEl) activityListEl.innerHTML = `<p class='error-msg'>Error al conectar. Por favor intenta de nuevo.</p>`;
             }
@@ -758,20 +803,34 @@ window.addEventListener('message', async (event) => {
         if (activitySection) activitySection.classList.remove('hidden');
         if (activityListEl) activityListEl.innerHTML = "<p class='status-msg'>Sincronizando tus rutas...</p>";
 
+        const scope = event.data.scope || '';
+
+        if (scope && !scope.includes('activity:read')) {
+            if (activityListEl) {
+                activityListEl.innerHTML = `
+                    <div class="error-container">
+                        <span class="error-title">⚠️ PERMISO DENEGADO</span>
+                        <p class='error-msg'>No pudimos leer tus actividades. Asegúrate de marcar todas las casillas de permisos en Strava al autorizar la aplicación.</p>
+                        <button id="btn-retry-auth" class="btn-primary" style="margin-top: 1rem;">
+                            🔄 INTENTAR DE NUEVO
+                        </button>
+                    </div>
+                `;
+                const retryBtn = document.getElementById('btn-retry-auth');
+                if (retryBtn) {
+                    retryBtn.onclick = () => window.location.reload();
+                }
+            }
+            return;
+        }
+
+        let tokenResponse;
         try {
-            const tokenResponse = await exchangeToken(newCode, sessionId);
+            tokenResponse = await exchangeToken(newCode, sessionId);
             saveStravaAuth(tokenResponse);
-            const accessToken = tokenResponse.access_token;
-            currentAccessToken = accessToken;
-
-            const activitiesData = await fetchStravaActivities(accessToken);
-            renderActivityFeed(activitiesData);
-
-            window.history.replaceState({ screen: 'screen-feed' }, document.title, window.location.pathname);
-        } catch (error) {
-            console.error("Error en Scora Auth:", error);
-            const status = (error as any).status;
-            
+        } catch (authError: any) {
+            console.error("Error al intercambiar token:", authError);
+            const status = authError?.status;
             if (status === 429) {
                 if (activityListEl) activityListEl.innerHTML = `<p class='status-msg error-msg'>Rate limit reached. Please wait.</p>`;
             } else if (status === 500) {
@@ -804,6 +863,43 @@ window.addEventListener('message', async (event) => {
                         `;
                     }
                 }
+            } else {
+                if (activityListEl) activityListEl.innerHTML = `<p class='error-msg'>Connection failed. Please try again.</p>`;
+            }
+            return;
+        }
+
+        try {
+            const accessToken = tokenResponse.access_token;
+            currentAccessToken = accessToken;
+
+            const activitiesData = await fetchStravaActivities(accessToken);
+            renderActivityFeed(activitiesData);
+
+            window.history.replaceState({ screen: 'screen-feed' }, document.title, window.location.pathname);
+        } catch (fetchError: any) {
+            console.error("Error al obtener actividades:", fetchError);
+            const status = fetchError?.status;
+            if (status === 403) {
+                if (activityListEl) {
+                    activityListEl.innerHTML = `
+                        <div class="error-container">
+                            <span class="error-title">⚠️ PERMISO DENEGADO</span>
+                            <p class='error-msg'>No pudimos leer tus actividades. Asegúrate de marcar todas las casillas de permisos en Strava al autorizar la aplicación.</p>
+                            <button id="btn-retry-auth" class="btn-primary" style="margin-top: 1rem;">
+                                🔄 INTENTAR DE NUEVO
+                            </button>
+                        </div>
+                    `;
+                    const retryBtn = document.getElementById('btn-retry-auth');
+                    if (retryBtn) {
+                        retryBtn.onclick = () => window.location.reload();
+                    }
+                }
+            } else if (status === 429) {
+                if (activityListEl) activityListEl.innerHTML = `<p class='status-msg error-msg'>Rate limit reached. Please wait.</p>`;
+            } else if (status === 500) {
+                if (activityListEl) activityListEl.innerHTML = `<p class='status-msg error-msg'>Internal server error. Connection failed.</p>`;
             } else {
                 if (activityListEl) activityListEl.innerHTML = `<p class='error-msg'>Connection failed. Please try again.</p>`;
             }
