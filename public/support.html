@@ -6,14 +6,16 @@
     <title>Soporte y Privacidad - Scora</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700;800&family=Playfair+Display:ital,wght@0,500;1,500;1,900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;700;800&family=Outfit:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #050505;
-            --text-color: #eaeaea;
-            --accent-color: #ffffff;
-            --muted-color: #666666;
-            --border-color: #222222;
+            --bg-color: #000000;
+            --text-color: #ffffff;
+            --accent-color: #80cbc4;
+            --muted-color: rgba(255, 255, 255, 0.4);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --font-main: 'Plus Jakarta Sans', sans-serif;
+            --font-alt: 'Outfit', sans-serif;
         }
         * {
             box-sizing: border-box;
@@ -23,7 +25,7 @@
         body {
             background-color: var(--bg-color);
             color: var(--text-color);
-            font-family: 'Outfit', -apple-system, sans-serif;
+            font-family: var(--font-main);
             -webkit-font-smoothing: antialiased;
             line-height: 1.6;
             overflow-x: hidden;
@@ -52,12 +54,11 @@
             color: var(--accent-color);
         }
         h1 {
-            font-family: 'Playfair Display', serif;
             font-size: clamp(3rem, 8vw, 5rem);
             line-height: 1.1;
             letter-spacing: -0.03em;
             margin-bottom: 4rem;
-            font-weight: 500;
+            font-weight: 700;
         }
         .section-block {
             border-top: 1px solid var(--border-color);
