@@ -1,11 +1,3 @@
-import { Redis } from '@upstash/redis';
-
-// 1. Instance outside handler to reuse connection (Warm Starts)
-const redis = new Redis({
-    url: process.env.UPSTASH_REDIS_REST_URL!,
-    token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-});
-
 const LOCK_KEY = 'strava:slot:lock';
 const QUEUE_KEY = 'strava:slot:queue';
 const ACTIVE_TOKEN_KEY = 'strava:active_token';
@@ -35,7 +27,13 @@ export default async function handler(req: any, res: any) {
             const detailResponse = await fetch(`https://www.strava.com/api/v3/activities/${activity_id}`, {
                 headers: { 'Authorization': `Bearer ${access_token}` }
             });
-            if (!detailResponse.ok) throw new Error(`Strava Detail API error: ${detailResponse.status}`);
+            if (!detailResponse.ok) {
+                console.error(`[API Error] Strava Detail API returned ${detailResponse.status}`);
+                return res.status(detailResponse.status).json({
+                    error: 'Strava Detail API Error',
+                    message: `Strava Detail API error: ${detailResponse.status}`
+                });
+            }
             responseData = { activity: await detailResponse.json() };
         } else {
             // Fetch activities list
@@ -43,7 +41,13 @@ export default async function handler(req: any, res: any) {
             const activitiesResponse = await fetch('https://www.strava.com/api/v3/athlete/activities?per_page=10', {
                 headers: { 'Authorization': `Bearer ${access_token}` }
             });
-            if (!activitiesResponse.ok) throw new Error(`Strava API error: ${activitiesResponse.status}`);
+            if (!activitiesResponse.ok) {
+                console.error(`[API Error] Strava API returned ${activitiesResponse.status}`);
+                return res.status(activitiesResponse.status).json({
+                    error: 'Strava API Error',
+                    message: `Strava API error: ${activitiesResponse.status}`
+                });
+            }
             responseData = { activities: await activitiesResponse.json() };
         }
 
