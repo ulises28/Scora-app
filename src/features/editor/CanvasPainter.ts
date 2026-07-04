@@ -5172,42 +5172,18 @@ function getGreeting(startTimeStr: string): string {
 
 export function drawEditorialStrip(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
     const c = buildColors(textColor);
-    ctx.textBaseline = 'middle';
 
-    // 1. Top Section (Weather/Time)
-    ctx.textAlign = 'right';
-    ctx.fillStyle = c.solid;
+    // Apply robust anti-ghosting shadow for universal photo contrast FIRST
+    // so it applies to EVERYTHING, including the day name!
+    applyAntiGhostingShadow(ctx, textColor);
 
-    if (stats.avgTemp) {
-        ctx.font = "900 64px 'Inter'";
-        ctx.fillText(stats.avgTemp + '°', 950, 150);
-    }
-
-    ctx.font = "900 24px 'Plus Jakarta Sans'";
-    ctx.fillStyle = c.trans;
-    ctx.fillText('LOCAL TIME', 950, 220);
-
-    ctx.font = "700 32px 'Plus Jakarta Sans'";
-    ctx.fillStyle = c.solid;
-    const timeDisplay = (stats.startTime || '--:--').toUpperCase();
-    const durDisplay = stats.timeStr ? ` | ${stats.timeStr.toUpperCase()}` : '';
-    ctx.fillText(`${timeDisplay}${durDisplay}`, 950, 265);
-
-    // 2. Vertical Day Headline
+    // 1. Right Side - Massive Rotated Day Name (Gradient)
     ctx.save();
-    ctx.translate(900, 960);
+    ctx.translate(960, 960);
     ctx.rotate(-Math.PI / 2);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
-    // Dynamic Greeting
-    ctx.font = "900 28px 'Inter'";
-    ctx.fillStyle = c.trans;
-    setLetterSpacing(ctx, '12px');
-    ctx.fillText(getGreeting(stats.startTime), 0, -180);
-    setLetterSpacing(ctx, '0px');
-
-    // Massive Rotated Day
     const dayStr = (stats.dayName || 'FRIDAY').toUpperCase();
     let fontSize = 320;
     ctx.font = `900 ${fontSize}px 'Inter'`;
@@ -5219,43 +5195,91 @@ export function drawEditorialStrip(ctx: CanvasRenderingContext2D, stats: any, te
     }
 
     const dayGrad = ctx.createLinearGradient(-500, 0, 500, 0);
-    dayGrad.addColorStop(0, textColor === 'black' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)');
-    dayGrad.addColorStop(1, textColor === 'black' ? 'rgba(0,0,0,0.9)' : 'rgba(255,255,255,0.9)');
+    // Use the parsed c.solid so it perfectly respects the theme color
+    const isDark = textColor === 'white' || textColor === '#ffffff';
+    dayGrad.addColorStop(0, isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)');
+    dayGrad.addColorStop(1, isDark ? 'rgba(255,255,255,0.95)' : 'rgba(0,0,0,0.95)');
     ctx.fillStyle = dayGrad;
     ctx.fillText(dayStr, 0, 0);
     ctx.restore();
 
-    // 3. Bottom Section (Location/Stats)
-    const bottomY = 1730; // 1750 -> 1730
+    // 2. Left Side - Strict Editorial Grid (Perfect Vertical Rhythm)
+    const leftX = 80;
     ctx.textAlign = 'left';
+    ctx.textBaseline = 'top'; // Use TOP for predictable vertical rhythm
 
-    ctx.strokeStyle = c.trans;
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(80, bottomY - 50); ctx.lineTo(1000, bottomY - 50); ctx.stroke();
-
-    // Location
-    drawMapPinIcon(ctx, 100, bottomY, 24, c.accent);
-    ctx.font = "900 24px 'Plus Jakarta Sans'";
+    // Date / Time Block
+    let currentY = 150;
+    
+    ctx.fillStyle = c.solid;
+    ctx.font = "900 64px 'Inter'";
+    ctx.fillText((stats.dateStr || 'OCT 24').toUpperCase(), leftX, currentY);
+    
+    currentY += 70;
     ctx.fillStyle = c.trans;
+    ctx.font = "700 28px 'Plus Jakarta Sans'";
+    ctx.fillText((stats.startTime || '08:00 AM').toUpperCase(), leftX, currentY);
+
+    currentY += 120; // Breathing room before Location
+
+    // Location / Title
+    ctx.fillStyle = c.solid;
+    ctx.font = "800 36px 'Plus Jakarta Sans'";
+    ctx.fillText((stats.location || stats.title || 'ACTIVITY').toUpperCase(), leftX, currentY);
+
+    currentY += 60;
+
+    // Horizontal Rule
+    ctx.strokeStyle = c.trans;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(leftX, currentY);
+    ctx.lineTo(600, currentY);
+    ctx.stroke();
+
+    currentY += 60; // Breathing room before Stats
+
+    const { s1, s2, s3 } = getDynamicStats(stats);
+
+    // Metric 1 (Distance - massive)
+    ctx.fillStyle = c.trans;
+    ctx.font = "700 24px 'Plus Jakarta Sans'";
     setLetterSpacing(ctx, '4px');
-    ctx.fillText((stats.location || 'MEXICO CITY').toUpperCase(), 130, bottomY);
+    ctx.fillText((s1.label || 'DISTANCE').toUpperCase(), leftX, currentY);
     setLetterSpacing(ctx, '0px');
 
-    // Main Stat (Distance/Duration)
-    const mainVal = stats.hasDistance ? stats.distanceVal : stats.mainValue;
-    const mainUnitBottom = stats.hasDistance ? 'KM' : 'TIME';
+    currentY += 35;
+    ctx.fillStyle = c.solid;
+    ctx.font = "900 120px 'Inter'";
+    ctx.fillText(s1.value || '0.0', leftX, currentY);
 
-    drawStatWithUnit(ctx, 100, bottomY + 70, mainVal, mainUnitBottom, { // 80 -> 70
-        valueFont: "900 84px 'Inter'",
-        unitFont: "700 32px 'Plus Jakarta Sans'",
-        valueColor: c.solid,
-        unitColor: c.trans,
-        gap: 20,
-        align: 'left'
-    });
+    currentY += 160;
 
+    // Metric 2 (Pace)
+    ctx.fillStyle = c.trans;
+    ctx.font = "700 22px 'Plus Jakarta Sans'";
+    setLetterSpacing(ctx, '4px');
+    ctx.fillText((s2.label || 'PACE').toUpperCase(), leftX, currentY);
+    setLetterSpacing(ctx, '0px');
 
+    currentY += 30;
+    ctx.fillStyle = c.solid;
+    ctx.font = "900 64px 'Space Grotesk'";
+    ctx.fillText(s2.value || '0:00', leftX, currentY);
 
+    currentY += 100;
+
+    // Metric 3 (Time/Heart Rate)
+    ctx.fillStyle = c.trans;
+    ctx.font = "700 22px 'Plus Jakarta Sans'";
+    setLetterSpacing(ctx, '4px');
+    ctx.fillText((s3.label || 'TIME').toUpperCase(), leftX, currentY);
+    setLetterSpacing(ctx, '0px');
+
+    currentY += 30;
+    ctx.fillStyle = c.solid;
+    ctx.font = "900 64px 'Space Grotesk'";
+    ctx.fillText(s3.value || '0:00', leftX, currentY);
 }
 
 
