@@ -7659,3 +7659,265 @@ export function drawNeonGlow(ctx: CanvasRenderingContext2D, stats: any, textColo
     
     ctx.restore();
 }
+function perpendicularDistance(pt: number[], lineStart: number[], lineEnd: number[]): number {
+    const dx = lineEnd[0] - lineStart[0];
+    const dy = lineEnd[1] - lineStart[1];
+    
+    if (dx === 0 && dy === 0) {
+        return Math.hypot(pt[0] - lineStart[0], pt[1] - lineStart[1]);
+    }
+
+    const t = ((pt[0] - lineStart[0]) * dx + (pt[1] - lineStart[1]) * dy) / (dx * dx + dy * dy);
+    
+    if (t < 0) {
+        return Math.hypot(pt[0] - lineStart[0], pt[1] - lineStart[1]);
+    } else if (t > 1) {
+        return Math.hypot(pt[0] - lineEnd[0], pt[1] - lineEnd[1]);
+    }
+    
+    const closestX = lineStart[0] + t * dx;
+    const closestY = lineStart[1] + t * dy;
+    
+    return Math.hypot(pt[0] - closestX, pt[1] - closestY);
+}
+
+function simplifyPath(points: number[][], tolerance: number): number[][] {
+    if (points.length <= 2) return points;
+
+    let maxDistance = 0;
+    let index = 0;
+
+    const end = points.length - 1;
+    for (let i = 1; i < end; i++) {
+        const d = perpendicularDistance(points[i], points[0], points[end]);
+        if (d > maxDistance) {
+            index = i;
+            maxDistance = d;
+        }
+    }
+
+    if (maxDistance > tolerance) {
+        const left = simplifyPath(points.slice(0, index + 1), tolerance);
+        const right = simplifyPath(points.slice(index), tolerance);
+        return left.slice(0, left.length - 1).concat(right);
+    } else {
+        return [points[0], points[end]];
+    }
+}
+
+export function drawGridSnappedRoute(ctx: CanvasRenderingContext2D, polyline: string, x: number, y: number, size: number, startX: number, startY: number, gridSpacing: number, options: { color: string, strokeWidth: number }) {
+    const rawPoints = decodePolyline(polyline);
+    if (rawPoints.length < 2) return;
+
+    let minLat = Infinity, maxLat = -Infinity, minLng = Infinity, maxLng = -Infinity;
+    rawPoints.forEach(([lat, lng]) => {
+        if (lat < minLat) minLat = lat;
+        if (lat > maxLat) maxLat = lat;
+        if (lng < minLng) minLng = lng;
+        if (lng > maxLng) maxLng = lng;
+    });
+
+    const latRange = maxLat - minLat;
+    const lngRange = maxLng - minLng;
+    const maxRange = Math.max(latRange, lngRange);
+
+    const padding = 50;
+    const scale = (size - padding * 2) / (maxRange || 1);
+    const xOffset = (size - lngRange * scale) / 2;
+    const yOffset = (size - latRange * scale) / 2;
+
+    const canvasXOffset = x - size / 2;
+    const canvasYOffset = y - size / 2;
+
+    const gridPoints: { gx: number, gy: number, px: number, py: number }[] = [];
+
+    rawPoints.forEach(([lat, lng]) => {
+        const px = canvasXOffset + xOffset + (lng - minLng) * scale;
+        const py = canvasYOffset + size - (yOffset + (lat - minLat) * scale);
+        
+        // Snap to nearest grid dot
+        const gx = Math.round((px - startX) / gridSpacing);
+        const gy = Math.round((py - startY) / gridSpacing);
+        
+        const last = gridPoints[gridPoints.length - 1];
+        // Only add if it moved to a new dot
+        if (!last || last.gx !== gx || last.gy !== gy) {
+            gridPoints.push({
+                gx,
+                gy,
+                px: startX + gx * gridSpacing,
+                py: startY + gy * gridSpacing
+            });
+        }
+    });
+
+    if (gridPoints.length < 2) return;
+
+    ctx.save();
+    
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'miter';
+    ctx.miterLimit = 2;
+
+    // Draw Neon Outer Bloom
+    ctx.beginPath();
+    ctx.moveTo(gridPoints[0].px, gridPoints[0].py);
+    for (let i = 1; i < gridPoints.length; i++) {
+        ctx.lineTo(gridPoints[i].px, gridPoints[i].py);
+    }
+    
+    ctx.strokeStyle = options.color;
+    ctx.lineWidth = options.strokeWidth * 1.5;
+    ctx.shadowColor = options.color;
+    ctx.shadowBlur = 35;
+    ctx.stroke();
+
+    // Draw Inner Hot Core
+    ctx.beginPath();
+    ctx.moveTo(gridPoints[0].px, gridPoints[0].py);
+    for (let i = 1; i < gridPoints.length; i++) {
+        ctx.lineTo(gridPoints[i].px, gridPoints[i].py);
+    }
+    
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = options.strokeWidth * 0.4;
+    ctx.shadowBlur = 5;
+    ctx.stroke();
+
+    ctx.restore();
+}
+
+export function drawDotGridArchitect(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const c = buildColors(textColor);
+    
+    // We treat "white" or "black" as defaults where we want vibrant fallbacks.
+    // If they select a custom hex color, we use it directly.
+    const isDefaultWhite = textColor === 'white' || textColor === '#ffffff';
+    const isDefaultBlack = textColor === 'black' || textColor === '#000000';
+    const isDark = isDefaultWhite; 
+    
+    const lineColor = isDark ? '#ffffff' : '#000000';
+    
+    // Glassmorphic Plate colors
+    const plateFill = isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.04)';
+    const plateBorder = isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.15)';
+    const gridColor = isDark ? 'rgba(255, 255, 255, 0.25)' : 'rgba(0, 0, 0, 0.15)';
+    const crosshairColor = isDark ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.5)';
+    
+    ctx.save();
+    
+    // Clear any lingering shadows
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    
+    // Dimensions
+    const gridW = 900;
+    const gridH = 1100;
+    const startX = 540 - (gridW / 2);
+    const startY = 960 - (gridH / 2);
+    const gridSpacing = 50;
+    const dotRadius = 2;
+    
+    // 0. Blueprint Glass Plate
+    ctx.fillStyle = plateFill;
+    ctx.strokeStyle = plateBorder;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.rect(startX - 30, startY - 30, gridW + 60, gridH + 60);
+    ctx.fill();
+    ctx.stroke();
+
+    // Crosshairs
+    ctx.strokeStyle = crosshairColor;
+    ctx.lineWidth = 1.5;
+    const drawCrosshair = (x: number, y: number) => {
+        const cl = 15;
+        ctx.beginPath();
+        ctx.moveTo(x - cl, y); ctx.lineTo(x + cl, y);
+        ctx.moveTo(x, y - cl); ctx.lineTo(x, y + cl);
+        ctx.stroke();
+    };
+    drawCrosshair(startX - 30, startY - 30);
+    drawCrosshair(startX + gridW + 30, startY - 30);
+    drawCrosshair(startX - 30, startY + gridH + 30);
+    drawCrosshair(startX + gridW + 30, startY + gridH + 30);
+    
+    // 1. Draw Architectural Dot Grid Background
+    ctx.fillStyle = gridColor;
+    for (let x = startX; x <= startX + gridW; x += gridSpacing) {
+        for (let y = startY; y <= startY + gridH; y += gridSpacing) {
+            ctx.beginPath();
+            ctx.arc(x, y, dotRadius, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+    
+    // 2. Map (Center) - Grid-snapped Transit Map + Neon Laser
+    const { s2, s3, hasMap } = getDynamicStats(stats);
+    if (hasMap) {
+        ctx.save();
+        
+        let mapAccent = c.accent;
+        if (isDefaultWhite) mapAccent = '#00e5ff';
+        if (isDefaultBlack) mapAccent = '#ff0055';
+        
+        drawGridSnappedRoute(ctx, stats.polyline, 540, 960, 800, startX, startY, gridSpacing, {
+            color: mapAccent,
+            strokeWidth: 8
+        });
+        
+        ctx.restore();
+    }
+    
+    // 3. Typography
+    ctx.fillStyle = lineColor;
+    // Apply robust anti-ghosting shadow to text so it is highly visible on ANY photo background
+    applyAntiGhostingShadow(ctx, isDark ? 'white' : 'black');
+    
+    const mainFont = "'Space Grotesk', sans-serif";
+    const subFont = "'Plus Jakarta Sans', sans-serif";
+    
+    // Top Left: Title/Location
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.font = `800 38px ${mainFont}`;
+    const topY = startY - 110;
+    ctx.fillText((stats.title || stats.location || "ACTIVITY").toUpperCase(), startX - 30, topY);
+    
+    // Top Right: Main Metric (Distance)
+    ctx.textAlign = 'right';
+    ctx.font = `800 52px ${mainFont}`;
+    const distText = stats.distanceVal ? `${stats.distanceVal} KM` : (stats.timeStr || "0M").toUpperCase();
+    ctx.fillText(distText, startX + gridW + 30, topY - 10);
+    
+    // Bottom Row
+    const bottomY = startY + gridH + 60;
+    
+    // Bottom Left: Pace/Secondary
+    ctx.textAlign = 'left';
+    ctx.font = `800 46px ${mainFont}`;
+    const paceVal = s2.value || "0:00";
+    const pValW = ctx.measureText(paceVal).width;
+    ctx.fillText(paceVal, startX - 30, bottomY);
+    
+    ctx.font = `700 22px ${subFont}`;
+    if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "0.15em";
+    const paceLabel = (s2.label || "/KM").toUpperCase();
+    ctx.fillText(paceLabel, startX - 30 + pValW + 15, bottomY + 22);
+    
+    // Bottom Right: Duration
+    ctx.textAlign = 'right';
+    if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "0px";
+    ctx.font = `800 46px ${mainFont}`;
+    const durVal = s3.value || "0H 00M";
+    const dValW = ctx.measureText(durVal).width;
+    ctx.fillText(durVal, startX + gridW + 30, bottomY);
+    
+    ctx.font = `700 22px ${subFont}`;
+    if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "0.15em";
+    const durLabel = (s3.label || "TIME").toUpperCase();
+    ctx.fillText(durLabel, startX + gridW + 30 - dValW - 15, bottomY + 22);
+    if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "0px";
+    
+    ctx.restore();
+}
