@@ -8701,53 +8701,69 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     const hg = Math.round(g + (255 - g) * 0.65);
     const hb = Math.round(b + (255 - b) * 0.65);
 
-    // A. Soft Drop Shadow behind glass
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
-    ctx.shadowBlur = 30;
+    // A. Soft Deep Drop Shadow behind glass
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.75)';
+    ctx.shadowBlur = 35;
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 18;
 
-    // B. Translucent Frosted Glass Fill
+    // B. Luminous High-Contrast 3D Glass Fill
     const glassFill = ctx.createLinearGradient(0, -1120, 0, 0);
-    glassFill.addColorStop(0.0, `rgba(${r}, ${g}, ${b}, 0.70)`);
-    glassFill.addColorStop(0.4, `rgba(${r}, ${g}, ${b}, 0.25)`);
-    glassFill.addColorStop(0.7, `rgba(${r}, ${g}, ${b}, 0.20)`);
-    glassFill.addColorStop(1.0, `rgba(${r}, ${g}, ${b}, 0.55)`);
+    glassFill.addColorStop(0.0, `rgba(${hr}, ${hg}, ${hb}, 0.95)`);   // Gleaming top specular sheen
+    glassFill.addColorStop(0.35, `rgba(${r}, ${g}, ${b}, 0.85)`);   // Rich vibrant user color core
+    glassFill.addColorStop(0.70, `rgba(${hr}, ${hg}, ${hb}, 0.55)`);  // Luminous glass interior
+    glassFill.addColorStop(1.0, `rgba(${r}, ${g}, ${b}, 0.90)`);   // Solid bottom glass rim
 
     ctx.fillStyle = glassFill;
     ctx.fillText(mainVal, 0, 0);
 
-    // Clear shadow for internal layers
-    ctx.shadowColor = 'transparent';
-    ctx.shadowBlur = 0;
-    ctx.shadowOffsetY = 0;
-
-    // C. INNER GLASS REFRACTIONS & LIGHT HIGHLIGHTS (100% Cross-Browser)
+    // C. INNER GLASS REFRACTIONS & BEVELS (3D Depth)
     ctx.globalCompositeOperation = 'source-atop';
 
-    // Top-down Gloss Specular Reflection Gradient inside the glass body
-    const glossGrad = ctx.createLinearGradient(0, -1120, 0, -400);
-    glossGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.60)');
-    glossGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.15)');
-    glossGrad.addColorStop(1.0, 'rgba(255, 255, 255, 0.0)');
+    const isSafari = typeof navigator !== 'undefined' && /AppleWebKit/i.test(navigator.userAgent) && !/Chrome|CriOS/i.test(navigator.userAgent);
 
-    ctx.fillStyle = glossGrad;
-    ctx.fillText(mainVal, 0, 0);
+    if (isSafari) {
+        // Safari Fallback Shader: Smooth Gradient Bevel Stroke at (0,0) to prevent WebKit tile clipping
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
 
-    // Subtle inner bevel stroke clipped strictly inside the glass glyphs
-    const bevelGrad = ctx.createLinearGradient(0, -1120, 0, 0);
-    bevelGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.85)');  // Soft top specular rim inside
-    bevelGrad.addColorStop(0.3, 'rgba(255, 255, 255, 0.10)');
-    bevelGrad.addColorStop(0.7, 'rgba(0, 0, 0, 0.05)');
-    bevelGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0.35)');      // Soft bottom depth shadow inside
+        const bevelGrad = ctx.createLinearGradient(0, -1120, 0, 0);
+        bevelGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.95)');   // Gleaming white top highlight
+        bevelGrad.addColorStop(0.20, 'rgba(255, 255, 255, 0.35)');
+        bevelGrad.addColorStop(0.50, 'rgba(255, 255, 255, 0.0)');
+        bevelGrad.addColorStop(0.80, 'rgba(0, 0, 0, 0.25)');
+        bevelGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0.65)');       // Dark bottom depth shadow
 
-    ctx.lineWidth = 14;
-    ctx.strokeStyle = bevelGrad;
-    ctx.strokeText(mainVal, 0, 0);
+        ctx.lineWidth = 18;
+        ctx.strokeStyle = bevelGrad;
+        ctx.strokeText(mainVal, 0, 0);
+    } else {
+        // Master 3D Chrome Shader: Inner Bevel Highlights & Shadows
+        ctx.shadowColor = 'rgba(255, 255, 255, 0.95)';
+        ctx.shadowBlur = 18;
+        ctx.shadowOffsetX = -9999;
+        ctx.shadowOffsetY = -18;
+        ctx.lineWidth = 20;
+        ctx.strokeStyle = '#ffffff';
+        ctx.strokeText(mainVal, 9999, 0);
 
-    // D. Color-Matched Outer Glass Contour (NO white outline!)
-    ctx.lineWidth = 6;
-    ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.85)`;
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+        ctx.shadowBlur = 18;
+        ctx.shadowOffsetX = -9999;
+        ctx.shadowOffsetY = 24;
+        ctx.lineWidth = 20;
+        ctx.strokeStyle = '#000000';
+        ctx.strokeText(mainVal, 9999, 0);
+    }
+
+    // D. Crisp Color-Matched Outer 3D Rim (Pure user-selected color, NO white outline!)
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+    ctx.lineWidth = 8;
+    ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.90)`;
     ctx.strokeText(mainVal, 0, 0);
 
     ctx.globalCompositeOperation = 'source-over';
