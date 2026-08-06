@@ -21,7 +21,6 @@ export const ACTIVE_STICKER_LIST: StickerDefinition[] = [
     { id: 'wave_title', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, duration: true, paceSpeed: true, date: true }, render: Renderers.drawWaveTitle },
     { id: 'music-player-pill', supportsCustomColor: true, category: 'all', supportsBlackText: true, compact: true, features: { distance: true, duration: true, paceSpeed: true }, render: Renderers.drawMusicPlayerPill },
     { id: 'floating-neon-path', supportsCustomColor: true, category: 'distance', supportsBlackText: true, compact: true, features: { distance: true, duration: true, paceSpeed: true, map: true }, render: Renderers.drawFloatingNeonPath },
-    { id: 'social-pill', supportsCustomColor: true, category: 'all', supportsBlackText: true, compact: true, features: { distance: true, duration: true }, render: Renderers.drawSocialPill },
     { id: 'monoline-minimalist', supportsCustomColor: true, category: 'all', supportsBlackText: true, compact: true, features: { distance: true, duration: true, paceSpeed: true, map: true }, render: Renderers.drawMonolineMinimalist },
     { id: 'dot-grid-architect', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, duration: true, paceSpeed: true, map: true }, render: Renderers.drawDotGridArchitect },
     { id: 'neon_glow', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, duration: true, paceSpeed: true, date: true, location: true }, render: Renderers.drawNeonGlow },
@@ -49,6 +48,7 @@ export const ACTIVE_STICKER_LIST: StickerDefinition[] = [
     { id: 'workout-receipt', category: 'distance', supportsBlackText: false, features: { distance: true, paceSpeed: true, duration: true, date: true }, render: Renderers.drawWorkoutReceipt },
     { id: 'condesa-stack', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, paceSpeed: true, startTime: true, date: true }, expectedMetadata: ['location', 'LOCAL TIME', 'LOCATION'], render: Renderers.drawCondesaStack },
     { id: 'journal-grid', supportsCustomColor: true, category: 'distance', supportsBlackText: true, features: { distance: true, duration: true, map: true, heartRate: true, location: true }, render: Renderers.drawJournalGrid },
+    { id: 'social-pill', supportsCustomColor: true, category: 'all', supportsBlackText: true, compact: true, features: { distance: true, duration: true }, render: Renderers.drawSocialPill },
 ];
 
 // ─── 2. ARCHIVED / HIDDEN STICKERS ───────────────────────────────────────────
