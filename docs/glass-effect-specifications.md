@@ -1,98 +1,94 @@
-# Glass Effect Rendering Specifications (Liquid Glass)
+# Studio Liquid Glass Effect Specifications
 
-This document specifies the standard Canvas 2D rendering formula and architectural guidelines for creating premium, high-visibility 3D Liquid Glass stickers in Scora.
-
----
-
-## 1. Core Principles
-
-1. **High Visibility Across Backgrounds**: Glass must be luminous and readable on both pitch-black dark mode backgrounds and bright photo backgrounds.
-2. **Ambient Light Sheen (Light-Shifted Color)**: Saturated/dark colors (like Red `#ff0000`) will turn dark/muddy on black backgrounds if rendered as pure alpha tints. Mixing white ambient light into top/bottom highlights preserves hue while boosting contrast.
-3. **Sharp Vector Resolution**: Render text at full native height and scale down horizontally to avoid iOS/Safari canvas text rasterization blur.
+This document defines the authoritative 4-Layer Canvas 2D rendering formula and architectural rules for creating premium, high-visibility 3D Liquid Glass stickers in Scora.
 
 ---
 
-## 2. Color & Shader Formula
+## 1. Core Principles & Lessons Learned
 
-### A. Ambient Light Sheen Calculation
+1. **Directional Studio Lighting (Top-Left Light, Bottom-Right Refraction)**
+   - High-end 3D glass requires consistent directional lighting: a white specular highlight along **top-left inner edges** (`offset: -4, -4`) and a soft dark refraction shadow along **bottom-right inner edges** (`offset: +4, +4`).
+2. **Zero Offscreen Offsets (Cross-Browser Rule)**
+   - **DO NOT** use large offscreen shadow offsets (`shadowOffsetX = -9999` or `-1800`). Large offsets cause WebKit glyph tile clipping in Safari iOS/macOS and white halo/black stroke rendering artifacts in Chrome.
+   - All stroke and fill operations MUST be drawn at local coordinates (`x = 0, y = 0`) using `globalCompositeOperation = 'source-atop'` for GPU-accelerated inner clipping.
+3. **Color-Matched Outer Perimeter (No Hardcoded White Rims)**
+   - **DO NOT** render hardcoded `#ffffff` or `rgba(255,255,255,0.6)` outer strokes around colored glass shapes. Outer rims MUST match the user-selected color (`rgba(r, g, b, 0.85)`).
+4. **Translucent Core (Photo & Background Visibility)**
+   - Liquid glass should never be opaque. The center of glass shapes must have a low opacity tint (`0.20`), allowing photo backgrounds to shine through the glass body.
+
+---
+
+## 2. Standard 4-Layer Rendering Pipeline
+
+### Step 1: Soft Ambient Grounding Shadow
+Grounds the glass element over any background (pitch black or bright photo):
 ```typescript
-// Parse r, g, b from hex color (or fallback to white)
-const r = 255, g = 0, b = 0; // Example: Red
-
-// Mix 65% white light for ambient specular sheen
-const hr = Math.round(r + (255 - r) * 0.65);
-const hg = Math.round(g + (255 - g) * 0.65);
-const hb = Math.round(b + (255 - b) * 0.65);
+ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+ctx.shadowBlur = 28;
+ctx.shadowOffsetX = 0;
+ctx.shadowOffsetY = 16;
 ```
 
-### B. Multi-Stop Glass Gradient
+### Step 2: Translucent Tinted Glass Base
+Provides the core glass volume with high center transparency:
 ```typescript
 const glassFill = ctx.createLinearGradient(0, -height, 0, 0);
-glassFill.addColorStop(0, `rgba(${hr}, ${hg}, ${hb}, 0.95)`);   // Top specular sheen
-glassFill.addColorStop(0.35, `rgba(${r}, ${g}, ${b}, 0.70)`);   // Core user tint
-glassFill.addColorStop(0.70, `rgba(${hr}, ${hg}, ${hb}, 0.40)`);  // Luminous glass body
-glassFill.addColorStop(1.0, `rgba(${hr}, ${hg}, ${hb}, 0.85)`);   // Bottom rim reflection
-```
-
----
-
-## 3. Layering & Composite Operations
-
-### Layer 1: Ambient Drop Shadow (Base)
-```typescript
-ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
-ctx.shadowBlur = 40;
-ctx.shadowOffsetX = 0;
-ctx.shadowOffsetY = 20;
+glassFill.addColorStop(0.0, `rgba(${r}, ${g}, ${b}, 0.55)`);  // Top glass density
+glassFill.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, 0.20)`);  // Translucent core
+glassFill.addColorStop(1.0, `rgba(${r}, ${g}, ${b}, 0.50)`);  // Bottom glass density
 
 ctx.fillStyle = glassFill;
-ctx.fillText(text, x, y); // Or fillRect/roundRect for glass boxes
+ctx.fillText(text, 0, 0); // Or fillRect / roundRect
+
+// Reset shadow for internal layers
+ctx.shadowColor = 'transparent';
+ctx.shadowBlur = 0;
+ctx.shadowOffsetY = 0;
 ```
 
-### Layer 2: Inner Bevels & Refractions (`source-atop`)
+### Step 3: Directional Studio Refractions (`source-atop`)
+Clips all inner highlights strictly inside the shape bounds using GPU composition:
 ```typescript
 ctx.globalCompositeOperation = 'source-atop';
 
-// 1. Top Specular White Reflection
-ctx.shadowColor = 'rgba(255, 255, 255, 1)';
-ctx.shadowBlur = 18;
-ctx.shadowOffsetX = -9999;
-ctx.shadowOffsetY = -18; 
-ctx.lineWidth = 20;
-ctx.strokeStyle = '#ffffff';
-ctx.strokeText(text, 9999, y);
+// 3A. Bottom-Right Dark Refraction Shadow (Offset +4, +4)
+ctx.lineWidth = 12;
+ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
+ctx.strokeText(text, 4, 4);
 
-// 2. Bottom Inner Depth Shadow
-ctx.shadowColor = 'rgba(0, 0, 0, 0.6)'; 
-ctx.shadowBlur = 18; 
-ctx.shadowOffsetX = -9999;
-ctx.shadowOffsetY = 24;
-ctx.lineWidth = 20;
-ctx.strokeStyle = '#000000';
-ctx.strokeText(text, 9999, y);
+// 3B. Top-Left White Specular Edge Light (Offset -4, -4)
+ctx.lineWidth = 12;
+ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+ctx.strokeText(text, -4, -4);
+
+// 3C. Vertical Gloss Sheen
+const glossGrad = ctx.createLinearGradient(0, -height, 0, 0);
+glossGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.35)');
+glossGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.05)');
+glossGrad.addColorStop(1.0, 'rgba(255, 255, 255, 0.25)');
+
+ctx.fillStyle = glossGrad;
+ctx.fillText(text, 0, 0);
 ```
 
-### Layer 3: Dual Specular Rim Contour
+### Step 4: Color-Matched Perimeter Rim
+Defines a crisp edge in the exact user-selected color without white halos:
 ```typescript
-// 1. Luminous Color Rim
-ctx.shadowBlur = 0;
-ctx.shadowOffsetX = 0;
-ctx.shadowOffsetY = 0;
-ctx.lineWidth = 10;
-ctx.strokeStyle = `rgba(${hr}, ${hg}, ${hb}, 0.95)`; 
-ctx.strokeText(text, x, y);
-
-// 2. Pure White Specular Accent Rim
-ctx.lineWidth = 4;
-ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
-ctx.strokeText(text, x, y);
+ctx.lineWidth = 5;
+ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.85)`;
+ctx.strokeText(text, 0, 0);
 
 ctx.globalCompositeOperation = 'source-over';
+ctx.restore();
 ```
 
 ---
 
-## 4. Canvas Resolution & Scaling Rules
+## 3. Native Text Scaling & Spacing Rules
 
-- **Native Text Scaling**: Avoid `scale(1, 3.2)` with a `350px` font. Render at `1120px` font size and `scale(0.203, 1.0)`.
-- **Shadow Offset Math**: When using the `-9999` off-screen stroke trick, use `-9999` and `+9999` directly. The Canvas API transforms both `shadowOffsetX` and text coordinates synchronously with the matrix transform. Do not manually scale or divide `-9999`.
+1. **Resolution & Blur Prevention**:
+   - Render vertical text at full stretched native height (`1120px` font size) and apply horizontal scale down (`scale(0.203125, 1.0)`). This prevents rasterization blur on iOS Safari high-DPI displays.
+2. **Date Header Clearance**:
+   - Always leave at least `100px+` vertical clearance between date/meta text at top (`y = 150`) and giant numbers (`y = 1350`).
+3. **Pill Spacing**:
+   - For glass pills (`social-pill`), maintain a minimum `50px` clear gap between the end of text strings and action buttons by dynamically scaling down font sizes when text length increases.
