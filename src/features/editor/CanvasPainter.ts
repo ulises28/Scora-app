@@ -8085,7 +8085,7 @@ export function drawMicroMapPill(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.stroke();
 
     // 5. Map & Text change color based on user color selection
-    const contentColor = colors.solid;
+    let contentColor = textColor || '#ffffff';
 
     if (hasMap) {
         const coords = decodePolyline(stats.polyline);
@@ -8104,6 +8104,7 @@ export function drawMicroMapPill(ctx: CanvasRenderingContext2D, stats: any, text
     if (hasMap) {
         ctx.font = "600 28px 'Plus Jakarta Sans', sans-serif";
         ctx.globalAlpha = 0.85;
+        ctx.fillStyle = contentColor;
         ctx.fillText(subText, textX, y + 95);
         ctx.globalAlpha = 1.0;
     }
