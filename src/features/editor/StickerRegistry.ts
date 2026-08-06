@@ -12,12 +12,16 @@ import * as Renderers from './CanvasPainter';
 // These are visible in the Studio UI Gallery.
 export const ACTIVE_STICKER_LIST: StickerDefinition[] = [
     { id: 'note-accent', supportsCustomColor: true, category: 'all', supportsBlackText: true, preferredCase: 'title', features: { distance: true, duration: true, paceSpeed: true }, render: Renderers.drawNoteAccentSticker },
-    { id: 'dot-grid-architect', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, duration: true, paceSpeed: true, map: true }, render: Renderers.drawDotGridArchitect },
-    { id: 'chrome-v1', category: 'distance', features: { map: true }, render: Renderers.drawChromeHighContrastSticker },
-    { id: 'neon_glow', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, duration: true, paceSpeed: true, date: true, location: true }, render: Renderers.drawNeonGlow },
     { id: 'narrative-highlight', category: 'all', supportsBlackText: true, preferredCase: 'lowercase', features: { distance: true, duration: true, paceSpeed: true, date: true, location: true }, render: Renderers.drawNarrativeHighlight },
-    { id: 'dm', category: 'distance', features: { distance: true, paceSpeed: true, startTime: true, location: true }, render: Renderers.drawDMModular },
+    { id: 'micro-map-pill', supportsCustomColor: true, category: 'all', supportsBlackText: true, compact: true, features: { distance: true, duration: true, paceSpeed: true, map: true }, render: Renderers.drawMicroMapPill },
+    { id: 'chrome-v1', category: 'all', features: {}, render: Renderers.drawChromeHighContrastSticker },
     { id: 'wave_title', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, duration: true, paceSpeed: true, date: true }, render: Renderers.drawWaveTitle },
+    { id: 'music-player-pill', supportsCustomColor: true, category: 'all', supportsBlackText: true, compact: true, features: { distance: true, duration: true, paceSpeed: true }, render: Renderers.drawMusicPlayerPill },
+    { id: 'floating-neon-path', supportsCustomColor: true, category: 'distance', supportsBlackText: true, compact: true, features: { distance: true, duration: true, paceSpeed: true, map: true }, render: Renderers.drawFloatingNeonPath },
+    { id: 'monoline-minimalist', supportsCustomColor: true, category: 'all', supportsBlackText: true, compact: true, features: { distance: true, duration: true, paceSpeed: true, map: true }, render: Renderers.drawMonolineMinimalist },
+    { id: 'dot-grid-architect', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, duration: true, paceSpeed: true, map: true }, render: Renderers.drawDotGridArchitect },
+    { id: 'neon_glow', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, duration: true, paceSpeed: true, date: true, location: true }, render: Renderers.drawNeonGlow },
+    { id: 'dm', category: 'distance', features: { distance: true, paceSpeed: true, startTime: true, location: true }, render: Renderers.drawDMModular },
     { id: 'social-chat', category: 'all', supportsBlackText: false, features: { distance: true, duration: true, paceSpeed: true, map: true }, render: Renderers.drawChatSticker },
     { id: 'graffiti-map', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, duration: true, map: true }, render: Renderers.drawGraffitiMap },
     { id: 'note-minimal', category: 'all', supportsBlackText: true, preferredCase: 'title', features: { distance: true, duration: true, paceSpeed: true }, render: Renderers.drawNoteSticker },
@@ -43,6 +47,10 @@ export const ACTIVE_STICKER_LIST: StickerDefinition[] = [
     { id: 'journal-grid', supportsCustomColor: true, category: 'distance', supportsBlackText: true, features: { distance: true, duration: true, map: true, heartRate: true, location: true }, render: Renderers.drawJournalGrid },
     { id: 'science-pro', category: 'all', supportsBlackText: false, features: { distance: true, heartRate: true, date: true, paceSpeed: false }, render: Renderers.drawSciencePro },
     { id: 'editorial-strip', supportsCustomColor: true, category: 'all', supportsBlackText: false, compact: true, features: { distance: true, duration: true, date: true }, render: Renderers.drawEditorialStrip },
+    { id: 'fridge-magnets', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, duration: true }, render: Renderers.drawFridgeMagnets },
+    { id: 'social-pill', supportsCustomColor: true, category: 'all', supportsBlackText: true, compact: true, features: { distance: true, duration: true }, render: Renderers.drawSocialPill },
+    { id: 'balloon-letters', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, duration: true }, render: Renderers.drawBalloonLetters },
+    { id: 'glass-numbers', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, duration: true, date: true }, render: Renderers.drawGlassNumbers },
 ];
 
 // ─── 2. ARCHIVED / HIDDEN STICKERS ───────────────────────────────────────────

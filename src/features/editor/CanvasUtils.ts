@@ -321,7 +321,11 @@ export function getDynamicStats(stats: any) {
         pool.push({ value: timeText, label: 'DURATION' });
         const hr = stats.hr || stats.avgHeartrate || (stats.average_heartrate ? Math.round(stats.average_heartrate) : null);
         if (hr) pool.push({ value: `${hr}`, label: 'BPM' });
-        if (stats.calories && stats.calories !== '0') pool.push({ value: `${stats.calories}`, label: 'KCAL' });
+        
+        const maxHr = stats.max_heartrate || stats.maxHeartrate || (stats.max_hr ? Math.round(stats.max_hr) : null);
+        const sufferScore = stats.suffer_score || stats.sufferScore;
+        if (maxHr) pool.push({ value: `${maxHr}`, label: 'MAX HR' });
+        else if (sufferScore) pool.push({ value: `${sufferScore}`, label: 'SUFFER' });
     }
 
     // Secondary Fallbacks (Metadata) to avoid duplication or '0' values

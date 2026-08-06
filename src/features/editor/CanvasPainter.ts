@@ -296,21 +296,22 @@ export async function drawTemplate(
     ctx.scale(scaleX, scaleY);
     ctx.clearRect(0, 0, TARGET_W, TARGET_H);
 
+    // ── Unified Registry Lookup ──────────────────────────────────────────────
+    const sticker = STICKER_REGISTRY[templateType] || STICKER_REGISTRY['minimal'];
+
     // ── Optional SCORA branding ──────────────────────────────────────────────
     if (showLogo && !templateType.startsWith('chrome')) {
         ctx.textAlign = 'left';
-        ctx.fillStyle = '#80cbc4';
         ctx.beginPath();
         ctx.arc(80, 100, 10, 0, Math.PI * 2);
+        ctx.fillStyle = textColor; // Dot matches the text color for monochromatic stickers
         ctx.fill();
 
         ctx.font = "700 42px 'Plus Jakarta Sans'";
-        ctx.fillStyle = textColor; // Direct match to user preference
+        ctx.fillStyle = textColor; 
         ctx.fillText('SCORA.', 110, 115);
     }
 
-    // ── Unified Registry Lookup ──────────────────────────────────────────────
-    const sticker = STICKER_REGISTRY[templateType] || STICKER_REGISTRY['minimal'];
     sticker.render(ctx, stats, textColor, showLogo);
 
     ctx.restore();
@@ -6363,16 +6364,11 @@ export function drawNoteAccentSticker(ctx: CanvasRenderingContext2D, stats: any,
 
     // B. Base Liquid Glass Gradient Fill
     const baseGrad = ctx.createLinearGradient(menuX, menuY, menuX, menuY + menuH);
-    const isLightTheme = textColor === 'black';
-    if (isLightTheme) {
-        baseGrad.addColorStop(0, 'rgba(255, 255, 255, 0.80)');
-        baseGrad.addColorStop(0.3, 'rgba(255, 255, 255, 0.50)');
-        baseGrad.addColorStop(1, 'rgba(240, 240, 245, 0.60)');
-    } else {
-        baseGrad.addColorStop(0, 'rgba(60, 60, 65, 0.65)');
-        baseGrad.addColorStop(0.3, 'rgba(30, 30, 35, 0.45)');
-        baseGrad.addColorStop(1, 'rgba(15, 15, 20, 0.55)');
-    }
+    const isLightTheme = true; // Always force white glass effect as requested
+    
+    baseGrad.addColorStop(0, 'rgba(255, 255, 255, 0.80)');
+    baseGrad.addColorStop(0.3, 'rgba(255, 255, 255, 0.50)');
+    baseGrad.addColorStop(1, 'rgba(240, 240, 245, 0.60)');
 
     ctx.fillStyle = baseGrad;
     ctx.beginPath();
@@ -7360,11 +7356,15 @@ export function drawRetroDistance(ctx: CanvasRenderingContext2D, stats: any, tex
     let mainValue = stats.distanceVal ? `${stats.distanceVal} KM` : 'N/A';
     let cell2Value = stats.timeStr || '0:00';
     let cell3Value = (stats.subValue || '').split(' ')[0] || '0:00';
+    let label2 = 'TIME_ ';
+    let label3 = 'PACE_ ';
 
     if (!stats.distanceVal || parseFloat(stats.distanceVal) === 0) {
         mainValue = stats.timeStr || '0:00';
         cell2Value = normalizeSport(stats.activityType || 'WORKOUT').toUpperCase();
         cell3Value = (stats.calories || '0') + ' KCAL';
+        label2 = 'TYPE_ ';
+        label3 = 'BURN_ ';
     }
 
     // Terminal Monospace Typography
@@ -7382,14 +7382,21 @@ export function drawRetroDistance(ctx: CanvasRenderingContext2D, stats: any, tex
     ctx.font = `500 36px 'VT323', 'Courier New', monospace`;
     
     // Use fixed positions to keep it structured like a terminal grid
-    ctx.fillText(`TIME_ ${cell2Value}`, cX + 520, textY - 25);
-    ctx.fillText(`PACE_ ${cell3Value}`, cX + 520, textY + 30);
+    ctx.fillText(`${label2}${cell2Value}`, cX + 520, textY - 25);
+    ctx.fillText(`${label3}${cell3Value}`, cX + 520, textY + 30);
 
     // Date Stamp in the corner
     ctx.textAlign = 'right';
     ctx.fillStyle = 'rgba(255,255,255,0.5)'; // Dimmed
     ctx.font = `400 24px 'VT323', 'Courier New', monospace`;
-    ctx.fillText(`[${(stats.dayAndNumber || 'APR 2').toUpperCase()}]`, cX + cardW - 50, textY);
+    
+    // Convert to short format so Wednesday doesn't overflow
+    let dateStr = (stats.dayAndNumber || 'APR 2').toUpperCase();
+    dateStr = dateStr.replace('MONDAY', 'MON').replace('TUESDAY', 'TUE').replace('WEDNESDAY', 'WED')
+                     .replace('THURSDAY', 'THU').replace('FRIDAY', 'FRI').replace('SATURDAY', 'SAT')
+                     .replace('SUNDAY', 'SUN');
+                     
+    ctx.fillText(`[${dateStr}]`, cX + cardW - 40, textY);
 
     ctx.restore();
 }
@@ -7403,10 +7410,15 @@ export function drawWaveTitle(ctx: CanvasRenderingContext2D, stats: any, textCol
     const cardW = 960;
     const cardH = 560; // Slightly taller to fit title safely
     const cX = 60;
-    const cY = 1260; // Shifted up slightly
+    const cY = 250; // Shifted UP to the top near SCORA logo
 
-    // Glass Pane (Light / White)
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    // B. Base Liquid Glass Gradient Fill
+    const baseGrad = ctx.createLinearGradient(cX, cY, cX, cY + cardH);
+    baseGrad.addColorStop(0, 'rgba(255, 255, 255, 0.85)');
+    baseGrad.addColorStop(0.3, 'rgba(255, 255, 255, 0.65)');
+    baseGrad.addColorStop(1, 'rgba(240, 240, 245, 0.70)');
+    
+    ctx.fillStyle = baseGrad;
     ctx.shadowColor = 'rgba(0,0,0,0.15)';
     ctx.shadowBlur = 40;
     ctx.shadowOffsetY = 20;
@@ -7414,11 +7426,31 @@ export function drawWaveTitle(ctx: CanvasRenderingContext2D, stats: any, textCol
     ctx.roundRect(cX, cY, cardW, cardH, 40);
     ctx.fill();
 
-    // Glass Border
+    // Disable shadow for internal drawings to avoid double-shadowing
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)'; // Bright white specular edge
-    ctx.lineWidth = 2;
+
+    // C. Specular Highlight / Glossy Top Half
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(cX, cY, cardW, cardH, 40);
+    ctx.clip();
+
+    const glossGrad = ctx.createLinearGradient(cX, cY, cX, cY + cardH / 2);
+    glossGrad.addColorStop(0, 'rgba(255, 255, 255, 0.6)');
+    glossGrad.addColorStop(1, 'rgba(255, 255, 255, 0.0)');
+    ctx.fillStyle = glossGrad;
+    ctx.fillRect(cX, cY, cardW, cardH / 2);
+    ctx.restore();
+
+    // D. Glossy Beveled Edge (Gradient Stroke)
+    const borderGrad = ctx.createLinearGradient(cX, cY, cX, cY + cardH);
+    borderGrad.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+    borderGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.5)');
+    borderGrad.addColorStop(1, 'rgba(0, 0, 0, 0.15)');
+    
+    ctx.strokeStyle = borderGrad;
+    ctx.lineWidth = 2.5;
     ctx.stroke();
 
     // Typography
@@ -7944,4 +7976,728 @@ export function drawDotGridArchitect(ctx: CanvasRenderingContext2D, stats: any, 
     if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "0px";
     
     ctx.restore();
+}
+
+// ─── MICRO-FOOTPRINT STICKERS (AESTHETIC V3) ───────────────────────────────
+
+function drawMicroMonolineMap(ctx: CanvasRenderingContext2D, coords: any[], mapBox: any, strokeColor = '#ffffff') {
+    if (!coords || coords.length === 0) return;
+    let minLat = coords[0][0], maxLat = minLat, minLng = coords[0][1], maxLng = minLng;
+    coords.forEach(p => {
+        if (p[0] < minLat) minLat = p[0]; if (p[0] > maxLat) maxLat = p[0];
+        if (p[1] < minLng) minLng = p[1]; if (p[1] > maxLng) maxLng = p[1];
+    });
+
+    const scale = Math.min(mapBox.w / (maxLng - minLng || 1), mapBox.h / (maxLat - minLat || 1));
+
+    ctx.beginPath();
+    ctx.strokeStyle = strokeColor;
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.shadowBlur = 0; // No drop shadow
+
+    coords.forEach((p, i) => {
+        const px = mapBox.x + (p[1] - minLng) * scale + (mapBox.w - ((maxLng - minLng) * scale)) / 2;
+        const py = mapBox.y + mapBox.h - ((p[0] - minLat) * scale) - (mapBox.h - ((maxLat - minLat) * scale)) / 2;
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    });
+    ctx.stroke();
+}
+
+export function drawMicroMapPill(ctx: CanvasRenderingContext2D, stats: any, textColor: string, showLogo = true) {
+    const { s1, s2, s3, hasMap } = getDynamicStats(stats);
+    const colors = buildColors(textColor);
+    
+    // Measure text to make pill perfectly symmetrical
+    ctx.font = "800 48px 'Plus Jakarta Sans'";
+    const titleText = `${s1.value} ${s1.label}`;
+    const titleW = ctx.measureText(titleText).width;
+    
+    // Format subtext per user request (replace PACE with /km, remove TIME/DURATION)
+    let sub2Label = s2.label;
+    if (sub2Label === 'PACE') sub2Label = '/km';
+    
+    let sub3Label = s3.label;
+    if (sub3Label === 'DURATION' || sub3Label === 'TIME') sub3Label = '';
+    
+    const subText = `${s2.value} ${sub2Label}   •   ${s3.value} ${sub3Label}`.trim();
+    
+    ctx.font = "600 28px 'Plus Jakarta Sans'";
+    const subW = ctx.measureText(subText).width;
+    
+    const maxTextW = hasMap ? Math.max(titleW, subW) : titleW;
+    
+    // Dynamic Pill Dimensions
+    const w = hasMap ? 100 + 40 + maxTextW + 50 : maxTextW + 100;
+    const h = hasMap ? 140 : 100;
+    const x = 540 - w / 2;
+    const y = 300;
+    
+    // 1. Draw Transparent, Color-Tinted Base Pill
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, 35);
+    
+    ctx.globalAlpha = 0.45; // Rich but translucent color
+    ctx.fillStyle = colors.solid;
+    ctx.fill();
+    ctx.globalAlpha = 1.0;
+    
+    // 2. Glossy Specular Highlight (The True Glass Effect)
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, 35);
+    ctx.clip();
+    
+    const glossGrad = ctx.createLinearGradient(x, y, x, y + h / 2);
+    glossGrad.addColorStop(0, 'rgba(255, 255, 255, 0.4)'); // Bright highlight at the top edge
+    glossGrad.addColorStop(1, 'rgba(255, 255, 255, 0.0)'); // Fades out completely by the middle
+    ctx.fillStyle = glossGrad;
+    ctx.fillRect(x, y, w, h / 2);
+    ctx.restore();
+    
+    // NO border line - as requested by user
+
+    // 3. Draw Map & Text ALWAYS WHITE
+    const contentColor = '#ffffff';
+
+    if (hasMap) {
+        const coords = decodePolyline(stats.polyline);
+        drawMicroMonolineMap(ctx, coords, { x: x + 30, y: y + 20, w: 100, h: 100 }, contentColor);
+    }
+    
+    const textX = hasMap ? x + 150 : x + 50;
+    
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = contentColor;
+    
+    ctx.font = "800 48px 'Plus Jakarta Sans'";
+    ctx.fillText(titleText, textX, y + (hasMap ? 45 : 50));
+    
+    if (hasMap) {
+        ctx.font = "600 28px 'Plus Jakarta Sans'";
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)'; // Slightly dimmed white for subtext
+        ctx.fillText(subText, textX, y + 95);
+    }
+}
+
+export function drawFloatingNeonPath(ctx: CanvasRenderingContext2D, stats: any, textColor: string, showLogo = true) {
+    const { s1, s2, s3, hasMap } = getDynamicStats(stats);
+    const colors = buildColors(textColor);
+    
+    // Base Y - everything will be drawn relative to this so it's a tight cluster
+    const baseY = 250; // Moved UP just below the global logo
+    
+    if (hasMap) {
+        const coords = decodePolyline(stats.polyline);
+        ctx.shadowColor = colors.accent;
+        ctx.shadowBlur = 15;
+        // Tightly packed above the text
+        drawMicroMonolineMap(ctx, coords, { x: 340, y: baseY, w: 400, h: 250 }, colors.accent);
+        ctx.shadowBlur = 0;
+    }
+    
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = colors.solid;
+    
+    ctx.font = "800 64px 'Monument Extended', 'Plus Jakarta Sans'";
+    ctx.fillText(stats.title || 'WORKOUT', 540, baseY + 300);
+    
+    ctx.font = "600 32px 'Plus Jakarta Sans'";
+    ctx.globalAlpha = 0.8;
+    ctx.fillText(`${s1.value} ${s1.label}    ${s2.value} ${s2.label}    ${s3.value} ${s3.label}`, 540, baseY + 360);
+    ctx.globalAlpha = 1.0;
+}
+
+export function drawMonolineMinimalist(ctx: CanvasRenderingContext2D, stats: any, textColor: string, showLogo = true) {
+    const { s1, s2, s3, hasMap } = getDynamicStats(stats);
+    const colors = buildColors(textColor);
+    
+    const startX = 80;
+    let currentY = 250; // Moved UP just below the global logo
+    
+    if (hasMap) {
+        const coords = decodePolyline(stats.polyline);
+        drawMicroMonolineMap(ctx, coords, { x: startX, y: currentY, w: 150, h: 150 }, colors.accent);
+        currentY += 180;
+    }
+    
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = colors.solid;
+    
+    ctx.font = "300 110px 'Satoshi', 'Plus Jakarta Sans'";
+    ctx.fillText(`${s1.value}`, startX, currentY);
+    const w1 = ctx.measureText(s1.value).width;
+    ctx.font = "700 40px 'Satoshi', 'Plus Jakarta Sans'";
+    ctx.fillText(`${s1.label}`, startX + w1 + 15, currentY + 50);
+    
+    currentY += 130;
+    
+    ctx.font = "400 36px 'Satoshi', 'Plus Jakarta Sans'";
+    ctx.fillText(`${s2.label}: ${s2.value}   |   ${s3.label}: ${s3.value}`, startX, currentY);
+}
+
+export function drawMassiveHero(ctx: CanvasRenderingContext2D, stats: any, textColor: string, showLogo = true) {
+    const { s1, s2, s3 } = getDynamicStats(stats);
+    const colors = buildColors(textColor);
+    
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = colors.solid;
+    
+    // Scora Tag at the top
+    ctx.beginPath();
+    ctx.roundRect(540 - 75, 200, 150, 40, 6);
+    ctx.fillStyle = colors.solid;
+    ctx.fill();
+    ctx.fillStyle = textColor === 'black' ? '#ffffff' : '#000000';
+    ctx.font = "800 18px 'Space Grotesk'";
+    ctx.fillText("@scora_app", 540, 222);
+    
+    // Massive Hero Metric
+    ctx.fillStyle = colors.solid;
+    const heroText = `${s1.value} ${s1.label}`;
+    let fontSize = 280;
+    ctx.font = `900 ${fontSize}px 'Monument Extended', 'Helvetica Neue', sans-serif`;
+    while (ctx.measureText(heroText).width > 980 && fontSize > 80) {
+        fontSize -= 10;
+        ctx.font = `900 ${fontSize}px 'Monument Extended', 'Helvetica Neue', sans-serif`;
+    }
+    ctx.fillText(heroText, 540, 380);
+    
+    // Bottom 3 Pillars
+    ctx.font = "800 45px 'Monument Extended', 'Helvetica Neue', sans-serif";
+    ctx.fillText(`${s2.value}`, 200, 480);
+    ctx.fillText(`${stats.timeStr || s3.value}`, 540, 480);
+    ctx.fillText(`${s3.value}`, 880, 480);
+}
+
+export function drawVerifiedDistance(ctx: CanvasRenderingContext2D, stats: any, textColor: string, showLogo = true) {
+    const { s1 } = getDynamicStats(stats);
+    const colors = buildColors(textColor);
+    
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = colors.solid;
+    
+    ctx.font = "700 64px 'Plus Jakarta Sans'";
+    const text = `${s1.value} ${s1.label.toLowerCase()}`;
+    ctx.fillText(text, 920, 1600);
+    
+    // Draw Blue Checkmark
+    ctx.beginPath();
+    ctx.arc(970, 1600, 24, 0, Math.PI * 2);
+    ctx.fillStyle = '#1DA1F2'; // Verified Blue
+    ctx.fill();
+    
+    // Draw check mark inside
+    ctx.beginPath();
+    ctx.moveTo(960, 1600);
+    ctx.lineTo(967, 1607);
+    ctx.lineTo(980, 1594);
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+}
+
+export function drawEditorialCorners(ctx: CanvasRenderingContext2D, stats: any, textColor: string, showLogo = true) {
+    const { s1, s2, s3 } = getDynamicStats(stats);
+    const colors = buildColors(textColor);
+    
+    ctx.fillStyle = colors.solid;
+    ctx.font = "400 95px 'Plus Jakarta Sans'";
+    ctx.textBaseline = 'top';
+    
+    // Top Left
+    ctx.textAlign = 'left';
+    ctx.fillText(s1.label, 80, 150);
+    ctx.fillText(s1.value, 80, 260);
+    
+    // Top Right
+    ctx.textAlign = 'right';
+    ctx.fillText("SCORA", 1000, 150);
+    ctx.fillText("APP", 1000, 260);
+    
+    // Bottom Left
+    ctx.textAlign = 'left';
+    ctx.fillText(s2.label, 80, 1550);
+    ctx.fillText(s2.value, 80, 1660);
+    
+    // Bottom Right
+    ctx.textAlign = 'right';
+    ctx.fillText(s3.label, 1000, 1550);
+    ctx.fillText(s3.value, 1000, 1660);
+}
+
+export function drawMusicPlayerPill(ctx: CanvasRenderingContext2D, stats: any, textColor: string, showLogo = true) {
+    const { s1, s2, s3 } = getDynamicStats(stats);
+    const colors = buildColors(textColor);
+    
+    const w = 900;
+    const h = 280;
+    const x = 540 - w/2;
+    const y = 250; // Moved UP just below the global logo
+    
+    // Dark frosted pill
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, 30);
+    ctx.fillStyle = 'rgba(10, 15, 25, 0.9)'; // Deep dark blue/black
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    
+    // Song Title (Activity Name)
+    ctx.fillStyle = '#ffffff';
+    let titleStr = stats.title || "Workout Session";
+    let titleFontSize = 48;
+    ctx.font = `700 ${titleFontSize}px 'Plus Jakarta Sans'`;
+    
+    // Auto-shrink title if it's too long (e.g. "Vuelta ciclista por la mañana")
+    if (ctx.measureText(titleStr).width > 750) {
+        titleFontSize = 38;
+        ctx.font = `700 ${titleFontSize}px 'Plus Jakarta Sans'`;
+        if (ctx.measureText(titleStr).width > 750) {
+            titleStr = titleStr.substring(0, 32) + '...';
+        }
+    }
+    ctx.fillText(titleStr, x + 50, y + 70);
+    
+    // Artist (Sport Type) - Enforcing normalizeSport to fix "WeightTraining" -> "Training"
+    ctx.font = "500 32px 'Plus Jakarta Sans'";
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.fillText(normalizeSport(stats.type), x + 50, y + 120);
+    
+    // Progress Bar Background
+    ctx.beginPath();
+    ctx.roundRect(x + 50, y + 175, w - 100, 6, 3);
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.fill();
+    
+    // Progress Bar Fill (Accent Color!)
+    ctx.beginPath();
+    ctx.roundRect(x + 50, y + 175, (w - 100) * 0.4, 6, 3);
+    ctx.fillStyle = colors.accent;
+    ctx.fill();
+    
+    // Progress Bar Dot
+    ctx.beginPath();
+    ctx.arc(x + 50 + (w - 100) * 0.4, y + 178, 10, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+    
+    // Times / Stats (Explicitly adding units to avoid guessing)
+    ctx.font = "500 22px 'Plus Jakarta Sans'";
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.textAlign = 'left';
+    ctx.fillText(`${s1.value} ${s1.label}`, x + 50, y + 215);
+    ctx.textAlign = 'right';
+    ctx.fillText(`- ${s2.value} ${s2.label}`, x + w - 50, y + 215);
+    
+    // Play button (Accent Color!)
+    ctx.beginPath();
+    ctx.arc(x + w/2, y + 225, 30, 0, Math.PI * 2);
+    ctx.fillStyle = colors.accent;
+    ctx.fill();
+    
+    // Pause bars
+    ctx.fillStyle = '#0a0f19'; // Match dark pill bg to punch through the white/accent circle
+    ctx.beginPath();
+    ctx.roundRect(x + w/2 - 10, y + 212, 6, 26, 2);
+    ctx.roundRect(x + w/2 + 4, y + 212, 6, 26, 2);
+    ctx.fill();
+}
+
+export function drawBoldEditorialDay(ctx: CanvasRenderingContext2D, stats: any, textColor: string, showLogo = true) {
+    const { s1, s2, s3 } = getDynamicStats(stats);
+    const colors = buildColors(textColor);
+    
+    let day = "MONDAY";
+    if (stats.startTime) {
+        // Try parsing the date string or fallback to "MONDAY"
+        try {
+            const d = new Date(stats.startTime);
+            if (!isNaN(d.getTime())) {
+                day = d.toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase();
+            }
+        } catch(e) {}
+    }
+    
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    ctx.font = "600 32px 'Plus Jakarta Sans'";
+    ctx.fillStyle = '#ff69b4'; // Pink
+    ctx.fillText(`SCORA ACTIVITY SUMMARY`, 540, 850);
+    ctx.fillStyle = colors.solid;
+    
+    // Massive Day
+    let fontSize = 320;
+    ctx.font = `900 ${fontSize}px 'Monument Extended', 'Helvetica Neue', sans-serif`;
+    while (ctx.measureText(day).width > 1000 && fontSize > 80) {
+        fontSize -= 10;
+        ctx.font = `900 ${fontSize}px 'Monument Extended', 'Helvetica Neue', sans-serif`;
+    }
+    ctx.fillText(day, 540, 1020);
+    
+    // Three columns
+    ctx.font = "800 48px 'Monument Extended', 'Helvetica Neue', sans-serif";
+    ctx.textAlign = 'left';
+    ctx.fillText(stats.type.toUpperCase(), 80, 1200);
+    ctx.fillText("WORKOUT", 80, 1260);
+    
+    ctx.textAlign = 'center';
+    ctx.fillText(s1.value, 540, 1200);
+    ctx.fillText(s1.label, 540, 1260);
+    
+    ctx.textAlign = 'right';
+    ctx.fillText(s2.value, 1000, 1200);
+    ctx.fillText(s3.value, 1000, 1260);
+}
+
+export function drawTheVibePill(ctx: CanvasRenderingContext2D, stats: any, textColor: string, showLogo = true) {
+    const { s1, s2, s3 } = getDynamicStats(stats);
+    const colors = buildColors(textColor);
+    
+    // Very small pill for non-map activities
+    const w = 500;
+    const h = 100;
+    const x = 540 - w / 2;
+    const y = 1650;
+    
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, 50);
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = colors.solid;
+    
+    ctx.font = "800 36px 'Plus Jakarta Sans'";
+    ctx.fillText(`${s1.value} ${s1.label}`, 540, y + 35);
+    
+    ctx.font = "600 22px 'Plus Jakarta Sans'";
+    ctx.fillStyle = colors.label;
+    ctx.fillText(`${s2.value} ${s2.label}   •   ${s3.value} ${s3.label}`, 540, y + 75);
+}
+
+export function drawScoraStamp(ctx: CanvasRenderingContext2D, stats: any, textColor: string, showLogo = true) {
+    const { s1 } = getDynamicStats(stats);
+    const colors = buildColors(textColor);
+    
+    const cx = 860;
+    const cy = 1600;
+    const r = 120;
+    
+    // Stamp ring
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.strokeStyle = colors.solid;
+    ctx.lineWidth = 4;
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.arc(cx, cy, r - 15, 0, Math.PI * 2);
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = colors.solid;
+    
+    ctx.font = "900 48px 'Monument Extended', 'Helvetica Neue', sans-serif";
+    ctx.fillText(s1.value, cx, cy - 10);
+    
+    ctx.font = "600 22px 'Plus Jakarta Sans'";
+    ctx.fillText(s1.label, cx, cy + 30);
+    
+    // Curved text or simple text
+    ctx.font = "700 16px 'Space Grotesk'";
+    setLetterSpacing(ctx, '2px');
+    ctx.fillText("SCORA VERIFIED", cx, cy + 80);
+    setLetterSpacing(ctx, '0px');
+}
+
+// -----------------------------------------------------------------------------
+// NEW STICKERS: Fridge Magnets, Social Pill, Balloon Letters, Glass Numbers
+// -----------------------------------------------------------------------------
+
+export function drawFridgeMagnets(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    let lines = [];
+    if (stats.title) {
+        const words = stats.title.toUpperCase().split(' ');
+        let currentLine = "";
+        for (const w of words) {
+            if (currentLine.length + w.length > 10) {
+                lines.push(currentLine.trim());
+                currentLine = w + " ";
+            } else {
+                currentLine += w + " ";
+            }
+        }
+        if (currentLine.trim()) lines.push(currentLine.trim());
+    } else {
+        lines.push(stats.type ? stats.type.toUpperCase() : "WORKOUT");
+    }
+
+    const distanceText = stats.hasDistance ? `${stats.distanceVal || '0.00'} KM` : (stats.timeStr || '0:00');
+    lines.push(distanceText);
+    
+    let startY = 500 - (lines.length * 90);
+    for (const line of lines) {
+        drawMagnetLetters(ctx, line, 540, startY);
+        startY += 180;
+    }
+}
+
+function drawMagnetLetters(ctx: CanvasRenderingContext2D, text: string, centerX: number, startY: number) {
+    // Vibrant magnet colors
+    const magnetColors = ['#ff3b30', '#007aff', '#34c759', '#ffcc00', '#ff9500', '#ff2d55'];
+    ctx.font = "800 120px 'Bubblegum Sans', 'Varela Round', sans-serif";
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'left';
+    
+    // Measure total width to center it properly
+    let totalW = 0;
+    const chars = text.split('');
+    chars.forEach(c => {
+        if (c === ' ') totalW += 50;
+        else totalW += ctx.measureText(c).width + 10; // 10px spacing
+    });
+    
+    let currX = centerX - totalW / 2;
+    
+    chars.forEach((char, i) => {
+        if (char === ' ') {
+            currX += 50;
+            return;
+        }
+        
+        ctx.save();
+        ctx.translate(currX + ctx.measureText(char).width / 2, startY);
+        // Deterministic pseudo-random rotation
+        const rot = (Math.sin(i * 12.345) * 0.35);
+        ctx.rotate(rot);
+        
+        const color = magnetColors[i % magnetColors.length];
+        
+        ctx.fillStyle = color;
+        ctx.fillText(char, -ctx.measureText(char).width / 2, 0);
+        
+        // 3. Inner bevel (offset white stroke)
+        ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+        ctx.lineWidth = 4;
+        ctx.strokeText(char, -ctx.measureText(char).width / 2 - 3, -3);
+        
+        // 4. Dark inner shadow edge
+        ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+        ctx.lineWidth = 4;
+        ctx.strokeText(char, -ctx.measureText(char).width / 2 + 3, +3);
+        
+        ctx.restore();
+        currX += ctx.measureText(char).width + 10;
+    });
+}
+
+export function drawSocialPill(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const { s2 } = getDynamicStats(stats);
+    
+    const h = 120;
+    ctx.font = "500 50px 'Space Grotesk', 'Courier New', monospace";
+    
+    let pillText = "";
+    if (stats.hasDistance) {
+        const pace = s2.label === 'PACE' ? s2.value + ' /KM' : s2.value;
+        pillText = `${stats.distanceVal} KM   •   ${pace}   •   ${stats.location || 'LOCAL ROUTE'}`.toUpperCase();
+    } else {
+        const cal = s2.label === 'KCAL' ? s2.value + ' KCAL' : s2.value;
+        pillText = `${stats.timeStr}   •   ${cal}   •   ${stats.location || 'TRAINING'}`.toUpperCase();
+    }
+    
+    const textW = ctx.measureText(pillText).width;
+    const w = textW + 160; // room for text + button
+    const x = 540 - w / 2;
+    const y = 200;
+    
+    // Dark pill background
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, 60);
+    ctx.fillStyle = '#222222';
+    ctx.fill();
+    
+    // Text
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(pillText, x + 50, y + h / 2 + 5); // +5 for visual centering
+    
+    // Blue button
+    const btnRadius = 45;
+    const btnX = x + w - btnRadius - 15;
+    const btnY = y + h / 2;
+    
+    ctx.beginPath();
+    ctx.arc(btnX, btnY, btnRadius, 0, Math.PI * 2);
+    ctx.fillStyle = '#3a6df0';
+    ctx.fill();
+    
+    // White Arrow (up arrow)
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 6;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    
+    ctx.beginPath();
+    ctx.moveTo(btnX, btnY + 15);
+    ctx.lineTo(btnX, btnY - 15);
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.moveTo(btnX - 12, btnY - 3);
+    ctx.lineTo(btnX, btnY - 15);
+    ctx.lineTo(btnX + 12, btnY - 3);
+    ctx.stroke();
+}
+
+export function drawBalloonLetters(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const colors = buildColors(textColor);
+    // Use user color, fallback to pink if white/black
+    let color = textColor === 'black' || textColor === 'white' ? '#ff69b4' : colors.solid;
+    
+    const month = stats.rawDate ? new Intl.DateTimeFormat('en-US', { month: 'long' }).format(new Date(stats.rawDate.replace('Z', ''))).toUpperCase() : (stats.type || 'WORKOUT').toUpperCase();
+    
+    const x = 540;
+    const y = 350;
+    
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = "900 180px 'Fredoka One', 'Bubblegum Sans', 'Varela Round', sans-serif";
+    
+    ctx.fillStyle = color;
+    ctx.fillText(month, x, y);
+    
+    // Glossy Inner Bevel (Using thick gradient stroke)
+    const bevel = ctx.createLinearGradient(x - 200, y - 100, x + 200, y + 100);
+    bevel.addColorStop(0, 'rgba(255,255,255,0.9)'); // Bright top-left reflection
+    bevel.addColorStop(0.3, 'rgba(255,255,255,0.2)');
+    bevel.addColorStop(0.7, 'rgba(0,0,0,0.1)');
+    bevel.addColorStop(1, 'rgba(0,0,0,0.6)'); // Dark bottom-right shadow
+    
+    ctx.strokeStyle = bevel;
+    ctx.lineWidth = 15;
+    ctx.lineJoin = 'round';
+    ctx.strokeText(month, x, y);
+    
+    // Overlay Script Font
+    ctx.font = "400 90px 'Great Vibes', 'Shadows Into Light Two', cursive";
+    ctx.fillStyle = '#ffffff';
+    
+    const sub = stats.location ? stats.location.toLowerCase() : (stats.title ? stats.title.toLowerCase() : (stats.hasDistance ? `${stats.distanceVal} ${stats.distanceUnit || 'km'}` : stats.timeStr));
+    // Add some rotation to the script text
+    ctx.save();
+    ctx.translate(x, y + 60);
+    ctx.rotate(-0.05);
+    ctx.fillText(sub, 0, 0);
+    ctx.restore();
+}
+
+export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const mainVal = stats.hasDistance ? stats.distanceVal : (stats.timeStr || '0:00');
+    const unit = stats.hasDistance ? (stats.distanceUnit || 'KM').toLowerCase() : 'min';
+    
+    const x = 540;
+    const y = 960;
+    
+    // 1. Date at top
+    const dateStr = stats.rawDate ? new Intl.DateTimeFormat('es-ES', { weekday: 'short', month: 'short', day: 'numeric' }).format(new Date(stats.rawDate.replace('Z', ''))) : 'Lun jun 29';
+    const formattedDate = dateStr.charAt(0).toUpperCase() + dateStr.slice(1).replace('.', '');
+    
+    ctx.font = "600 45px 'Inter', 'Plus Jakarta Sans', sans-serif";
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#ffffff';
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+    ctx.shadowBlur = 15;
+    ctx.shadowOffsetY = 5;
+    ctx.fillText(formattedDate, x, 250);
+    
+    // 2. Huge Glass Numbers (Extremely tall and narrow, TEXT ITSELF IS THE GLASS)
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(0.65, 2.0); // Tall and narrow
+    
+    // Use an incredibly massive font size to fill the screen
+    ctx.font = "800 350px 'Inter', 'Plus Jakarta Sans', sans-serif";
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    // A. Outer Drop Shadow
+    // Extremely dark and huge blur to simulate the darkened blur of the background, giving massive contrast
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+    ctx.shadowBlur = 60;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 20;
+    
+    // B. Translucent Glass Fill (Milky white, stronger for contrast)
+    const glassFill = ctx.createLinearGradient(0, -180, 0, 180);
+    glassFill.addColorStop(0, 'rgba(255, 255, 255, 0.7)'); // Frosty top
+    glassFill.addColorStop(0.5, 'rgba(255, 255, 255, 0.15)'); // Slightly milky middle
+    glassFill.addColorStop(1, 'rgba(255, 255, 255, 0.5)'); // Frosty bottom
+    
+    ctx.fillStyle = glassFill;
+    ctx.fillText(mainVal, 0, 0);
+    
+    // C. MASTERCLASS INNER BEVELS (Masked to text shape)
+    ctx.globalCompositeOperation = 'source-atop';
+    
+    // Inner Dark Shadow (High contrast top edge)
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.9)'; // Extremely dark
+    ctx.shadowBlur = 25;
+    ctx.shadowOffsetX = -9999;
+    ctx.shadowOffsetY = 20;
+    ctx.lineWidth = 20;
+    ctx.strokeStyle = '#000000'; // Drawn offscreen, casts shadow
+    ctx.strokeText(mainVal, 9999, 0);
+    
+    // Inner Bright Highlight (High contrast bottom edge)
+    ctx.shadowColor = 'rgba(255, 255, 255, 1)';
+    ctx.shadowBlur = 25;
+    ctx.shadowOffsetX = -9999;
+    ctx.shadowOffsetY = -20;
+    ctx.lineWidth = 20;
+    ctx.strokeStyle = '#ffffff';
+    ctx.strokeText(mainVal, 9999, 0);
+    
+    // D. Outer rim inside the glass bounds (Glossy edge)
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)'; // High contrast bright rim
+    ctx.strokeText(mainVal, 0, 0);
+    
+    // Restore normal composition
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.restore();
+    
+    // 3. Small units perfectly hugging the bottom of the text
+    ctx.font = "600 60px 'Inter', 'Plus Jakarta Sans', sans-serif";
+    ctx.fillStyle = '#ffffff';
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+    ctx.shadowBlur = 15;
+    ctx.shadowOffsetY = 5;
+    // Y is roughly 960 (center) + 350 (height). Placed exactly at 1290 to hug the numbers!
+    ctx.fillText(unit, x, y + 330); 
 }
