@@ -8701,20 +8701,29 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     const hg = Math.round(g + (255 - g) * 0.65);
     const hb = Math.round(b + (255 - b) * 0.65);
 
+    const isWhite = r > 230 && g > 230 && b > 230;
+
     // A. Soft Realistic Ambient Glass Drop Shadow
     ctx.shadowColor = 'rgba(0, 0, 0, 0.40)';
     ctx.shadowBlur = 30;
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 16;
 
-    // B. Pure Liquid Glass Base Fill (Silky 2-stop color gradient - NO 90s WordArt metallic stripes)
-    const topR = Math.min(255, Math.round(r * 0.85 + 255 * 0.15));
-    const topG = Math.min(255, Math.round(g * 0.85 + 255 * 0.15));
-    const topB = Math.min(255, Math.round(b * 0.85 + 255 * 0.15));
-
+    // B. Pure Liquid Glass Base Fill
     const glassFill = ctx.createLinearGradient(0, -1120, 0, 0);
-    glassFill.addColorStop(0.0, `rgba(${topR}, ${topG}, ${topB}, 0.95)`);
-    glassFill.addColorStop(1.0, `rgba(${r}, ${g}, ${b}, 0.90)`);
+    if (isWhite) {
+        // White Glass: Frosted White at top -> Soft Smoked Crystal at bottom for crisp 3D contrast on light & dark
+        glassFill.addColorStop(0.0, 'rgba(255, 255, 255, 0.98)');
+        glassFill.addColorStop(1.0, 'rgba(215, 220, 228, 0.90)');
+    } else {
+        // Color Glass: Top tint sheen -> Rich color core
+        const topR = Math.min(255, Math.round(r * 0.85 + 255 * 0.15));
+        const topG = Math.min(255, Math.round(g * 0.85 + 255 * 0.15));
+        const topB = Math.min(255, Math.round(b * 0.85 + 255 * 0.15));
+
+        glassFill.addColorStop(0.0, `rgba(${topR}, ${topG}, ${topB}, 0.95)`);
+        glassFill.addColorStop(1.0, `rgba(${r}, ${g}, ${b}, 0.90)`);
+    }
 
     ctx.fillStyle = glassFill;
     ctx.fillText(mainVal, 0, 0);
@@ -8729,26 +8738,26 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
 
     // 1. Soft Specular Top Sheen (fanning down gracefully from top 35%)
     const topSheen = ctx.createLinearGradient(0, -1120, 0, -650);
-    topSheen.addColorStop(0.0, 'rgba(255, 255, 255, 0.45)');
-    topSheen.addColorStop(0.6, 'rgba(255, 255, 255, 0.10)');
+    topSheen.addColorStop(0.0, 'rgba(255, 255, 255, 0.55)');
+    topSheen.addColorStop(0.6, 'rgba(255, 255, 255, 0.15)');
     topSheen.addColorStop(1.0, 'rgba(255, 255, 255, 0.0)');
 
     ctx.fillStyle = topSheen;
     ctx.fillText(mainVal, 0, 0);
 
-    // 2. Liquid Edge Light Refraction (Soft inner stroke, NO black lines, NO WordArt bevels)
+    // 2. Liquid Edge Light Refraction
     const glassEdge = ctx.createLinearGradient(0, -1120, 0, 0);
-    glassEdge.addColorStop(0.0, 'rgba(255, 255, 255, 0.50)'); // Top light edge
+    glassEdge.addColorStop(0.0, 'rgba(255, 255, 255, 0.60)'); // Top light edge
     glassEdge.addColorStop(0.4, 'rgba(255, 255, 255, 0.05)');
-    glassEdge.addColorStop(1.0, 'rgba(0, 0, 0, 0.20)');       // Soft bottom grounding
+    glassEdge.addColorStop(1.0, isWhite ? 'rgba(0, 0, 0, 0.45)' : 'rgba(0, 0, 0, 0.25)'); // Dark bottom refraction for white glass contrast
 
     ctx.lineWidth = 12;
     ctx.strokeStyle = glassEdge;
     ctx.strokeText(mainVal, 0, 0);
 
-    // D. Outer Glass Contour (Clean 4px border in exact selected color)
+    // D. Outer Glass Contour (Clean 4px border)
     ctx.lineWidth = 4;
-    ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.60)`;
+    ctx.strokeStyle = isWhite ? 'rgba(170, 180, 190, 0.65)' : `rgba(${r}, ${g}, ${b}, 0.60)`;
     ctx.strokeText(mainVal, 0, 0);
 
     ctx.globalCompositeOperation = 'source-over';
