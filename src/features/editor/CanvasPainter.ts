@@ -8702,18 +8702,17 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     const hg = Math.round(g + (255 - g) * 0.65);
     const hb = Math.round(b + (255 - b) * 0.65);
 
-    // A. Deep Contrast Drop Shadow (Ensures separation on bright & dark backgrounds)
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
-    ctx.shadowBlur = 40;
+    // A. Deep Contrast Drop Shadow
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+    ctx.shadowBlur = 35;
     ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 20;
+    ctx.shadowOffsetY = 15;
 
-    // B. Luminous Frosted Glass Fill
+    // B. Translucent Glass Fill (Tinted with user selected color)
     const glassFill = ctx.createLinearGradient(0, -1120, 0, 0);
-    glassFill.addColorStop(0, `rgba(${hr}, ${hg}, ${hb}, 0.95)`);   // Bright top specular sheen
-    glassFill.addColorStop(0.35, `rgba(${r}, ${g}, ${b}, 0.70)`);   // Rich user color core
-    glassFill.addColorStop(0.7, `rgba(${hr}, ${hg}, ${hb}, 0.40)`);  // Luminous glass interior
-    glassFill.addColorStop(1, `rgba(${hr}, ${hg}, ${hb}, 0.85)`);   // Bottom rim reflection
+    glassFill.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.85)`);
+    glassFill.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, 0.35)`);
+    glassFill.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0.75)`);
 
     ctx.fillStyle = glassFill;
     ctx.fillText(mainVal, 0, 0);
@@ -8741,35 +8740,30 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
         ctx.strokeStyle = bevelGrad;
         ctx.strokeText(mainVal, 0, 0);
     } else {
-        // Untouched Chrome Master Shader: Exact original dual shadow offset bevels
+        // Untouched Chrome Master Shader: Inner Bevel Highlights & Shadows
         ctx.shadowColor = 'rgba(255, 255, 255, 1)';
-        ctx.shadowBlur = 18;
+        ctx.shadowBlur = 15;
         ctx.shadowOffsetX = -9999;
-        ctx.shadowOffsetY = -18;
+        ctx.shadowOffsetY = -16;
         ctx.lineWidth = 20;
         ctx.strokeStyle = '#ffffff';
         ctx.strokeText(mainVal, 9999, 0);
 
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
         ctx.shadowBlur = 18;
         ctx.shadowOffsetX = -9999;
-        ctx.shadowOffsetY = 24;
+        ctx.shadowOffsetY = 20;
         ctx.lineWidth = 20;
         ctx.strokeStyle = '#000000';
         ctx.strokeText(mainVal, 9999, 0);
     }
 
-    // D. Razor-Sharp Luminous Rim
+    // D. Crisp Color-Matched Outer Rim (NO White Outline)
     ctx.shadowBlur = 0;
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 0;
-    ctx.lineWidth = 10;
-    ctx.strokeStyle = `rgba(${hr}, ${hg}, ${hb}, 0.95)`;
-    ctx.strokeText(mainVal, 0, 0);
-
-    // E. Pure Specular Accent Outline
-    ctx.lineWidth = 4;
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.85)`;
     ctx.strokeText(mainVal, 0, 0);
 
     ctx.globalCompositeOperation = 'source-over';
