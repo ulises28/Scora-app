@@ -99,9 +99,9 @@ function buildColors(textColor: string) {
 
 export function applyAntiGhostingShadow(ctx: CanvasRenderingContext2D, textColor: string) {
     ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 2;
-    ctx.shadowBlur = 6;
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+    ctx.shadowOffsetY = 0;
+    ctx.shadowBlur = 0;
+    ctx.shadowColor = 'transparent';
 }
 
 
@@ -8642,8 +8642,10 @@ export function drawBalloonLetters(ctx: CanvasRenderingContext2D, stats: any, te
 }
 
 export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
-    let mainVal = stats.distanceVal || stats.timeStr || '0.00';
-    if (!stats.hasDistance && stats.timeStr) {
+    const hasDistance = Boolean(stats.hasDistance && stats.distanceVal && parseFloat(stats.distanceVal) > 0);
+    let mainVal = hasDistance ? (stats.distanceVal || '0.00') : (stats.timeStr || stats.movingTime || '0:00');
+    
+    if (!hasDistance && mainVal) {
         const hMatch = mainVal.match(/(\d+)h/);
         const mMatch = mainVal.match(/(\d+)m/);
         if (hMatch || mMatch) {
@@ -8660,7 +8662,7 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
         }
     }
 
-    const unit = stats.hasDistance ? (stats.distanceUnit || 'KM').toLowerCase() : 'min';
+    const unit = hasDistance ? (stats.distanceUnit || 'KM').toLowerCase() : 'min';
     
     const x = 540;
     
@@ -8681,39 +8683,28 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = textColor; 
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
-    ctx.shadowBlur = 10;
-    ctx.shadowOffsetY = 3;
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
     ctx.fillText(formattedDate, x, 150);
     ctx.restore();
 
-    // 2. Huge Glass Numbers
+    // 2. Huge Studio Liquid Glass Numbers
     ctx.save();
-    // Anchor the numbers at Y=1350
-    ctx.translate(x, 1350);
-
-    // To prevent blurriness from vertical upscaling on iOS/Safari, 
-    // we render the font at its full stretched height (350 * 3.2 = 1120)
-    // and scale down the horizontal axis instead.
-    // X scale = 0.65 / 3.2 = 0.203125, Y scale = 1.0
-    ctx.scale(0.203125, 1.0);
+    ctx.translate(x, 1350); 
+    ctx.scale(0.203125, 1.0); 
 
     ctx.font = "800 1120px 'Inter', 'Plus Jakarta Sans', sans-serif";
     ctx.textAlign = 'center';
-    ctx.textBaseline = 'bottom';
+    ctx.textBaseline = 'bottom'; 
 
-    // Calculate light-shifted highlight color for glass refraction (mix 65% white for ambient light sheen)
-    const hr = Math.round(r + (255 - r) * 0.65);
-    const hg = Math.round(g + (255 - g) * 0.65);
-    const hb = Math.round(b + (255 - b) * 0.65);
-
-    // A. Soft Drop Shadow behind glass
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
-    ctx.shadowBlur = 28;
+    // Step 1: Crisp Base (No Drop Shadow)
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
     ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 16;
+    ctx.shadowOffsetY = 0;
 
-    // B. Translucent Tinted Glass Base
+    // Step 2: Translucent Tinted Glass Base
     const glassFill = ctx.createLinearGradient(0, -1120, 0, 0);
     glassFill.addColorStop(0.0, `rgba(${r}, ${g}, ${b}, 0.55)`);
     glassFill.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, 0.20)`);
@@ -8727,20 +8718,20 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
 
-    // C. Studio Liquid Glass Refractions (Source-Atop GPU Clipping)
+    // Step 3: Studio Liquid Glass Refractions (Source-Atop GPU Clipping)
     ctx.globalCompositeOperation = 'source-atop';
 
-    // 1. Bottom-Right Dark Refraction Line (Offset +4, +4)
+    // 3A. Bottom-Right Dark Refraction Line (Offset +4, +4)
     ctx.lineWidth = 12;
     ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
     ctx.strokeText(mainVal, 4, 4);
 
-    // 2. Top-Left White Specular Edge Light (Offset -4, -4)
+    // 3B. Top-Left White Specular Edge Light (Offset -4, -4)
     ctx.lineWidth = 12;
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
     ctx.strokeText(mainVal, -4, -4);
 
-    // 3. Vertical Gloss Sheen
+    // 3C. Vertical Gloss Sheen
     const glossGrad = ctx.createLinearGradient(0, -1120, 0, 0);
     glossGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.35)');
     glossGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.05)');
@@ -8749,7 +8740,7 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.fillStyle = glossGrad;
     ctx.fillText(mainVal, 0, 0);
 
-    // D. Color-Matched Outer Glass Contour
+    // Step 4: Color-Matched Perimeter Rim
     ctx.lineWidth = 5;
     ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.85)`;
     ctx.strokeText(mainVal, 0, 0);
@@ -8757,16 +8748,17 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.globalCompositeOperation = 'source-over';
     ctx.restore();
 
-    // 3. Small units perfectly hugging the bottom of the text
+    // 3. Small units label at bottom
+    ctx.save();
     ctx.font = "600 60px 'Inter', 'Plus Jakarta Sans', sans-serif";
-    ctx.fillStyle = '#ffffff';
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
-    ctx.shadowBlur = 15;
-    ctx.shadowOffsetY = 5;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    // Shifted significantly up to account for the font's built-in bottom padding when scaled 3.2x
+    ctx.fillStyle = textColor;
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
     ctx.fillText(unit, x, 1260);
+    ctx.restore();
 }
 
 export function drawMarkerHighlight(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
