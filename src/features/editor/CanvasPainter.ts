@@ -8681,7 +8681,7 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
     ctx.shadowBlur = 15;
     ctx.shadowOffsetY = 5;
-    ctx.fillText(formattedDate, x, 250);
+    ctx.fillText(formattedDate, x, 190);
     
     // 2. Huge Glass Numbers
     ctx.save();
