@@ -8655,9 +8655,8 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     }
 
     const unit = stats.hasDistance ? (stats.distanceUnit || 'KM').toLowerCase() : 'min';
-    
     const x = 540;
-    
+
     // Parse textColor for tinting
     let r = 255, g = 255, b = 255;
     if (textColor.startsWith('#') && textColor.length === 7) {
@@ -8696,68 +8695,62 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
 
-    // Calculate light-shifted highlight color for glass refraction (mix 65% white for ambient light sheen)
-    const hr = Math.round(r + (255 - r) * 0.65);
-    const hg = Math.round(g + (255 - g) * 0.65);
-    const hb = Math.round(b + (255 - b) * 0.65);
+    // Light-shifted ambient highlight color for top specular sheen
+    const hr = Math.round(r + (255 - r) * 0.70);
+    const hg = Math.round(g + (255 - g) * 0.70);
+    const hb = Math.round(b + (255 - b) * 0.70);
 
-    const isWhite = r > 230 && g > 230 && b > 230;
+    // Dark-shifted refraction color for depth shadow
+    const dr = Math.round(r * 0.40);
+    const dg = Math.round(g * 0.40);
+    const db = Math.round(b * 0.40);
 
     // A. Soft Realistic Ambient Glass Drop Shadow
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.40)';
-    ctx.shadowBlur = 30;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
+    ctx.shadowBlur = 25;
     ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 16;
+    ctx.shadowOffsetY = 15;
 
-    // B. Pure Liquid Glass Base Fill
+    // B. Semi-Translucent Frosted Glass Base Fill (Background photo shines through naturally!)
     const glassFill = ctx.createLinearGradient(0, -1120, 0, 0);
-    if (isWhite) {
-        // White Glass: Frosted White at top -> Soft Smoked Crystal at bottom for crisp 3D contrast on light & dark
-        glassFill.addColorStop(0.0, 'rgba(255, 255, 255, 0.98)');
-        glassFill.addColorStop(1.0, 'rgba(215, 220, 228, 0.90)');
-    } else {
-        // Color Glass: Top tint sheen -> Rich color core
-        const topR = Math.min(255, Math.round(r * 0.85 + 255 * 0.15));
-        const topG = Math.min(255, Math.round(g * 0.85 + 255 * 0.15));
-        const topB = Math.min(255, Math.round(b * 0.85 + 255 * 0.15));
-
-        glassFill.addColorStop(0.0, `rgba(${topR}, ${topG}, ${topB}, 0.95)`);
-        glassFill.addColorStop(1.0, `rgba(${r}, ${g}, ${b}, 0.90)`);
-    }
+    glassFill.addColorStop(0.0, `rgba(${hr}, ${hg}, ${hb}, 0.50)`); // Bright top specular tint
+    glassFill.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, 0.32)`);   // Translucent color core allowing photo through
+    glassFill.addColorStop(1.0, `rgba(${hr}, ${hg}, ${hb}, 0.45)`); // Luminous glass interior reflection
 
     ctx.fillStyle = glassFill;
     ctx.fillText(mainVal, 0, 0);
 
-    // Reset shadow for internal glass highlights
+    // Clear shadow for interior glass layers
     ctx.shadowColor = 'transparent';
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
 
-    // C. LIQUID GLASS REFRACTIONS (Under source-atop)
+    // C. LIQUID GLASS 3D BEVEL & SPECULAR REFRACTIONS (source-atop)
     ctx.globalCompositeOperation = 'source-atop';
 
-    // 1. Soft Specular Top Sheen (fanning down gracefully from top 35%)
-    const topSheen = ctx.createLinearGradient(0, -1120, 0, -650);
-    topSheen.addColorStop(0.0, 'rgba(255, 255, 255, 0.55)');
-    topSheen.addColorStop(0.6, 'rgba(255, 255, 255, 0.15)');
-    topSheen.addColorStop(1.0, 'rgba(255, 255, 255, 0.0)');
+    // 1. Soft Specular Top Sheen (Fanning down from top 40%)
+    const topGloss = ctx.createLinearGradient(0, -1120, 0, -600);
+    topGloss.addColorStop(0.0, 'rgba(255, 255, 255, 0.55)');
+    topGloss.addColorStop(0.5, 'rgba(255, 255, 255, 0.15)');
+    topGloss.addColorStop(1.0, 'rgba(255, 255, 255, 0.0)');
 
-    ctx.fillStyle = topSheen;
+    ctx.fillStyle = topGloss;
     ctx.fillText(mainVal, 0, 0);
 
-    // 2. Liquid Edge Light Refraction
-    const glassEdge = ctx.createLinearGradient(0, -1120, 0, 0);
-    glassEdge.addColorStop(0.0, 'rgba(255, 255, 255, 0.60)'); // Top light edge
-    glassEdge.addColorStop(0.4, 'rgba(255, 255, 255, 0.05)');
-    glassEdge.addColorStop(1.0, isWhite ? 'rgba(0, 0, 0, 0.45)' : 'rgba(0, 0, 0, 0.25)'); // Dark bottom refraction for white glass contrast
+    // 2. 3D Bevel Edge Refraction Stroke (Gleaming white top-left, deep refraction bottom-right)
+    const bevelGrad = ctx.createLinearGradient(-300, -1120, 300, 0);
+    bevelGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.85)'); // Top-left light specular edge
+    bevelGrad.addColorStop(0.3, `rgba(${hr}, ${hg}, ${hb}, 0.40)`);
+    bevelGrad.addColorStop(0.7, `rgba(${dr}, ${dg}, ${db}, 0.30)`);
+    bevelGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0.45)');       // Bottom-right shadow refraction
 
-    ctx.lineWidth = 12;
-    ctx.strokeStyle = glassEdge;
+    ctx.lineWidth = 14;
+    ctx.strokeStyle = bevelGrad;
     ctx.strokeText(mainVal, 0, 0);
 
-    // D. Outer Glass Contour (Clean 4px border)
+    // D. Fine 3D Glass Rim (Clean 4px border tinted in user color)
     ctx.lineWidth = 4;
-    ctx.strokeStyle = isWhite ? 'rgba(170, 180, 190, 0.65)' : `rgba(${r}, ${g}, ${b}, 0.60)`;
+    ctx.strokeStyle = `rgba(${hr}, ${hg}, ${hb}, 0.70)`;
     ctx.strokeText(mainVal, 0, 0);
 
     ctx.globalCompositeOperation = 'source-over';
