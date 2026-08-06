@@ -8665,7 +8665,7 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
         b = parseInt(textColor.slice(5, 7), 16);
     }
 
-    // 1. Date at top (Positioned at y=150 to guarantee ZERO overlap with giant numbers)
+    // 1. Date at top
     const dateStr = stats.rawDate ? new Intl.DateTimeFormat('es-ES', { weekday: 'short', month: 'short', day: 'numeric' }).format(new Date(stats.rawDate.replace('Z', ''))) : 'Lun jun 29';
     const formattedDate = dateStr.charAt(0).toUpperCase() + dateStr.slice(1).replace('.', '');
 
