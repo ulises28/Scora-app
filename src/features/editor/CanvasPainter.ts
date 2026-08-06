@@ -8698,11 +8698,11 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom'; 
 
-    // Step 1: Crisp Base (No Drop Shadow)
-    ctx.shadowColor = 'transparent';
-    ctx.shadowBlur = 0;
+    // Step 1: Soft Ambient Grounding Drop Shadow behind Liquid Glass numbers
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+    ctx.shadowBlur = 28;
     ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 0;
+    ctx.shadowOffsetY = 16;
 
     // Step 2: Translucent Tinted Glass Base
     const glassFill = ctx.createLinearGradient(0, -1120, 0, 0);
@@ -8713,7 +8713,7 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.fillStyle = glassFill;
     ctx.fillText(mainVal, 0, 0);
 
-    // Clear shadow for internal layers
+    // Clear shadow immediately for internal refractions and text
     ctx.shadowColor = 'transparent';
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
