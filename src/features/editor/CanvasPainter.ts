@@ -8538,19 +8538,19 @@ export function drawSocialPill(ctx: CanvasRenderingContext2D, stats: any, textCo
     const distOrTime = stats.hasDistance ? `${stats.distanceVal} KM` : `${stats.timeStr}`;
     const pillText = `${distOrTime}   •   ${paceOrCal}   •   ${locationStr}`;
 
-    // Auto-scale font size so full text fits inside the pill cleanly without '...' truncation
-    let fontSize = 48;
+    // Auto-scale font size so full text fits inside the pill cleanly with generous spacing before the blue button
+    let fontSize = 46;
     ctx.font = `500 ${fontSize}px 'Space Grotesk', 'Courier New', monospace`;
     let textW = ctx.measureText(pillText).width;
-    const maxTextW = 760; // Max allowed text width for 980px wide pill
+    const maxTextW = 690; // Ensures 50px+ clear gap between text end and blue button
 
     if (textW > maxTextW) {
-        fontSize = Math.max(30, Math.floor(48 * (maxTextW / textW)));
+        fontSize = Math.max(28, Math.floor(46 * (maxTextW / textW)));
         ctx.font = `500 ${fontSize}px 'Space Grotesk', 'Courier New', monospace`;
         textW = ctx.measureText(pillText).width;
     }
     
-    const w = Math.min(980, textW + 150); 
+    const w = Math.min(980, textW + 200); // 200px total padding for 50px clear gap before button
     const x = 540 - w / 2;
     const y = 200;
     
