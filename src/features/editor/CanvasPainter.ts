@@ -82,9 +82,10 @@ function buildColors(textColor: string) {
     const alphaValue = 0.9;
     let base = '255, 255, 255';
     if (textColor === 'black') base = '0, 0, 0';
-    else if (textColor.startsWith('#')) base = hexToRgb(textColor);
+    // Custom hex color selected for map/accent -> Text remains white
+    else if (textColor.startsWith('#')) base = '255, 255, 255';
 
-    const isDark = isColorDark(textColor.startsWith('#') ? textColor : (textColor === 'black' ? '#000000' : '#ffffff'));
+    const isDark = textColor !== 'black';
 
     const accent = textColor.startsWith('#') ? textColor : (textColor === 'black' ? '#000000' : '#ffffff');
 
@@ -97,11 +98,10 @@ function buildColors(textColor: string) {
 }
 
 export function applyAntiGhostingShadow(ctx: CanvasRenderingContext2D, textColor: string) {
-    const isDark = isColorDark(textColor.startsWith('#') ? textColor : (textColor === 'black' ? '#000000' : '#ffffff'));
     ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 6;
-    ctx.shadowBlur = 25;
-    ctx.shadowColor = isDark ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.45)';
+    ctx.shadowOffsetY = 2;
+    ctx.shadowBlur = 6;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
 }
 
 
@@ -7400,72 +7400,98 @@ export function drawRetroDistance(ctx: CanvasRenderingContext2D, stats: any, tex
 }
 
 export function drawWaveTitle(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
-    // FROSTED GLASSMORPHISM PLATE
-    // Default to dark text (#111111) since the glass is now white
-    const mainColor = textColor.startsWith('#') ? textColor : (textColor === 'white' ? '#111111' : '#111111');
     ctx.save();
 
-    const cardW = 960;
-    const cardH = 560; // Slightly taller to fit title safely
-    const cX = 60;
-    const cY = 250; // Shifted UP to the top near SCORA logo
+    // 1. Color setup: Selected color changes the typography inside the card!
+    let mainColor = '#ffffff';
+    if (textColor === 'black') {
+        mainColor = '#111111';
+    } else if (textColor.startsWith('#')) {
+        mainColor = textColor;
+    }
 
-    // B. Base Liquid Glass Gradient Fill
-    const baseGrad = ctx.createLinearGradient(cX, cY, cX, cY + cardH);
-    baseGrad.addColorStop(0, 'rgba(255, 255, 255, 0.85)');
-    baseGrad.addColorStop(0.3, 'rgba(255, 255, 255, 0.65)');
-    baseGrad.addColorStop(1, 'rgba(240, 240, 245, 0.70)');
-    
-    ctx.fillStyle = baseGrad;
-    ctx.shadowColor = 'rgba(0,0,0,0.15)';
-    ctx.shadowBlur = 40;
-    ctx.shadowOffsetY = 20;
+    const cardW = 960;
+    const cardH = 560;
+    const cX = 60;
+    const cY = 250;
+    const cornerRadius = 40;
+
+    // A. Soft Outer Ambient Drop Shadow
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
+    ctx.shadowBlur = 45;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 25;
+
+    // B. Multi-Stop Translucent Liquid Glass Fill (Clean Neutral Frosted Glass)
+    const glassFill = ctx.createLinearGradient(cX, cY, cX, cY + cardH);
+    glassFill.addColorStop(0, 'rgba(255, 255, 255, 0.70)');   // Top specular sheen
+    glassFill.addColorStop(0.35, 'rgba(255, 255, 255, 0.40)'); // Core translucent glass
+    glassFill.addColorStop(0.70, 'rgba(240, 240, 250, 0.30)'); // Glass body
+    glassFill.addColorStop(1.0, 'rgba(255, 255, 255, 0.60)');  // Bottom rim reflection
+
+    ctx.fillStyle = glassFill;
     ctx.beginPath();
-    ctx.roundRect(cX, cY, cardW, cardH, 40);
+    ctx.roundRect(cX, cY, cardW, cardH, cornerRadius);
     ctx.fill();
 
     // Disable shadow for internal drawings to avoid double-shadowing
+    ctx.shadowColor = 'transparent';
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
 
-    // C. Specular Highlight / Glossy Top Half
+    // C. Specular Top Glass Reflection
     ctx.save();
     ctx.beginPath();
-    ctx.roundRect(cX, cY, cardW, cardH, 40);
+    ctx.roundRect(cX, cY, cardW, cardH, cornerRadius);
     ctx.clip();
 
-    const glossGrad = ctx.createLinearGradient(cX, cY, cX, cY + cardH / 2);
-    glossGrad.addColorStop(0, 'rgba(255, 255, 255, 0.6)');
-    glossGrad.addColorStop(1, 'rgba(255, 255, 255, 0.0)');
-    ctx.fillStyle = glossGrad;
-    ctx.fillRect(cX, cY, cardW, cardH / 2);
+    const topReflection = ctx.createLinearGradient(cX, cY, cX, cY + cardH * 0.4);
+    topReflection.addColorStop(0, 'rgba(255, 255, 255, 0.50)');
+    topReflection.addColorStop(1, 'rgba(255, 255, 255, 0.0)');
+    ctx.fillStyle = topReflection;
+    ctx.fillRect(cX, cY, cardW, cardH * 0.4);
     ctx.restore();
 
-    // D. Glossy Beveled Edge (Gradient Stroke)
-    const borderGrad = ctx.createLinearGradient(cX, cY, cX, cY + cardH);
-    borderGrad.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
-    borderGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.5)');
-    borderGrad.addColorStop(1, 'rgba(0, 0, 0, 0.15)');
+    // D. Outer Glass Rim Contour & Specular Accents
+    ctx.beginPath();
+    ctx.roundRect(cX, cY, cardW, cardH, cornerRadius);
     
-    ctx.strokeStyle = borderGrad;
-    ctx.lineWidth = 2.5;
+    // 1. Crisp Neutral Glass Rim
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+    ctx.lineWidth = 3;
     ctx.stroke();
 
-    // Typography
+    // 2. Top Specular Accent Rim
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // E. Typography inside the glass card (Uses selected color!)
+    ctx.fillStyle = mainColor;
+
+    // Subtle drop shadow for text inside card
+    ctx.shadowColor = mainColor === '#ffffff' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.2)';
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetY = 2;
 
     // Top Massive Title
-    ctx.fillStyle = mainColor; // Dynamic color
-    ctx.font = `800 120px 'Unbounded', sans-serif`; // Replaced Slack Sans Notch
+    ctx.font = `800 120px 'Unbounded', sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(normalizeSport(stats.activityType || 'RUN').toUpperCase(), 540, cY + 120, cardW - 80);
 
     // Separator line
-    ctx.globalAlpha = 0.2;
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 0.25;
     ctx.fillStyle = mainColor;
     ctx.fillRect(cX + 60, cY + 220, cardW - 120, 2);
     ctx.globalAlpha = 1.0;
 
+    // Sub-metrics
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetY = 2;
     ctx.textBaseline = 'top';
     const rowY = cY + 260;
 
@@ -7474,7 +7500,7 @@ export function drawWaveTitle(ctx: CanvasRenderingContext2D, stats: any, textCol
     ctx.font = `700 32px 'Inter', sans-serif`;
     ctx.fillText((stats.dayAndNumber || 'APR 2').toUpperCase(), cX + 60, rowY, 300);
 
-    // Distance (Placed perfectly in the right available space)
+    // Distance / Calories
     if (stats.distanceVal && parseFloat(stats.distanceVal) > 0) {
         ctx.textAlign = 'right';
         ctx.font = `600 24px 'Inter', sans-serif`;
@@ -7489,11 +7515,10 @@ export function drawWaveTitle(ctx: CanvasRenderingContext2D, stats: any, textCol
         ctx.fillText(stats.calories + ' kcal', cX + cardW - 60, rowY + 30);
     }
 
-    // Title (Moved to its own line to prevent overlap)
+    // Title
     const titleY = rowY + 60;
-    ctx.textAlign = 'left'; // Fix alignment bug
+    ctx.textAlign = 'left';
     ctx.font = `800 48px 'Inter', sans-serif`;
-    // Added maxWidth (cardW - 120) to ensure long titles shrink to fit
     ctx.fillText(stats.shortTitle || 'WORKSHOP', cX + 60, titleY, cardW - 120);
 
     // Bottom Details
@@ -7844,19 +7869,14 @@ export function drawGridSnappedRoute(ctx: CanvasRenderingContext2D, polyline: st
 export function drawDotGridArchitect(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
     const c = buildColors(textColor);
     
-    // We treat "white" or "black" as defaults where we want vibrant fallbacks.
-    // If they select a custom hex color, we use it directly.
-    const isDefaultWhite = textColor === 'white' || textColor === '#ffffff';
-    const isDefaultBlack = textColor === 'black' || textColor === '#000000';
-    const isDark = isDefaultWhite; 
-    
-    const lineColor = isDark ? '#ffffff' : '#000000';
+    const isBlackText = textColor === 'black';
+    const lineColor = c.solid; 
     
     // Glassmorphic Plate colors
-    const plateFill = isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.04)';
-    const plateBorder = isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.15)';
-    const gridColor = isDark ? 'rgba(255, 255, 255, 0.25)' : 'rgba(0, 0, 0, 0.15)';
-    const crosshairColor = isDark ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.5)';
+    const plateFill = isBlackText ? 'rgba(0, 0, 0, 0.04)' : 'rgba(255, 255, 255, 0.03)';
+    const plateBorder = isBlackText ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.15)';
+    const gridColor = isBlackText ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.25)';
+    const crosshairColor = isBlackText ? 'rgba(0, 0, 0, 0.5)' : 'rgba(255, 255, 255, 0.6)';
     
     ctx.save();
     
@@ -7912,8 +7932,6 @@ export function drawDotGridArchitect(ctx: CanvasRenderingContext2D, stats: any, 
         ctx.save();
         
         let mapAccent = c.accent;
-        if (isDefaultWhite) mapAccent = '#00e5ff';
-        if (isDefaultBlack) mapAccent = '#ff0055';
         
         drawGridSnappedRoute(ctx, stats.polyline, 540, 960, 800, startX, startY, gridSpacing, {
             color: mapAccent,
@@ -7925,8 +7943,7 @@ export function drawDotGridArchitect(ctx: CanvasRenderingContext2D, stats: any, 
     
     // 3. Typography
     ctx.fillStyle = lineColor;
-    // Apply robust anti-ghosting shadow to text so it is highly visible on ANY photo background
-    applyAntiGhostingShadow(ctx, isDark ? 'white' : 'black');
+    applyAntiGhostingShadow(ctx, lineColor);
     
     const mainFont = "'Space Grotesk', sans-serif";
     const subFont = "'Plus Jakarta Sans', sans-serif";
@@ -8515,17 +8532,26 @@ export function drawSocialPill(ctx: CanvasRenderingContext2D, stats: any, textCo
     const h = 120;
     ctx.font = "500 50px 'Space Grotesk', 'Courier New', monospace";
     
-    let pillText = "";
-    if (stats.hasDistance) {
-        const pace = s2.label === 'PACE' ? s2.value + ' /KM' : s2.value;
-        pillText = `${stats.distanceVal} KM   •   ${pace}   •   ${stats.location || 'LOCAL ROUTE'}`.toUpperCase();
-    } else {
-        const cal = s2.label === 'KCAL' ? s2.value + ' KCAL' : s2.value;
-        pillText = `${stats.timeStr}   •   ${cal}   •   ${stats.location || 'TRAINING'}`.toUpperCase();
+    const paceOrCal = stats.hasDistance 
+        ? (s2.label === 'PACE' ? s2.value + ' /KM' : s2.value)
+        : (s2.label === 'KCAL' ? s2.value + ' KCAL' : s2.value);
+
+    const distOrTime = stats.hasDistance ? `${stats.distanceVal} KM` : `${stats.timeStr}`;
+    
+    let locationStr = (stats.location || (stats.hasDistance ? 'LOCAL ROUTE' : 'TRAINING')).toUpperCase();
+    
+    const baseText = `${distOrTime}   •   ${paceOrCal}   •   `;
+    const maxTextWidth = 720; 
+    
+    // Dynamic truncation of location if too long so it NEVER overlaps the blue button
+    while (locationStr.length > 3 && ctx.measureText(baseText + locationStr).width > maxTextWidth) {
+        locationStr = locationStr.slice(0, -2) + '…';
     }
     
+    const pillText = `${baseText}${locationStr}`;
+    
     const textW = ctx.measureText(pillText).width;
-    const w = textW + 160; // room for text + button
+    const w = Math.min(980, textW + 160); 
     const x = 540 - w / 2;
     const y = 200;
     
@@ -8539,7 +8565,7 @@ export function drawSocialPill(ctx: CanvasRenderingContext2D, stats: any, textCo
     ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText(pillText, x + 50, y + h / 2 + 5); // +5 for visual centering
+    ctx.fillText(pillText, x + 50, y + h / 2 + 5); 
     
     // Blue button
     const btnRadius = 45;
@@ -8574,7 +8600,7 @@ export function drawBalloonLetters(ctx: CanvasRenderingContext2D, stats: any, te
     // Use user color, fallback to pink if white/black
     let color = textColor === 'black' || textColor === 'white' ? '#ff69b4' : colors.solid;
     
-    const month = stats.rawDate ? new Intl.DateTimeFormat('en-US', { month: 'long' }).format(new Date(stats.rawDate.replace('Z', ''))).toUpperCase() : (stats.type || 'WORKOUT').toUpperCase();
+    const month = stats.rawDate ? new Intl.DateTimeFormat('en-US', { month: 'long' }).format(new Date(stats.rawDate.replace('Z', ''))).toUpperCase() : normalizeSport(stats.type || 'WORKOUT').toUpperCase();
     
     const x = 540;
     const y = 350;
@@ -8660,57 +8686,72 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     
     // 2. Huge Glass Numbers
     ctx.save();
-    // Anchor the numbers at Y=1350 so when they stretch, they grow UPWARDS
+    // Anchor the numbers at Y=1350
     ctx.translate(x, 1350); 
-    // STRETCH VERTICALLY ONLY - Make them much taller to fill the box
-    ctx.scale(0.65, 3.2); 
     
-    ctx.font = "800 350px 'Inter', 'Plus Jakarta Sans', sans-serif";
+    // To prevent blurriness from vertical upscaling on iOS/Safari, 
+    // we render the font at its full stretched height (350 * 3.2 = 1120)
+    // and scale down the horizontal axis instead.
+    // X scale = 0.65 / 3.2 = 0.203125, Y scale = 1.0
+    ctx.scale(0.203125, 1.0); 
+    
+    ctx.font = "800 1120px 'Inter', 'Plus Jakarta Sans', sans-serif";
     ctx.textAlign = 'center';
-    ctx.textBaseline = 'bottom'; // Crucial: forces scaling to push upwards
+    ctx.textBaseline = 'bottom'; 
     
-    // A. Outer Drop Shadow
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
-    ctx.shadowBlur = 60;
+    // Calculate light-shifted highlight color for glass refraction (mix 65% white for ambient light sheen)
+    const hr = Math.round(r + (255 - r) * 0.65);
+    const hg = Math.round(g + (255 - g) * 0.65);
+    const hb = Math.round(b + (255 - b) * 0.65);
+
+    // A. Deep Contrast Drop Shadow (Ensures separation on bright & dark backgrounds)
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
+    ctx.shadowBlur = 40;
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 20;
     
-    // B. Translucent Glass Fill (Tinted with selected color)
-    const glassFill = ctx.createLinearGradient(0, -350, 0, 0); // Adjusted gradient for bottom baseline
-    glassFill.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.7)`); // Frosty top
-    glassFill.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, 0.15)`); // Slightly milky middle
-    glassFill.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0.5)`); // Frosty bottom
+    // B. Luminous Frosted Glass Fill
+    const glassFill = ctx.createLinearGradient(0, -1120, 0, 0);
+    glassFill.addColorStop(0, `rgba(${hr}, ${hg}, ${hb}, 0.95)`);   // Bright top specular sheen
+    glassFill.addColorStop(0.35, `rgba(${r}, ${g}, ${b}, 0.70)`);   // Rich user color core
+    glassFill.addColorStop(0.7, `rgba(${hr}, ${hg}, ${hb}, 0.40)`);  // Luminous glass interior
+    glassFill.addColorStop(1, `rgba(${hr}, ${hg}, ${hb}, 0.85)`);   // Bottom rim reflection
     
     ctx.fillStyle = glassFill;
     ctx.fillText(mainVal, 0, 0);
     
-    // C. MASTERCLASS INNER BEVELS
+    // C. INNER GLASS REFRACTIONS & BEVELS
     ctx.globalCompositeOperation = 'source-atop';
     
-    // Inner Dark Shadow
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.9)'; 
-    ctx.shadowBlur = 25;
-    ctx.shadowOffsetX = -9999;
-    ctx.shadowOffsetY = 20;
-    ctx.lineWidth = 20;
-    ctx.strokeStyle = '#000000';
-    ctx.strokeText(mainVal, 9999, 0);
-    
-    // Inner Bright Highlight
+    // 1. High-Luminance Top Specular Reflection (Gleaming white highlight)
     ctx.shadowColor = 'rgba(255, 255, 255, 1)';
-    ctx.shadowBlur = 25;
-    ctx.shadowOffsetX = -9999;
-    ctx.shadowOffsetY = -20;
+    ctx.shadowBlur = 18;
+    ctx.shadowOffsetX = -1800;
+    ctx.shadowOffsetY = -18; 
     ctx.lineWidth = 20;
     ctx.strokeStyle = '#ffffff';
-    ctx.strokeText(mainVal, 9999, 0);
+    ctx.strokeText(mainVal, 1800, 0);
     
-    // D. Outer rim inside the glass bounds
+    // 2. Bottom Inner Depth Shadow
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.6)'; 
+    ctx.shadowBlur = 18; 
+    ctx.shadowOffsetX = -1800;
+    ctx.shadowOffsetY = 24;
+    ctx.lineWidth = 20;
+    ctx.strokeStyle = '#000000';
+    ctx.strokeText(mainVal, 1800, 0);
+    
+    // D. Razor-Sharp Luminous Rim
     ctx.shadowBlur = 0;
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 0;
-    ctx.lineWidth = 5;
-    ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.9)`; 
+    ctx.lineWidth = 10;
+    ctx.strokeStyle = `rgba(${hr}, ${hg}, ${hb}, 0.95)`; 
+    ctx.strokeText(mainVal, 0, 0);
+
+    // E. Pure Specular Accent Outline
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
     ctx.strokeText(mainVal, 0, 0);
     
     ctx.globalCompositeOperation = 'source-over';
@@ -8819,7 +8860,7 @@ export function drawCircleLetters(ctx: CanvasRenderingContext2D, stats: any, tex
     const y = 450; // Move closer to the Scora logo at the top
     
     // Spell out activity type
-    const activityType = stats.type || 'Workout';
+    const activityType = normalizeSport(stats.type || 'Workout');
     // e.g. "RUNNING", "RIDING", "TRAINING"
     let word = activityType.toUpperCase();
     if (word === 'RUN') word = 'RUNNING';
