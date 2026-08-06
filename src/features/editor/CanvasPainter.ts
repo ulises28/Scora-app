@@ -8703,21 +8703,22 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     const hb = Math.round(b + (255 - b) * 0.65);
 
     // A. Deep Contrast Drop Shadow
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
-    ctx.shadowBlur = 35;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
+    ctx.shadowBlur = 40;
     ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 15;
+    ctx.shadowOffsetY = 20;
 
-    // B. Translucent Glass Fill (Tinted with user selected color)
+    // B. Luminous Frosted 3D Glass Fill
     const glassFill = ctx.createLinearGradient(0, -1120, 0, 0);
-    glassFill.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.85)`);
-    glassFill.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, 0.35)`);
-    glassFill.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0.75)`);
+    glassFill.addColorStop(0, `rgba(${hr}, ${hg}, ${hb}, 0.95)`);   // Bright top specular sheen
+    glassFill.addColorStop(0.35, `rgba(${r}, ${g}, ${b}, 0.70)`);   // Rich user color core
+    glassFill.addColorStop(0.7, `rgba(${hr}, ${hg}, ${hb}, 0.40)`);  // Luminous glass interior
+    glassFill.addColorStop(1, `rgba(${hr}, ${hg}, ${hb}, 0.85)`);   // Bottom rim reflection
 
     ctx.fillStyle = glassFill;
     ctx.fillText(mainVal, 0, 0);
 
-    // C. INNER GLASS REFRACTIONS & BEVELS
+    // C. INNER GLASS REFRACTIONS & BEVELS (3D Depth)
     ctx.globalCompositeOperation = 'source-atop';
 
     const isSafari = typeof navigator !== 'undefined' && /AppleWebKit/i.test(navigator.userAgent) && !/Chrome|CriOS/i.test(navigator.userAgent);
@@ -8740,30 +8741,30 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
         ctx.strokeStyle = bevelGrad;
         ctx.strokeText(mainVal, 0, 0);
     } else {
-        // Untouched Chrome Master Shader: Inner Bevel Highlights & Shadows
+        // Master 3D Chrome Shader: Inner Bevel Highlights & Shadows
         ctx.shadowColor = 'rgba(255, 255, 255, 1)';
-        ctx.shadowBlur = 15;
+        ctx.shadowBlur = 18;
         ctx.shadowOffsetX = -9999;
-        ctx.shadowOffsetY = -16;
+        ctx.shadowOffsetY = -18;
         ctx.lineWidth = 20;
         ctx.strokeStyle = '#ffffff';
         ctx.strokeText(mainVal, 9999, 0);
 
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
         ctx.shadowBlur = 18;
         ctx.shadowOffsetX = -9999;
-        ctx.shadowOffsetY = 20;
+        ctx.shadowOffsetY = 24;
         ctx.lineWidth = 20;
         ctx.strokeStyle = '#000000';
         ctx.strokeText(mainVal, 9999, 0);
     }
 
-    // D. Crisp Color-Matched Outer Rim (NO White Outline)
+    // D. Outer Rim - Stroke in EXACT User Selected Color (No White Outer Line!)
     ctx.shadowBlur = 0;
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 0;
-    ctx.lineWidth = 6;
-    ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.85)`;
+    ctx.lineWidth = 8;
+    ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.90)`;
     ctx.strokeText(mainVal, 0, 0);
 
     ctx.globalCompositeOperation = 'source-over';
