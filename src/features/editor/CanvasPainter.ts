@@ -8017,7 +8017,7 @@ export function drawMicroMapPill(ctx: CanvasRenderingContext2D, stats: any, text
     const colors = buildColors(textColor);
 
     // Measure text to make pill perfectly symmetrical
-    ctx.font = "800 48px 'Plus Jakarta Sans'";
+    ctx.font = "800 48px 'Plus Jakarta Sans', sans-serif";
     const titleText = `${s1.value} ${s1.label}`;
     const titleW = ctx.measureText(titleText).width;
 
@@ -8030,7 +8030,7 @@ export function drawMicroMapPill(ctx: CanvasRenderingContext2D, stats: any, text
 
     const subText = `${s2.value} ${sub2Label}   •   ${s3.value} ${sub3Label}`.trim();
 
-    ctx.font = "600 28px 'Plus Jakarta Sans'";
+    ctx.font = "600 28px 'Plus Jakarta Sans', sans-serif";
     const subW = ctx.measureText(subText).width;
 
     const maxTextW = hasMap ? Math.max(titleW, subW) : titleW;
@@ -8041,32 +8041,51 @@ export function drawMicroMapPill(ctx: CanvasRenderingContext2D, stats: any, text
     const x = 540 - w / 2;
     const y = 300;
 
-    // 1. Draw Transparent, Color-Tinted Base Pill
+    // 1. Soft Outer Ambient Drop Shadow for Liquid Glass Pill
+    ctx.save();
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
+    ctx.shadowBlur = 30;
+    ctx.shadowOffsetY = 15;
+
+    // 2. Fixed Neutral Translucent Liquid Glass Fill (Pill stays neutral glass)
+    const glassFill = ctx.createLinearGradient(x, y, x, y + h);
+    glassFill.addColorStop(0, 'rgba(255, 255, 255, 0.45)');   // Top specular sheen
+    glassFill.addColorStop(0.35, 'rgba(255, 255, 255, 0.15)'); // Core transparency
+    glassFill.addColorStop(0.70, 'rgba(255, 255, 255, 0.10)'); // Translucent glass body
+    glassFill.addColorStop(1.0, 'rgba(255, 255, 255, 0.35)');  // Bottom rim reflection
+
+    ctx.fillStyle = glassFill;
     ctx.beginPath();
     ctx.roundRect(x, y, w, h, 35);
-
-    ctx.globalAlpha = 0.45; // Rich but translucent color
-    ctx.fillStyle = colors.solid;
     ctx.fill();
-    ctx.globalAlpha = 1.0;
 
-    // 2. Glossy Specular Highlight (The True Glass Effect)
+    // Disable shadow for internal drawings to keep text razor sharp
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+
+    // 3. Specular Top Glass Reflection
     ctx.save();
     ctx.beginPath();
     ctx.roundRect(x, y, w, h, 35);
     ctx.clip();
 
-    const glossGrad = ctx.createLinearGradient(x, y, x, y + h / 2);
-    glossGrad.addColorStop(0, 'rgba(255, 255, 255, 0.4)'); // Bright highlight at the top edge
-    glossGrad.addColorStop(1, 'rgba(255, 255, 255, 0.0)'); // Fades out completely by the middle
+    const glossGrad = ctx.createLinearGradient(x, y, x, y + h * 0.4);
+    glossGrad.addColorStop(0, 'rgba(255, 255, 255, 0.40)');
+    glossGrad.addColorStop(1, 'rgba(255, 255, 255, 0.0)');
     ctx.fillStyle = glossGrad;
-    ctx.fillRect(x, y, w, h / 2);
+    ctx.fillRect(x, y, w, h * 0.4);
     ctx.restore();
 
-    // NO border line - as requested by user
+    // 4. Outer Specular Glass Rim
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, 35);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.65)';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
 
-    // 3. Draw Map & Text ALWAYS WHITE
-    const contentColor = '#ffffff';
+    // 5. Map & Text change color based on user color selection
+    const contentColor = colors.solid;
 
     if (hasMap) {
         const coords = decodePolyline(stats.polyline);
@@ -8079,14 +8098,17 @@ export function drawMicroMapPill(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.textBaseline = 'middle';
     ctx.fillStyle = contentColor;
 
-    ctx.font = "800 48px 'Plus Jakarta Sans'";
+    ctx.font = "800 48px 'Plus Jakarta Sans', sans-serif";
     ctx.fillText(titleText, textX, y + (hasMap ? 45 : 50));
 
     if (hasMap) {
-        ctx.font = "600 28px 'Plus Jakarta Sans'";
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)'; // Slightly dimmed white for subtext
+        ctx.font = "600 28px 'Plus Jakarta Sans', sans-serif";
+        ctx.globalAlpha = 0.85;
         ctx.fillText(subText, textX, y + 95);
+        ctx.globalAlpha = 1.0;
     }
+
+    ctx.restore();
 }
 
 export function drawFloatingNeonPath(ctx: CanvasRenderingContext2D, stats: any, textColor: string, showLogo = true) {
