@@ -7402,19 +7402,9 @@ export function drawRetroDistance(ctx: CanvasRenderingContext2D, stats: any, tex
 export function drawWaveTitle(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
     ctx.save();
 
-    // 1. Color setup (Parse RGB & calculate ambient light-shifted color)
-    let r = 255, g = 255, b = 255;
-    if (textColor.startsWith('#') && textColor.length === 7) {
-        r = parseInt(textColor.slice(1, 3), 16);
-        g = parseInt(textColor.slice(3, 5), 16);
-        b = parseInt(textColor.slice(5, 7), 16);
-    } else if (textColor === 'black') {
-        r = 35; g = 35; b = 35;
-    }
-
-    const hr = Math.round(r + (255 - r) * 0.65);
-    const hg = Math.round(g + (255 - g) * 0.65);
-    const hb = Math.round(b + (255 - b) * 0.65);
+    // 1. Fixed Neutral Glass Colors for the frosted card (Always clean neutral white glass)
+    const r = 255, g = 255, b = 255;
+    const hr = 255, hg = 255, hb = 255;
 
     const cardW = 960;
     const cardH = 560;
@@ -7428,12 +7418,12 @@ export function drawWaveTitle(ctx: CanvasRenderingContext2D, stats: any, textCol
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 25;
 
-    // B. Multi-Stop Translucent Liquid Glass Fill
+    // B. Multi-Stop Translucent Liquid Glass Fill (Fixed Neutral Frosted Glass)
     const glassFill = ctx.createLinearGradient(cX, cY, cX, cY + cardH);
-    glassFill.addColorStop(0, `rgba(${hr}, ${hg}, ${hb}, 0.55)`);   // Top specular sheen
-    glassFill.addColorStop(0.35, `rgba(${r}, ${g}, ${b}, 0.25)`);   // Core tint
-    glassFill.addColorStop(0.70, `rgba(${hr}, ${hg}, ${hb}, 0.15)`);  // Translucent glass body
-    glassFill.addColorStop(1.0, `rgba(${hr}, ${hg}, ${hb}, 0.45)`);   // Bottom rim reflection
+    glassFill.addColorStop(0, 'rgba(255, 255, 255, 0.45)');   // Top specular sheen
+    glassFill.addColorStop(0.35, 'rgba(255, 255, 255, 0.15)'); // Core glass transparency
+    glassFill.addColorStop(0.70, 'rgba(255, 255, 255, 0.10)'); // Translucent glass body
+    glassFill.addColorStop(1.0, 'rgba(255, 255, 255, 0.35)');  // Bottom rim reflection
 
     ctx.fillStyle = glassFill;
     ctx.beginPath();
@@ -7462,18 +7452,13 @@ export function drawWaveTitle(ctx: CanvasRenderingContext2D, stats: any, textCol
     ctx.beginPath();
     ctx.roundRect(cX, cY, cardW, cardH, cornerRadius);
 
-    // 1. Color-matched Glass Rim
-    ctx.strokeStyle = `rgba(${hr}, ${hg}, ${hb}, 0.85)`;
+    // 1. Glass Rim
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
     ctx.lineWidth = 3;
     ctx.stroke();
 
-    // 2. Top Specular Accent Rim
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-
-    // E. Typography inside the glass card (Crisp White text for maximum contrast)
-    const mainColor = '#ffffff';
+    // E. Typography inside the glass card (Color selection changes ONLY the text/metrics!)
+    const mainColor = textColor || '#ffffff';
     ctx.fillStyle = mainColor;
 
     // Subtle drop shadow for text inside card
@@ -8105,61 +8090,73 @@ export function drawMicroMapPill(ctx: CanvasRenderingContext2D, stats: any, text
 }
 
 export function drawFloatingNeonPath(ctx: CanvasRenderingContext2D, stats: any, textColor: string, showLogo = true) {
-    const { s1, s2, s3, hasMap } = getDynamicStats(stats);
+    const { s1, hasMap } = getDynamicStats(stats);
     const colors = buildColors(textColor);
 
-    // Base Y - everything will be drawn relative to this so it's a tight cluster
-    const baseY = 250; // Moved UP just below the global logo
+    const baseY = 250; 
+    const cX = 540;
+
+    // Gradient calculation using user selected color
+    let r = 255, g = 255, b = 255;
+    if (textColor.startsWith('#') && textColor.length === 7) {
+        r = parseInt(textColor.slice(1, 3), 16);
+        g = parseInt(textColor.slice(3, 5), 16);
+        b = parseInt(textColor.slice(5, 7), 16);
+    }
+    const hr = Math.min(255, Math.round(r * 0.6 + 100));
+    const hg = Math.min(255, Math.round(g * 0.6 + 100));
+    const hb = Math.min(255, Math.round(b * 0.6 + 100));
+
+    // Luminous Dual-Color Neon Gradient
+    const neonGrad = ctx.createLinearGradient(cX - 200, baseY, cX + 200, baseY + 350);
+    neonGrad.addColorStop(0, `rgb(${r}, ${g}, ${b})`);
+    neonGrad.addColorStop(1, `rgb(${hr}, ${hg}, ${hb})`);
 
     if (hasMap) {
         const coords = decodePolyline(stats.polyline);
-        ctx.shadowColor = colors.accent;
-        ctx.shadowBlur = 15;
-        // Tightly packed above the text
-        drawMicroMonolineMap(ctx, coords, { x: 340, y: baseY, w: 400, h: 250 }, colors.accent);
+        ctx.shadowColor = `rgba(${r}, ${g}, ${b}, 0.8)`;
+        ctx.shadowBlur = 20;
+        drawMicroMonolineMap(ctx, coords, { x: 340, y: baseY, w: 400, h: 250 }, neonGrad as any);
         ctx.shadowBlur = 0;
     }
 
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
+    ctx.fillStyle = neonGrad;
+
+    // Display ONLY Main Value + Unit (No pace or time metrics)
+    ctx.font = "800 110px 'Monument Extended', 'Plus Jakarta Sans', sans-serif";
+    ctx.fillText(`${s1.value}`, cX, baseY + 300);
+
+    ctx.font = "700 36px 'Space Grotesk', 'Plus Jakarta Sans', sans-serif";
     ctx.fillStyle = colors.solid;
-
-    ctx.font = "800 64px 'Monument Extended', 'Plus Jakarta Sans'";
-    ctx.fillText(stats.title || 'WORKOUT', 540, baseY + 300);
-
-    ctx.font = "600 32px 'Plus Jakarta Sans'";
-    ctx.globalAlpha = 0.8;
-    ctx.fillText(`${s1.value} ${s1.label}    ${s2.value} ${s2.label}    ${s3.value} ${s3.label}`, 540, baseY + 360);
-    ctx.globalAlpha = 1.0;
+    ctx.fillText(`${s1.label}`, cX, baseY + 375);
 }
 
 export function drawMonolineMinimalist(ctx: CanvasRenderingContext2D, stats: any, textColor: string, showLogo = true) {
-    const { s1, s2, s3, hasMap } = getDynamicStats(stats);
+    const { s1, hasMap } = getDynamicStats(stats);
     const colors = buildColors(textColor);
 
     const startX = 80;
-    let currentY = 250; // Moved UP just below the global logo
+    let currentY = 250; 
 
     if (hasMap) {
         const coords = decodePolyline(stats.polyline);
-        drawMicroMonolineMap(ctx, coords, { x: startX, y: currentY, w: 150, h: 150 }, colors.accent);
-        currentY += 180;
+        drawMicroMonolineMap(ctx, coords, { x: startX, y: currentY, w: 180, h: 180 }, colors.solid);
+        currentY += 210;
     }
 
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
     ctx.fillStyle = colors.solid;
 
-    ctx.font = "300 110px 'Satoshi', 'Plus Jakarta Sans'";
+    // Display ONLY Main Value + Unit (No pace or time metrics)
+    ctx.font = "300 120px 'Satoshi', 'Plus Jakarta Sans', sans-serif";
     ctx.fillText(`${s1.value}`, startX, currentY);
+    
     const w1 = ctx.measureText(s1.value).width;
-    ctx.font = "700 40px 'Satoshi', 'Plus Jakarta Sans'";
-    ctx.fillText(`${s1.label}`, startX + w1 + 15, currentY + 50);
-
-    currentY += 130;
-
-    ctx.font = "400 36px 'Satoshi', 'Plus Jakarta Sans'";
-    ctx.fillText(`${s2.label}: ${s2.value}   |   ${s3.label}: ${s3.value}`, startX, currentY);
+    ctx.font = "700 42px 'Satoshi', 'Plus Jakarta Sans', sans-serif";
+    ctx.fillText(`${s1.label}`, startX + w1 + 18, currentY + 55);
 }
 
 export function drawMassiveHero(ctx: CanvasRenderingContext2D, stats: any, textColor: string, showLogo = true) {
