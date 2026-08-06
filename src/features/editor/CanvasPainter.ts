@@ -8530,28 +8530,27 @@ export function drawSocialPill(ctx: CanvasRenderingContext2D, stats: any, textCo
     const { s2 } = getDynamicStats(stats);
     
     const h = 120;
-    ctx.font = "500 50px 'Space Grotesk', 'Courier New', monospace";
-    
+    const locationStr = (stats.location || (stats.hasDistance ? 'LOCAL ROUTE' : 'TRAINING')).toUpperCase();
     const paceOrCal = stats.hasDistance 
         ? (s2.label === 'PACE' ? s2.value + ' /KM' : s2.value)
         : (s2.label === 'KCAL' ? s2.value + ' KCAL' : s2.value);
 
     const distOrTime = stats.hasDistance ? `${stats.distanceVal} KM` : `${stats.timeStr}`;
-    
-    let locationStr = (stats.location || (stats.hasDistance ? 'LOCAL ROUTE' : 'TRAINING')).toUpperCase();
-    
-    const baseText = `${distOrTime}   •   ${paceOrCal}   •   `;
-    const maxTextWidth = 720; 
-    
-    // Dynamic truncation of location if too long so it NEVER overlaps the blue button
-    while (locationStr.length > 3 && ctx.measureText(baseText + locationStr).width > maxTextWidth) {
-        locationStr = locationStr.slice(0, -2) + '…';
+    const pillText = `${distOrTime}   •   ${paceOrCal}   •   ${locationStr}`;
+
+    // Auto-scale font size so full text fits inside the pill cleanly without '...' truncation
+    let fontSize = 48;
+    ctx.font = `500 ${fontSize}px 'Space Grotesk', 'Courier New', monospace`;
+    let textW = ctx.measureText(pillText).width;
+    const maxTextW = 760; // Max allowed text width for 980px wide pill
+
+    if (textW > maxTextW) {
+        fontSize = Math.max(30, Math.floor(48 * (maxTextW / textW)));
+        ctx.font = `500 ${fontSize}px 'Space Grotesk', 'Courier New', monospace`;
+        textW = ctx.measureText(pillText).width;
     }
     
-    const pillText = `${baseText}${locationStr}`;
-    
-    const textW = ctx.measureText(pillText).width;
-    const w = Math.min(980, textW + 160); 
+    const w = Math.min(980, textW + 150); 
     const x = 540 - w / 2;
     const y = 200;
     
@@ -8565,7 +8564,7 @@ export function drawSocialPill(ctx: CanvasRenderingContext2D, stats: any, textCo
     ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText(pillText, x + 50, y + h / 2 + 5); 
+    ctx.fillText(pillText, x + 45, y + h / 2 + 4); 
     
     // Blue button
     const btnRadius = 45;
@@ -8720,37 +8719,35 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.fillStyle = glassFill;
     ctx.fillText(mainVal, 0, 0);
     
-    // C. INNER GLASS REFRACTIONS & BEVELS
+    // C. INNER GLASS REFRACTIONS & BEVELS (Cross-Browser Gradient Bevel Stroke)
     ctx.globalCompositeOperation = 'source-atop';
     
-    // 1. High-Luminance Top Specular Reflection (Gleaming white highlight)
-    ctx.shadowColor = 'rgba(255, 255, 255, 1)';
-    ctx.shadowBlur = 18;
-    ctx.shadowOffsetX = -1800;
-    ctx.shadowOffsetY = -18; 
-    ctx.lineWidth = 20;
-    ctx.strokeStyle = '#ffffff';
-    ctx.strokeText(mainVal, 1800, 0);
-    
-    // 2. Bottom Inner Depth Shadow
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.6)'; 
-    ctx.shadowBlur = 18; 
-    ctx.shadowOffsetX = -1800;
-    ctx.shadowOffsetY = 24;
-    ctx.lineWidth = 20;
-    ctx.strokeStyle = '#000000';
-    ctx.strokeText(mainVal, 1800, 0);
-    
-    // D. Razor-Sharp Luminous Rim
+    // Clear shadow offsets to avoid off-screen artifact rendering bugs in Safari & Chrome
+    ctx.shadowColor = 'transparent';
     ctx.shadowBlur = 0;
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 0;
-    ctx.lineWidth = 10;
+
+    // Linear gradient stroke applied directly over text at (0, 0)
+    // source-atop clips the stroke to inside the glyph bounds!
+    const bevelGrad = ctx.createLinearGradient(0, -1120, 0, 0);
+    bevelGrad.addColorStop(0, 'rgba(255, 255, 255, 0.95)');   // Gleaming white top highlight
+    bevelGrad.addColorStop(0.20, 'rgba(255, 255, 255, 0.35)');
+    bevelGrad.addColorStop(0.50, 'rgba(255, 255, 255, 0.0)');
+    bevelGrad.addColorStop(0.80, 'rgba(0, 0, 0, 0.25)');
+    bevelGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0.65)');       // Dark bottom depth shadow
+    
+    ctx.lineWidth = 18;
+    ctx.strokeStyle = bevelGrad;
+    ctx.strokeText(mainVal, 0, 0);
+    
+    // D. Razor-Sharp Luminous Outer Rim
+    ctx.lineWidth = 8;
     ctx.strokeStyle = `rgba(${hr}, ${hg}, ${hb}, 0.95)`; 
     ctx.strokeText(mainVal, 0, 0);
 
     // E. Pure Specular Accent Outline
-    ctx.lineWidth = 4;
+    ctx.lineWidth = 3;
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
     ctx.strokeText(mainVal, 0, 0);
     
