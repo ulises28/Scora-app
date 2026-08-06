@@ -8669,7 +8669,7 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     // 1. Date at top (Positioned at y=150 to guarantee ZERO overlap with giant numbers)
     const dateStr = stats.rawDate ? new Intl.DateTimeFormat('es-ES', { weekday: 'short', month: 'short', day: 'numeric' }).format(new Date(stats.rawDate.replace('Z', ''))) : 'Lun jun 29';
     const formattedDate = dateStr.charAt(0).toUpperCase() + dateStr.slice(1).replace('.', '');
-
+    
     ctx.save();
     ctx.font = "600 42px 'Inter', 'Plus Jakarta Sans', sans-serif";
     ctx.textAlign = 'center';
@@ -8702,16 +8702,16 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     const hb = Math.round(b + (255 - b) * 0.65);
 
     // A. Soft Drop Shadow behind glass
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.50)';
-    ctx.shadowBlur = 32;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+    ctx.shadowBlur = 28;
     ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 18;
+    ctx.shadowOffsetY = 16;
 
-    // B. Symmetrical Translucent Glass Fill (Equal top & bottom color concentration)
+    // B. Translucent Tinted Glass Base
     const glassFill = ctx.createLinearGradient(0, -1120, 0, 0);
-    glassFill.addColorStop(0.0, `rgba(${r}, ${g}, ${b}, 0.65)`);
+    glassFill.addColorStop(0.0, `rgba(${r}, ${g}, ${b}, 0.55)`);
     glassFill.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, 0.20)`);
-    glassFill.addColorStop(1.0, `rgba(${r}, ${g}, ${b}, 0.65)`);
+    glassFill.addColorStop(1.0, `rgba(${r}, ${g}, ${b}, 0.50)`);
 
     ctx.fillStyle = glassFill;
     ctx.fillText(mainVal, 0, 0);
@@ -8721,23 +8721,30 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
 
-    // C. SYMMETRICAL INNER GLASS REFRACTIONS (Equal 3D glass bevel top & bottom)
+    // C. Studio Liquid Glass Refractions (Source-Atop GPU Clipping)
     ctx.globalCompositeOperation = 'source-atop';
 
-    // Symmetrical Top & Bottom Inner Bevel
-    const bevelGrad = ctx.createLinearGradient(0, -1120, 0, 0);
-    bevelGrad.addColorStop(0.0,  'rgba(255, 255, 255, 0.90)'); // Top specular white rim
-    bevelGrad.addColorStop(0.08, 'rgba(0, 0, 0, 0.40)');       // Top inner contrast shadow
-    bevelGrad.addColorStop(0.50, 'rgba(0, 0, 0, 0.0)');        // Clear glass center
-    bevelGrad.addColorStop(0.92, 'rgba(0, 0, 0, 0.40)');       // Bottom inner contrast shadow
-    bevelGrad.addColorStop(1.0,  'rgba(255, 255, 255, 0.90)'); // Bottom specular white rim
+    // 1. Bottom-Right Dark Refraction Line (Offset +4, +4)
+    ctx.lineWidth = 12;
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
+    ctx.strokeText(mainVal, 4, 4);
 
-    ctx.lineWidth = 14;
-    ctx.strokeStyle = bevelGrad;
-    ctx.strokeText(mainVal, 0, 0);
+    // 2. Top-Left White Specular Edge Light (Offset -4, -4)
+    ctx.lineWidth = 12;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+    ctx.strokeText(mainVal, -4, -4);
 
-    // D. Color-Matched Outer Glass Contour (Clean perimeter in user selected color)
-    ctx.lineWidth = 6;
+    // 3. Vertical Gloss Sheen
+    const glossGrad = ctx.createLinearGradient(0, -1120, 0, 0);
+    glossGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.35)');
+    glossGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.05)');
+    glossGrad.addColorStop(1.0, 'rgba(255, 255, 255, 0.25)');
+
+    ctx.fillStyle = glossGrad;
+    ctx.fillText(mainVal, 0, 0);
+
+    // D. Color-Matched Outer Glass Contour
+    ctx.lineWidth = 5;
     ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.85)`;
     ctx.strokeText(mainVal, 0, 0);
 
