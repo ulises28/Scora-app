@@ -8636,10 +8636,8 @@ export function drawBalloonLetters(ctx: CanvasRenderingContext2D, stats: any, te
 }
 
 export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
-    let mainVal = stats.hasDistance ? stats.distanceVal : (stats.timeStr || '0:00');
-
-    // Convert time to total minutes for workout mode
-    if (!stats.hasDistance && mainVal) {
+    let mainVal = stats.distanceVal || stats.timeStr || '0.00';
+    if (!stats.hasDistance && stats.timeStr) {
         const hMatch = mainVal.match(/(\d+)h/);
         const mMatch = mainVal.match(/(\d+)m/);
         if (hMatch || mMatch) {
@@ -8657,10 +8655,9 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     }
 
     const unit = stats.hasDistance ? (stats.distanceUnit || 'KM').toLowerCase() : 'min';
-
+    
     const x = 540;
-    const y = 960;
-
+    
     // Parse textColor for tinting
     let r = 255, g = 255, b = 255;
     if (textColor.startsWith('#') && textColor.length === 7) {
@@ -8669,18 +8666,20 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
         b = parseInt(textColor.slice(5, 7), 16);
     }
 
-    // 1. Date at top
+    // 1. Date at top (Positioned at y=150 to guarantee ZERO overlap with giant numbers)
     const dateStr = stats.rawDate ? new Intl.DateTimeFormat('es-ES', { weekday: 'short', month: 'short', day: 'numeric' }).format(new Date(stats.rawDate.replace('Z', ''))) : 'Lun jun 29';
     const formattedDate = dateStr.charAt(0).toUpperCase() + dateStr.slice(1).replace('.', '');
 
-    ctx.font = "600 45px 'Inter', 'Plus Jakarta Sans', sans-serif";
+    ctx.save();
+    ctx.font = "600 42px 'Inter', 'Plus Jakarta Sans', sans-serif";
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = textColor; // Date uses the raw selected color
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
-    ctx.shadowBlur = 15;
-    ctx.shadowOffsetY = 5;
-    ctx.fillText(formattedDate, x, 250);
+    ctx.fillStyle = textColor; 
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+    ctx.shadowBlur = 10;
+    ctx.shadowOffsetY = 3;
+    ctx.fillText(formattedDate, x, 150);
+    ctx.restore();
 
     // 2. Huge Glass Numbers
     ctx.save();
