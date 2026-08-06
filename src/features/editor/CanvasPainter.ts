@@ -8701,3 +8701,83 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     // Y is roughly 960 (center) + 350 (height). Placed exactly at 1290 to hug the numbers!
     ctx.fillText(unit, x, y + 330); 
 }
+
+export function drawMarkerHighlight(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const x = 540;
+    const y = 960;
+    
+    let title = stats.title || 'Morning Run in the city';
+    // Fallback if no title is provided
+    if (title.trim() === '') title = 'a veces me dan inseguridad mis piernas y mi cuerpo en general';
+    
+    const words = title.split(' ');
+    let lines = [];
+    let currentLine = words[0];
+    ctx.font = "italic 400 65px 'Georgia', 'Times New Roman', serif";
+    const maxWidth = 800;
+    
+    for (let i = 1; i < words.length; i++) {
+        let word = words[i];
+        let width = ctx.measureText(currentLine + " " + word).width;
+        if (width < maxWidth) {
+            currentLine += " " + word;
+        } else {
+            lines.push(currentLine);
+            currentLine = word;
+        }
+    }
+    lines.push(currentLine);
+    
+    const lineHeight = 80;
+    const totalHeight = lines.length * lineHeight;
+    const startY = y - totalHeight / 2 + lineHeight / 2;
+    
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    // 1. Draw the highlighter strokes BEHIND the text
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = 75; // Thickness of the highlighter
+    // Use an aesthetic red marker color
+    ctx.strokeStyle = 'rgba(215, 50, 50, 0.95)'; 
+    
+    lines.forEach((line, index) => {
+        const lineY = startY + index * lineHeight;
+        const lineWidth = ctx.measureText(line).width;
+        
+        const padX = 25;
+        // Subtle slant to the marker stroke
+        const skewY = (index % 2 === 0) ? -2 : 2; 
+        
+        ctx.beginPath();
+        ctx.moveTo(x - lineWidth / 2 - padX, lineY + skewY);
+        ctx.lineTo(x + lineWidth / 2 + padX, lineY - skewY);
+        ctx.stroke();
+    });
+    ctx.restore();
+    
+    // 2. Draw the white text on top
+    ctx.fillStyle = '#ffffff';
+    ctx.shadowColor = 'rgba(0,0,0,0.2)';
+    ctx.shadowBlur = 5;
+    ctx.shadowOffsetY = 2;
+    
+    lines.forEach((line, index) => {
+        const lineY = startY + index * lineHeight;
+        ctx.fillText(line.toLowerCase(), x, lineY);
+    });
+    
+    // 3. Draw small stats at the bottom
+    const distance = stats.hasDistance ? stats.distanceVal + ' ' + (stats.distanceUnit || 'KM').toLowerCase() : '';
+    const time = stats.timeStr || '';
+    
+    if (distance || time) {
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetY = 0;
+        ctx.font = "500 35px 'Inter', sans-serif";
+        const meta = [distance, time].filter(Boolean).join(' • ');
+        ctx.fillText(meta, x, y + totalHeight / 2 + 100);
+    }
+}

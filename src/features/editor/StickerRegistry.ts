@@ -11,6 +11,7 @@ import * as Renderers from './CanvasPainter';
 // ─── 1. ACTIVE PRODUCTIVE STICKERS ───────────────────────────────────────────
 // These are visible in the Studio UI Gallery.
 export const ACTIVE_STICKER_LIST: StickerDefinition[] = [
+    { id: 'marker-highlight', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, duration: true }, render: Renderers.drawMarkerHighlight },
     { id: 'glass-numbers', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, duration: true, date: true }, render: Renderers.drawGlassNumbers },
     { id: 'note-accent', supportsCustomColor: true, category: 'all', supportsBlackText: true, preferredCase: 'title', features: { distance: true, duration: true, paceSpeed: true }, render: Renderers.drawNoteAccentSticker },
     { id: 'narrative-highlight', category: 'all', supportsBlackText: true, preferredCase: 'lowercase', features: { distance: true, duration: true, paceSpeed: true, date: true, location: true }, render: Renderers.drawNarrativeHighlight },
