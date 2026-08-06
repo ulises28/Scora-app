@@ -11,7 +11,8 @@ import * as Renderers from './CanvasPainter';
 // ─── 1. ACTIVE PRODUCTIVE STICKERS ───────────────────────────────────────────
 // These are visible in the Studio UI Gallery.
 export const ACTIVE_STICKER_LIST: StickerDefinition[] = [
-    { id: 'marker-highlight', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, duration: true }, render: Renderers.drawMarkerHighlight },
+
+    { id: 'circle-letters', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, duration: true }, render: Renderers.drawCircleLetters },
     { id: 'glass-numbers', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, duration: true, date: true }, render: Renderers.drawGlassNumbers },
     { id: 'note-accent', supportsCustomColor: true, category: 'all', supportsBlackText: true, preferredCase: 'title', features: { distance: true, duration: true, paceSpeed: true }, render: Renderers.drawNoteAccentSticker },
     { id: 'narrative-highlight', category: 'all', supportsBlackText: true, preferredCase: 'lowercase', features: { distance: true, duration: true, paceSpeed: true, date: true, location: true }, render: Renderers.drawNarrativeHighlight },
@@ -47,16 +48,17 @@ export const ACTIVE_STICKER_LIST: StickerDefinition[] = [
     { id: 'workout-receipt', category: 'distance', supportsBlackText: false, features: { distance: true, paceSpeed: true, duration: true, date: true }, render: Renderers.drawWorkoutReceipt },
     { id: 'condesa-stack', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, paceSpeed: true, startTime: true, date: true }, expectedMetadata: ['location', 'LOCAL TIME', 'LOCATION'], render: Renderers.drawCondesaStack },
     { id: 'journal-grid', supportsCustomColor: true, category: 'distance', supportsBlackText: true, features: { distance: true, duration: true, map: true, heartRate: true, location: true }, render: Renderers.drawJournalGrid },
-    { id: 'science-pro', category: 'all', supportsBlackText: false, features: { distance: true, heartRate: true, date: true, paceSpeed: false }, render: Renderers.drawSciencePro },
-    { id: 'editorial-strip', supportsCustomColor: true, category: 'all', supportsBlackText: false, compact: true, features: { distance: true, duration: true, date: true }, render: Renderers.drawEditorialStrip },
-    { id: 'fridge-magnets', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, duration: true }, render: Renderers.drawFridgeMagnets },
     { id: 'social-pill', supportsCustomColor: true, category: 'all', supportsBlackText: true, compact: true, features: { distance: true, duration: true }, render: Renderers.drawSocialPill },
-    { id: 'balloon-letters', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, duration: true }, render: Renderers.drawBalloonLetters },
 ];
 
 // ─── 2. ARCHIVED / HIDDEN STICKERS ───────────────────────────────────────────
 // These are preserved in the code but hidden from the main UI Gallery.
 export const ARCHIVED_STICKER_LIST: StickerDefinition[] = [
+    { id: 'marker-highlight', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, duration: true }, render: Renderers.drawMarkerHighlight },
+    { id: 'science-pro', category: 'all', supportsBlackText: false, features: { distance: true, heartRate: true, date: true, paceSpeed: false }, render: Renderers.drawSciencePro },
+    { id: 'editorial-strip', supportsCustomColor: true, category: 'all', supportsBlackText: false, compact: true, features: { distance: true, duration: true, date: true }, render: Renderers.drawEditorialStrip },
+    { id: 'fridge-magnets', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, duration: true }, render: Renderers.drawFridgeMagnets },
+    { id: 'balloon-letters', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, duration: true }, render: Renderers.drawBalloonLetters },
     { id: 'coffee_club', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, duration: true, paceSpeed: true, date: true, location: true, map: true }, render: Renderers.drawCoffeeClub },
     { id: 'boxed-metric', supportsCustomColor: true, category: 'distance', supportsBlackText: true, compact: true, features: { distance: true, duration: true }, render: Renderers.drawBoxedMetric },
     { id: 'editorial-row', category: 'all', supportsBlackText: true, features: { distance: true, paceSpeed: true, heartRate: true }, render: Renderers.drawEditorialRow },

@@ -303,13 +303,13 @@ export async function drawTemplate(
     if (showLogo && !templateType.startsWith('chrome')) {
         ctx.textAlign = 'left';
         ctx.beginPath();
-        ctx.arc(80, 100, 10, 0, Math.PI * 2);
+        ctx.arc(70, 90, 6, 0, Math.PI * 2); // Smaller dot
         ctx.fillStyle = textColor; // Dot matches the text color for monochromatic stickers
         ctx.fill();
 
-        ctx.font = "700 42px 'Plus Jakarta Sans'";
+        ctx.font = "800 28px 'Plus Jakarta Sans'"; // Reduced from 42px
         ctx.fillStyle = textColor; 
-        ctx.fillText('SCORA.', 110, 115);
+        ctx.fillText('SCORA.', 90, 99); // Adjusted X/Y for the smaller size
     }
 
     sticker.render(ctx, stats, textColor, showLogo);
@@ -5577,7 +5577,6 @@ export function drawGraffitiExpo(ctx: CanvasRenderingContext2D, stats: any, text
     const heroText = `${distNum} KM`;
     
     ctx.save();
-    applyAntiGhostingShadow(ctx, customColor);
     
     const targetW = 960;
     const baseHeroSize = 200;
@@ -5757,11 +5756,11 @@ export function drawJournalGrid(ctx: CanvasRenderingContext2D, stats: any, textC
     ctx.save();
     ctx.globalAlpha = 0.9;
 
-    // Apply Bi-Directional Readability Shadow (Anti-Ghosting)
+    // Shadow removed per user request
     ctx.save();
-    ctx.shadowColor = isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.7)'; // Stronger contrast shadow
-    ctx.shadowBlur = 14;
-    ctx.shadowOffsetY = 3;
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
 
     // Refined Grid Aesthetics
     ctx.beginPath();
@@ -7214,7 +7213,6 @@ export function drawWavyQuote(ctx: CanvasRenderingContext2D, stats: any, textCol
     if (fontSize > 200) fontSize = 200; 
 
     ctx.font = `900 ${fontSize}px 'Monument Extended', 'Cabinet Grotesk Black', sans-serif`;
-    applyAntiGhostingShadow(ctx, mainColor);
     ctx.fillText(dayStr, 60, 140);
     ctx.restore();
     ctx.save();
@@ -8614,11 +8612,38 @@ export function drawBalloonLetters(ctx: CanvasRenderingContext2D, stats: any, te
 }
 
 export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
-    const mainVal = stats.hasDistance ? stats.distanceVal : (stats.timeStr || '0:00');
+    let mainVal = stats.hasDistance ? stats.distanceVal : (stats.timeStr || '0:00');
+    
+    // Convert time to total minutes for workout mode
+    if (!stats.hasDistance && mainVal) {
+        const hMatch = mainVal.match(/(\d+)h/);
+        const mMatch = mainVal.match(/(\d+)m/);
+        if (hMatch || mMatch) {
+            const h = hMatch ? parseInt(hMatch[1], 10) : 0;
+            const m = mMatch ? parseInt(mMatch[1], 10) : 0;
+            mainVal = String(h * 60 + m);
+        } else {
+            const parts = mainVal.split(':');
+            if (parts.length === 3) {
+                mainVal = String(parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10));
+            } else if (parts.length === 2) {
+                mainVal = String(parseInt(parts[0], 10));
+            }
+        }
+    }
+
     const unit = stats.hasDistance ? (stats.distanceUnit || 'KM').toLowerCase() : 'min';
     
     const x = 540;
     const y = 960;
+    
+    // Parse textColor for tinting
+    let r = 255, g = 255, b = 255;
+    if (textColor.startsWith('#') && textColor.length === 7) {
+        r = parseInt(textColor.slice(1, 3), 16);
+        g = parseInt(textColor.slice(3, 5), 16);
+        b = parseInt(textColor.slice(5, 7), 16);
+    }
     
     // 1. Date at top
     const dateStr = stats.rawDate ? new Intl.DateTimeFormat('es-ES', { weekday: 'short', month: 'short', day: 'numeric' }).format(new Date(stats.rawDate.replace('Z', ''))) : 'Lun jun 29';
@@ -8627,51 +8652,51 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.font = "600 45px 'Inter', 'Plus Jakarta Sans', sans-serif";
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = textColor; // Date uses the raw selected color
     ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
     ctx.shadowBlur = 15;
     ctx.shadowOffsetY = 5;
     ctx.fillText(formattedDate, x, 250);
     
-    // 2. Huge Glass Numbers (Extremely tall and narrow, TEXT ITSELF IS THE GLASS)
+    // 2. Huge Glass Numbers
     ctx.save();
-    ctx.translate(x, y);
-    ctx.scale(0.65, 2.0); // Tall and narrow
+    // Anchor the numbers at Y=1350 so when they stretch, they grow UPWARDS
+    ctx.translate(x, 1350); 
+    // STRETCH VERTICALLY ONLY - Make them much taller to fill the box
+    ctx.scale(0.65, 3.2); 
     
-    // Use an incredibly massive font size to fill the screen
     ctx.font = "800 350px 'Inter', 'Plus Jakarta Sans', sans-serif";
     ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
+    ctx.textBaseline = 'bottom'; // Crucial: forces scaling to push upwards
     
     // A. Outer Drop Shadow
-    // Extremely dark and huge blur to simulate the darkened blur of the background, giving massive contrast
     ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
     ctx.shadowBlur = 60;
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 20;
     
-    // B. Translucent Glass Fill (Milky white, stronger for contrast)
-    const glassFill = ctx.createLinearGradient(0, -180, 0, 180);
-    glassFill.addColorStop(0, 'rgba(255, 255, 255, 0.7)'); // Frosty top
-    glassFill.addColorStop(0.5, 'rgba(255, 255, 255, 0.15)'); // Slightly milky middle
-    glassFill.addColorStop(1, 'rgba(255, 255, 255, 0.5)'); // Frosty bottom
+    // B. Translucent Glass Fill (Tinted with selected color)
+    const glassFill = ctx.createLinearGradient(0, -350, 0, 0); // Adjusted gradient for bottom baseline
+    glassFill.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.7)`); // Frosty top
+    glassFill.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, 0.15)`); // Slightly milky middle
+    glassFill.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0.5)`); // Frosty bottom
     
     ctx.fillStyle = glassFill;
     ctx.fillText(mainVal, 0, 0);
     
-    // C. MASTERCLASS INNER BEVELS (Masked to text shape)
+    // C. MASTERCLASS INNER BEVELS
     ctx.globalCompositeOperation = 'source-atop';
     
-    // Inner Dark Shadow (High contrast top edge)
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.9)'; // Extremely dark
+    // Inner Dark Shadow
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.9)'; 
     ctx.shadowBlur = 25;
     ctx.shadowOffsetX = -9999;
     ctx.shadowOffsetY = 20;
     ctx.lineWidth = 20;
-    ctx.strokeStyle = '#000000'; // Drawn offscreen, casts shadow
+    ctx.strokeStyle = '#000000';
     ctx.strokeText(mainVal, 9999, 0);
     
-    // Inner Bright Highlight (High contrast bottom edge)
+    // Inner Bright Highlight
     ctx.shadowColor = 'rgba(255, 255, 255, 1)';
     ctx.shadowBlur = 25;
     ctx.shadowOffsetX = -9999;
@@ -8680,15 +8705,14 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.strokeStyle = '#ffffff';
     ctx.strokeText(mainVal, 9999, 0);
     
-    // D. Outer rim inside the glass bounds (Glossy edge)
+    // D. Outer rim inside the glass bounds
     ctx.shadowBlur = 0;
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 0;
     ctx.lineWidth = 5;
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)'; // High contrast bright rim
+    ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.9)`; 
     ctx.strokeText(mainVal, 0, 0);
     
-    // Restore normal composition
     ctx.globalCompositeOperation = 'source-over';
     ctx.restore();
     
@@ -8698,8 +8722,10 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
     ctx.shadowBlur = 15;
     ctx.shadowOffsetY = 5;
-    // Y is roughly 960 (center) + 350 (height). Placed exactly at 1290 to hug the numbers!
-    ctx.fillText(unit, x, y + 330); 
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    // Shifted significantly up to account for the font's built-in bottom padding when scaled 3.2x
+    ctx.fillText(unit, x, 1260); 
 }
 
 export function drawMarkerHighlight(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
@@ -8707,13 +8733,14 @@ export function drawMarkerHighlight(ctx: CanvasRenderingContext2D, stats: any, t
     const y = 960;
     
     let title = stats.title || 'Morning Run in the city';
-    // Fallback if no title is provided
     if (title.trim() === '') title = 'a veces me dan inseguridad mis piernas y mi cuerpo en general';
     
     const words = title.split(' ');
     let lines = [];
     let currentLine = words[0];
-    ctx.font = "italic 400 65px 'Georgia', 'Times New Roman', serif";
+    
+    // Non-italic serif font exactly like the reference image
+    ctx.font = "400 65px 'Times New Roman', 'Georgia', serif";
     const maxWidth = 800;
     
     for (let i = 1; i < words.length; i++) {
@@ -8737,19 +8764,22 @@ export function drawMarkerHighlight(ctx: CanvasRenderingContext2D, stats: any, t
     
     // 1. Draw the highlighter strokes BEHIND the text
     ctx.save();
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.lineWidth = 75; // Thickness of the highlighter
-    // Use an aesthetic red marker color
-    ctx.strokeStyle = 'rgba(215, 50, 50, 0.95)'; 
+    ctx.lineCap = 'butt'; // Gives the messy rectangular marker ends
+    ctx.lineJoin = 'miter';
+    ctx.lineWidth = 80; // Thickness of the highlighter
+    
+    // We cannot use 'multiply' on a transparent canvas as it will vanish. 
+    // Instead, we use standard alpha blending so overlapping strokes naturally darken!
+    ctx.globalCompositeOperation = 'source-over'; 
+    ctx.strokeStyle = 'rgba(215, 45, 45, 0.85)'; // Authentic red marker color
     
     lines.forEach((line, index) => {
         const lineY = startY + index * lineHeight;
         const lineWidth = ctx.measureText(line).width;
         
-        const padX = 25;
+        const padX = 15;
         // Subtle slant to the marker stroke
-        const skewY = (index % 2 === 0) ? -2 : 2; 
+        const skewY = (index % 2 === 0) ? -3 : 2; 
         
         ctx.beginPath();
         ctx.moveTo(x - lineWidth / 2 - padX, lineY + skewY);
@@ -8760,13 +8790,15 @@ export function drawMarkerHighlight(ctx: CanvasRenderingContext2D, stats: any, t
     
     // 2. Draw the white text on top
     ctx.fillStyle = '#ffffff';
-    ctx.shadowColor = 'rgba(0,0,0,0.2)';
-    ctx.shadowBlur = 5;
-    ctx.shadowOffsetY = 2;
+    // Very subtle shadow to lift it off the red ink
+    ctx.shadowColor = 'rgba(0,0,0,0.15)';
+    ctx.shadowBlur = 3;
+    ctx.shadowOffsetY = 1;
     
     lines.forEach((line, index) => {
         const lineY = startY + index * lineHeight;
-        ctx.fillText(line.toLowerCase(), x, lineY);
+        // Text is drawn exactly as typed, to match the lowercase aesthetic of the reference
+        ctx.fillText(line, x, lineY);
     });
     
     // 3. Draw small stats at the bottom
@@ -8780,4 +8812,129 @@ export function drawMarkerHighlight(ctx: CanvasRenderingContext2D, stats: any, t
         const meta = [distance, time].filter(Boolean).join(' • ');
         ctx.fillText(meta, x, y + totalHeight / 2 + 100);
     }
+}
+
+export function drawCircleLetters(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const x = 540;
+    const y = 450; // Move closer to the Scora logo at the top
+    
+    // Spell out activity type
+    const activityType = stats.type || 'Workout';
+    // e.g. "RUNNING", "RIDING", "TRAINING"
+    let word = activityType.toUpperCase();
+    if (word === 'RUN') word = 'RUNNING';
+    else if (word === 'RIDE') word = 'RIDING';
+    else if (word === 'WORKOUT') word = 'TRAINING';
+    
+    // Draw circles
+    const circleRadius = 55;
+    // NEGATIVE GAP: This makes the circles overlap like a chain!
+    const gap = -15; 
+    const totalWidth = (word.length * circleRadius * 2) + ((word.length - 1) * gap);
+    const startX = x - totalWidth / 2 + circleRadius;
+    
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    // Split into characters and draw circles
+    for (let i = 0; i < word.length; i++) {
+        const char = word[i];
+        const cx = startX + i * (circleRadius * 2 + gap);
+        const cy = y - 70; // slightly above center
+        
+        ctx.save();
+        
+        // 1. Drop Shadow for 3D popup
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+        ctx.shadowBlur = 20;
+        ctx.shadowOffsetY = 15;
+        
+        // Base Circle
+        ctx.beginPath();
+        ctx.arc(cx, cy, circleRadius, 0, Math.PI * 2);
+        ctx.fillStyle = '#ebebeb'; // off-white cream color
+        ctx.fill();
+        
+        // Disable shadow for inner rendering
+        ctx.shadowColor = 'transparent';
+        
+        // 2. Inner Top Highlight Bevel
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(cx, cy, circleRadius, 0, Math.PI * 2);
+        ctx.clip();
+        
+        ctx.beginPath();
+        ctx.arc(cx, cy - 8, circleRadius, 0, Math.PI * 2);
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 16;
+        ctx.stroke();
+        
+        // 3. Inner Bottom Shadow Bevel
+        ctx.beginPath();
+        ctx.arc(cx, cy + 8, circleRadius, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.08)';
+        ctx.lineWidth = 16;
+        ctx.stroke();
+        ctx.restore(); // restore clip
+        
+        // 4. Letter
+        ctx.font = "800 65px 'Inter', 'Plus Jakarta Sans', sans-serif";
+        ctx.fillStyle = '#222222';
+        ctx.fillText(char, cx, cy + 5); // +5 to vertically balance the font
+        
+        ctx.restore();
+    }
+    
+    // Pink Handwriting below: Distance or Total Minutes
+    let subtext = '';
+    if (stats.hasDistance && stats.distanceVal) {
+        subtext = `${stats.distanceVal} ${stats.distanceUnit || 'KM'}`;
+    } else {
+        // Parse time to minutes for workouts
+        let mainVal = stats.timeStr || '0:00';
+        const hMatch = mainVal.match(/(\d+)h/);
+        const mMatch = mainVal.match(/(\d+)m/);
+        if (hMatch || mMatch) {
+            const h = hMatch ? parseInt(hMatch[1], 10) : 0;
+            const m = mMatch ? parseInt(mMatch[1], 10) : 0;
+            mainVal = String(h * 60 + m);
+        } else {
+            const parts = mainVal.split(':');
+            if (parts.length === 3) {
+                mainVal = String(parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10));
+            } else if (parts.length === 2) {
+                mainVal = String(parseInt(parts[0], 10));
+            }
+        }
+        subtext = `${mainVal} MIN`;
+    }
+    
+    ctx.save();
+    ctx.translate(x, y + 60);
+    ctx.rotate(-0.06);
+    
+    // The reference image uses a handwritten marker font, spaced out.
+    ctx.font = "700 90px 'Shadows Into Light Two', 'Caveat', cursive";
+    ctx.fillStyle = textColor; // Use the customer's selected color
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    // Add letter spacing manually since canvas doesn't natively support it easily in all browsers
+    const letters = subtext.toUpperCase().split('');
+    const charSpacing = 10;
+    
+    // Calculate total width of the spaced string
+    let textWidth = 0;
+    letters.forEach((c) => { textWidth += ctx.measureText(c).width + charSpacing; });
+    textWidth -= charSpacing; // remove last spacing
+    
+    let currentX = -textWidth / 2;
+    letters.forEach((c) => {
+        const w = ctx.measureText(c).width;
+        ctx.fillText(c, currentX + w / 2, 0);
+        currentX += w + charSpacing;
+    });
+    
+    ctx.restore();
 }
