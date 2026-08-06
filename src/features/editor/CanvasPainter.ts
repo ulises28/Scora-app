@@ -8534,19 +8534,28 @@ export function drawSocialPill(ctx: CanvasRenderingContext2D, stats: any, textCo
     const { s2 } = getDynamicStats(stats);
 
     const h = 120;
-    ctx.font = "500 50px 'Space Grotesk', 'Courier New', monospace";
+    const locationStr = (stats.location || (stats.hasDistance ? 'LOCAL ROUTE' : 'TRAINING')).toUpperCase();
+    const paceOrCal = stats.hasDistance 
+        ? (s2.label === 'PACE' ? s2.value + ' /KM' : s2.value)
+        : (s2.label === 'KCAL' ? s2.value + ' KCAL' : s2.value);
 
-    let pillText = "";
-    if (stats.hasDistance) {
-        const pace = s2.label === 'PACE' ? s2.value + ' /KM' : s2.value;
-        pillText = `${stats.distanceVal} KM   •   ${pace}   •   ${stats.location || 'LOCAL ROUTE'}`.toUpperCase();
-    } else {
-        const cal = s2.label === 'KCAL' ? s2.value + ' KCAL' : s2.value;
-        pillText = `${stats.timeStr}   •   ${cal}   •   ${stats.location || 'TRAINING'}`.toUpperCase();
+    const distOrTime = stats.hasDistance ? `${stats.distanceVal} KM` : `${stats.timeStr}`;
+    const pillText = `${distOrTime}   •   ${paceOrCal}   •   ${locationStr}`;
+
+    const maxPillWidth = 900; // Hard limit: leaves 90px margin on each side of 1080px canvas
+    const maxTextW = maxPillWidth - 210; // 690px max allowed text area width
+
+    let fontSize = 44;
+    ctx.font = `500 ${fontSize}px 'Space Grotesk', 'Courier New', monospace`;
+    let textW = ctx.measureText(pillText).width;
+
+    if (textW > maxTextW) {
+        fontSize = Math.max(26, Math.floor(44 * (maxTextW / textW)));
+        ctx.font = `500 ${fontSize}px 'Space Grotesk', 'Courier New', monospace`;
+        textW = ctx.measureText(pillText).width;
     }
 
-    const textW = ctx.measureText(pillText).width;
-    const w = textW + 160; // room for text + button
+    const w = Math.min(maxPillWidth, textW + 190); 
     const x = 540 - w / 2;
     const y = 200;
 
@@ -8560,11 +8569,11 @@ export function drawSocialPill(ctx: CanvasRenderingContext2D, stats: any, textCo
     ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText(pillText, x + 50, y + h / 2 + 5); // +5 for visual centering
+    ctx.fillText(pillText, x + 45, y + h / 2 + 4);
 
     // Blue button
-    const btnRadius = 45;
-    const btnX = x + w - btnRadius - 15;
+    const btnRadius = 42;
+    const btnX = x + w - btnRadius - 16;
     const btnY = y + h / 2;
 
     ctx.beginPath();
@@ -8579,14 +8588,14 @@ export function drawSocialPill(ctx: CanvasRenderingContext2D, stats: any, textCo
     ctx.lineJoin = 'round';
 
     ctx.beginPath();
-    ctx.moveTo(btnX, btnY + 15);
-    ctx.lineTo(btnX, btnY - 15);
+    ctx.moveTo(btnX, btnY + 14);
+    ctx.lineTo(btnX, btnY - 14);
     ctx.stroke();
 
     ctx.beginPath();
-    ctx.moveTo(btnX - 12, btnY - 3);
-    ctx.lineTo(btnX, btnY - 15);
-    ctx.lineTo(btnX + 12, btnY - 3);
+    ctx.moveTo(btnX - 11, btnY - 3);
+    ctx.lineTo(btnX, btnY - 14);
+    ctx.lineTo(btnX + 11, btnY - 3);
     ctx.stroke();
 }
 
