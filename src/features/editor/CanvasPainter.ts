@@ -8755,36 +8755,17 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     const dotY = -40;
 
     // Layer 1: Ambient Drop Shadow (Grounds glass over background photo)
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
-    ctx.shadowBlur = 32;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.60)';
+    ctx.shadowBlur = 36;
     ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 14;
+    ctx.shadowOffsetY = 16;
 
-    // Base Text Mask Fill (Establishes shape for drop shadow & clipping)
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-    ctx.fillText(textToDraw, 0, 0);
-    if (hasDot) {
-        ctx.beginPath();
-        ctx.ellipse(dotX, dotY, dotRx, dotRy, 0, 0, Math.PI * 2);
-        ctx.fill();
-    }
-
-    // Clear drop shadow for inner refraction layers
-    ctx.shadowColor = 'transparent';
-    ctx.shadowBlur = 0;
-    ctx.shadowOffsetY = 0;
-
-    // Layer 2: Clip all subsequent layers INSIDE the text shape
-    ctx.globalCompositeOperation = 'source-atop';
-
-
-
-    // 2B. Translucent Liquid Glass Color Tint Fill
+    // Layer 2: Translucent Liquid Glass Color Tint Base Fill
     const glassFill = ctx.createLinearGradient(0, -1000, 0, 0);
-    glassFill.addColorStop(0.0, `rgba(${hr}, ${hg}, ${hb}, 0.65)`);  // Top specular sheen
-    glassFill.addColorStop(0.30, `rgba(${r}, ${g}, ${b}, 0.35)`);    // Upper translucent body
-    glassFill.addColorStop(0.70, `rgba(${r}, ${g}, ${b}, 0.25)`);    // Core translucency
-    glassFill.addColorStop(1.0, `rgba(${hr}, ${hg}, ${hb}, 0.55)`);  // Bottom rim reflection
+    glassFill.addColorStop(0.0, `rgba(${hr}, ${hg}, ${hb}, 0.75)`);  // Top specular reflection
+    glassFill.addColorStop(0.30, `rgba(${r}, ${g}, ${b}, 0.40)`);    // Upper translucent body
+    glassFill.addColorStop(0.70, `rgba(${r}, ${g}, ${b}, 0.30)`);    // Core translucency
+    glassFill.addColorStop(1.0, `rgba(${hr}, ${hg}, ${hb}, 0.65)`);  // Bottom rim reflection
 
     ctx.fillStyle = glassFill;
     ctx.fillText(textToDraw, 0, 0);
@@ -8794,25 +8775,33 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
         ctx.fill();
     }
 
-    // 2C. 3D Dark Bottom-Right Refraction Shadow
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.40)';
-    ctx.fillText(textToDraw, 3.0, 3.5);
+    // Clear drop shadow for inner refraction & glare layers
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+
+    // Layer 3: 3D Refractions & Specular Glare (Source-Atop GPU Clipping)
+    ctx.globalCompositeOperation = 'source-atop';
+
+    // 3A. Dark Bottom-Right Refraction Shadow (Carves 3D glass depth on light photos)
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.50)';
+    ctx.fillText(textToDraw, 4.0, 4.5);
     if (hasDot) {
         ctx.beginPath();
-        ctx.ellipse(dotX + 3.0, dotY + 3.5, dotRx, dotRy, 0, 0, Math.PI * 2);
+        ctx.ellipse(dotX + 4.0, dotY + 4.5, dotRx, dotRy, 0, 0, Math.PI * 2);
         ctx.fill();
     }
 
-    // 2D. 3D Bright Top-Left Specular Refraction Highlight (Light source reflection)
-    ctx.fillStyle = `rgba(${hr}, ${hg}, ${hb}, 0.95)`;
-    ctx.fillText(textToDraw, -3.0, -3.5);
+    // 3B. Bright Top-Left Specular Refraction Highlight (Light source reflection)
+    ctx.fillStyle = `rgba(255, 255, 255, 0.95)`;
+    ctx.fillText(textToDraw, -4.0, -4.5);
     if (hasDot) {
         ctx.beginPath();
-        ctx.ellipse(dotX - 3.0, dotY - 3.5, dotRx, dotRy, 0, 0, Math.PI * 2);
+        ctx.ellipse(dotX - 4.0, dotY - 4.5, dotRx, dotRy, 0, 0, Math.PI * 2);
         ctx.fill();
     }
 
-    // 2E. Clean Angular Specular Glare Reflection Sweep (-45°)
+    // 3C. Clean Angular Specular Glare Sweep (-45°)
     const glareGrad = ctx.createLinearGradient(-500, -1000, 500, 0);
     glareGrad.addColorStop(0.0, `rgba(${hr}, ${hg}, ${hb}, 0.50)`);
     glareGrad.addColorStop(0.35, 'rgba(255, 255, 255, 0.0)');
@@ -8827,8 +8816,8 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
         ctx.fill();
     }
 
-    // Layer 3: Razor-Sharp 3D Glass Edge Contour (Fresnel Rim)
-    ctx.lineWidth = 3.5;
+    // Layer 4: Razor-Sharp 3D Glass Rim Contour (Fresnel Rim)
+    ctx.lineWidth = 4;
     ctx.strokeStyle = `rgba(${hr}, ${hg}, ${hb}, 0.90)`;
     ctx.strokeText(textToDraw, 0, 0);
     if (hasDot) {
