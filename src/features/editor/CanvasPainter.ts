@@ -8727,7 +8727,7 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.fillText(formattedDate, x, 160);
     ctx.restore();
 
-    // 2. Liquid Glass Numbers (Liquid Glass Studio Optics Shader)
+    // 2. Ultra-Precision Apple Liquid Glass Numbers (Crystal Clear Optics Shader)
     ctx.save();
     ctx.translate(x, 1300);
     ctx.scale(0.203125, 1.0);
@@ -8736,52 +8736,50 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.textAlign = 'center';
     ctx.textBaseline = 'alphabetic';
 
-    // Layer 1: Ambient Drop Shadow (Grounds glass over any background photo)
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
-    ctx.shadowBlur = 36;
+    // Layer 1: Soft Ambient Grounding Drop Shadow
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.40)';
+    ctx.shadowBlur = 24;
     ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 16;
+    ctx.shadowOffsetY = 8;
 
-    // Layer 2: Frosted Glass Body (Gaussian Blur + Refractive Translucent Body Fill)
-    ctx.filter = 'blur(2.5px)';
+    // Layer 2: Luminous Crystal Translucent Glass Body Fill
     const glassFill = ctx.createLinearGradient(0, -1120, 0, 0);
-    glassFill.addColorStop(0.0, `rgba(${hr}, ${hg}, ${hb}, 0.65)`);
-    glassFill.addColorStop(0.30, `rgba(${r}, ${g}, ${b}, 0.48)`);
-    glassFill.addColorStop(0.65, `rgba(${r}, ${g}, ${b}, 0.42)`);
-    glassFill.addColorStop(1.0, `rgba(${hr}, ${hg}, ${hb}, 0.60)`);
+    glassFill.addColorStop(0.0, `rgba(${hr}, ${hg}, ${hb}, 0.85)`);  // Top specular reflection
+    glassFill.addColorStop(0.25, `rgba(${r}, ${g}, ${b}, 0.55)`);    // Upper translucent body
+    glassFill.addColorStop(0.70, `rgba(${r}, ${g}, ${b}, 0.45)`);    // Deep glass volume
+    glassFill.addColorStop(1.0, `rgba(${hr}, ${hg}, ${hb}, 0.75)`);  // Bottom rim reflection
 
     ctx.fillStyle = glassFill;
     ctx.fillText(mainVal, 0, 0);
 
-    // Clear blur & shadow for crisp inner refraction & specular layers
-    ctx.filter = 'none';
+    // Clear drop shadow for inner refraction layers
     ctx.shadowColor = 'transparent';
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
 
-    // Layer 3: Refractions & Specular Glare (Source-Atop GPU Clipping)
+    // Layer 3: Precision Micro-Refractions & Specular Sheen (Source-Atop GPU Clipping)
     ctx.globalCompositeOperation = 'source-atop';
 
-    // 3A. Dark Bottom-Right Refraction Caustics (Refraction Factor ~2.96)
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
-    ctx.fillText(mainVal, 6, 6);
+    // 3A. Subtle Bottom-Right Sub-Pixel Caustic Refraction (No dirty smudges!)
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.30)';
+    ctx.fillText(mainVal, 1.5, 2.0);
 
-    // 3B. Bright Top-Left Specular Refraction Highlight
-    ctx.fillStyle = `rgba(${hr}, ${hg}, ${hb}, 0.90)`;
-    ctx.fillText(mainVal, -6, -6);
+    // 3B. Crisp Top-Left Specular Refraction Highlight
+    ctx.fillStyle = `rgba(${hr}, ${hg}, ${hb}, 0.85)`;
+    ctx.fillText(mainVal, -1.5, -2.0);
 
-    // 3C. Angular Specular Glare Sweep (-45° Glare Angle)
+    // 3C. Clean Angular Specular Glare Reflection (-45°)
     const glareGrad = ctx.createLinearGradient(-560, -1120, 560, 0);
-    glareGrad.addColorStop(0.0, `rgba(${hr}, ${hg}, ${hb}, 0.55)`);
-    glareGrad.addColorStop(0.32, 'rgba(255, 255, 255, 0.0)');
-    glareGrad.addColorStop(0.68, 'rgba(255, 255, 255, 0.0)');
-    glareGrad.addColorStop(1.0, `rgba(${hr}, ${hg}, ${hb}, 0.22)`);
+    glareGrad.addColorStop(0.0, `rgba(${hr}, ${hg}, ${hb}, 0.45)`);
+    glareGrad.addColorStop(0.35, 'rgba(255, 255, 255, 0.0)');
+    glareGrad.addColorStop(0.65, 'rgba(255, 255, 255, 0.0)');
+    glareGrad.addColorStop(1.0, `rgba(${hr}, ${hg}, ${hb}, 0.20)`);
 
     ctx.fillStyle = glareGrad;
     ctx.fillText(mainVal, 0, 0);
 
-    // 3D. Fresnel Edge Reflection Rim Contour
-    ctx.lineWidth = 4;
+    // 3D. Razor-Sharp Crystal Rim Contour
+    ctx.lineWidth = 2.5;
     ctx.strokeStyle = `rgba(${hr}, ${hg}, ${hb}, 0.85)`;
     ctx.strokeText(mainVal, 0, 0);
 
