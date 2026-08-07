@@ -8727,7 +8727,26 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.fillText(formattedDate, x, 160);
     ctx.restore();
 
-    // 2. Ultra-Precision Apple Liquid Glass Numbers (Crystal Clear Optics Shader)
+    // ─── Real Liquid Glass Backdrop Blur Sampling ───────────────────────────
+    // Capture the existing background canvas below the glass numbers
+    let bgBlurredCanvas: HTMLCanvasElement | null = null;
+    if (typeof document !== 'undefined' && ctx.canvas && ctx.canvas.width > 0 && ctx.canvas.height > 0) {
+        try {
+            bgBlurredCanvas = document.createElement('canvas');
+            bgBlurredCanvas.width = ctx.canvas.width;
+            bgBlurredCanvas.height = ctx.canvas.height;
+            const bgCtx = bgBlurredCanvas.getContext('2d');
+            if (bgCtx) {
+                // Apply Gaussian blur + saturation boost to mimic WebGL / iOS Liquid Glass Backdrop Filter
+                bgCtx.filter = 'blur(18px) saturate(145%) brightness(108%)';
+                bgCtx.drawImage(ctx.canvas, 0, 0);
+            }
+        } catch {
+            bgBlurredCanvas = null;
+        }
+    }
+
+    // 2. Liquid Glass Numbers (Real Backdrop Blur + 3D Specular Light Refraction)
     ctx.save();
     ctx.translate(x, 1280);
     ctx.scale(0.203125, 1.0);
@@ -8759,54 +8778,72 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 14;
 
-    // Layer 2: Luminous Translucent Glass Body Fill
-    const glassFill = ctx.createLinearGradient(0, -1000, 0, 0);
-    glassFill.addColorStop(0.0, `rgba(${hr}, ${hg}, ${hb}, 0.85)`);  // Top specular reflection
-    glassFill.addColorStop(0.30, `rgba(${r}, ${g}, ${b}, 0.50)`);    // Upper translucent body
-    glassFill.addColorStop(0.70, `rgba(${r}, ${g}, ${b}, 0.40)`);    // Deep glass volume
-    glassFill.addColorStop(1.0, `rgba(${hr}, ${hg}, ${hb}, 0.75)`);  // Bottom rim reflection
-
-    ctx.fillStyle = glassFill;
+    // Base Text Mask Fill (Establishes shape for drop shadow & clipping)
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
     ctx.fillText(textToDraw, 0, 0);
-
     if (hasDot) {
         ctx.beginPath();
         ctx.ellipse(dotX, dotY, dotRx, dotRy, 0, 0, Math.PI * 2);
         ctx.fill();
     }
 
-    // Clear drop shadow for inner refraction & glare layers
+    // Clear drop shadow for inner refraction layers
     ctx.shadowColor = 'transparent';
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
 
-    // Layer 3: Micro-Refractions & Specular Sheen (Source-Atop GPU Clipping)
+    // Layer 2: Clip all subsequent layers INSIDE the text shape
     ctx.globalCompositeOperation = 'source-atop';
 
-    // 3A. Dark Bottom-Right Refraction Shadow
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
-    ctx.fillText(textToDraw, 2.0, 2.5);
+    // 2A. Draw REAL Blurred Background Photo INSIDE the Numbers
+    if (bgBlurredCanvas) {
+        ctx.save();
+        // Un-transform back to 1:1 canvas coordinates to align blurred photo
+        ctx.scale(1 / 0.203125, 1.0);
+        ctx.translate(-x, -1280);
+        ctx.drawImage(bgBlurredCanvas, 0, 0);
+        ctx.restore();
+    }
+
+    // 2B. Translucent Liquid Glass Color Tint Fill
+    const glassFill = ctx.createLinearGradient(0, -1000, 0, 0);
+    glassFill.addColorStop(0.0, `rgba(${hr}, ${hg}, ${hb}, 0.65)`);  // Top specular sheen
+    glassFill.addColorStop(0.30, `rgba(${r}, ${g}, ${b}, 0.35)`);    // Upper translucent body
+    glassFill.addColorStop(0.70, `rgba(${r}, ${g}, ${b}, 0.25)`);    // Core translucency
+    glassFill.addColorStop(1.0, `rgba(${hr}, ${hg}, ${hb}, 0.55)`);  // Bottom rim reflection
+
+    ctx.fillStyle = glassFill;
+    ctx.fillText(textToDraw, 0, 0);
     if (hasDot) {
         ctx.beginPath();
-        ctx.ellipse(dotX + 2.0, dotY + 2.5, dotRx, dotRy, 0, 0, Math.PI * 2);
+        ctx.ellipse(dotX, dotY, dotRx, dotRy, 0, 0, Math.PI * 2);
         ctx.fill();
     }
 
-    // 3B. Bright Top-Left Specular Refraction Highlight
-    ctx.fillStyle = `rgba(${hr}, ${hg}, ${hb}, 0.85)`;
-    ctx.fillText(textToDraw, -2.0, -2.5);
+    // 2C. 3D Dark Bottom-Right Refraction Shadow
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.40)';
+    ctx.fillText(textToDraw, 3.0, 3.5);
     if (hasDot) {
         ctx.beginPath();
-        ctx.ellipse(dotX - 2.0, dotY - 2.5, dotRx, dotRy, 0, 0, Math.PI * 2);
+        ctx.ellipse(dotX + 3.0, dotY + 3.5, dotRx, dotRy, 0, 0, Math.PI * 2);
         ctx.fill();
     }
 
-    // 3C. Clean Angular Specular Glare Sweep (-45°)
+    // 2D. 3D Bright Top-Left Specular Refraction Highlight (Light source reflection)
+    ctx.fillStyle = `rgba(${hr}, ${hg}, ${hb}, 0.95)`;
+    ctx.fillText(textToDraw, -3.0, -3.5);
+    if (hasDot) {
+        ctx.beginPath();
+        ctx.ellipse(dotX - 3.0, dotY - 3.5, dotRx, dotRy, 0, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // 2E. Clean Angular Specular Glare Reflection Sweep (-45°)
     const glareGrad = ctx.createLinearGradient(-500, -1000, 500, 0);
-    glareGrad.addColorStop(0.0, `rgba(${hr}, ${hg}, ${hb}, 0.45)`);
+    glareGrad.addColorStop(0.0, `rgba(${hr}, ${hg}, ${hb}, 0.50)`);
     glareGrad.addColorStop(0.35, 'rgba(255, 255, 255, 0.0)');
     glareGrad.addColorStop(0.65, 'rgba(255, 255, 255, 0.0)');
-    glareGrad.addColorStop(1.0, `rgba(${hr}, ${hg}, ${hb}, 0.20)`);
+    glareGrad.addColorStop(1.0, `rgba(${hr}, ${hg}, ${hb}, 0.25)`);
 
     ctx.fillStyle = glareGrad;
     ctx.fillText(textToDraw, 0, 0);
@@ -8816,9 +8853,9 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
         ctx.fill();
     }
 
-    // 3D. Razor-Sharp Glass Rim Contour
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = `rgba(${hr}, ${hg}, ${hb}, 0.85)`;
+    // Layer 3: Razor-Sharp 3D Glass Edge Contour (Fresnel Rim)
+    ctx.lineWidth = 3.5;
+    ctx.strokeStyle = `rgba(${hr}, ${hg}, ${hb}, 0.90)`;
     ctx.strokeText(textToDraw, 0, 0);
     if (hasDot) {
         ctx.beginPath();
