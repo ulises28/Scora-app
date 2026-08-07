@@ -8711,7 +8711,7 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.fillText(formattedDate, x, 150);
     ctx.restore();
 
-    // 2. Huge Studio Liquid Glass Numbers (Universal Safari & Chrome 4-Layer Shader)
+    // 2. Huge Studio High-Contrast Liquid Glass Numbers (Universal Safari & Chrome)
     ctx.save();
     ctx.translate(x, 1350); 
     ctx.scale(0.203125, 1.0); 
@@ -8720,21 +8720,39 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom'; 
 
-    // Step 1: 3D Ambient Grounding Drop Shadow
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
-    ctx.shadowBlur = 28;
-    ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 16;
+    const hasDot = mainVal.includes('.');
+    const textToDraw = hasDot ? mainVal.replace('.', ' ') : mainVal;
+    let dotX = 0;
+    if (hasDot) {
+        const parts = mainVal.split('.');
+        const leftW = ctx.measureText(parts[0]).width;
+        const totalW = ctx.measureText(textToDraw).width;
+        const dotCharW = ctx.measureText(' ').width;
+        dotX = -totalW / 2 + leftW + dotCharW / 2;
+    }
 
-    // Step 2: Multi-Stop Translucent Liquid Glass Base Fill (Universal Safari & Chrome)
+    // Step 1: Deep Grounding 3D Ambient Drop Shadow (Pops on light/white photos)
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
+    ctx.shadowBlur = 36;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 20;
+
+    // Step 2: Dense Translucent Liquid Glass Base Fill (Vibrant & clear on all backgrounds)
     const glassFill = ctx.createLinearGradient(0, -1120, 0, 0);
-    glassFill.addColorStop(0.0, `rgba(${hr}, ${hg}, ${hb}, 0.70)`); // Top specular sheen
-    glassFill.addColorStop(0.40, `rgba(${r}, ${g}, ${b}, 0.22)`);   // Core translucent glass transparency
-    glassFill.addColorStop(0.70, `rgba(${r}, ${g}, ${b}, 0.18)`);   // Pure glass clarity
-    glassFill.addColorStop(1.0, `rgba(${hr}, ${hg}, ${hb}, 0.55)`); // Bottom rim reflection
+    glassFill.addColorStop(0.0, `rgba(${hr}, ${hg}, ${hb}, 0.85)`); // Top specular sheen
+    glassFill.addColorStop(0.35, `rgba(${r}, ${g}, ${b}, 0.45)`);  // Solid glass body density
+    glassFill.addColorStop(0.70, `rgba(${r}, ${g}, ${b}, 0.35)`);  // Core translucency
+    glassFill.addColorStop(1.0, `rgba(${hr}, ${hg}, ${hb}, 0.75)`); // Bottom rim reflection
 
     ctx.fillStyle = glassFill;
-    ctx.fillText(mainVal, 0, 0);
+    ctx.fillText(textToDraw, 0, 0);
+
+    // Draw bold, perfect round 3D Liquid Glass decimal point sphere
+    if (hasDot) {
+        ctx.beginPath();
+        ctx.ellipse(dotX, -45, 125, 25, 0, 0, Math.PI * 2);
+        ctx.fill();
+    }
 
     // Clear shadow for internal GPU composite layers
     ctx.shadowColor = 'transparent';
@@ -8744,29 +8762,49 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     // Step 3: Studio Liquid Glass Refractions (Source-Atop GPU Clipping)
     ctx.globalCompositeOperation = 'source-atop';
 
-    // 3A. Bottom-Right Dark Refraction Shadow (Offset +4, +4)
-    ctx.lineWidth = 12;
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
-    ctx.strokeText(mainVal, 4, 4);
+    // 3A. Deep Dark Refraction Shadow (Carves 3D glass geometry on white/light backgrounds)
+    ctx.lineWidth = 16;
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.65)';
+    ctx.strokeText(textToDraw, 5, 5);
+    if (hasDot) {
+        ctx.beginPath();
+        ctx.ellipse(dotX + 5, -40, 125, 25, 0, 0, Math.PI * 2);
+        ctx.stroke();
+    }
 
-    // 3B. Top-Left White Specular Edge Light (Offset -4, -4)
-    ctx.lineWidth = 12;
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.90)';
-    ctx.strokeText(mainVal, -4, -4);
+    // 3B. Top-Left White Specular Edge Light (Offset -5, -5)
+    ctx.lineWidth = 16;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
+    ctx.strokeText(textToDraw, -5, -5);
+    if (hasDot) {
+        ctx.beginPath();
+        ctx.ellipse(dotX - 5, -50, 125, 25, 0, 0, Math.PI * 2);
+        ctx.stroke();
+    }
 
     // 3C. Vertical Gloss Sheen
     const glossGrad = ctx.createLinearGradient(0, -1120, 0, 0);
-    glossGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.40)');
-    glossGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.05)');
-    glossGrad.addColorStop(1.0, 'rgba(255, 255, 255, 0.30)');
+    glossGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.45)');
+    glossGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.10)');
+    glossGrad.addColorStop(1.0, 'rgba(255, 255, 255, 0.35)');
 
     ctx.fillStyle = glossGrad;
-    ctx.fillText(mainVal, 0, 0);
+    ctx.fillText(textToDraw, 0, 0);
+    if (hasDot) {
+        ctx.beginPath();
+        ctx.ellipse(dotX, -45, 125, 25, 0, 0, Math.PI * 2);
+        ctx.fill();
+    }
 
-    // Step 4: Color-Matched Perimeter Glass Rim Contour
-    ctx.lineWidth = 5;
-    ctx.strokeStyle = `rgba(${hr}, ${hg}, ${hb}, 0.85)`;
-    ctx.strokeText(mainVal, 0, 0);
+    // Step 4: Dark Perimeter Rim Contour (Defines sharp glass outline on white photos)
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = `rgba(0, 0, 0, 0.40)`;
+    ctx.strokeText(textToDraw, 0, 0);
+    if (hasDot) {
+        ctx.beginPath();
+        ctx.ellipse(dotX, -45, 125, 25, 0, 0, Math.PI * 2);
+        ctx.stroke();
+    }
 
     ctx.globalCompositeOperation = 'source-over';
     ctx.restore();
