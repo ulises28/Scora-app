@@ -8711,7 +8711,7 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.fillText(formattedDate, x, 160);
     ctx.restore();
 
-    // 2. Huge Studio Apple iOS 18 Glassmorphism Clock Lockscreen Shader
+    // 2. Huge Studio Optical Liquid Glass Shader (Liquid Glass Studio Engine)
     ctx.save();
     ctx.translate(x, 1300); 
     ctx.scale(0.203125, 1.0); 
@@ -8734,9 +8734,9 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
 
     // Step 1: 3D Grounding Ambient Drop Shadow
     ctx.shadowColor = 'rgba(0, 0, 0, 0.40)';
-    ctx.shadowBlur = 24;
+    ctx.shadowBlur = 28;
     ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 14;
+    ctx.shadowOffsetY = 16;
 
     // Optical Clear Glass Fill Gradient (Preserves photo background underneath)
     const glassFill = ctx.createLinearGradient(0, -1120, 0, 0);
@@ -8767,10 +8767,46 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
 
-    // Step 2: Studio Liquid Glass Refractions (Source-Atop GPU Clipping)
+    // Step 2: Prismatic Chromatic Dispersion & Refractions (Source-Atop GPU Clipping)
     ctx.globalCompositeOperation = 'source-atop';
 
-    // 2A. Bottom-Right Dark Refraction Shadow (Offset +3, +3)
+    // 2A. Chromatic Dispersion - Cyan/Blue Channel Refraction (Offset +4, +4)
+    ctx.lineWidth = 8;
+    ctx.strokeStyle = 'rgba(100, 210, 255, 0.40)';
+    if (hasSep && rightStr.length > 0) {
+        ctx.textAlign = 'right';
+        ctx.strokeText(leftStr, -126, 4);
+        ctx.textAlign = 'left';
+        ctx.strokeText(rightStr, 134, 4);
+
+        ctx.beginPath();
+        ctx.ellipse(4, orbTopY + 4, orbRx, orbRy, 0, 0, Math.PI * 2);
+        ctx.ellipse(4, orbBotY + 4, orbRx, orbRy, 0, 0, Math.PI * 2);
+        ctx.stroke();
+    } else {
+        ctx.textAlign = 'center';
+        ctx.strokeText(mainVal, 4, 4);
+    }
+
+    // 2B. Chromatic Dispersion - Amber/Warm Glare Highlight (Offset -4, -4)
+    ctx.lineWidth = 8;
+    ctx.strokeStyle = 'rgba(255, 200, 140, 0.45)';
+    if (hasSep && rightStr.length > 0) {
+        ctx.textAlign = 'right';
+        ctx.strokeText(leftStr, -134, -4);
+        ctx.textAlign = 'left';
+        ctx.strokeText(rightStr, 126, -4);
+
+        ctx.beginPath();
+        ctx.ellipse(-4, orbTopY - 4, orbRx, orbRy, 0, 0, Math.PI * 2);
+        ctx.ellipse(-4, orbBotY - 4, orbRx, orbRy, 0, 0, Math.PI * 2);
+        ctx.stroke();
+    } else {
+        ctx.textAlign = 'center';
+        ctx.strokeText(mainVal, -4, -4);
+    }
+
+    // 2C. Dark Bottom-Right Refraction Shadow (Offset +3, +3)
     ctx.lineWidth = 6;
     ctx.strokeStyle = 'rgba(0, 0, 0, 0.48)';
     if (hasSep && rightStr.length > 0) {
@@ -8788,25 +8824,25 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
         ctx.strokeText(mainVal, 3, 3);
     }
 
-    // 2B. Top-Left White Specular Edge Light (Offset -3, -3)
-    ctx.lineWidth = 6;
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
+    // 2D. Razor-Sharp Top-Left White Specular Glare (Offset -2.5, -2.5)
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.98)';
     if (hasSep && rightStr.length > 0) {
         ctx.textAlign = 'right';
-        ctx.strokeText(leftStr, -133, -3);
+        ctx.strokeText(leftStr, -132.5, -2.5);
         ctx.textAlign = 'left';
-        ctx.strokeText(rightStr, 127, -3);
+        ctx.strokeText(rightStr, 127.5, -2.5);
 
         ctx.beginPath();
-        ctx.ellipse(-3, orbTopY - 3, orbRx, orbRy, 0, 0, Math.PI * 2);
-        ctx.ellipse(-3, orbBotY - 3, orbRx, orbRy, 0, 0, Math.PI * 2);
+        ctx.ellipse(-2.5, orbTopY - 2.5, orbRx, orbRy, 0, 0, Math.PI * 2);
+        ctx.ellipse(-2.5, orbBotY - 2.5, orbRx, orbRy, 0, 0, Math.PI * 2);
         ctx.stroke();
     } else {
         ctx.textAlign = 'center';
-        ctx.strokeText(mainVal, -3, -3);
+        ctx.strokeText(mainVal, -2.5, -2.5);
     }
 
-    // 2C. Vertical Gloss Sheen Gradient
+    // 2E. Vertical Gloss Sheen Gradient
     const glossGrad = ctx.createLinearGradient(0, -1120, 0, 0);
     glossGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.35)');
     glossGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.05)');
@@ -8828,7 +8864,7 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
         ctx.fillText(mainVal, 0, 0);
     }
 
-    // Step 3: Color-Matched Perimeter Rim Contour
+    // Step 3: Color-Matched Perimeter Glass Rim Contour
     ctx.lineWidth = 3;
     ctx.strokeStyle = `rgba(${hr}, ${hg}, ${hb}, 0.85)`;
     if (hasSep && rightStr.length > 0) {
