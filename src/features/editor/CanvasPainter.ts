@@ -8727,24 +8727,6 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.fillText(formattedDate, x, 160);
     ctx.restore();
 
-    // ─── Real Liquid Glass Backdrop Blur Sampling ───────────────────────────
-    // Capture the existing background canvas below the glass numbers
-    let bgBlurredCanvas: HTMLCanvasElement | null = null;
-    if (typeof document !== 'undefined' && ctx.canvas && ctx.canvas.width > 0 && ctx.canvas.height > 0) {
-        try {
-            bgBlurredCanvas = document.createElement('canvas');
-            bgBlurredCanvas.width = ctx.canvas.width;
-            bgBlurredCanvas.height = ctx.canvas.height;
-            const bgCtx = bgBlurredCanvas.getContext('2d');
-            if (bgCtx) {
-                // Apply Gaussian blur + saturation boost to mimic WebGL / iOS Liquid Glass Backdrop Filter
-                bgCtx.filter = 'blur(18px) saturate(145%) brightness(108%)';
-                bgCtx.drawImage(ctx.canvas, 0, 0);
-            }
-        } catch {
-            bgBlurredCanvas = null;
-        }
-    }
 
     // 2. Liquid Glass Numbers (Real Backdrop Blur + 3D Specular Light Refraction)
     ctx.save();
@@ -8795,15 +8777,7 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     // Layer 2: Clip all subsequent layers INSIDE the text shape
     ctx.globalCompositeOperation = 'source-atop';
 
-    // 2A. Draw REAL Blurred Background Photo INSIDE the Numbers
-    if (bgBlurredCanvas) {
-        ctx.save();
-        // Un-transform back to 1:1 canvas coordinates to align blurred photo
-        ctx.scale(1 / 0.203125, 1.0);
-        ctx.translate(-x, -1280);
-        ctx.drawImage(bgBlurredCanvas, 0, 0);
-        ctx.restore();
-    }
+
 
     // 2B. Translucent Liquid Glass Color Tint Fill
     const glassFill = ctx.createLinearGradient(0, -1000, 0, 0);
