@@ -7461,10 +7461,10 @@ export function drawWaveTitle(ctx: CanvasRenderingContext2D, stats: any, textCol
     const mainColor = textColor || '#ffffff';
     ctx.fillStyle = mainColor;
 
-    // Subtle drop shadow for text inside card
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-    ctx.shadowBlur = 8;
-    ctx.shadowOffsetY = 2;
+    // Crisp text without any drop shadow
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
 
     // Top Massive Title
     ctx.font = `800 120px 'Unbounded', sans-serif`;
@@ -7473,17 +7473,12 @@ export function drawWaveTitle(ctx: CanvasRenderingContext2D, stats: any, textCol
     ctx.fillText(normalizeSport(stats.activityType || 'RUN').toUpperCase(), 540, cY + 120, cardW - 80);
 
     // Separator line
-    ctx.shadowColor = 'transparent';
-    ctx.shadowBlur = 0;
     ctx.globalAlpha = 0.25;
     ctx.fillStyle = mainColor;
     ctx.fillRect(cX + 60, cY + 220, cardW - 120, 2);
     ctx.globalAlpha = 1.0;
 
     // Sub-metrics
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-    ctx.shadowBlur = 8;
-    ctx.shadowOffsetY = 2;
     ctx.textBaseline = 'top';
     const rowY = cY + 260;
 
@@ -8706,9 +8701,9 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = textColor; 
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
-    ctx.shadowBlur = 10;
-    ctx.shadowOffsetY = 2;
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
     ctx.fillText(formattedDate, x, 150);
     ctx.restore();
 
@@ -8721,52 +8716,47 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom'; 
 
-    // Step 1: Deep Grounding Ambient Drop Shadow behind Liquid Glass numbers
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.70)';
-    ctx.shadowBlur = 36;
+    // Step 1: Crisp Base Fill (No Drop Shadow)
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
     ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 20;
+    ctx.shadowOffsetY = 0;
 
-    // Step 2: High-Density Translucent Glass Fill (Pops against complex photos)
+    // Step 2: High-Density High-Contrast Translucent Glass Base
     const glassFill = ctx.createLinearGradient(0, -1120, 0, 0);
-    glassFill.addColorStop(0.0, `rgba(${r}, ${g}, ${b}, 0.82)`); // Top specular sheen
-    glassFill.addColorStop(0.35, `rgba(${r}, ${g}, ${b}, 0.55)`); // Solid translucent glass body
-    glassFill.addColorStop(0.70, `rgba(${r}, ${g}, ${b}, 0.45)`); // Core glass density
-    glassFill.addColorStop(1.0, `rgba(${r}, ${g}, ${b}, 0.78)`); // Crisp bottom reflection
+    glassFill.addColorStop(0.0, `rgba(${r}, ${g}, ${b}, 0.88)`); // Top specular sheen
+    glassFill.addColorStop(0.35, `rgba(${r}, ${g}, ${b}, 0.65)`); // Solid translucent glass body
+    glassFill.addColorStop(0.70, `rgba(${r}, ${g}, ${b}, 0.55)`); // Core glass density
+    glassFill.addColorStop(1.0, `rgba(${r}, ${g}, ${b}, 0.85)`); // Crisp bottom reflection
 
     ctx.fillStyle = glassFill;
     ctx.fillText(mainVal, 0, 0);
 
-    // Clear shadow immediately for internal refractions
-    ctx.shadowColor = 'transparent';
-    ctx.shadowBlur = 0;
-    ctx.shadowOffsetY = 0;
-
     // Step 3: High-Contrast Studio Liquid Glass Refractions (Source-Atop GPU Clipping)
     ctx.globalCompositeOperation = 'source-atop';
 
-    // 3A. Deep Bottom-Right Dark Refraction Shadow (Offset +6, +6)
-    ctx.lineWidth = 18;
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.65)';
+    // 3A. Deep Bottom-Right Dark Refraction Line (Offset +6, +6)
+    ctx.lineWidth = 20;
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.70)';
     ctx.strokeText(mainVal, 6, 6);
 
     // 3B. Crisp Top-Left White Specular Edge Light (Offset -6, -6)
-    ctx.lineWidth = 18;
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
+    ctx.lineWidth = 20;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.98)';
     ctx.strokeText(mainVal, -6, -6);
 
     // 3C. Vertical Gloss Sheen
     const glossGrad = ctx.createLinearGradient(0, -1120, 0, 0);
-    glossGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.45)');
-    glossGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.10)');
-    glossGrad.addColorStop(1.0, 'rgba(255, 255, 255, 0.35)');
+    glossGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.50)');
+    glossGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.15)');
+    glossGrad.addColorStop(1.0, 'rgba(255, 255, 255, 0.40)');
 
     ctx.fillStyle = glossGrad;
     ctx.fillText(mainVal, 0, 0);
 
-    // Step 4: Solid Outer Perimeter Contour Rim (Defines the shape against background elements)
-    ctx.lineWidth = 10;
-    ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.95)`;
+    // Step 4: Solid Outer Perimeter Contour Rim (Defines the shape sharply)
+    ctx.lineWidth = 12;
+    ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, 1.0)`;
     ctx.strokeText(mainVal, 0, 0);
 
     ctx.globalCompositeOperation = 'source-over';
@@ -8778,9 +8768,9 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     ctx.fillStyle = textColor;
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
-    ctx.shadowBlur = 10;
-    ctx.shadowOffsetY = 2;
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
     ctx.fillText(unit, x, 1260);
     ctx.restore();
 }
