@@ -8711,7 +8711,7 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.fillText(formattedDate, x, 160);
     ctx.restore();
 
-    // 2. Huge Studio Liquid Glass Numbers
+    // 2. Huge Studio Liquid Glass Numbers (Master Refraction Shader - Zero Vector Bleed)
     ctx.save();
     ctx.translate(x, 1300); 
     ctx.scale(0.203125, 1.0); 
@@ -8720,18 +8720,18 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.textAlign = 'center';
     ctx.textBaseline = 'alphabetic'; 
 
-    // Step 1: 3D Grounding Ambient Drop Shadow
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
-    ctx.shadowBlur = 28;
+    // Step 1: Deep Grounding 3D Ambient Drop Shadow (Pops on light/white photos)
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
+    ctx.shadowBlur = 36;
     ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 16;
+    ctx.shadowOffsetY = 20;
 
-    // Translucent Liquid Glass Fill Gradient
+    // Translucent Liquid Glass Base Fill Gradient (Dense & vibrant)
     const glassFill = ctx.createLinearGradient(0, -1120, 0, 0);
-    glassFill.addColorStop(0.0, `rgba(${hr}, ${hg}, ${hb}, 0.75)`); // Top specular sheen
-    glassFill.addColorStop(0.40, `rgba(${r}, ${g}, ${b}, 0.28)`);   // Core translucent glass transparency
-    glassFill.addColorStop(0.70, `rgba(${r}, ${g}, ${b}, 0.22)`);   // Pure glass clarity
-    glassFill.addColorStop(1.0, `rgba(${hr}, ${hg}, ${hb}, 0.60)`); // Bottom rim reflection
+    glassFill.addColorStop(0.0, `rgba(${hr}, ${hg}, ${hb}, 0.90)`); // Top specular sheen
+    glassFill.addColorStop(0.35, `rgba(${r}, ${g}, ${b}, 0.50)`);  // Vibrant glass body
+    glassFill.addColorStop(0.70, `rgba(${r}, ${g}, ${b}, 0.40)`);  // Core glass density
+    glassFill.addColorStop(1.0, `rgba(${hr}, ${hg}, ${hb}, 0.80)`); // Bottom rim reflection
 
     ctx.fillStyle = glassFill;
     ctx.fillText(mainVal, 0, 0);
@@ -8741,31 +8741,30 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
 
-    // Step 2: Studio Liquid Glass Refractions (Source-Atop GPU Clipping)
+    // Step 2: High-Contrast Studio Liquid Glass Refractions (Source-Atop GPU Clipping)
+    // Using fillText offsets instead of strokeText prevents inner vector line bleed on digit 4!
     ctx.globalCompositeOperation = 'source-atop';
 
-    // 2A. Bottom-Right Dark Refraction Shadow (Offset +3, +3, 6px width avoids inner glyph bleed on digit 4)
-    ctx.lineWidth = 6;
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.50)';
-    ctx.strokeText(mainVal, 3, 3);
+    // 2A. Deep Dark Bottom-Right Refraction Shadow (Offset +6, +6)
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
+    ctx.fillText(mainVal, 6, 6);
 
-    // 2B. Top-Left White Specular Edge Light (Offset -3, -3)
-    ctx.lineWidth = 6;
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
-    ctx.strokeText(mainVal, -3, -3);
+    // 2B. Crisp Top-Left White Specular Edge Light (Offset -6, -6)
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+    ctx.fillText(mainVal, -6, -6);
 
-    // 2C. Vertical Gloss Sheen
+    // 2C. Vertical Gloss Sheen Gradient
     const glossGrad = ctx.createLinearGradient(0, -1120, 0, 0);
-    glossGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.40)');
-    glossGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.05)');
-    glossGrad.addColorStop(1.0, 'rgba(255, 255, 255, 0.30)');
+    glossGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.50)');
+    glossGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.10)');
+    glossGrad.addColorStop(1.0, 'rgba(255, 255, 255, 0.40)');
 
     ctx.fillStyle = glossGrad;
     ctx.fillText(mainVal, 0, 0);
 
-    // Step 3: Color-Matched Perimeter Rim Contour
-    ctx.lineWidth = 4;
-    ctx.strokeStyle = `rgba(${hr}, ${hg}, ${hb}, 0.85)`;
+    // Step 3: Color-Matched Outer Perimeter Rim Contour (Thin 3px stroke defines outer perimeter sharply)
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = `rgba(${hr}, ${hg}, ${hb}, 0.95)`;
     ctx.strokeText(mainVal, 0, 0);
 
     ctx.globalCompositeOperation = 'source-over';
