@@ -8684,17 +8684,33 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
 
     const x = 540;
 
-    // Parse textColor for tinting
+    // Parse textColor for tinting (supports 'white', 'black', hex #RGB, #RRGGBB, rgb(...))
     let r = 255, g = 255, b = 255;
-    if (textColor.startsWith('#') && textColor.length === 7) {
-        r = parseInt(textColor.slice(1, 3), 16);
-        g = parseInt(textColor.slice(3, 5), 16);
-        b = parseInt(textColor.slice(5, 7), 16);
+    const lowerColor = (textColor || 'white').trim().toLowerCase();
+    if (lowerColor === 'black') {
+        r = 0; g = 0; b = 0;
+    } else if (lowerColor.startsWith('#')) {
+        if (lowerColor.length === 7) {
+            r = parseInt(lowerColor.slice(1, 3), 16) || 0;
+            g = parseInt(lowerColor.slice(3, 5), 16) || 0;
+            b = parseInt(lowerColor.slice(5, 7), 16) || 0;
+        } else if (lowerColor.length === 4) {
+            r = parseInt(lowerColor[1] + lowerColor[1], 16) || 0;
+            g = parseInt(lowerColor[2] + lowerColor[2], 16) || 0;
+            b = parseInt(lowerColor[3] + lowerColor[3], 16) || 0;
+        }
+    } else if (lowerColor.startsWith('rgb')) {
+        const matches = lowerColor.match(/\d+/g);
+        if (matches && matches.length >= 3) {
+            r = Math.min(255, Math.max(0, parseInt(matches[0], 10)));
+            g = Math.min(255, Math.max(0, parseInt(matches[1], 10)));
+            b = Math.min(255, Math.max(0, parseInt(matches[2], 10)));
+        }
     }
 
-    const hr = Math.round(r + (255 - r) * 0.65);
-    const hg = Math.round(g + (255 - g) * 0.65);
-    const hb = Math.round(b + (255 - b) * 0.65);
+    const hr = Math.round(r + (255 - r) * 0.70);
+    const hg = Math.round(g + (255 - g) * 0.70);
+    const hb = Math.round(b + (255 - b) * 0.70);
 
     // 1. Date at top (Positioned at Y=160 to give generous breathing room)
     const dateStr = stats.rawDate ? new Intl.DateTimeFormat('es-ES', { weekday: 'short', month: 'short', day: 'numeric' }).format(new Date(stats.rawDate.replace('Z', ''))) : 'Lun jun 29';
@@ -8711,7 +8727,7 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.fillText(formattedDate, x, 160);
     ctx.restore();
 
-    // 2. Liquid Glass Numbers (liquid-glass-studio spec)
+    // 2. Liquid Glass Numbers (Liquid Glass Studio Optics Shader)
     ctx.save();
     ctx.translate(x, 1300);
     ctx.scale(0.203125, 1.0);
@@ -8720,52 +8736,52 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.textAlign = 'center';
     ctx.textBaseline = 'alphabetic';
 
-    // Layer 1: Drop shadow
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.60)';
-    ctx.shadowBlur = 35;
+    // Layer 1: Ambient Drop Shadow (Grounds glass over any background photo)
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
+    ctx.shadowBlur = 36;
     ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 14;
+    ctx.shadowOffsetY = 16;
 
-    // Layer 2: Frosted glass body (blur + visible opacity)
-    ctx.filter = 'blur(3px)';
+    // Layer 2: Frosted Glass Body (Gaussian Blur + Refractive Translucent Body Fill)
+    ctx.filter = 'blur(2.5px)';
     const glassFill = ctx.createLinearGradient(0, -1120, 0, 0);
-    glassFill.addColorStop(0.0, `rgba(${hr}, ${hg}, ${hb}, 0.70)`);
-    glassFill.addColorStop(0.30, `rgba(${r}, ${g}, ${b}, 0.50)`);
-    glassFill.addColorStop(0.60, `rgba(${r}, ${g}, ${b}, 0.45)`);
-    glassFill.addColorStop(1.0, `rgba(${hr}, ${hg}, ${hb}, 0.65)`);
+    glassFill.addColorStop(0.0, `rgba(${hr}, ${hg}, ${hb}, 0.65)`);
+    glassFill.addColorStop(0.30, `rgba(${r}, ${g}, ${b}, 0.48)`);
+    glassFill.addColorStop(0.65, `rgba(${r}, ${g}, ${b}, 0.42)`);
+    glassFill.addColorStop(1.0, `rgba(${hr}, ${hg}, ${hb}, 0.60)`);
 
     ctx.fillStyle = glassFill;
     ctx.fillText(mainVal, 0, 0);
 
-    // Clear blur & shadow for sharp refraction layers
+    // Clear blur & shadow for crisp inner refraction & specular layers
     ctx.filter = 'none';
     ctx.shadowColor = 'transparent';
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
 
-    // Layer 3+: Refractions & glare (source-atop clips inside glass)
+    // Layer 3: Refractions & Specular Glare (Source-Atop GPU Clipping)
     ctx.globalCompositeOperation = 'source-atop';
 
-    // Dark bottom-right refraction edge
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.60)';
+    // 3A. Dark Bottom-Right Refraction Caustics (Refraction Factor ~2.96)
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
     ctx.fillText(mainVal, 6, 6);
 
-    // Bright top-left refraction edge
+    // 3B. Bright Top-Left Specular Refraction Highlight
     ctx.fillStyle = `rgba(${hr}, ${hg}, ${hb}, 0.90)`;
     ctx.fillText(mainVal, -6, -6);
 
-    // Diagonal -45° glare band
+    // 3C. Angular Specular Glare Sweep (-45° Glare Angle)
     const glareGrad = ctx.createLinearGradient(-560, -1120, 560, 0);
-    glareGrad.addColorStop(0.0, `rgba(${hr}, ${hg}, ${hb}, 0.50)`);
-    glareGrad.addColorStop(0.30, 'rgba(255, 255, 255, 0.0)');
-    glareGrad.addColorStop(0.70, 'rgba(255, 255, 255, 0.0)');
-    glareGrad.addColorStop(1.0, `rgba(${hr}, ${hg}, ${hb}, 0.20)`);
+    glareGrad.addColorStop(0.0, `rgba(${hr}, ${hg}, ${hb}, 0.55)`);
+    glareGrad.addColorStop(0.32, 'rgba(255, 255, 255, 0.0)');
+    glareGrad.addColorStop(0.68, 'rgba(255, 255, 255, 0.0)');
+    glareGrad.addColorStop(1.0, `rgba(${hr}, ${hg}, ${hb}, 0.22)`);
 
     ctx.fillStyle = glareGrad;
     ctx.fillText(mainVal, 0, 0);
 
-    // Fresnel rim contour
-    ctx.lineWidth = 5;
+    // 3D. Fresnel Edge Reflection Rim Contour
+    ctx.lineWidth = 4;
     ctx.strokeStyle = `rgba(${hr}, ${hg}, ${hb}, 0.85)`;
     ctx.strokeText(mainVal, 0, 0);
 
