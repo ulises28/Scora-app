@@ -737,6 +737,55 @@ if (btnBack) btnBack.addEventListener('click', (e) => { e.preventDefault(); wind
 
 if (btnDownload) btnDownload.addEventListener('click', () => exportCanvas('storyCanvas'));
 
+// Helper: Crops canvas to tight sticker bounding box for Instagram stories export
+function getCroppedStickerCanvas(canvas: HTMLCanvasElement): HTMLCanvasElement {
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return canvas;
+
+    const w = canvas.width;
+    const h = canvas.height;
+    const imgData = ctx.getImageData(0, 0, w, h);
+    const data = imgData.data;
+
+    let minX = w, minY = h, maxX = 0, maxY = 0;
+    let found = false;
+
+    for (let y = 0; y < h; y += 8) {
+        for (let x = 0; x < w; x += 8) {
+            const alpha = data[(y * w + x) * 4 + 3];
+            if (alpha > 8) {
+                if (x < minX) minX = x;
+                if (x > maxX) maxX = x;
+                if (y < minY) minY = y;
+                if (y > maxY) maxY = y;
+                found = true;
+            }
+        }
+    }
+
+    if (!found) return canvas;
+
+    // Add 40px margin around content for crisp edge padding
+    const padding = 40;
+    minX = Math.max(0, minX - padding);
+    minY = Math.max(0, minY - padding);
+    maxX = Math.min(w, maxX + padding);
+    maxY = Math.min(h, maxY + padding);
+
+    const cropW = maxX - minX;
+    const cropH = maxY - minY;
+
+    const cropped = document.createElement('canvas');
+    cropped.width = cropW;
+    cropped.height = cropH;
+
+    const cropCtx = cropped.getContext('2d');
+    if (cropCtx) {
+        cropCtx.drawImage(canvas, minX, minY, cropW, cropH, 0, 0, cropW, cropH);
+    }
+    return cropped;
+}
+
 // --- STUDIO PRECISION: Click-to-Copy Feature ---
 let copyFeedbackTimeout: ReturnType<typeof setTimeout> | null = null;
 const canvasWrapper = document.querySelector('.canvas-wrapper');
@@ -754,11 +803,12 @@ if (canvasWrapper) {
                 copyFeedbackTimeout = null;
             }, 1500);
 
-            // ─── SAFARI COMPATIBLE COPY ───
-            // We must call navigator.clipboard.write IMMEDIATELY.
+            // ─── SAFARI COMPATIBLE TIGHT CROP COPY ───
+            const croppedCanvas = getCroppedStickerCanvas(canvas);
+
             if (typeof window.ClipboardItem !== 'undefined') {
                 const imagePromise = new Promise<Blob>((resolve, reject) => {
-                    canvas.toBlob((blob) => {
+                    croppedCanvas.toBlob((blob) => {
                         if (blob) resolve(blob);
                         else reject(new Error("Canvas toBlob failed"));
                     }, 'image/png');
@@ -766,7 +816,7 @@ if (canvasWrapper) {
 
                 const item = new window.ClipboardItem({ "image/png": imagePromise });
                 await navigator.clipboard.write([item]);
-                console.log("[Studio] Sticker copied to clipboard.");
+                console.log("[Studio] Cropped sticker copied to clipboard.");
             } else {
                 throw new Error("ClipboardItem not supported");
             }
