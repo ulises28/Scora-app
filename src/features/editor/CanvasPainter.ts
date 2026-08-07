@@ -8729,59 +8729,102 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
 
     // 2. Ultra-Precision Apple Liquid Glass Numbers (Crystal Clear Optics Shader)
     ctx.save();
-    ctx.translate(x, 1300);
+    ctx.translate(x, 1280);
     ctx.scale(0.203125, 1.0);
 
-    ctx.font = "800 1120px 'Inter', 'Plus Jakarta Sans', sans-serif";
+    ctx.font = "800 1000px 'Inter', 'Plus Jakarta Sans', sans-serif";
     ctx.textAlign = 'center';
     ctx.textBaseline = 'alphabetic';
 
-    // Layer 1: Soft Ambient Grounding Drop Shadow
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.40)';
-    ctx.shadowBlur = 24;
-    ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 8;
+    // Decimal dot handling: replace font '.' with natural space, draw 1:1 round baseline dot
+    const hasDot = mainVal.includes('.');
+    const textToDraw = hasDot ? mainVal.replace('.', ' ') : mainVal;
+    let dotX = 0;
+    if (hasDot) {
+        const parts = mainVal.split('.');
+        const leftW = ctx.measureText(parts[0]).width;
+        const totalW = ctx.measureText(textToDraw).width;
+        const spaceW = ctx.measureText(' ').width;
+        dotX = -totalW / 2 + leftW + spaceW / 2;
+    }
 
-    // Layer 2: Luminous Crystal Translucent Glass Body Fill
-    const glassFill = ctx.createLinearGradient(0, -1120, 0, 0);
+    // Scale-compensated dot radii (123.08 * 0.203125 = 25px horizontal screen radius = 50px 1:1 perfect circle)
+    const dotRx = 25 / 0.203125;
+    const dotRy = 25;
+    const dotY = -40;
+
+    // Layer 1: Ambient Drop Shadow (Grounds glass over background photo)
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
+    ctx.shadowBlur = 32;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 14;
+
+    // Layer 2: Luminous Translucent Glass Body Fill
+    const glassFill = ctx.createLinearGradient(0, -1000, 0, 0);
     glassFill.addColorStop(0.0, `rgba(${hr}, ${hg}, ${hb}, 0.85)`);  // Top specular reflection
-    glassFill.addColorStop(0.25, `rgba(${r}, ${g}, ${b}, 0.55)`);    // Upper translucent body
-    glassFill.addColorStop(0.70, `rgba(${r}, ${g}, ${b}, 0.45)`);    // Deep glass volume
+    glassFill.addColorStop(0.30, `rgba(${r}, ${g}, ${b}, 0.50)`);    // Upper translucent body
+    glassFill.addColorStop(0.70, `rgba(${r}, ${g}, ${b}, 0.40)`);    // Deep glass volume
     glassFill.addColorStop(1.0, `rgba(${hr}, ${hg}, ${hb}, 0.75)`);  // Bottom rim reflection
 
     ctx.fillStyle = glassFill;
-    ctx.fillText(mainVal, 0, 0);
+    ctx.fillText(textToDraw, 0, 0);
 
-    // Clear drop shadow for inner refraction layers
+    if (hasDot) {
+        ctx.beginPath();
+        ctx.ellipse(dotX, dotY, dotRx, dotRy, 0, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // Clear drop shadow for inner refraction & glare layers
     ctx.shadowColor = 'transparent';
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
 
-    // Layer 3: Precision Micro-Refractions & Specular Sheen (Source-Atop GPU Clipping)
+    // Layer 3: Micro-Refractions & Specular Sheen (Source-Atop GPU Clipping)
     ctx.globalCompositeOperation = 'source-atop';
 
-    // 3A. Subtle Bottom-Right Sub-Pixel Caustic Refraction (No dirty smudges!)
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.30)';
-    ctx.fillText(mainVal, 1.5, 2.0);
+    // 3A. Dark Bottom-Right Refraction Shadow
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+    ctx.fillText(textToDraw, 2.0, 2.5);
+    if (hasDot) {
+        ctx.beginPath();
+        ctx.ellipse(dotX + 2.0, dotY + 2.5, dotRx, dotRy, 0, 0, Math.PI * 2);
+        ctx.fill();
+    }
 
-    // 3B. Crisp Top-Left Specular Refraction Highlight
+    // 3B. Bright Top-Left Specular Refraction Highlight
     ctx.fillStyle = `rgba(${hr}, ${hg}, ${hb}, 0.85)`;
-    ctx.fillText(mainVal, -1.5, -2.0);
+    ctx.fillText(textToDraw, -2.0, -2.5);
+    if (hasDot) {
+        ctx.beginPath();
+        ctx.ellipse(dotX - 2.0, dotY - 2.5, dotRx, dotRy, 0, 0, Math.PI * 2);
+        ctx.fill();
+    }
 
-    // 3C. Clean Angular Specular Glare Reflection (-45°)
-    const glareGrad = ctx.createLinearGradient(-560, -1120, 560, 0);
+    // 3C. Clean Angular Specular Glare Sweep (-45°)
+    const glareGrad = ctx.createLinearGradient(-500, -1000, 500, 0);
     glareGrad.addColorStop(0.0, `rgba(${hr}, ${hg}, ${hb}, 0.45)`);
     glareGrad.addColorStop(0.35, 'rgba(255, 255, 255, 0.0)');
     glareGrad.addColorStop(0.65, 'rgba(255, 255, 255, 0.0)');
     glareGrad.addColorStop(1.0, `rgba(${hr}, ${hg}, ${hb}, 0.20)`);
 
     ctx.fillStyle = glareGrad;
-    ctx.fillText(mainVal, 0, 0);
+    ctx.fillText(textToDraw, 0, 0);
+    if (hasDot) {
+        ctx.beginPath();
+        ctx.ellipse(dotX, dotY, dotRx, dotRy, 0, 0, Math.PI * 2);
+        ctx.fill();
+    }
 
-    // 3D. Razor-Sharp Crystal Rim Contour
-    ctx.lineWidth = 2.5;
+    // 3D. Razor-Sharp Glass Rim Contour
+    ctx.lineWidth = 3;
     ctx.strokeStyle = `rgba(${hr}, ${hg}, ${hb}, 0.85)`;
-    ctx.strokeText(mainVal, 0, 0);
+    ctx.strokeText(textToDraw, 0, 0);
+    if (hasDot) {
+        ctx.beginPath();
+        ctx.ellipse(dotX, dotY, dotRx, dotRy, 0, 0, Math.PI * 2);
+        ctx.stroke();
+    }
 
     ctx.globalCompositeOperation = 'source-over';
     ctx.restore();
