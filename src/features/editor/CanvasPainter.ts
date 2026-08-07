@@ -8711,7 +8711,7 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.fillText(formattedDate, x, 150);
     ctx.restore();
 
-    // 2. Huge Studio Optical Liquid Glass Numbers
+    // 2. Huge Studio Liquid Glass Numbers (Universal Safari & Chrome 4-Layer Shader)
     ctx.save();
     ctx.translate(x, 1350); 
     ctx.scale(0.203125, 1.0); 
@@ -8726,51 +8726,46 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 16;
 
-    // Step 2: Optical Glass Blending (Preserves photo background colors while adding glass sheen)
+    // Step 2: Multi-Stop Translucent Liquid Glass Base Fill (Universal Safari & Chrome)
     const glassFill = ctx.createLinearGradient(0, -1120, 0, 0);
     glassFill.addColorStop(0.0, `rgba(${hr}, ${hg}, ${hb}, 0.70)`); // Top specular sheen
-    glassFill.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, 0.25)`);    // Translucent core
-    glassFill.addColorStop(1.0, `rgba(${hr}, ${hg}, ${hb}, 0.60)`); // Bottom rim reflection
+    glassFill.addColorStop(0.40, `rgba(${r}, ${g}, ${b}, 0.22)`);   // Core translucent glass transparency
+    glassFill.addColorStop(0.70, `rgba(${r}, ${g}, ${b}, 0.18)`);   // Pure glass clarity
+    glassFill.addColorStop(1.0, `rgba(${hr}, ${hg}, ${hb}, 0.55)`); // Bottom rim reflection
 
-    // Overlay blend mode illuminates the photo colors underneath instead of covering them with white paint!
-    ctx.globalCompositeOperation = 'overlay';
     ctx.fillStyle = glassFill;
     ctx.fillText(mainVal, 0, 0);
 
-    // Subtle base core fill for solid definition
-    ctx.globalCompositeOperation = 'source-over';
+    // Clear shadow for internal GPU composite layers
     ctx.shadowColor = 'transparent';
     ctx.shadowBlur = 0;
-    ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.12)`;
-    ctx.fillText(mainVal, 0, 0);
+    ctx.shadowOffsetY = 0;
 
     // Step 3: Studio Liquid Glass Refractions (Source-Atop GPU Clipping)
     ctx.globalCompositeOperation = 'source-atop';
 
     // 3A. Bottom-Right Dark Refraction Shadow (Offset +4, +4)
     ctx.lineWidth = 12;
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.48)';
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
     ctx.strokeText(mainVal, 4, 4);
 
     // 3B. Top-Left White Specular Edge Light (Offset -4, -4)
     ctx.lineWidth = 12;
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.92)';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.90)';
     ctx.strokeText(mainVal, -4, -4);
 
-    // 3C. Gloss Sheen Gradient (Color-Dodge for vibrant optical glass glow)
+    // 3C. Vertical Gloss Sheen
     const glossGrad = ctx.createLinearGradient(0, -1120, 0, 0);
     glossGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.40)');
-    glossGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.08)');
+    glossGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.05)');
     glossGrad.addColorStop(1.0, 'rgba(255, 255, 255, 0.30)');
 
-    ctx.globalCompositeOperation = 'color-dodge';
     ctx.fillStyle = glossGrad;
     ctx.fillText(mainVal, 0, 0);
 
-    // Step 4: Outer Color-Matched Glass Contour Rim
-    ctx.globalCompositeOperation = 'source-atop';
+    // Step 4: Color-Matched Perimeter Glass Rim Contour
     ctx.lineWidth = 5;
-    ctx.strokeStyle = `rgba(${hr}, ${hg}, ${hb}, 0.90)`;
+    ctx.strokeStyle = `rgba(${hr}, ${hg}, ${hb}, 0.85)`;
     ctx.strokeText(mainVal, 0, 0);
 
     ctx.globalCompositeOperation = 'source-over';
