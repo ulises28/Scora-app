@@ -8716,98 +8716,102 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom'; 
 
-    // Step 1: 3D Ambient Grounding Drop Shadow for the Liquid Glass numbers
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
-    ctx.shadowBlur = 32;
+    // Step 1: Deep High-Contrast 3D Ambient Drop Shadow for Liquid Glass numbers
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.75)';
+    ctx.shadowBlur = 40;
     ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 18;
+    ctx.shadowOffsetY = 24;
 
-    // Step 2: High-Density High-Contrast Translucent Glass Base
+    // Step 2: Maximum Density & High-Contrast Translucent Glass Base
     const glassFill = ctx.createLinearGradient(0, -1120, 0, 0);
-    glassFill.addColorStop(0.0, `rgba(${r}, ${g}, ${b}, 0.88)`); // Top specular sheen
-    glassFill.addColorStop(0.35, `rgba(${r}, ${g}, ${b}, 0.65)`); // Solid translucent glass body
-    glassFill.addColorStop(0.70, `rgba(${r}, ${g}, ${b}, 0.55)`); // Core glass density
-    glassFill.addColorStop(1.0, `rgba(${r}, ${g}, ${b}, 0.85)`); // Crisp bottom reflection
+    glassFill.addColorStop(0.0, `rgba(${r}, ${g}, ${b}, 0.95)`); // Top specular sheen
+    glassFill.addColorStop(0.35, `rgba(${r}, ${g}, ${b}, 0.78)`); // Solid translucent glass body
+    glassFill.addColorStop(0.70, `rgba(${r}, ${g}, ${b}, 0.68)`); // Core glass density
+    glassFill.addColorStop(1.0, `rgba(${r}, ${g}, ${b}, 0.92)`); // Crisp bottom reflection
 
     ctx.fillStyle = glassFill;
     ctx.fillText(mainVal, 0, 0);
 
-    // Clear shadow immediately for internal refractions and text
+    // Clear shadow immediately for internal refractions
     ctx.shadowColor = 'transparent';
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
 
-    // Step 3: High-Contrast Studio Liquid Glass Refractions (Source-Atop GPU Clipping)
+    // Step 3: Ultra-High-Contrast Studio Liquid Glass Refractions (Source-Atop GPU Clipping)
     ctx.globalCompositeOperation = 'source-atop';
 
-    // 3A. Deep Bottom-Right Dark Refraction Line (Offset +6, +6)
-    ctx.lineWidth = 20;
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.70)';
-    ctx.strokeText(mainVal, 6, 6);
+    // 3A. Deep Dark Refraction Shadow (Offset +7, +7)
+    ctx.lineWidth = 24;
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.82)';
+    ctx.strokeText(mainVal, 7, 7);
 
-    // 3B. Crisp Top-Left White Specular Edge Light (Offset -6, -6)
-    ctx.lineWidth = 20;
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.98)';
-    ctx.strokeText(mainVal, -6, -6);
+    // 3B. Crisp Top-Left White Specular Edge Light (Offset -7, -7)
+    ctx.lineWidth = 24;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 1.0)';
+    ctx.strokeText(mainVal, -7, -7);
 
     // 3C. Vertical Gloss Sheen
     const glossGrad = ctx.createLinearGradient(0, -1120, 0, 0);
-    glossGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.50)');
-    glossGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.15)');
-    glossGrad.addColorStop(1.0, 'rgba(255, 255, 255, 0.40)');
+    glossGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.55)');
+    glossGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.18)');
+    glossGrad.addColorStop(1.0, 'rgba(255, 255, 255, 0.45)');
 
     ctx.fillStyle = glossGrad;
     ctx.fillText(mainVal, 0, 0);
 
-    // Step 4: Solid Outer Perimeter Contour Rim (Defines the shape sharply)
-    ctx.lineWidth = 12;
+    // Step 4: Solid Perimeter Contour Rim
+    ctx.lineWidth = 14;
     ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, 1.0)`;
     ctx.strokeText(mainVal, 0, 0);
 
     ctx.globalCompositeOperation = 'source-over';
     ctx.restore();
 
-    // 3. Integrated Mini Liquid Glass Unit Badge below numbers
+    // 3. Liquid Glass Unit text positioned tightly right below the giant numbers
     ctx.save();
-    const unitStr = unit.toUpperCase();
-    ctx.font = "800 34px 'Inter', 'Plus Jakarta Sans', sans-serif";
-    const unitW = ctx.measureText(unitStr).width;
-    const pillW = Math.max(130, unitW + 60);
-    const pillH = 56;
-    const pillX = 540 - pillW / 2;
-    const pillY = 1380;
+    const unitStr = unit.toLowerCase();
+    const unitY = 1240; // Tightly hugging bottom of numbers
+    ctx.font = "800 65px 'Inter', 'Plus Jakarta Sans', sans-serif";
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
 
-    // Ambient drop shadow for the unit glass pill
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.40)';
-    ctx.shadowBlur = 20;
-    ctx.shadowOffsetY = 8;
+    // Ambient drop shadow for 3D liquid glass unit letters
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
+    ctx.shadowBlur = 16;
+    ctx.shadowOffsetY = 6;
 
-    // Glass pill background
-    const unitPillFill = ctx.createLinearGradient(pillX, pillY, pillX, pillY + pillH);
-    unitPillFill.addColorStop(0, 'rgba(255, 255, 255, 0.45)');
-    unitPillFill.addColorStop(1, 'rgba(255, 255, 255, 0.20)');
-    ctx.fillStyle = unitPillFill;
-    ctx.beginPath();
-    ctx.roundRect(pillX, pillY, pillW, pillH, 28);
-    ctx.fill();
+    // Liquid Glass Fill
+    const unitFill = ctx.createLinearGradient(0, unitY, 0, unitY + 65);
+    unitFill.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.92)`);
+    unitFill.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, 0.70)`);
+    unitFill.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0.88)`);
+    ctx.fillStyle = unitFill;
+    ctx.fillText(unitStr, x, unitY);
 
-    // Reset shadow for text inside pill
+    // Clear shadow for refractions
     ctx.shadowColor = 'transparent';
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
 
-    // Glass rim stroke
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.roundRect(pillX, pillY, pillW, pillH, 28);
-    ctx.stroke();
+    // Liquid Glass Refractions on unit text
+    ctx.globalCompositeOperation = 'source-atop';
 
-    // Unit text inside pill
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = textColor;
-    ctx.fillText(unitStr, 540, pillY + pillH / 2 + 2);
+    // Dark Refraction Shadow (+2, +2)
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.80)';
+    ctx.strokeText(unitStr, x + 2.5, unitY + 2.5);
+
+    // Specular White Highlight (-2, -2)
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
+    ctx.strokeText(unitStr, x - 2.5, unitY - 2.5);
+
+    // Contour Rim
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, 1.0)`;
+    ctx.strokeText(unitStr, x, unitY);
+
+    ctx.globalCompositeOperation = 'source-over';
     ctx.restore();
 }
 
