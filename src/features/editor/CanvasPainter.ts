@@ -8717,16 +8717,17 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.textBaseline = 'bottom'; 
 
     // Step 1: 3D Ambient Grounding Drop Shadow for Liquid Glass numbers
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
-    ctx.shadowBlur = 28;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.60)';
+    ctx.shadowBlur = 32;
     ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 16;
+    ctx.shadowOffsetY = 18;
 
-    // Step 2: Translucent Tinted Glass Base Fill
+    // Step 2: High-Vibrancy Translucent Glass Base Fill (Pops on white/clear photos)
     const glassFill = ctx.createLinearGradient(0, -1120, 0, 0);
-    glassFill.addColorStop(0.0, `rgba(${r}, ${g}, ${b}, 0.55)`); // Top specular sheen
-    glassFill.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, 0.22)`); // Core translucent glass body
-    glassFill.addColorStop(1.0, `rgba(${r}, ${g}, ${b}, 0.50)`); // Crisp bottom reflection
+    glassFill.addColorStop(0.0, `rgba(${r}, ${g}, ${b}, 0.85)`); // Top specular sheen
+    glassFill.addColorStop(0.35, `rgba(${r}, ${g}, ${b}, 0.65)`); // Vibrant translucent glass body
+    glassFill.addColorStop(0.70, `rgba(${r}, ${g}, ${b}, 0.55)`); // Core glass density
+    glassFill.addColorStop(1.0, `rgba(${r}, ${g}, ${b}, 0.80)`); // Crisp bottom reflection
 
     ctx.fillStyle = glassFill;
     ctx.fillText(mainVal, 0, 0);
@@ -8739,28 +8740,28 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     // Step 3: Studio Liquid Glass Refractions (Source-Atop GPU Clipping)
     ctx.globalCompositeOperation = 'source-atop';
 
-    // 3A. Bottom-Right Dark Refraction Line (Offset +4, +4)
-    ctx.lineWidth = 12;
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
-    ctx.strokeText(mainVal, 4, 4);
+    // 3A. Bottom-Right Dark Refraction Line (Offset +5, +5)
+    ctx.lineWidth = 14;
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.65)';
+    ctx.strokeText(mainVal, 5, 5);
 
-    // 3B. Top-Left White Specular Edge Light (Offset -4, -4)
-    ctx.lineWidth = 12;
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
-    ctx.strokeText(mainVal, -4, -4);
+    // 3B. Top-Left White Specular Edge Light (Offset -5, -5)
+    ctx.lineWidth = 14;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.90)';
+    ctx.strokeText(mainVal, -5, -5);
 
     // 3C. Vertical Gloss Sheen Gradient
     const glossGrad = ctx.createLinearGradient(0, -1120, 0, 0);
-    glossGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.35)');
-    glossGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.05)');
-    glossGrad.addColorStop(1.0, 'rgba(255, 255, 255, 0.25)');
+    glossGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.45)');
+    glossGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.10)');
+    glossGrad.addColorStop(1.0, 'rgba(255, 255, 255, 0.35)');
 
     ctx.fillStyle = glossGrad;
     ctx.fillText(mainVal, 0, 0);
 
-    // Step 4: Color-Matched Outer Glass Contour
-    ctx.lineWidth = 5;
-    ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.85)`;
+    // Step 4: Color-Matched Outer Glass Contour Rim
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.95)`;
     ctx.strokeText(mainVal, 0, 0);
 
     ctx.globalCompositeOperation = 'source-over';
