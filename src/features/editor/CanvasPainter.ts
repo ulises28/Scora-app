@@ -8706,9 +8706,9 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = textColor; 
-    ctx.shadowColor = 'transparent';
-    ctx.shadowBlur = 0;
-    ctx.shadowOffsetY = 0;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
+    ctx.shadowBlur = 10;
+    ctx.shadowOffsetY = 2;
     ctx.fillText(formattedDate, x, 150);
     ctx.restore();
 
@@ -8721,51 +8721,52 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom'; 
 
-    // Step 1: Soft Ambient Grounding Drop Shadow behind Liquid Glass numbers
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
-    ctx.shadowBlur = 28;
+    // Step 1: Deep Grounding Ambient Drop Shadow behind Liquid Glass numbers
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.70)';
+    ctx.shadowBlur = 36;
     ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 16;
+    ctx.shadowOffsetY = 20;
 
-    // Step 2: Translucent Tinted Glass Base
+    // Step 2: High-Density Translucent Glass Fill (Pops against complex photos)
     const glassFill = ctx.createLinearGradient(0, -1120, 0, 0);
-    glassFill.addColorStop(0.0, `rgba(${r}, ${g}, ${b}, 0.55)`);
-    glassFill.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, 0.20)`);
-    glassFill.addColorStop(1.0, `rgba(${r}, ${g}, ${b}, 0.50)`);
+    glassFill.addColorStop(0.0, `rgba(${r}, ${g}, ${b}, 0.82)`); // Top specular sheen
+    glassFill.addColorStop(0.35, `rgba(${r}, ${g}, ${b}, 0.55)`); // Solid translucent glass body
+    glassFill.addColorStop(0.70, `rgba(${r}, ${g}, ${b}, 0.45)`); // Core glass density
+    glassFill.addColorStop(1.0, `rgba(${r}, ${g}, ${b}, 0.78)`); // Crisp bottom reflection
 
     ctx.fillStyle = glassFill;
     ctx.fillText(mainVal, 0, 0);
 
-    // Clear shadow immediately for internal refractions and text
+    // Clear shadow immediately for internal refractions
     ctx.shadowColor = 'transparent';
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
 
-    // Step 3: Studio Liquid Glass Refractions (Source-Atop GPU Clipping)
+    // Step 3: High-Contrast Studio Liquid Glass Refractions (Source-Atop GPU Clipping)
     ctx.globalCompositeOperation = 'source-atop';
 
-    // 3A. Bottom-Right Dark Refraction Line (Offset +4, +4)
-    ctx.lineWidth = 12;
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
-    ctx.strokeText(mainVal, 4, 4);
+    // 3A. Deep Bottom-Right Dark Refraction Shadow (Offset +6, +6)
+    ctx.lineWidth = 18;
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.65)';
+    ctx.strokeText(mainVal, 6, 6);
 
-    // 3B. Top-Left White Specular Edge Light (Offset -4, -4)
-    ctx.lineWidth = 12;
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
-    ctx.strokeText(mainVal, -4, -4);
+    // 3B. Crisp Top-Left White Specular Edge Light (Offset -6, -6)
+    ctx.lineWidth = 18;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
+    ctx.strokeText(mainVal, -6, -6);
 
     // 3C. Vertical Gloss Sheen
     const glossGrad = ctx.createLinearGradient(0, -1120, 0, 0);
-    glossGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.35)');
-    glossGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.05)');
-    glossGrad.addColorStop(1.0, 'rgba(255, 255, 255, 0.25)');
+    glossGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.45)');
+    glossGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.10)');
+    glossGrad.addColorStop(1.0, 'rgba(255, 255, 255, 0.35)');
 
     ctx.fillStyle = glossGrad;
     ctx.fillText(mainVal, 0, 0);
 
-    // Step 4: Color-Matched Perimeter Rim
-    ctx.lineWidth = 5;
-    ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.85)`;
+    // Step 4: Solid Outer Perimeter Contour Rim (Defines the shape against background elements)
+    ctx.lineWidth = 10;
+    ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.95)`;
     ctx.strokeText(mainVal, 0, 0);
 
     ctx.globalCompositeOperation = 'source-over';
@@ -8777,9 +8778,9 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     ctx.fillStyle = textColor;
-    ctx.shadowColor = 'transparent';
-    ctx.shadowBlur = 0;
-    ctx.shadowOffsetY = 0;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
+    ctx.shadowBlur = 10;
+    ctx.shadowOffsetY = 2;
     ctx.fillText(unit, x, 1260);
     ctx.restore();
 }
