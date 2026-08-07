@@ -8733,9 +8733,9 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
         dotX = -totalW / 2 + leftW + spaceW / 2;
     }
 
-    // Scale-compensated radius math: 68.9 * 0.203125 = 14px screen radius (28px 1:1 PERFECT ROUND CIRCLE)
-    const dotRx = 68.9;
-    const dotRy = 14;
+    // Scale-compensated radius math: 123.08 * 0.203125 = 25px screen radius (50px 1:1 PERFECT ROUND 3D GLASS SPHERE)
+    const dotRx = 123.08;
+    const dotRy = 25;
     const dotY = -45;
 
     // Step 1: 3D Grounding Ambient Drop Shadow
