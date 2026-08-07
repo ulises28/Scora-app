@@ -8711,47 +8711,52 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.fillText(formattedDate, x, 150);
     ctx.restore();
 
-    // 2. Huge Studio High-Contrast Liquid Glass Numbers (Universal Safari & Chrome)
+    // 2. Huge Studio Optical Liquid Glass Numbers (Reference 11.11 Aesthetic)
     ctx.save();
     ctx.translate(x, 1350); 
     ctx.scale(0.203125, 1.0); 
 
     ctx.font = "800 1120px 'Inter', 'Plus Jakarta Sans', sans-serif";
-    ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom'; 
 
-    const hasDot = mainVal.includes('.');
-    const textToDraw = hasDot ? mainVal.replace('.', ' ') : mainVal;
-    let dotX = 0;
-    if (hasDot) {
-        const parts = mainVal.split('.');
-        const leftW = ctx.measureText(parts[0]).width;
-        const totalW = ctx.measureText(textToDraw).width;
-        const dotCharW = ctx.measureText(' ').width;
-        dotX = -totalW / 2 + leftW + dotCharW / 2;
-    }
+    const hasSep = mainVal.includes('.') || mainVal.includes(':');
+    const parts = hasSep ? mainVal.split(/[\.:]/) : [mainVal, ''];
+    const leftStr = parts[0];
+    const rightStr = parts[1] || '';
 
-    // Step 1: Deep Grounding 3D Ambient Drop Shadow (Pops on light/white photos)
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
-    ctx.shadowBlur = 36;
+    // Step 1: 3D Grounding Ambient Drop Shadow
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+    ctx.shadowBlur = 28;
     ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 20;
+    ctx.shadowOffsetY = 16;
 
-    // Step 2: Dense Translucent Liquid Glass Base Fill (Vibrant & clear on all backgrounds)
+    // Translucent Liquid Glass Fill Gradient
     const glassFill = ctx.createLinearGradient(0, -1120, 0, 0);
-    glassFill.addColorStop(0.0, `rgba(${hr}, ${hg}, ${hb}, 0.85)`); // Top specular sheen
-    glassFill.addColorStop(0.35, `rgba(${r}, ${g}, ${b}, 0.45)`);  // Solid glass body density
-    glassFill.addColorStop(0.70, `rgba(${r}, ${g}, ${b}, 0.35)`);  // Core translucency
-    glassFill.addColorStop(1.0, `rgba(${hr}, ${hg}, ${hb}, 0.75)`); // Bottom rim reflection
+    glassFill.addColorStop(0.0, `rgba(${hr}, ${hg}, ${hb}, 0.75)`); // Top specular sheen
+    glassFill.addColorStop(0.40, `rgba(${r}, ${g}, ${b}, 0.28)`);   // Core translucent glass transparency
+    glassFill.addColorStop(0.70, `rgba(${r}, ${g}, ${b}, 0.22)`);   // Pure glass clarity
+    glassFill.addColorStop(1.0, `rgba(${hr}, ${hg}, ${hb}, 0.60)`); // Bottom rim reflection
 
-    ctx.fillStyle = glassFill;
-    ctx.fillText(textToDraw, 0, 0);
+    const orbY = -560; // Vertical middle height of 1120px tall digits
+    const orbRx = 118; // 118 * 0.203125 = 24px horizontal radius on screen
+    const orbRy = 24;  // 24px vertical radius on screen -> 100% PERFECT ROUND 24px CIRCLE
 
-    // Draw bold, perfect round 3D Liquid Glass decimal point sphere
-    if (hasDot) {
+    if (hasSep && rightStr.length > 0) {
+        ctx.textAlign = 'right';
+        ctx.fillStyle = glassFill;
+        ctx.fillText(leftStr, -140, 0);
+
+        ctx.textAlign = 'left';
+        ctx.fillText(rightStr, 140, 0);
+
+        // Centered Floating 3D Liquid Glass Sphere Orb
         ctx.beginPath();
-        ctx.ellipse(dotX, -45, 125, 25, 0, 0, Math.PI * 2);
+        ctx.ellipse(0, orbY, orbRx, orbRy, 0, 0, Math.PI * 2);
         ctx.fill();
+    } else {
+        ctx.textAlign = 'center';
+        ctx.fillStyle = glassFill;
+        ctx.fillText(mainVal, 0, 0);
     }
 
     // Clear shadow for internal GPU composite layers
@@ -8759,51 +8764,79 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
 
-    // Step 3: Studio Liquid Glass Refractions (Source-Atop GPU Clipping)
+    // Step 2: Studio Liquid Glass Refractions (Source-Atop GPU Clipping)
     ctx.globalCompositeOperation = 'source-atop';
 
-    // 3A. Deep Dark Refraction Shadow (Carves 3D glass geometry on white/light backgrounds)
-    ctx.lineWidth = 16;
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.65)';
-    ctx.strokeText(textToDraw, 5, 5);
-    if (hasDot) {
+    // 2A. Bottom-Right Dark Refraction Shadow (Offset +4, +4)
+    ctx.lineWidth = 14;
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.48)';
+    if (hasSep && rightStr.length > 0) {
+        ctx.textAlign = 'right';
+        ctx.strokeText(leftStr, -136, 4);
+        ctx.textAlign = 'left';
+        ctx.strokeText(rightStr, 144, 4);
+
         ctx.beginPath();
-        ctx.ellipse(dotX + 5, -40, 125, 25, 0, 0, Math.PI * 2);
+        ctx.ellipse(4, orbY + 4, orbRx, orbRy, 0, 0, Math.PI * 2);
         ctx.stroke();
+    } else {
+        ctx.textAlign = 'center';
+        ctx.strokeText(mainVal, 4, 4);
     }
 
-    // 3B. Top-Left White Specular Edge Light (Offset -5, -5)
-    ctx.lineWidth = 16;
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
-    ctx.strokeText(textToDraw, -5, -5);
-    if (hasDot) {
+    // 2B. Top-Left White Specular Edge Light (Offset -4, -4)
+    ctx.lineWidth = 14;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.92)';
+    if (hasSep && rightStr.length > 0) {
+        ctx.textAlign = 'right';
+        ctx.strokeText(leftStr, -144, -4);
+        ctx.textAlign = 'left';
+        ctx.strokeText(rightStr, 136, -4);
+
         ctx.beginPath();
-        ctx.ellipse(dotX - 5, -50, 125, 25, 0, 0, Math.PI * 2);
+        ctx.ellipse(-4, orbY - 4, orbRx, orbRy, 0, 0, Math.PI * 2);
         ctx.stroke();
+    } else {
+        ctx.textAlign = 'center';
+        ctx.strokeText(mainVal, -4, -4);
     }
 
-    // 3C. Vertical Gloss Sheen
+    // 2C. Vertical Gloss Sheen
     const glossGrad = ctx.createLinearGradient(0, -1120, 0, 0);
-    glossGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.45)');
-    glossGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.10)');
-    glossGrad.addColorStop(1.0, 'rgba(255, 255, 255, 0.35)');
+    glossGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.40)');
+    glossGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.05)');
+    glossGrad.addColorStop(1.0, 'rgba(255, 255, 255, 0.30)');
 
     ctx.fillStyle = glossGrad;
-    ctx.fillText(textToDraw, 0, 0);
-    if (hasDot) {
+    if (hasSep && rightStr.length > 0) {
+        ctx.textAlign = 'right';
+        ctx.fillText(leftStr, -140, 0);
+        ctx.textAlign = 'left';
+        ctx.fillText(rightStr, 140, 0);
+
         ctx.beginPath();
-        ctx.ellipse(dotX, -45, 125, 25, 0, 0, Math.PI * 2);
+        ctx.ellipse(0, orbY, orbRx, orbRy, 0, 0, Math.PI * 2);
         ctx.fill();
+    } else {
+        ctx.textAlign = 'center';
+        ctx.fillText(mainVal, 0, 0);
     }
 
-    // Step 4: Dark Perimeter Rim Contour (Defines sharp glass outline on white photos)
-    ctx.lineWidth = 6;
-    ctx.strokeStyle = `rgba(0, 0, 0, 0.40)`;
-    ctx.strokeText(textToDraw, 0, 0);
-    if (hasDot) {
+    // Step 3: Color-Matched Perimeter Rim Contour
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = `rgba(${hr}, ${hg}, ${hb}, 0.85)`;
+    if (hasSep && rightStr.length > 0) {
+        ctx.textAlign = 'right';
+        ctx.strokeText(leftStr, -140, 0);
+        ctx.textAlign = 'left';
+        ctx.strokeText(rightStr, 140, 0);
+
         ctx.beginPath();
-        ctx.ellipse(dotX, -45, 125, 25, 0, 0, Math.PI * 2);
+        ctx.ellipse(0, orbY, orbRx, orbRy, 0, 0, Math.PI * 2);
         ctx.stroke();
+    } else {
+        ctx.textAlign = 'center';
+        ctx.strokeText(mainVal, 0, 0);
     }
 
     ctx.globalCompositeOperation = 'source-over';
