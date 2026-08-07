@@ -8711,133 +8711,64 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.fillText(formattedDate, x, 160);
     ctx.restore();
 
-    // 2. Huge Studio Optical Liquid Glass Shader (Exact Image 3 Aesthetic)
+    // 2. Huge Studio Optical Liquid Glass Shader
     ctx.save();
-    ctx.translate(x, 1350); 
+    ctx.translate(x, 1300); 
     ctx.scale(0.203125, 1.0); 
 
-    ctx.font = "800 1120px 'Inter', 'Plus Jakarta Sans', sans-serif";
-    ctx.textBaseline = 'bottom'; 
+    ctx.font = "800 1120px 'SF Pro Rounded', 'Plus Jakarta Sans', 'Inter', sans-serif";
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic'; 
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
-    const hasSep = mainVal.includes('.') || mainVal.includes(':');
-    const parts = hasSep ? mainVal.split(/[\.:]/) : [mainVal, ''];
-    const leftStr = parts[0];
-    const rightStr = parts[1] || '';
-
-    // Vertical 3D Liquid Glass Decimal Sphere (Exact Image 3 8.95 geometry)
-    const orbY = -220; // Positioned vertically in natural gap between left and right digits
-    const orbRx = 90;  // 90 * 0.203125 = 18.28px width
-    const orbRy = 190; // 190px height -> PERFECT VERTICAL LIQUID GLASS CAPSULE SPHERE
-
-    // Step 1: Deep Grounding 3D Ambient Drop Shadow
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.70)';
-    ctx.shadowBlur = 36;
+    // Step 1: 3D Grounding Ambient Drop Shadow
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+    ctx.shadowBlur = 28;
     ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 20;
+    ctx.shadowOffsetY = 16;
 
     // Optical Translucent Glass Base Fill Gradient
     const glassFill = ctx.createLinearGradient(0, -1120, 0, 0);
-    glassFill.addColorStop(0.0, `rgba(${hr}, ${hg}, ${hb}, 0.85)`); // Specular sheen top
-    glassFill.addColorStop(0.35, `rgba(${r}, ${g}, ${b}, 0.45)`);  // Dense glass body
-    glassFill.addColorStop(0.70, `rgba(${r}, ${g}, ${b}, 0.35)`);  // Core translucency
-    glassFill.addColorStop(1.0, `rgba(${hr}, ${hg}, ${hb}, 0.75)`); // Bottom rim reflection
+    glassFill.addColorStop(0.0, `rgba(${hr}, ${hg}, ${hb}, 0.80)`); // Specular sheen top
+    glassFill.addColorStop(0.35, `rgba(${r}, ${g}, ${b}, 0.30)`);  // Vibrant glass body
+    glassFill.addColorStop(0.70, `rgba(${r}, ${g}, ${b}, 0.22)`);  // Glass core clarity
+    glassFill.addColorStop(1.0, `rgba(${hr}, ${hg}, ${hb}, 0.65)`); // Bottom rim reflection
 
     ctx.fillStyle = glassFill;
-    if (hasSep && rightStr.length > 0) {
-        ctx.textAlign = 'right';
-        ctx.fillText(leftStr, -120, 0);
-        ctx.textAlign = 'left';
-        ctx.fillText(rightStr, 120, 0);
-
-        ctx.beginPath();
-        ctx.ellipse(0, orbY, orbRx, orbRy, 0, 0, Math.PI * 2);
-        ctx.fill();
-    } else {
-        ctx.textAlign = 'center';
-        ctx.fillText(mainVal, 0, 0);
-    }
+    ctx.fillText(mainVal, 0, 0);
 
     // Clear shadow for internal GPU composite layers
     ctx.shadowColor = 'transparent';
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
 
-    // Step 2: High-Contrast Studio Liquid Glass Refractions (Source-Atop GPU Clipping)
+    // Step 2: Studio Liquid Glass Refractions (Source-Atop GPU Clipping)
     ctx.globalCompositeOperation = 'source-atop';
 
-    // 2A. Deep Dark Refraction Shadow (Offset +4, +4)
-    ctx.lineWidth = 12;
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.65)';
-    if (hasSep && rightStr.length > 0) {
-        ctx.textAlign = 'right';
-        ctx.strokeText(leftStr, -116, 4);
-        ctx.textAlign = 'left';
-        ctx.strokeText(rightStr, 124, 4);
-
-        ctx.beginPath();
-        ctx.ellipse(4, orbY + 4, orbRx, orbRy, 0, 0, Math.PI * 2);
-        ctx.stroke();
-    } else {
-        ctx.textAlign = 'center';
-        ctx.strokeText(mainVal, 4, 4);
-    }
+    // 2A. Dark Bottom-Right Refraction Shadow (Offset +4, +4)
+    ctx.lineWidth = 8;
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.55)';
+    ctx.strokeText(mainVal, 4, 4);
 
     // 2B. Top-Left White Specular Edge Light (Offset -4, -4)
-    ctx.lineWidth = 12;
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.92)';
-    if (hasSep && rightStr.length > 0) {
-        ctx.textAlign = 'right';
-        ctx.strokeText(leftStr, -124, -4);
-        ctx.textAlign = 'left';
-        ctx.strokeText(rightStr, 116, -4);
-
-        ctx.beginPath();
-        ctx.ellipse(-4, orbY - 4, orbRx, orbRy, 0, 0, Math.PI * 2);
-        ctx.stroke();
-    } else {
-        ctx.textAlign = 'center';
-        ctx.strokeText(mainVal, -4, -4);
-    }
+    ctx.lineWidth = 8;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
+    ctx.strokeText(mainVal, -4, -4);
 
     // 2C. Vertical Gloss Sheen Gradient
     const glossGrad = ctx.createLinearGradient(0, -1120, 0, 0);
-    glossGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.45)');
-    glossGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.10)');
-    glossGrad.addColorStop(1.0, 'rgba(255, 255, 255, 0.35)');
+    glossGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.40)');
+    glossGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.05)');
+    glossGrad.addColorStop(1.0, 'rgba(255, 255, 255, 0.30)');
 
     ctx.fillStyle = glossGrad;
-    if (hasSep && rightStr.length > 0) {
-        ctx.textAlign = 'right';
-        ctx.fillText(leftStr, -120, 0);
-        ctx.textAlign = 'left';
-        ctx.fillText(rightStr, 120, 0);
-
-        ctx.beginPath();
-        ctx.ellipse(0, orbY, orbRx, orbRy, 0, 0, Math.PI * 2);
-        ctx.fill();
-    } else {
-        ctx.textAlign = 'center';
-        ctx.fillText(mainVal, 0, 0);
-    }
+    ctx.fillText(mainVal, 0, 0);
 
     // Step 3: Color-Matched Perimeter Rim Contour
-    ctx.lineWidth = 5;
+    ctx.lineWidth = 4;
     ctx.strokeStyle = `rgba(${hr}, ${hg}, ${hb}, 0.85)`;
-    if (hasSep && rightStr.length > 0) {
-        ctx.textAlign = 'right';
-        ctx.strokeText(leftStr, -120, 0);
-        ctx.textAlign = 'left';
-        ctx.strokeText(rightStr, 120, 0);
-
-        ctx.beginPath();
-        ctx.ellipse(0, orbY, orbRx, orbRy, 0, 0, Math.PI * 2);
-        ctx.stroke();
-    } else {
-        ctx.textAlign = 'center';
-        ctx.strokeText(mainVal, 0, 0);
-    }
+    ctx.strokeText(mainVal, 0, 0);
 
     ctx.globalCompositeOperation = 'source-over';
     ctx.restore();
