@@ -8696,7 +8696,7 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     const hg = Math.round(g + (255 - g) * 0.65);
     const hb = Math.round(b + (255 - b) * 0.65);
 
-    // 1. Date at top (Positioned at y=150 to guarantee ZERO overlap with giant numbers)
+    // 1. Date at top (Positioned at Y=160 to give generous breathing room)
     const dateStr = stats.rawDate ? new Intl.DateTimeFormat('es-ES', { weekday: 'short', month: 'short', day: 'numeric' }).format(new Date(stats.rawDate.replace('Z', ''))) : 'Lun jun 29';
     const formattedDate = dateStr.charAt(0).toUpperCase() + dateStr.slice(1).replace('.', '');
     
@@ -8708,34 +8708,23 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.shadowColor = 'transparent';
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
-    ctx.fillText(formattedDate, x, 150);
+    ctx.fillText(formattedDate, x, 160);
     ctx.restore();
 
-    // 2. Huge Studio Liquid Glass Numbers (Master Baseline Decimal Shader)
+    // 2. Huge Studio Liquid Glass Numbers
     ctx.save();
-    ctx.translate(x, 1350); 
+    ctx.translate(x, 1300); 
     ctx.scale(0.203125, 1.0); 
 
     ctx.font = "800 1120px 'Inter', 'Plus Jakarta Sans', sans-serif";
     ctx.textAlign = 'center';
-    ctx.textBaseline = 'bottom'; 
-
-    const hasDot = mainVal.includes('.');
-    const textToDraw = hasDot ? mainVal.replace('.', ' ') : mainVal;
-    let dotX = 0;
-    if (hasDot) {
-        const parts = mainVal.split('.');
-        const leftW = ctx.measureText(parts[0]).width;
-        const totalW = ctx.measureText(textToDraw).width;
-        const dotCharW = ctx.measureText(' ').width;
-        dotX = -totalW / 2 + leftW + dotCharW / 2;
-    }
+    ctx.textBaseline = 'alphabetic'; 
 
     // Step 1: 3D Grounding Ambient Drop Shadow
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.50)';
-    ctx.shadowBlur = 30;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+    ctx.shadowBlur = 28;
     ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 18;
+    ctx.shadowOffsetY = 16;
 
     // Translucent Liquid Glass Fill Gradient
     const glassFill = ctx.createLinearGradient(0, -1120, 0, 0);
@@ -8744,19 +8733,8 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     glassFill.addColorStop(0.70, `rgba(${r}, ${g}, ${b}, 0.22)`);   // Pure glass clarity
     glassFill.addColorStop(1.0, `rgba(${hr}, ${hg}, ${hb}, 0.60)`); // Bottom rim reflection
 
-    // Radius math: 59.08 * 0.203125 = 12px screen radius (24px diameter 1:1 perfect circle on baseline)
-    const dotRx = 59.08;
-    const dotRy = 12;
-    const dotY = -45;
-
     ctx.fillStyle = glassFill;
-    ctx.fillText(textToDraw, 0, 0);
-
-    if (hasDot) {
-        ctx.beginPath();
-        ctx.ellipse(dotX, dotY, dotRx, dotRy, 0, 0, Math.PI * 2);
-        ctx.fill();
-    }
+    ctx.fillText(mainVal, 0, 0);
 
     // Clear shadow for internal GPU composite layers
     ctx.shadowColor = 'transparent';
@@ -8766,25 +8744,15 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     // Step 2: Studio Liquid Glass Refractions (Source-Atop GPU Clipping)
     ctx.globalCompositeOperation = 'source-atop';
 
-    // 2A. Bottom-Right Dark Refraction Shadow (Offset +4, +4)
-    ctx.lineWidth = 14;
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.48)';
-    ctx.strokeText(textToDraw, 4, 4);
-    if (hasDot) {
-        ctx.beginPath();
-        ctx.ellipse(dotX + 4, dotY + 4, dotRx, dotRy, 0, 0, Math.PI * 2);
-        ctx.stroke();
-    }
+    // 2A. Bottom-Right Dark Refraction Shadow (Offset +3, +3, 6px width avoids inner glyph bleed on digit 4)
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.50)';
+    ctx.strokeText(mainVal, 3, 3);
 
-    // 2B. Top-Left White Specular Edge Light (Offset -4, -4)
-    ctx.lineWidth = 14;
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.92)';
-    ctx.strokeText(textToDraw, -4, -4);
-    if (hasDot) {
-        ctx.beginPath();
-        ctx.ellipse(dotX - 4, dotY - 4, dotRx, dotRy, 0, 0, Math.PI * 2);
-        ctx.stroke();
-    }
+    // 2B. Top-Left White Specular Edge Light (Offset -3, -3)
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
+    ctx.strokeText(mainVal, -3, -3);
 
     // 2C. Vertical Gloss Sheen
     const glossGrad = ctx.createLinearGradient(0, -1120, 0, 0);
@@ -8793,27 +8761,17 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     glossGrad.addColorStop(1.0, 'rgba(255, 255, 255, 0.30)');
 
     ctx.fillStyle = glossGrad;
-    ctx.fillText(textToDraw, 0, 0);
-    if (hasDot) {
-        ctx.beginPath();
-        ctx.ellipse(dotX, dotY, dotRx, dotRy, 0, 0, Math.PI * 2);
-        ctx.fill();
-    }
+    ctx.fillText(mainVal, 0, 0);
 
     // Step 3: Color-Matched Perimeter Rim Contour
-    ctx.lineWidth = 5;
+    ctx.lineWidth = 4;
     ctx.strokeStyle = `rgba(${hr}, ${hg}, ${hb}, 0.85)`;
-    ctx.strokeText(textToDraw, 0, 0);
-    if (hasDot) {
-        ctx.beginPath();
-        ctx.ellipse(dotX, dotY, dotRx, dotRy, 0, 0, Math.PI * 2);
-        ctx.stroke();
-    }
+    ctx.strokeText(mainVal, 0, 0);
 
     ctx.globalCompositeOperation = 'source-over';
     ctx.restore();
 
-    // 3. Clean Unit text positioned tightly right below the giant numbers
+    // 3. Clean Unit text positioned clearly below the giant numbers at Y=1380
     ctx.save();
     ctx.font = "600 56px 'Inter', 'Plus Jakarta Sans', sans-serif";
     ctx.textAlign = 'center';
@@ -8822,7 +8780,7 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.shadowColor = 'transparent';
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
-    ctx.fillText(unit.toLowerCase(), x, 1240);
+    ctx.fillText(unit.toLowerCase(), x, 1380);
     ctx.restore();
 }
 
