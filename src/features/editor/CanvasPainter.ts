@@ -8716,11 +8716,11 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom'; 
 
-    // Step 1: Crisp Base Fill (No Drop Shadow)
-    ctx.shadowColor = 'transparent';
-    ctx.shadowBlur = 0;
+    // Step 1: 3D Ambient Grounding Drop Shadow for the Liquid Glass numbers
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
+    ctx.shadowBlur = 32;
     ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 0;
+    ctx.shadowOffsetY = 18;
 
     // Step 2: High-Density High-Contrast Translucent Glass Base
     const glassFill = ctx.createLinearGradient(0, -1120, 0, 0);
@@ -8731,6 +8731,11 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
 
     ctx.fillStyle = glassFill;
     ctx.fillText(mainVal, 0, 0);
+
+    // Clear shadow immediately for internal refractions and text
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
 
     // Step 3: High-Contrast Studio Liquid Glass Refractions (Source-Atop GPU Clipping)
     ctx.globalCompositeOperation = 'source-atop';
@@ -8762,16 +8767,47 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.globalCompositeOperation = 'source-over';
     ctx.restore();
 
-    // 3. Small units label at bottom
+    // 3. Integrated Mini Liquid Glass Unit Badge below numbers
     ctx.save();
-    ctx.font = "600 60px 'Inter', 'Plus Jakarta Sans', sans-serif";
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    ctx.fillStyle = textColor;
+    const unitStr = unit.toUpperCase();
+    ctx.font = "800 34px 'Inter', 'Plus Jakarta Sans', sans-serif";
+    const unitW = ctx.measureText(unitStr).width;
+    const pillW = Math.max(130, unitW + 60);
+    const pillH = 56;
+    const pillX = 540 - pillW / 2;
+    const pillY = 1380;
+
+    // Ambient drop shadow for the unit glass pill
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.40)';
+    ctx.shadowBlur = 20;
+    ctx.shadowOffsetY = 8;
+
+    // Glass pill background
+    const unitPillFill = ctx.createLinearGradient(pillX, pillY, pillX, pillY + pillH);
+    unitPillFill.addColorStop(0, 'rgba(255, 255, 255, 0.45)');
+    unitPillFill.addColorStop(1, 'rgba(255, 255, 255, 0.20)');
+    ctx.fillStyle = unitPillFill;
+    ctx.beginPath();
+    ctx.roundRect(pillX, pillY, pillW, pillH, 28);
+    ctx.fill();
+
+    // Reset shadow for text inside pill
     ctx.shadowColor = 'transparent';
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
-    ctx.fillText(unit, x, 1260);
+
+    // Glass rim stroke
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.roundRect(pillX, pillY, pillW, pillH, 28);
+    ctx.stroke();
+
+    // Unit text inside pill
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = textColor;
+    ctx.fillText(unitStr, 540, pillY + pillH / 2 + 2);
     ctx.restore();
 }
 
