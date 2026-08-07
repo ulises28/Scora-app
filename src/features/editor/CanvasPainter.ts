@@ -8711,7 +8711,7 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.fillText(formattedDate, x, 160);
     ctx.restore();
 
-    // 2. Huge Studio Liquid Glass Numbers (Liquid Glass Studio Inspired Shader)
+    // 2. Liquid Glass Numbers (Translucent — background shows through, edges define the shape)
     ctx.save();
     ctx.translate(x, 1300);
     ctx.scale(0.203125, 1.0);
@@ -8720,58 +8720,51 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.textAlign = 'center';
     ctx.textBaseline = 'alphabetic';
 
-    // Step 1: Deep Grounding 3D Ambient Drop Shadow
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.80)';
-    ctx.shadowBlur = 48;
+    // Step 1: Subtle drop shadow for depth
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.50)';
+    ctx.shadowBlur = 40;
     ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 24;
+    ctx.shadowOffsetY = 14;
 
-    // Translucent Liquid Glass Base Fill Gradient (Higher opacity for light-bg visibility)
+    // Very transparent glass body — lets the photo show through (the key to liquid glass)
     const glassFill = ctx.createLinearGradient(0, -1120, 0, 0);
-    glassFill.addColorStop(0.0, `rgba(${hr}, ${hg}, ${hb}, 0.95)`); // Top specular sheen
-    glassFill.addColorStop(0.30, `rgba(${r}, ${g}, ${b}, 0.60)`);   // Upper glass body
-    glassFill.addColorStop(0.55, `rgba(${r}, ${g}, ${b}, 0.50)`);   // Core glass density
-    glassFill.addColorStop(0.80, `rgba(${r}, ${g}, ${b}, 0.55)`);   // Lower glass body
-    glassFill.addColorStop(1.0, `rgba(${hr}, ${hg}, ${hb}, 0.85)`); // Bottom rim reflection
+    glassFill.addColorStop(0.0, `rgba(${r}, ${g}, ${b}, 0.22)`);  // Top: subtle tint
+    glassFill.addColorStop(0.40, `rgba(${r}, ${g}, ${b}, 0.12)`); // Core: nearly clear
+    glassFill.addColorStop(0.70, `rgba(${r}, ${g}, ${b}, 0.10)`); // Lower: maximum clarity
+    glassFill.addColorStop(1.0, `rgba(${r}, ${g}, ${b}, 0.20)`);  // Bottom: subtle tint
 
     ctx.fillStyle = glassFill;
     ctx.fillText(mainVal, 0, 0);
 
-    // Clear shadow for internal GPU composite layers
+    // Clear shadow
     ctx.shadowColor = 'transparent';
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
 
-    // Step 2: Liquid Glass Refractions (Source-Atop GPU Clipping)
-    // Using fillText offsets instead of strokeText prevents inner vector line bleed on digit 4!
+    // Step 2: Edge refractions inside the glass shape (source-atop clips to filled pixels)
     ctx.globalCompositeOperation = 'source-atop';
 
-    // 2A. Wide Soft Glow Halo (simulates blur radius from liquid-glass-studio)
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
-    ctx.fillText(mainVal, 18, 18);
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
-    ctx.fillText(mainVal, -18, -18);
+    // 2A. Dark bottom-right refraction edge (thin stroke, offset)
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.55)';
+    ctx.strokeText(mainVal, 5, 5);
 
-    // 2B. Sharp Dark Bottom-Right Refraction Shadow (Offset +10, +10)
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
-    ctx.fillText(mainVal, 10, 10);
+    // 2B. Bright top-left specular edge (thin stroke, offset)
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = `rgba(${hr}, ${hg}, ${hb}, 0.90)`;
+    ctx.strokeText(mainVal, -5, -5);
 
-    // 2C. Sharp Top-Left White Specular Edge Light (Offset -10, -10)
-    ctx.fillStyle = 'rgba(255, 255, 255, 1.0)';
-    ctx.fillText(mainVal, -10, -10);
-
-    // 2D. Vertical Gloss Sheen Gradient
-    const glossGrad = ctx.createLinearGradient(0, -1120, 0, 0);
-    glossGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.55)');
-    glossGrad.addColorStop(0.45, 'rgba(255, 255, 255, 0.08)');
-    glossGrad.addColorStop(1.0, 'rgba(255, 255, 255, 0.40)');
+    // 2C. Subtle top gloss sheen
+    const glossGrad = ctx.createLinearGradient(0, -1120, 0, -560);
+    glossGrad.addColorStop(0.0, `rgba(${hr}, ${hg}, ${hb}, 0.30)`);
+    glossGrad.addColorStop(1.0, 'rgba(255, 255, 255, 0.0)');
 
     ctx.fillStyle = glossGrad;
     ctx.fillText(mainVal, 0, 0);
 
-    // Step 3: Bright Rim Contour (Crisp glass edge definition)
-    ctx.lineWidth = 6;
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+    // Step 3: Crisp glass rim contour (this is what makes it read as "glass")
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = `rgba(${hr}, ${hg}, ${hb}, 0.75)`;
     ctx.strokeText(mainVal, 0, 0);
 
     ctx.globalCompositeOperation = 'source-over';
