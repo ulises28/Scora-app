@@ -8720,17 +8720,6 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom'; 
 
-    const hasDot = mainVal.includes('.');
-    const textToDraw = hasDot ? mainVal.replace('.', ' ') : mainVal;
-    let dotX = 0;
-    if (hasDot) {
-        const parts = mainVal.split('.');
-        const leftW = ctx.measureText(parts[0]).width;
-        const totalW = ctx.measureText(textToDraw).width;
-        const dotCharW = ctx.measureText(' ').width;
-        dotX = -totalW / 2 + leftW + dotCharW / 2;
-    }
-
     // Step 1: 3D Ambient Grounding Drop Shadow
     ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
     ctx.shadowBlur = 28;
@@ -8745,14 +8734,7 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     glassFill.addColorStop(1.0, `rgba(${hr}, ${hg}, ${hb}, 0.55)`); // Bottom rim reflection
 
     ctx.fillStyle = glassFill;
-    ctx.fillText(textToDraw, 0, 0);
-
-    // Draw perfect 1:1 round decimal point sphere
-    if (hasDot) {
-        ctx.beginPath();
-        ctx.ellipse(dotX, -45, 118, 24, 0, 0, Math.PI * 2);
-        ctx.fill();
-    }
+    ctx.fillText(mainVal, 0, 0);
 
     // Clear shadow for internal GPU composite layers
     ctx.shadowColor = 'transparent';
@@ -8765,22 +8747,12 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     // 3A. Bottom-Right Dark Refraction Shadow (Offset +4, +4)
     ctx.lineWidth = 12;
     ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
-    ctx.strokeText(textToDraw, 4, 4);
-    if (hasDot) {
-        ctx.beginPath();
-        ctx.ellipse(dotX + 4, -41, 118, 24, 0, 0, Math.PI * 2);
-        ctx.stroke();
-    }
+    ctx.strokeText(mainVal, 4, 4);
 
     // 3B. Top-Left White Specular Edge Light (Offset -4, -4)
     ctx.lineWidth = 12;
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.90)';
-    ctx.strokeText(textToDraw, -4, -4);
-    if (hasDot) {
-        ctx.beginPath();
-        ctx.ellipse(dotX - 4, -49, 118, 24, 0, 0, Math.PI * 2);
-        ctx.stroke();
-    }
+    ctx.strokeText(mainVal, -4, -4);
 
     // 3C. Vertical Gloss Sheen
     const glossGrad = ctx.createLinearGradient(0, -1120, 0, 0);
@@ -8789,22 +8761,12 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     glossGrad.addColorStop(1.0, 'rgba(255, 255, 255, 0.30)');
 
     ctx.fillStyle = glossGrad;
-    ctx.fillText(textToDraw, 0, 0);
-    if (hasDot) {
-        ctx.beginPath();
-        ctx.ellipse(dotX, -45, 118, 24, 0, 0, Math.PI * 2);
-        ctx.fill();
-    }
+    ctx.fillText(mainVal, 0, 0);
 
     // Step 4: Color-Matched Perimeter Glass Rim Contour
     ctx.lineWidth = 5;
     ctx.strokeStyle = `rgba(${hr}, ${hg}, ${hb}, 0.85)`;
-    ctx.strokeText(textToDraw, 0, 0);
-    if (hasDot) {
-        ctx.beginPath();
-        ctx.ellipse(dotX, -45, 118, 24, 0, 0, Math.PI * 2);
-        ctx.stroke();
-    }
+    ctx.strokeText(mainVal, 0, 0);
 
     ctx.globalCompositeOperation = 'source-over';
     ctx.restore();
