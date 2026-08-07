@@ -8111,7 +8111,7 @@ export function drawFloatingNeonPath(ctx: CanvasRenderingContext2D, stats: any, 
     const { s1, hasMap } = getDynamicStats(stats);
     const colors = buildColors(textColor);
 
-    const baseY = 250; 
+    const baseY = 250;
     const cX = 540;
 
     // Gradient calculation using user selected color
@@ -8156,7 +8156,7 @@ export function drawMonolineMinimalist(ctx: CanvasRenderingContext2D, stats: any
     const colors = buildColors(textColor);
 
     const startX = 80;
-    let currentY = 250; 
+    let currentY = 250;
 
     if (hasMap) {
         const coords = decodePolyline(stats.polyline);
@@ -8171,7 +8171,7 @@ export function drawMonolineMinimalist(ctx: CanvasRenderingContext2D, stats: any
     // Display ONLY Main Value + Unit (No pace or time metrics)
     ctx.font = "300 120px 'Satoshi', 'Plus Jakarta Sans', sans-serif";
     ctx.fillText(`${s1.value}`, startX, currentY);
-    
+
     const w1 = ctx.measureText(s1.value).width;
     ctx.font = "700 42px 'Satoshi', 'Plus Jakarta Sans', sans-serif";
     ctx.fillText(`${s1.label}`, startX + w1 + 18, currentY + 55);
@@ -8553,7 +8553,7 @@ export function drawSocialPill(ctx: CanvasRenderingContext2D, stats: any, textCo
 
     const h = 120;
     const locationStr = (stats.location || (stats.hasDistance ? 'LOCAL ROUTE' : 'TRAINING')).toUpperCase();
-    const paceOrCal = stats.hasDistance 
+    const paceOrCal = stats.hasDistance
         ? (s2.label === 'PACE' ? s2.value + ' /KM' : s2.value)
         : (s2.label === 'KCAL' ? s2.value + ' KCAL' : s2.value);
 
@@ -8573,7 +8573,7 @@ export function drawSocialPill(ctx: CanvasRenderingContext2D, stats: any, textCo
         textW = ctx.measureText(pillText).width;
     }
 
-    const w = Math.min(maxPillWidth, textW + 190); 
+    const w = Math.min(maxPillWidth, textW + 190);
     const x = 540 - w / 2;
     const y = 200;
 
@@ -8662,7 +8662,7 @@ export function drawBalloonLetters(ctx: CanvasRenderingContext2D, stats: any, te
 export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
     const hasDistance = Boolean(stats.hasDistance && stats.distanceVal && parseFloat(stats.distanceVal) > 0);
     let mainVal = hasDistance ? (stats.distanceVal || '0.00') : (stats.timeStr || stats.movingTime || '0:00');
-    
+
     if (!hasDistance && mainVal) {
         const hMatch = mainVal.match(/(\d+)h/);
         const mMatch = mainVal.match(/(\d+)m/);
@@ -8681,9 +8681,9 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     }
 
     const unit = hasDistance ? (stats.distanceUnit || 'KM').toLowerCase() : 'min';
-    
+
     const x = 540;
-    
+
     // Parse textColor for tinting
     let r = 255, g = 255, b = 255;
     if (textColor.startsWith('#') && textColor.length === 7) {
@@ -8699,41 +8699,39 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     // 1. Date at top (Positioned at Y=160 to give generous breathing room)
     const dateStr = stats.rawDate ? new Intl.DateTimeFormat('es-ES', { weekday: 'short', month: 'short', day: 'numeric' }).format(new Date(stats.rawDate.replace('Z', ''))) : 'Lun jun 29';
     const formattedDate = dateStr.charAt(0).toUpperCase() + dateStr.slice(1).replace('.', '');
-    
+
     ctx.save();
     ctx.font = "600 42px 'Inter', 'Plus Jakarta Sans', sans-serif";
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = textColor; 
+    ctx.fillStyle = textColor;
     ctx.shadowColor = 'transparent';
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
     ctx.fillText(formattedDate, x, 160);
     ctx.restore();
 
-    // 2. Huge Studio Optical Liquid Glass Shader
+    // 2. Huge Studio Liquid Glass Numbers (Master Refraction Shader - Zero Vector Bleed)
     ctx.save();
-    ctx.translate(x, 1300); 
-    ctx.scale(0.203125, 1.0); 
+    ctx.translate(x, 1300);
+    ctx.scale(0.203125, 1.0);
 
-    ctx.font = "800 1120px 'SF Pro Rounded', 'Plus Jakarta Sans', 'Inter', sans-serif";
+    ctx.font = "800 1120px 'Inter', 'Plus Jakarta Sans', sans-serif";
     ctx.textAlign = 'center';
-    ctx.textBaseline = 'alphabetic'; 
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
+    ctx.textBaseline = 'alphabetic';
 
-    // Step 1: 3D Grounding Ambient Drop Shadow
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
-    ctx.shadowBlur = 28;
+    // Step 1: Deep Grounding 3D Ambient Drop Shadow (Pops on light/white photos)
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
+    ctx.shadowBlur = 36;
     ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 16;
+    ctx.shadowOffsetY = 20;
 
-    // Optical Translucent Glass Base Fill Gradient
+    // Translucent Liquid Glass Base Fill Gradient (Dense & vibrant)
     const glassFill = ctx.createLinearGradient(0, -1120, 0, 0);
-    glassFill.addColorStop(0.0, `rgba(${hr}, ${hg}, ${hb}, 0.80)`); // Specular sheen top
-    glassFill.addColorStop(0.35, `rgba(${r}, ${g}, ${b}, 0.30)`);  // Vibrant glass body
-    glassFill.addColorStop(0.70, `rgba(${r}, ${g}, ${b}, 0.22)`);  // Glass core clarity
-    glassFill.addColorStop(1.0, `rgba(${hr}, ${hg}, ${hb}, 0.65)`); // Bottom rim reflection
+    glassFill.addColorStop(0.0, `rgba(${hr}, ${hg}, ${hb}, 0.90)`); // Top specular sheen
+    glassFill.addColorStop(0.35, `rgba(${r}, ${g}, ${b}, 0.50)`);  // Vibrant glass body
+    glassFill.addColorStop(0.70, `rgba(${r}, ${g}, ${b}, 0.40)`);  // Core glass density
+    glassFill.addColorStop(1.0, `rgba(${hr}, ${hg}, ${hb}, 0.80)`); // Bottom rim reflection
 
     ctx.fillStyle = glassFill;
     ctx.fillText(mainVal, 0, 0);
@@ -8743,31 +8741,30 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
 
-    // Step 2: Studio Liquid Glass Refractions (Source-Atop GPU Clipping)
+    // Step 2: High-Contrast Studio Liquid Glass Refractions (Source-Atop GPU Clipping)
+    // Using fillText offsets instead of strokeText prevents inner vector line bleed on digit 4!
     ctx.globalCompositeOperation = 'source-atop';
 
-    // 2A. Dark Bottom-Right Refraction Shadow (Offset +4, +4)
-    ctx.lineWidth = 8;
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.55)';
-    ctx.strokeText(mainVal, 4, 4);
+    // 2A. Deep Dark Bottom-Right Refraction Shadow (Offset +6, +6)
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
+    ctx.fillText(mainVal, 6, 6);
 
-    // 2B. Top-Left White Specular Edge Light (Offset -4, -4)
-    ctx.lineWidth = 8;
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
-    ctx.strokeText(mainVal, -4, -4);
+    // 2B. Crisp Top-Left White Specular Edge Light (Offset -6, -6)
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+    ctx.fillText(mainVal, -6, -6);
 
     // 2C. Vertical Gloss Sheen Gradient
     const glossGrad = ctx.createLinearGradient(0, -1120, 0, 0);
-    glossGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.40)');
-    glossGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.05)');
-    glossGrad.addColorStop(1.0, 'rgba(255, 255, 255, 0.30)');
+    glossGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.50)');
+    glossGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.10)');
+    glossGrad.addColorStop(1.0, 'rgba(255, 255, 255, 0.40)');
 
     ctx.fillStyle = glossGrad;
     ctx.fillText(mainVal, 0, 0);
 
-    // Step 3: Color-Matched Perimeter Rim Contour
-    ctx.lineWidth = 4;
-    ctx.strokeStyle = `rgba(${hr}, ${hg}, ${hb}, 0.85)`;
+    // Step 3: Color-Matched Outer Perimeter Rim Contour (Thin 3px stroke defines outer perimeter sharply)
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = `rgba(${hr}, ${hg}, ${hb}, 0.95)`;
     ctx.strokeText(mainVal, 0, 0);
 
     ctx.globalCompositeOperation = 'source-over';
@@ -8775,7 +8772,7 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
 
     // 3. Clean Unit text positioned clearly below the giant numbers at Y=1380
     ctx.save();
-    ctx.font = "600 56px 'SF Pro Rounded', 'Plus Jakarta Sans', 'Inter', sans-serif";
+    ctx.font = "600 56px 'Inter', 'Plus Jakarta Sans', sans-serif";
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     ctx.fillStyle = textColor;
