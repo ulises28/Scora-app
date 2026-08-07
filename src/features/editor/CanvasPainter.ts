@@ -8711,68 +8711,147 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.fillText(formattedDate, x, 160);
     ctx.restore();
 
-    // 2. Huge Studio Liquid Glass Numbers (Master Refraction Shader - Zero Vector Bleed)
+    // 2. Huge Studio Apple iOS 18 Glassmorphism Clock Lockscreen Shader
     ctx.save();
     ctx.translate(x, 1300); 
     ctx.scale(0.203125, 1.0); 
 
-    ctx.font = "800 1120px 'Inter', 'Plus Jakarta Sans', sans-serif";
-    ctx.textAlign = 'center';
+    ctx.font = "800 1120px 'SF Pro Rounded', 'Plus Jakarta Sans', 'Inter', sans-serif";
     ctx.textBaseline = 'alphabetic'; 
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
 
-    // Step 1: Deep Grounding 3D Ambient Drop Shadow (Pops on light/white photos)
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
-    ctx.shadowBlur = 36;
+    const hasSep = mainVal.includes('.') || mainVal.includes(':');
+    const parts = hasSep ? mainVal.split(/[\.:]/) : [mainVal, ''];
+    const leftStr = parts[0];
+    const rightStr = parts[1] || '';
+
+    // Two 3D Glass Colon Spheres aligned vertically in center gap
+    const orbTopY = -700;
+    const orbBotY = -350;
+    const orbRx = 98.5; // 98.5 * 0.203125 = 20px screen radius
+    const orbRy = 20;   // 20px screen radius -> 100% PERFECT 20px ROUND SPHERES
+
+    // Step 1: 3D Grounding Ambient Drop Shadow
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.40)';
+    ctx.shadowBlur = 24;
     ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 20;
+    ctx.shadowOffsetY = 14;
 
-    // Translucent Liquid Glass Base Fill Gradient (Dense & vibrant)
+    // Optical Clear Glass Fill Gradient (Preserves photo background underneath)
     const glassFill = ctx.createLinearGradient(0, -1120, 0, 0);
-    glassFill.addColorStop(0.0, `rgba(${hr}, ${hg}, ${hb}, 0.90)`); // Top specular sheen
-    glassFill.addColorStop(0.35, `rgba(${r}, ${g}, ${b}, 0.50)`);  // Vibrant glass body
-    glassFill.addColorStop(0.70, `rgba(${r}, ${g}, ${b}, 0.40)`);  // Core glass density
-    glassFill.addColorStop(1.0, `rgba(${hr}, ${hg}, ${hb}, 0.80)`); // Bottom rim reflection
+    glassFill.addColorStop(0.0, `rgba(${hr}, ${hg}, ${hb}, 0.65)`); // Top specular sheen
+    glassFill.addColorStop(0.40, `rgba(${r}, ${g}, ${b}, 0.18)`);   // Optical clarity core
+    glassFill.addColorStop(0.70, `rgba(${r}, ${g}, ${b}, 0.14)`);   // Translucent glass body
+    glassFill.addColorStop(1.0, `rgba(${hr}, ${hg}, ${hb}, 0.55)`); // Bottom rim reflection
 
     ctx.fillStyle = glassFill;
-    ctx.fillText(mainVal, 0, 0);
+    if (hasSep && rightStr.length > 0) {
+        ctx.textAlign = 'right';
+        ctx.fillText(leftStr, -130, 0);
+        ctx.textAlign = 'left';
+        ctx.fillText(rightStr, 130, 0);
+
+        // Top & Bottom 3D Liquid Glass Colon Orbs
+        ctx.beginPath();
+        ctx.ellipse(0, orbTopY, orbRx, orbRy, 0, 0, Math.PI * 2);
+        ctx.ellipse(0, orbBotY, orbRx, orbRy, 0, 0, Math.PI * 2);
+        ctx.fill();
+    } else {
+        ctx.textAlign = 'center';
+        ctx.fillText(mainVal, 0, 0);
+    }
 
     // Clear shadow for internal GPU composite layers
     ctx.shadowColor = 'transparent';
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
 
-    // Step 2: High-Contrast Studio Liquid Glass Refractions (Source-Atop GPU Clipping)
-    // Using fillText offsets instead of strokeText prevents inner vector line bleed on digit 4!
+    // Step 2: Studio Liquid Glass Refractions (Source-Atop GPU Clipping)
     ctx.globalCompositeOperation = 'source-atop';
 
-    // 2A. Deep Dark Bottom-Right Refraction Shadow (Offset +6, +6)
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
-    ctx.fillText(mainVal, 6, 6);
+    // 2A. Bottom-Right Dark Refraction Shadow (Offset +3, +3)
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.48)';
+    if (hasSep && rightStr.length > 0) {
+        ctx.textAlign = 'right';
+        ctx.strokeText(leftStr, -127, 3);
+        ctx.textAlign = 'left';
+        ctx.strokeText(rightStr, 133, 3);
 
-    // 2B. Crisp Top-Left White Specular Edge Light (Offset -6, -6)
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-    ctx.fillText(mainVal, -6, -6);
+        ctx.beginPath();
+        ctx.ellipse(3, orbTopY + 3, orbRx, orbRy, 0, 0, Math.PI * 2);
+        ctx.ellipse(3, orbBotY + 3, orbRx, orbRy, 0, 0, Math.PI * 2);
+        ctx.stroke();
+    } else {
+        ctx.textAlign = 'center';
+        ctx.strokeText(mainVal, 3, 3);
+    }
+
+    // 2B. Top-Left White Specular Edge Light (Offset -3, -3)
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
+    if (hasSep && rightStr.length > 0) {
+        ctx.textAlign = 'right';
+        ctx.strokeText(leftStr, -133, -3);
+        ctx.textAlign = 'left';
+        ctx.strokeText(rightStr, 127, -3);
+
+        ctx.beginPath();
+        ctx.ellipse(-3, orbTopY - 3, orbRx, orbRy, 0, 0, Math.PI * 2);
+        ctx.ellipse(-3, orbBotY - 3, orbRx, orbRy, 0, 0, Math.PI * 2);
+        ctx.stroke();
+    } else {
+        ctx.textAlign = 'center';
+        ctx.strokeText(mainVal, -3, -3);
+    }
 
     // 2C. Vertical Gloss Sheen Gradient
     const glossGrad = ctx.createLinearGradient(0, -1120, 0, 0);
-    glossGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.50)');
-    glossGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.10)');
-    glossGrad.addColorStop(1.0, 'rgba(255, 255, 255, 0.40)');
+    glossGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.35)');
+    glossGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.05)');
+    glossGrad.addColorStop(1.0, 'rgba(255, 255, 255, 0.25)');
 
     ctx.fillStyle = glossGrad;
-    ctx.fillText(mainVal, 0, 0);
+    if (hasSep && rightStr.length > 0) {
+        ctx.textAlign = 'right';
+        ctx.fillText(leftStr, -130, 0);
+        ctx.textAlign = 'left';
+        ctx.fillText(rightStr, 130, 0);
 
-    // Step 3: Color-Matched Outer Perimeter Rim Contour (Thin 3px stroke defines outer perimeter sharply)
+        ctx.beginPath();
+        ctx.ellipse(0, orbTopY, orbRx, orbRy, 0, 0, Math.PI * 2);
+        ctx.ellipse(0, orbBotY, orbRx, orbRy, 0, 0, Math.PI * 2);
+        ctx.fill();
+    } else {
+        ctx.textAlign = 'center';
+        ctx.fillText(mainVal, 0, 0);
+    }
+
+    // Step 3: Color-Matched Perimeter Rim Contour
     ctx.lineWidth = 3;
-    ctx.strokeStyle = `rgba(${hr}, ${hg}, ${hb}, 0.95)`;
-    ctx.strokeText(mainVal, 0, 0);
+    ctx.strokeStyle = `rgba(${hr}, ${hg}, ${hb}, 0.85)`;
+    if (hasSep && rightStr.length > 0) {
+        ctx.textAlign = 'right';
+        ctx.strokeText(leftStr, -130, 0);
+        ctx.textAlign = 'left';
+        ctx.strokeText(rightStr, 130, 0);
+
+        ctx.beginPath();
+        ctx.ellipse(0, orbTopY, orbRx, orbRy, 0, 0, Math.PI * 2);
+        ctx.ellipse(0, orbBotY, orbRx, orbRy, 0, 0, Math.PI * 2);
+        ctx.stroke();
+    } else {
+        ctx.textAlign = 'center';
+        ctx.strokeText(mainVal, 0, 0);
+    }
 
     ctx.globalCompositeOperation = 'source-over';
     ctx.restore();
 
     // 3. Clean Unit text positioned clearly below the giant numbers at Y=1380
     ctx.save();
-    ctx.font = "600 56px 'Inter', 'Plus Jakarta Sans', sans-serif";
+    ctx.font = "600 56px 'SF Pro Rounded', 'Plus Jakarta Sans', 'Inter', sans-serif";
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     ctx.fillStyle = textColor;
