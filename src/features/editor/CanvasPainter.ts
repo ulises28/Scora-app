@@ -8710,7 +8710,7 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     const w = mainCanvas.width;
     const h = mainCanvas.height;
 
-    // 1. Date Header at Top (Anchor Y = 160)
+    // 1. Top-Docked Date Header (Anchor Y = 180, zero overlap)
     const dateStr = stats.rawDate ? new Intl.DateTimeFormat('es-ES', { weekday: 'short', month: 'short', day: 'numeric' }).format(new Date(stats.rawDate.replace('Z', ''))) : 'Dom, 29 mar';
     const formattedDate = dateStr.charAt(0).toUpperCase() + dateStr.slice(1).replace('.', '');
 
@@ -8722,14 +8722,14 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.shadowColor = 'rgba(0, 0, 0, 0.40)';
     ctx.shadowBlur = 10;
     ctx.shadowOffsetY = 4;
-    ctx.fillText(formattedDate, x, 160);
+    ctx.fillText(formattedDate, x, 180);
     ctx.restore();
 
-    // 2. Measure & Calculate Dynamic Auto-Fit Font Scaling for Slim 1350px Font (Inter 300 Light)
-    const heroY = 940;
-    const baseFontSize = 1350;
-    const aspectScaleX = 0.24;
-    const maxAllowedWidth = 900;
+    // 2. Measure & Calculate Dynamic Auto-Fit Font Scaling for Hero Digits (Center Y = 640)
+    const heroY = 640;
+    const baseFontSize = 850;
+    const aspectScaleX = 0.22;
+    const maxAllowedWidth = 640;
     const fontWeight = '300';
 
     ctx.save();
@@ -8761,7 +8761,7 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
             (gCtx as any).filter = 'none';
         }
 
-        // Step B: Crop Blurred Backdrop strictly into the Slim Digit Silhouette (destination-in)
+        // Step B: Crop Blurred Backdrop strictly into the Digit Silhouette (destination-in)
         gCtx.globalCompositeOperation = 'destination-in';
         gCtx.save();
         gCtx.translate(x, heroY);
@@ -8774,7 +8774,7 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
         gCtx.fillText(mainVal, 0, 0);
         gCtx.restore();
 
-        // Step C: 5-Stop Glass Body Gradient Overlay in User's Selected Color!
+        // Step C: 5-Stop Glass Body Gradient Overlay in User's Selected Color
         gCtx.globalCompositeOperation = 'source-over';
         gCtx.save();
         gCtx.translate(x, heroY);
@@ -8795,7 +8795,6 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
             tintGrad.addColorStop(0.7, 'rgba(10, 10, 15, 0.30)');
             tintGrad.addColorStop(1.0, 'rgba(35, 35, 45, 0.75)');
         } else {
-            // Strictly match user's selected RGB color tint!
             tintGrad.addColorStop(0.0, `rgba(${r}, ${g}, ${b}, 0.65)`);
             tintGrad.addColorStop(0.3, `rgba(${r}, ${g}, ${b}, 0.30)`);
             tintGrad.addColorStop(0.7, `rgba(${r}, ${g}, ${b}, 0.20)`);
@@ -8809,17 +8808,17 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
         gCtx.globalCompositeOperation = 'source-atop';
 
         // 1. Bottom-Right Dark Refraction Shadow
-        gCtx.lineWidth = 16;
+        gCtx.lineWidth = 14;
         gCtx.strokeStyle = isBlack ? 'rgba(0, 0, 0, 0.90)' : 'rgba(0, 0, 0, 0.50)';
         gCtx.strokeText(mainVal, 4, 5);
 
         // 2. Top-Left Specular Light Highlight
-        gCtx.lineWidth = 10;
+        gCtx.lineWidth = 8;
         gCtx.strokeStyle = 'rgba(255, 255, 255, 0.90)';
         gCtx.strokeText(mainVal, -3, -4);
 
         // 3. Inner Accent Contour Glow
-        gCtx.lineWidth = 6;
+        gCtx.lineWidth = 5;
         gCtx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.65)`;
         gCtx.strokeText(mainVal, 0, 0);
 
@@ -8844,8 +8843,8 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
-    ctx.shadowBlur = 45;
-    ctx.shadowOffsetY = 24;
+    ctx.shadowBlur = 40;
+    ctx.shadowOffsetY = 20;
     ctx.fillStyle = 'rgba(0, 0, 0, 0.01)';
     ctx.fillText(mainVal, 0, 0);
     ctx.restore();
@@ -8854,16 +8853,16 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.drawImage(glassCanvas, 0, 0);
     ctx.restore();
 
-    // 5. Unit Label at Bottom (Anchor Y = 1720)
+    // 5. Symmetric Unit Label at Bottom (Anchor Y = 1080)
     ctx.save();
     ctx.font = "600 48px 'Inter', sans-serif";
     ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
+    ctx.textBaseline = 'middle';
     ctx.fillStyle = textColor;
     ctx.shadowColor = 'rgba(0, 0, 0, 0.40)';
     ctx.shadowBlur = 10;
     ctx.shadowOffsetY = 4;
-    ctx.fillText(unit, x, 1720);
+    ctx.fillText(unit, x, 1080);
     ctx.restore();
 }
 
