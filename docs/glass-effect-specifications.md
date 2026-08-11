@@ -15,71 +15,101 @@ This document defines the authoritative 4-Layer Canvas 2D rendering formula and 
    - **DO NOT** render hardcoded `#ffffff` or `rgba(255,255,255,0.6)` outer strokes around colored glass shapes. Outer rims MUST match the user-selected color (`rgba(r, g, b, 0.85)`).
 4. **Translucent Core (Photo & Background Visibility)**
    - Liquid glass should never be opaque. The center of glass shapes must have a low opacity tint (`0.20`), allowing photo backgrounds to shine through the glass body.
+5. **1:1 Offscreen Canvas for Anisotropic Text (Skia Winding Bug)**
+   - When rendering text under non-uniform scaling (`scale(0.22, 1.0)`), **DO NOT** call `fillText` or `strokeText` directly on the scaled context. Skia/Blink's GPU rasterizer miscalculates winding rules for self-intersecting font paths (e.g. digit `'4'`), filling hollow counters with solid color.
+   - Instead, render all text layers on a **1:1 uniform-scale offscreen canvas**, then composite onto the main canvas with `drawImage(offscreen, x, y, scaledWidth, height)`.
+6. **No Offset `strokeText` Under `source-atop`**
+   - **DO NOT** use `strokeText(text, x±offset, y±offset)` with `globalCompositeOperation = 'source-atop'` for directional lighting. The shifted glyph paths bleed into counters of characters like `'4'`. Use diagonal gradient `fillRect` instead.
 
 ---
 
-## 2. Standard 4-Layer Rendering Pipeline
+## 2. Standard 6-Layer Zero-Stroke Rendering Pipeline
 
-### Step 1: Soft Ambient Grounding Shadow
-Grounds the glass element over any background (pitch black or bright photo):
+> [!CAUTION]
+> **CRITICAL RULE: ZERO `strokeText` CALLS.** 
+> `strokeText` strokes ALL sub-paths including inner counter holes of characters like `0`, `4`, `5`, `6`, `8`, `9`. There is NO Canvas 2D API to stroke only the outer contour. The glass rim MUST be simulated with multiple `fillText` passes and directional canvas shadows instead.
+
+### Layer 1: Ambient Glass Halo (Soft Glow)
+Soft glow around the entire glyph to separate it from the background.
 ```typescript
-ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
-ctx.shadowBlur = 28;
+ctx.shadowColor = `rgba(${hr}, ${hg}, ${hb}, 0.80)`;
+ctx.shadowBlur = 18;
 ctx.shadowOffsetX = 0;
-ctx.shadowOffsetY = 16;
+ctx.shadowOffsetY = 0;
+ctx.fillStyle = 'rgba(255, 255, 255, 0.01)';
+ctx.fillText(text, x, y);
 ```
 
-### Step 2: Translucent Tinted Glass Base
-Provides the core glass volume with high center transparency:
+### Layer 2: Top Specular Rim Highlight
+Simulates white light hitting the top edge.
 ```typescript
-const glassFill = ctx.createLinearGradient(0, -height, 0, 0);
-glassFill.addColorStop(0.0, `rgba(${r}, ${g}, ${b}, 0.55)`);  // Top glass density
-glassFill.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, 0.20)`);  // Translucent core
-glassFill.addColorStop(1.0, `rgba(${r}, ${g}, ${b}, 0.50)`);  // Bottom glass density
+ctx.shadowColor = 'rgba(255, 255, 255, 0.98)';
+ctx.shadowBlur = 6;
+ctx.shadowOffsetX = 0;
+ctx.shadowOffsetY = -4;
+ctx.fillStyle = 'rgba(255, 255, 255, 0.01)';
+ctx.fillText(text, x, y);
+```
 
-ctx.fillStyle = glassFill;
-ctx.fillText(text, 0, 0); // Or fillRect / roundRect
+### Layer 3: Bottom Shadow Rim
+Dark grounding shadow under the bottom edge.
+```typescript
+ctx.shadowColor = 'rgba(0, 0, 0, 0.75)';
+ctx.shadowBlur = 6;
+ctx.shadowOffsetX = 0;
+ctx.shadowOffsetY = 5;
+ctx.fillStyle = 'rgba(0, 0, 0, 0.01)';
+ctx.fillText(text, x, y);
+```
 
-// Reset shadow for internal layers
+### Layer 4: Crystal Glass Body Fill (Translucent Gradient)
+The core glass volume with high center transparency.
+```typescript
 ctx.shadowColor = 'transparent';
 ctx.shadowBlur = 0;
 ctx.shadowOffsetY = 0;
+const glassFill = ctx.createLinearGradient(0, cy - halfH, 0, cy + halfH);
+glassFill.addColorStop(0.00, 'rgba(255, 255, 255, 0.80)');
+glassFill.addColorStop(0.12, `rgba(${hr}, ${hg}, ${hb}, 0.40)`);
+glassFill.addColorStop(0.45, `rgba(${r}, ${g}, ${b}, 0.12)`);
+glassFill.addColorStop(0.75, `rgba(${r}, ${g}, ${b}, 0.20)`);
+glassFill.addColorStop(1.00, 'rgba(15, 15, 15, 0.60)');
+ctx.fillStyle = glassFill;
+ctx.fillText(text, x, y);
 ```
 
-### Step 3: Directional Studio Refractions (`source-atop`)
-Clips all inner highlights strictly inside the shape bounds using GPU composition:
+### Layer 5: -45° Specular Surface Glare Sweep (`source-atop`)
+Clips specular glare inside the glyph using GPU composition.
 ```typescript
 ctx.globalCompositeOperation = 'source-atop';
-
-// 3A. Bottom-Right Dark Refraction Shadow (Offset +4, +4)
-ctx.lineWidth = 12;
-ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
-ctx.strokeText(text, 4, 4);
-
-// 3B. Top-Left White Specular Edge Light (Offset -4, -4)
-ctx.lineWidth = 12;
-ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
-ctx.strokeText(text, -4, -4);
-
-// 3C. Vertical Gloss Sheen
-const glossGrad = ctx.createLinearGradient(0, -height, 0, 0);
-glossGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.35)');
-glossGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.05)');
-glossGrad.addColorStop(1.0, 'rgba(255, 255, 255, 0.25)');
-
-ctx.fillStyle = glossGrad;
-ctx.fillText(text, 0, 0);
+const glareGrad = ctx.createLinearGradient(
+    cx - halfH * 0.85, cy - halfH * 0.85,
+    cx + halfH * 0.85, cy + halfH * 0.85
+);
+glareGrad.addColorStop(0.00, 'rgba(255, 255, 255, 0.85)');
+glareGrad.addColorStop(0.22, 'rgba(255, 255, 255, 0.30)');
+glareGrad.addColorStop(0.50, 'rgba(255, 255, 255, 0.02)');
+glareGrad.addColorStop(0.78, 'rgba(0, 0, 0, 0.18)');
+glareGrad.addColorStop(1.00, 'rgba(0, 0, 0, 0.55)');
+ctx.fillStyle = glareGrad;
+ctx.fillRect(0, 0, width, height);
 ```
 
-### Step 4: Color-Matched Perimeter Rim
-Defines a crisp edge in the exact user-selected color without white halos:
+### Layer 6: Bright Top-Edge Specular Pass
+A final pop of top-edge highlight.
 ```typescript
-ctx.lineWidth = 5;
-ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.85)`;
-ctx.strokeText(text, 0, 0);
-
 ctx.globalCompositeOperation = 'source-over';
-ctx.restore();
+ctx.shadowColor = 'rgba(255, 255, 255, 0.95)';
+ctx.shadowBlur = 10;
+ctx.shadowOffsetX = 0;
+ctx.shadowOffsetY = -3;
+ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+ctx.fillText(text, x, y);
+
+// Reset shadows
+ctx.shadowColor = 'transparent';
+ctx.shadowBlur = 0;
+ctx.shadowOffsetY = 0;
 ```
 
 ---

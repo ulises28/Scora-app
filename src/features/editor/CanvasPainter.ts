@@ -8700,7 +8700,6 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     const unit = hasDistance ? (stats.distanceUnit || 'KM').toLowerCase() : 'min';
     const x = 540;
 
-    // Parse textColor reliably using native 1x1 canvas sampler
     const { r, g, b } = parseCanvasColor(textColor);
     const hr = Math.round(r + (255 - r) * 0.70);
     const hg = Math.round(g + (255 - g) * 0.70);
@@ -8711,7 +8710,7 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     const formattedDate = dateStr.charAt(0).toUpperCase() + dateStr.slice(1).replace('.', '');
 
     ctx.save();
-    ctx.font = "600 44px 'Inter', sans-serif";
+    ctx.font = "600 44px 'Montserrat', sans-serif";
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = textColor;
@@ -8726,10 +8725,10 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     const baseFontSize = 850;
     const aspectScaleX = 0.22;
     const maxAllowedWidth = 640;
-    const fontWeight = '300';
+    const fontWeight = '400';
 
     ctx.save();
-    ctx.font = `${fontWeight} ${baseFontSize}px 'Inter', sans-serif`;
+    ctx.font = `${fontWeight} ${baseFontSize}px 'Montserrat', sans-serif`;
     const rawMeasuredWidth = ctx.measureText(mainVal).width * aspectScaleX;
     ctx.restore();
 
@@ -8741,74 +8740,123 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     const finalFontSize = Math.floor(baseFontSize * scaleFactor);
     const finalScaleX = aspectScaleX * scaleFactor;
 
-    // 3. Liquid Glass Studio Optics Shader (Direct GPU Refraction Pipeline)
+    // 3. Studio Liquid Glass 4-Layer Pipeline (docs/glass-effect-specifications.md)
+    //    All layers rendered at 1:1 uniform scale on offscreen canvas to prevent
+    //    Skia anisotropic winding bug on digit '4'. Composited via drawImage.
     ctx.save();
-    ctx.translate(x, heroY);
-    ctx.scale(finalScaleX, 1.0);
-    ctx.font = `${fontWeight} ${finalFontSize}px 'Inter', sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
+    ctx.font = `${fontWeight} ${finalFontSize}px 'Montserrat', sans-serif`;
+    const textMetrics = ctx.measureText(mainVal);
+    ctx.restore();
 
-    // Layer 1: Ambient Drop Shadow (Grounds glass over any background photo)
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
-    ctx.shadowBlur = 36;
+    const padding = 160;
+    const unscaledW = Math.ceil(textMetrics.width) + padding * 2;
+    const unscaledH = Math.ceil(finalFontSize * 1.5);
+
+    const glassCanvas = document.createElement('canvas');
+    glassCanvas.width = unscaledW;
+    glassCanvas.height = unscaledH;
+    const gc = glassCanvas.getContext('2d');
+
+    if (gc) {
+        const cx = unscaledW / 2;
+        const cy = unscaledH / 2;
+        const halfH = finalFontSize / 2;
+
+        gc.font = `${fontWeight} ${finalFontSize}px 'Montserrat', sans-serif`;
+        gc.textAlign = 'center';
+        gc.textBaseline = 'middle';
+
+        // ══════════════════════════════════════════════════════════════
+        // CRITICAL: ZERO strokeText calls in this entire pipeline.
+        // strokeText strokes ALL sub-paths including inner counter holes
+        // of 0, 4, 5, 6, 8, 9 — there is NO Canvas 2D API to stroke
+        // only the outer contour. Glass rim is simulated with fillText
+        // + directional canvas shadows instead.
+        // ══════════════════════════════════════════════════════════════
+
+        // ── Layer 1: Ambient Glass Halo (soft glow around entire glyph) ──
+        gc.shadowColor = `rgba(${hr}, ${hg}, ${hb}, 0.80)`;
+        gc.shadowBlur = 18;
+        gc.shadowOffsetX = 0;
+        gc.shadowOffsetY = 0;
+        gc.fillStyle = 'rgba(255, 255, 255, 0.01)';
+        gc.fillText(mainVal, cx, cy);
+
+        // ── Layer 2: Top Specular Rim Highlight (white light hitting top edge) ──
+        gc.shadowColor = 'rgba(255, 255, 255, 0.98)';
+        gc.shadowBlur = 6;
+        gc.shadowOffsetX = 0;
+        gc.shadowOffsetY = -4;
+        gc.fillStyle = 'rgba(255, 255, 255, 0.01)';
+        gc.fillText(mainVal, cx, cy);
+
+        // ── Layer 3: Bottom Shadow Rim (dark grounding shadow under bottom edge) ──
+        gc.shadowColor = 'rgba(0, 0, 0, 0.75)';
+        gc.shadowBlur = 6;
+        gc.shadowOffsetX = 0;
+        gc.shadowOffsetY = 5;
+        gc.fillStyle = 'rgba(0, 0, 0, 0.01)';
+        gc.fillText(mainVal, cx, cy);
+
+        // ── Layer 4: Crystal Glass Body Fill (translucent gradient) ──
+        gc.shadowColor = 'transparent';
+        gc.shadowBlur = 0;
+        gc.shadowOffsetY = 0;
+        const glassFill = gc.createLinearGradient(0, cy - halfH, 0, cy + halfH);
+        glassFill.addColorStop(0.00, 'rgba(255, 255, 255, 0.80)');
+        glassFill.addColorStop(0.12, `rgba(${hr}, ${hg}, ${hb}, 0.40)`);
+        glassFill.addColorStop(0.45, `rgba(${r}, ${g}, ${b}, 0.12)`);
+        glassFill.addColorStop(0.75, `rgba(${r}, ${g}, ${b}, 0.20)`);
+        glassFill.addColorStop(1.00, 'rgba(15, 15, 15, 0.60)');
+        gc.fillStyle = glassFill;
+        gc.fillText(mainVal, cx, cy);
+
+        // ── Layer 5: -45° Specular Surface Glare Sweep (source-atop, clipped to glyph) ──
+        gc.globalCompositeOperation = 'source-atop';
+        const glareGrad = gc.createLinearGradient(
+            cx - halfH * 0.85, cy - halfH * 0.85,
+            cx + halfH * 0.85, cy + halfH * 0.85
+        );
+        glareGrad.addColorStop(0.00, 'rgba(255, 255, 255, 0.85)');
+        glareGrad.addColorStop(0.22, 'rgba(255, 255, 255, 0.30)');
+        glareGrad.addColorStop(0.50, 'rgba(255, 255, 255, 0.02)');
+        glareGrad.addColorStop(0.78, 'rgba(0, 0, 0, 0.18)');
+        glareGrad.addColorStop(1.00, 'rgba(0, 0, 0, 0.55)');
+        gc.fillStyle = glareGrad;
+        gc.fillRect(0, 0, unscaledW, unscaledH);
+
+        // ── Layer 6: Bright Top-Edge Specular Pass (source-over fillText with top shadow) ──
+        gc.globalCompositeOperation = 'source-over';
+        gc.shadowColor = 'rgba(255, 255, 255, 0.95)';
+        gc.shadowBlur = 10;
+        gc.shadowOffsetX = 0;
+        gc.shadowOffsetY = -3;
+        gc.fillStyle = 'rgba(255, 255, 255, 0.25)';
+        gc.fillText(mainVal, cx, cy);
+
+        // Reset shadows
+        gc.shadowColor = 'transparent';
+        gc.shadowBlur = 0;
+        gc.shadowOffsetY = 0;
+    }
+
+    // 4. Composite offscreen glass onto main canvas with grounding shadow
+    const drawW = unscaledW * finalScaleX;
+    const drawH = unscaledH;
+    const drawX = x - drawW / 2;
+    const drawY = heroY - drawH / 2;
+
+    ctx.save();
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
+    ctx.shadowBlur = 28;
     ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 16;
-
-    // Layer 2: Frosted Glass Body (Gaussian Blur + Refractive Translucent Body Fill)
-    if ('filter' in ctx) {
-        (ctx as any).filter = 'blur(2.5px)';
-    }
-    const glassFill = ctx.createLinearGradient(0, -finalFontSize / 2, 0, finalFontSize / 2);
-    glassFill.addColorStop(0.0, `rgba(${hr}, ${hg}, ${hb}, 0.65)`);
-    glassFill.addColorStop(0.30, `rgba(${r}, ${g}, ${b}, 0.48)`);
-    glassFill.addColorStop(0.65, `rgba(${r}, ${g}, ${b}, 0.42)`);
-    glassFill.addColorStop(1.0, `rgba(${hr}, ${hg}, ${hb}, 0.60)`);
-
-    ctx.fillStyle = glassFill;
-    ctx.fillText(mainVal, 0, 0);
-
-    // Clear blur & shadow for crisp inner refraction & specular layers
-    if ('filter' in ctx) {
-        (ctx as any).filter = 'none';
-    }
-    ctx.shadowColor = 'transparent';
-    ctx.shadowBlur = 0;
-    ctx.shadowOffsetY = 0;
-
-    // Layer 3: Refractions & Specular Glare (Source-Atop GPU Clipping)
-    ctx.globalCompositeOperation = 'source-atop';
-
-    // 3A. Dark Bottom-Right Refraction Caustics (calibrated offset in unscaled space = 1.5 font px)
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
-    ctx.fillText(mainVal, 1.5, 2.0);
-
-    // 3B. Bright Top-Left Specular Refraction Highlight
-    ctx.fillStyle = `rgba(${hr}, ${hg}, ${hb}, 0.90)`;
-    ctx.fillText(mainVal, -1.5, -2.0);
-
-    // 3C. Angular Specular Glare Sweep (-45° Glare Angle)
-    const glareGrad = ctx.createLinearGradient(-baseFontSize / 2, -baseFontSize / 2, baseFontSize / 2, baseFontSize / 2);
-    glareGrad.addColorStop(0.0, `rgba(${hr}, ${hg}, ${hb}, 0.55)`);
-    glareGrad.addColorStop(0.32, 'rgba(255, 255, 255, 0.0)');
-    glareGrad.addColorStop(0.68, 'rgba(255, 255, 255, 0.0)');
-    glareGrad.addColorStop(1.0, `rgba(${hr}, ${hg}, ${hb}, 0.22)`);
-
-    ctx.fillStyle = glareGrad;
-    ctx.fillText(mainVal, 0, 0);
-
-    // 3D. Fresnel Edge Reflection Rim Contour
-    ctx.lineJoin = 'round';
-    ctx.lineCap = 'round';
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = `rgba(${hr}, ${hg}, ${hb}, 0.85)`;
-    ctx.strokeText(mainVal, 0, 0);
-
+    ctx.shadowOffsetY = 12;
+    ctx.drawImage(glassCanvas, drawX, drawY, drawW, drawH);
     ctx.restore();
 
     // 4. Symmetric Unit Label at Bottom (Anchor Y = 1080)
     ctx.save();
-    ctx.font = "600 48px 'Inter', sans-serif";
+    ctx.font = "600 48px 'Montserrat', sans-serif";
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = textColor;
