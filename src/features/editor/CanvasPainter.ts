@@ -8702,13 +8702,9 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
 
     // Parse textColor reliably using native 1x1 canvas sampler
     const { r, g, b } = parseCanvasColor(textColor);
-    const lowerColor = (textColor || 'white').trim().toLowerCase();
-    const isWhite = lowerColor === 'white' || lowerColor === '#ffffff' || lowerColor === '#fff' || (r > 250 && g > 250 && b > 250);
-    const isBlack = lowerColor === 'black' || lowerColor === '#000000' || lowerColor === '#000' || (r < 10 && g < 10 && b < 10);
-
-    const mainCanvas = ctx.canvas;
-    const w = mainCanvas.width;
-    const h = mainCanvas.height;
+    const hr = Math.round(r + (255 - r) * 0.70);
+    const hg = Math.round(g + (255 - g) * 0.70);
+    const hb = Math.round(b + (255 - b) * 0.70);
 
     // 1. Top-Docked Date Header (Anchor Y = 180, zero overlap)
     const dateStr = stats.rawDate ? new Intl.DateTimeFormat('es-ES', { weekday: 'short', month: 'short', day: 'numeric' }).format(new Date(stats.rawDate.replace('Z', ''))) : 'Dom, 29 mar';
@@ -8745,100 +8741,72 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     const finalFontSize = Math.floor(baseFontSize * scaleFactor);
     const finalScaleX = aspectScaleX * scaleFactor;
 
-    // 3. Build Offscreen Frosted Glass Overlay Canvas (destination-in Masking)
-    const glassCanvas = document.createElement('canvas');
-    glassCanvas.width = w;
-    glassCanvas.height = h;
-    const gCtx = glassCanvas.getContext('2d');
-
-    if (gCtx) {
-        // Step A: Draw Blurred Photo Backdrop onto Offscreen Canvas
-        if ('filter' in gCtx) {
-            (gCtx as any).filter = 'blur(16px)';
-        }
-        gCtx.drawImage(mainCanvas, 0, 0);
-        if ('filter' in gCtx) {
-            (gCtx as any).filter = 'none';
-        }
-
-        // Apply Transformation once for all text drawing steps
-        gCtx.save();
-        gCtx.translate(x, heroY);
-        gCtx.scale(finalScaleX, 1.0);
-        gCtx.font = `${fontWeight} ${finalFontSize}px 'Inter', sans-serif`;
-        gCtx.textAlign = 'center';
-        gCtx.textBaseline = 'middle';
-        gCtx.lineJoin = 'round';
-        gCtx.lineCap = 'round';
-        gCtx.miterLimit = 2;
-
-        // Step B: Crop Blurred Backdrop strictly into the Digit Silhouette (destination-in)
-        gCtx.globalCompositeOperation = 'destination-in';
-        gCtx.fillText(mainVal, 0, 0);
-
-        // Step C: Translucent Glass Tint Gradient Overlay
-        gCtx.globalCompositeOperation = 'source-over';
-        const tintGrad = gCtx.createLinearGradient(0, -finalFontSize / 2, 0, finalFontSize / 2);
-        if (isWhite) {
-            tintGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.45)');
-            tintGrad.addColorStop(0.3, 'rgba(240, 245, 255, 0.15)');
-            tintGrad.addColorStop(0.7, 'rgba(220, 230, 245, 0.10)');
-            tintGrad.addColorStop(1.0, 'rgba(255, 255, 255, 0.35)');
-        } else if (isBlack) {
-            tintGrad.addColorStop(0.0, 'rgba(40, 40, 50, 0.65)');
-            tintGrad.addColorStop(0.3, 'rgba(20, 20, 26, 0.30)');
-            tintGrad.addColorStop(0.7, 'rgba(10, 10, 15, 0.20)');
-            tintGrad.addColorStop(1.0, 'rgba(30, 30, 40, 0.55)');
-        } else {
-            tintGrad.addColorStop(0.0, `rgba(${r}, ${g}, ${b}, 0.50)`);
-            tintGrad.addColorStop(0.3, `rgba(${r}, ${g}, ${b}, 0.20)`);
-            tintGrad.addColorStop(0.7, `rgba(${r}, ${g}, ${b}, 0.12)`);
-            tintGrad.addColorStop(1.0, `rgba(${r}, ${g}, ${b}, 0.40)`);
-        }
-
-        gCtx.fillStyle = tintGrad;
-        gCtx.fillText(mainVal, 0, 0);
-
-        // Step D: Micro-Precision 3D Directional Refractions & Bevels (source-atop)
-        gCtx.globalCompositeOperation = 'source-atop';
-
-        // 1. Bottom-Right Dark Refraction Shadow (Micro-precision stroke width 3.0px)
-        gCtx.lineWidth = 3.0;
-        gCtx.strokeStyle = isBlack ? 'rgba(0, 0, 0, 0.85)' : 'rgba(0, 0, 0, 0.45)';
-        gCtx.strokeText(mainVal, 1.0, 1.5);
-
-        // 2. Top-Left Specular Light Highlight (Micro-precision stroke width 2.0px)
-        gCtx.lineWidth = 2.0;
-        gCtx.strokeStyle = 'rgba(255, 255, 255, 0.90)';
-        gCtx.strokeText(mainVal, -1.0, -1.0);
-
-        // 3. Inner Accent Contour Glow
-        gCtx.lineWidth = 1.5;
-        gCtx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.50)`;
-        gCtx.strokeText(mainVal, 0, 0);
-
-        // Step E: Outer Beveled Slim Perimeter Rim (source-over)
-        gCtx.globalCompositeOperation = 'source-over';
-        gCtx.lineWidth = 2.0;
-        gCtx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.80)`;
-        gCtx.strokeText(mainVal, 0, 0);
-
-        gCtx.lineWidth = 1.0;
-        gCtx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
-        gCtx.strokeText(mainVal, -0.5, -0.5);
-
-        gCtx.restore();
-    }
-
-    // 4. Grounding Ambient Drop Shadow & Composite Draw
+    // 3. Liquid Glass Studio Optics Shader (Direct GPU Refraction Pipeline)
     ctx.save();
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.40)';
-    ctx.shadowBlur = 30;
-    ctx.shadowOffsetY = 15;
-    ctx.drawImage(glassCanvas, 0, 0);
+    ctx.translate(x, heroY);
+    ctx.scale(finalScaleX, 1.0);
+    ctx.font = `${fontWeight} ${finalFontSize}px 'Inter', sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Layer 1: Ambient Drop Shadow (Grounds glass over any background photo)
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
+    ctx.shadowBlur = 36;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 16;
+
+    // Layer 2: Frosted Glass Body (Gaussian Blur + Refractive Translucent Body Fill)
+    if ('filter' in ctx) {
+        (ctx as any).filter = 'blur(2.5px)';
+    }
+    const glassFill = ctx.createLinearGradient(0, -finalFontSize / 2, 0, finalFontSize / 2);
+    glassFill.addColorStop(0.0, `rgba(${hr}, ${hg}, ${hb}, 0.65)`);
+    glassFill.addColorStop(0.30, `rgba(${r}, ${g}, ${b}, 0.48)`);
+    glassFill.addColorStop(0.65, `rgba(${r}, ${g}, ${b}, 0.42)`);
+    glassFill.addColorStop(1.0, `rgba(${hr}, ${hg}, ${hb}, 0.60)`);
+
+    ctx.fillStyle = glassFill;
+    ctx.fillText(mainVal, 0, 0);
+
+    // Clear blur & shadow for crisp inner refraction & specular layers
+    if ('filter' in ctx) {
+        (ctx as any).filter = 'none';
+    }
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+
+    // Layer 3: Refractions & Specular Glare (Source-Atop GPU Clipping)
+    ctx.globalCompositeOperation = 'source-atop';
+
+    // 3A. Dark Bottom-Right Refraction Caustics (calibrated offset in unscaled space = 1.5 font px)
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+    ctx.fillText(mainVal, 1.5, 2.0);
+
+    // 3B. Bright Top-Left Specular Refraction Highlight
+    ctx.fillStyle = `rgba(${hr}, ${hg}, ${hb}, 0.90)`;
+    ctx.fillText(mainVal, -1.5, -2.0);
+
+    // 3C. Angular Specular Glare Sweep (-45° Glare Angle)
+    const glareGrad = ctx.createLinearGradient(-baseFontSize / 2, -baseFontSize / 2, baseFontSize / 2, baseFontSize / 2);
+    glareGrad.addColorStop(0.0, `rgba(${hr}, ${hg}, ${hb}, 0.55)`);
+    glareGrad.addColorStop(0.32, 'rgba(255, 255, 255, 0.0)');
+    glareGrad.addColorStop(0.68, 'rgba(255, 255, 255, 0.0)');
+    glareGrad.addColorStop(1.0, `rgba(${hr}, ${hg}, ${hb}, 0.22)`);
+
+    ctx.fillStyle = glareGrad;
+    ctx.fillText(mainVal, 0, 0);
+
+    // 3D. Fresnel Edge Reflection Rim Contour
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = `rgba(${hr}, ${hg}, ${hb}, 0.85)`;
+    ctx.strokeText(mainVal, 0, 0);
+
     ctx.restore();
 
-    // 5. Symmetric Unit Label at Bottom (Anchor Y = 1080)
+    // 4. Symmetric Unit Label at Bottom (Anchor Y = 1080)
     ctx.save();
     ctx.font = "600 48px 'Inter', sans-serif";
     ctx.textAlign = 'center';
