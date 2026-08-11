@@ -1356,7 +1356,7 @@ export function drawScoraStealth(ctx, stats, textColor) {
     let paceUnit = paceParts[1] || (stats.hasDistance ? (stats.type === 'Ride' ? 'km/h' : '/km') : 'bpm');
     if (paceUnit === 'min/km') paceUnit = '/km';
 
-    const rightLabel = (stats.subLabel || (stats.hasDistance ? (stats.type === 'Ride' ? "Avg Speed" : "Pace") : "Avg HR")).toUpperCase();
+    const rightLabel = (stats.subLabel || (stats.hasDistance ? (stats.type === 'Ride' ? "Avg" : "Pace") : "Avg HR")).toUpperCase();
 
     const bottomY = 1750;
     const leftX = 80;
@@ -1410,7 +1410,7 @@ export function drawInfoGlass(ctx: CanvasRenderingContext2D, stats: any, textCol
     const distLabel = stats.hasDistance ? "DISTANCE" : "DURATION";
     const distText = stats.hasDistance ? (stats.distanceVal || '0.00') : (stats.timeStr || '0:00');
 
-    const paceLabel = (stats.subLabel || (stats.hasDistance ? (stats.type === 'Ride' ? "Avg Speed" : "Pace") : "Avg HR")).toUpperCase();
+    const paceLabel = (stats.subLabel || (stats.hasDistance ? (stats.type === 'Ride' ? "Avg" : "Pace") : "Avg HR")).toUpperCase();
     const paceParts = (stats.subValue || '').trim().split(' ');
     const paceText = paceParts[0] || (stats.avgHeartrate ? String(stats.avgHeartrate) : '0');
 
@@ -1503,7 +1503,7 @@ export function drawSplitBadge(ctx, stats, textColor) {
     const distText = stats.hasDistance ? (stats.distanceVal || '0.00') : (stats.timeStr || '0:00');
     const distUnit = stats.hasDistance ? "KILOMETERS" : "";
 
-    const paceLabel = (stats.subLabel || (stats.hasDistance ? (stats.type === 'Ride' ? "Avg Speed" : "Pace") : "Avg HR")).toUpperCase();
+    const paceLabel = (stats.subLabel || (stats.hasDistance ? (stats.type === 'Ride' ? "Avg" : "Pace") : "Avg HR")).toUpperCase();
     const paceParts = (stats.subValue || '').trim().split(' ');
     const paceText = paceParts[0] || (stats.avgHeartrate ? String(stats.avgHeartrate) : '0');
     let paceUnit = paceParts[1] ? paceParts[1].toUpperCase() : (stats.hasDistance ? 'MIN / KM' : 'BPM');
@@ -1574,7 +1574,7 @@ export function drawBrutalistBold(ctx: CanvasRenderingContext2D, stats: any, tex
     const mainVal = (isWorkout ? (stats.timeStr || '0:00') : (stats.distanceVal || '0.00')).toUpperCase();
     const mainUnit = isWorkout ? 'DURATION' : 'KM';
 
-    const paceLabel = isWorkout ? "HEART RATE" : (isRide ? "AVG SPEED" : "PACE");
+    const paceLabel = isWorkout ? "HEART RATE" : (isRide ? "AVG" : "PACE");
     const paceVal = isWorkout ? (stats.avgHeartrate ? `${stats.avgHeartrate} BPM` : 'WORKOUT') : (stats.subValue || '0:00 /KM').toUpperCase();
 
     ctx.save();
@@ -1682,7 +1682,7 @@ export function drawDataModular(ctx: CanvasRenderingContext2D, stats: any, textC
     const distLabel = (isWorkout ? "DURATION" : "DISTANCE").toUpperCase();
     const distText = isWorkout ? (stats.timeStr || '0:00') : `${stats.distanceVal || '0.00'} KM`;
 
-    const paceLabel = (isWorkout ? "HEART RATE" : (isRide ? "AVG SPEED" : "PACE")).toUpperCase();
+    const paceLabel = (isWorkout ? "HEART RATE" : (isRide ? "AVG" : "PACE")).toUpperCase();
     const paceVal = isWorkout ? (stats.avgHeartrate ? `${stats.avgHeartrate} BPM` : 'WORKOUT') : (stats.subValue || 'N/A').toUpperCase();
 
     const cx = 540;
@@ -1966,7 +1966,7 @@ export function drawGlassSlice(ctx, stats, textColor) {
     ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.6)';
     ctx.font = `900 16px ${sysFont}`;
     if ((ctx as any).letterSpacing !== undefined) (ctx as any).letterSpacing = "0.2em";
-    const subLabelText = (stats.subLabel || (stats.hasDistance ? (stats.type === 'Ride' ? "Avg Speed" : "Pace") : "Heart Rate")).toUpperCase();
+    const subLabelText = (stats.subLabel || (stats.hasDistance ? (stats.type === 'Ride' ? "Avg" : "Pace") : "Heart Rate")).toUpperCase();
     ctx.fillText(subLabelText, startXR, 35);
     if ((ctx as any).letterSpacing !== undefined) (ctx as any).letterSpacing = "0px";
 
@@ -2259,7 +2259,7 @@ export function drawWorkoutReceipt(ctx: CanvasRenderingContext2D, stats: any, te
     const distLabel = isWorkout ? "DURATION" : "DISTANCE";
     const distText = isWorkout ? (stats.timeStr || '0:00') : `${stats.distanceVal || '0.00'} KM`;
 
-    const paceLabel = isWorkout ? "HEART RATE" : (isRide ? "AVG SPEED" : "PACE");
+    const paceLabel = isWorkout ? "HEART RATE" : (isRide ? "AVG" : "PACE");
     const paceText = isWorkout ? (stats.avgHeartrate ? `${stats.avgHeartrate} BPM` : 'N/A') : (stats.subValue || 'N/A').toUpperCase();
 
     const energyLabel = isWorkout ? "CALORIES" : "DURATION";
@@ -2380,7 +2380,7 @@ export function drawObsidianBar(ctx: CanvasRenderingContext2D, stats: any, textC
     const p1Label = isWorkout ? "DURATION" : "DISTANCE";
     const p1Value = isWorkout ? (stats.timeStr || '0:00') : `${stats.distanceVal || '0.00'} KM`;
 
-    const p2Label = isWorkout ? "HEART RATE" : (isRide ? "AVG SPEED" : "PACE");
+    const p2Label = isWorkout ? "HEART RATE" : (isRide ? "AVG" : "PACE");
     const p2Value = isWorkout ? (stats.avgHeartrate ? `${stats.avgHeartrate} BPM` : 'N/A') : (stats.subValue || 'N/A').toUpperCase();
 
     const p3Label = isWorkout ? "ENERGY" : "DURATION";
@@ -2456,7 +2456,7 @@ export function drawModernPill(ctx: CanvasRenderingContext2D, stats: any, textCo
     const p1Value = isWorkout ? (stats.timeStr || '0:00') : (stats.distanceVal || '0.00');
     const p1Unit = isWorkout ? '' : 'KM';
 
-    const p2Label = isWorkout ? "HEART RATE" : (isRide ? "AVG SPEED" : "PACE");
+    const p2Label = isWorkout ? "HEART RATE" : (isRide ? "AVG" : "PACE");
     const p2Value = isWorkout ? (stats.avgHeartrate ? `${stats.avgHeartrate}` : 'N/A') : (stats.subValue || 'N/A').split(' ')[0];
     const p2Unit = isWorkout ? 'BPM' : (stats.subValue || '').split(' ')[1] || (isRide ? 'KM/H' : '/KM');
 
@@ -2565,7 +2565,7 @@ export function drawMonoSplit(ctx: CanvasRenderingContext2D, stats: any, textCol
     const p1Unit = isWorkout ? '' : 'KM';
 
     const p2Value = (isWorkout ? (stats.avgHeartrate ? `${stats.avgHeartrate}` : (stats.calories ? `${stats.calories}` : 'WORKOUT')) : (stats.subValue || '0:00').split(' ')[0]).toUpperCase();
-    const p2Label = isWorkout ? (stats.avgHeartrate ? 'HEART RATE' : 'CALORIES') : (isRide ? 'AVG SPEED' : 'PACE');
+    const p2Label = isWorkout ? (stats.avgHeartrate ? 'HEART RATE' : 'CALORIES') : (isRide ? 'AVG' : 'PACE');
     const p2Unit = isWorkout ? (stats.avgHeartrate ? 'BPM' : 'KCAL') : (stats.subValue || '').split(' ')[1] || '/KM';
 
     ctx.save();
@@ -3171,7 +3171,7 @@ export function drawCondesaStack(ctx: CanvasRenderingContext2D, stats: any, text
     const distLabel = isWorkout ? 'DURATION' : 'DISTANCE';
     const distUnit = isWorkout ? '' : 'KM';
 
-    const paceLabel = isWorkout ? 'HEART RATE' : (isRide ? 'AVG SPEED' : 'PACE');
+    const paceLabel = isWorkout ? 'HEART RATE' : (isRide ? 'AVG' : 'PACE');
     const paceVal = isWorkout ? (stats.avgHeartrate ? `${stats.avgHeartrate} BPM` : 'N/A') : (stats.subValue || 'N/A').toUpperCase();
     const locationVal = (stats.location || 'MEXICO').toUpperCase();
 
@@ -3968,7 +3968,7 @@ export function drawProVertical(ctx: CanvasRenderingContext2D, stats: any, textC
 
     // 4. Metadata Line (Time, Pace, HR, Location)
     const isRide = stats.type === 'Ride' || stats.type === 'EBikeRide';
-    const paceLabel = isWorkout ? "HEART RATE" : (isRide ? "AVG SPEED" : "PACE");
+    const paceLabel = isWorkout ? "HEART RATE" : (isRide ? "AVG" : "PACE");
     const paceVal = isWorkout ? (stats.avgHeartrate ? `${stats.avgHeartrate} BPM` : 'WORKOUT') : (stats.subValue || '0:00 /KM').toUpperCase();
 
     const subString = `${paceLabel}: ${paceVal}   ·   ${(stats.startTime || '00:00 AM').toUpperCase()}   ·   ${(stats.location || 'OUTDOORS').toUpperCase()}`;
@@ -8019,6 +8019,7 @@ export function drawMicroMapPill(ctx: CanvasRenderingContext2D, stats: any, text
     // Format subtext per user request (replace PACE with /km, remove TIME/DURATION)
     let sub2Label = s2.label;
     if (sub2Label === 'PACE') sub2Label = '/km';
+    if (sub2Label === 'Avg' || sub2Label === 'Avg Speed') sub2Label = s2.unit || 'km/h';
 
     let sub3Label = s3.label;
     if (sub3Label === 'DURATION' || sub3Label === 'TIME') sub3Label = '';

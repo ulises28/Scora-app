@@ -299,11 +299,11 @@ export function formatActivityStats(activity: StravaActivity): StickerStats {
         polyline: activity.map?.summary_polyline || '',
         avgHeartrate: activity.average_heartrate ? Math.round(activity.average_heartrate) : null,
         maxHeartrate: activity.max_heartrate ? Math.round(activity.max_heartrate) : null,
-        startTime: formatTime(activity.start_date_local || activity.start_date),
-        date: formatDateNarrative(activity.start_date_local || activity.start_date),
-        dayName: formatDayName(activity.start_date_local || activity.start_date),
-        dayAndNumber: formatDayAndNumber(activity.start_date_local || activity.start_date),
-        rawDate: activity.start_date_local || activity.start_date,
+        startTime: formatTime(activity.start_date),
+        date: formatDateNarrative(activity.start_date),
+        dayName: formatDayName(activity.start_date),
+        dayAndNumber: formatDayAndNumber(activity.start_date),
+        rawDate: activity.start_date,
         avgTemp: (activity.average_temp !== undefined && activity.average_temp !== null) ? String(Math.round(activity.average_temp)) : null,
         hasDistance: activity.distance > 0,
         activityType: activity.type,
@@ -341,7 +341,7 @@ export function formatActivityStats(activity: StravaActivity): StickerStats {
             stats.maxPace = '0:00';
         } else {
             stats.subValue = formatSpeedKmh(activity.average_speed);
-            stats.subLabel = 'Avg Speed';
+            stats.subLabel = 'km/h';
             stats.maxPace = activity.max_speed ? (activity.max_speed * 3.6).toFixed(1) : '0.0';
             stats.maxPaceLabel = 'Max Speed';
             stats.maxPaceUnit = 'km/h';
@@ -392,7 +392,7 @@ export function formatActivityStats(activity: StravaActivity): StickerStats {
         type: { label: 'Type', value: (activity.type === 'WeightTraining' || activity.type === 'Workout') ? 'Gym' : activity.type, unit: '' },
         name: { label: 'Name', value: stats.shortTitle || '', unit: '' },
         start_time: { label: 'Time', value: stats.startTime || '', unit: '' },
-        date_long: { label: 'Date', value: formatDayAndNumberNormal(activity.start_date_local || activity.start_date), unit: '' }
+        date_long: { label: 'Date', value: formatDayAndNumberNormal(activity.start_date), unit: '' }
     };
 
     let p_list: string[] = [];
