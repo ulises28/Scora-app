@@ -8761,8 +8761,7 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
             (gCtx as any).filter = 'none';
         }
 
-        // Step B: Crop Blurred Backdrop strictly into the Digit Silhouette (destination-in)
-        gCtx.globalCompositeOperation = 'destination-in';
+        // Apply Transformation once for all text drawing steps
         gCtx.save();
         gCtx.translate(x, heroY);
         gCtx.scale(finalScaleX, 1.0);
@@ -8771,85 +8770,71 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
         gCtx.textBaseline = 'middle';
         gCtx.lineJoin = 'round';
         gCtx.lineCap = 'round';
+        gCtx.miterLimit = 2;
+
+        // Step B: Crop Blurred Backdrop strictly into the Digit Silhouette (destination-in)
+        gCtx.globalCompositeOperation = 'destination-in';
         gCtx.fillText(mainVal, 0, 0);
-        gCtx.restore();
 
-        // Step C: 5-Stop Glass Body Gradient Overlay in User's Selected Color
+        // Step C: Translucent Glass Tint Gradient Overlay
         gCtx.globalCompositeOperation = 'source-over';
-        gCtx.save();
-        gCtx.translate(x, heroY);
-        gCtx.scale(finalScaleX, 1.0);
-        gCtx.font = `${fontWeight} ${finalFontSize}px 'Inter', sans-serif`;
-        gCtx.textAlign = 'center';
-        gCtx.textBaseline = 'middle';
-
         const tintGrad = gCtx.createLinearGradient(0, -finalFontSize / 2, 0, finalFontSize / 2);
         if (isWhite) {
-            tintGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.60)');
-            tintGrad.addColorStop(0.3, 'rgba(240, 245, 255, 0.25)');
-            tintGrad.addColorStop(0.7, 'rgba(220, 230, 245, 0.18)');
-            tintGrad.addColorStop(1.0, 'rgba(255, 255, 255, 0.50)');
+            tintGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.45)');
+            tintGrad.addColorStop(0.3, 'rgba(240, 245, 255, 0.15)');
+            tintGrad.addColorStop(0.7, 'rgba(220, 230, 245, 0.10)');
+            tintGrad.addColorStop(1.0, 'rgba(255, 255, 255, 0.35)');
         } else if (isBlack) {
-            tintGrad.addColorStop(0.0, 'rgba(50, 50, 60, 0.85)');
-            tintGrad.addColorStop(0.3, 'rgba(20, 20, 26, 0.45)');
-            tintGrad.addColorStop(0.7, 'rgba(10, 10, 15, 0.30)');
-            tintGrad.addColorStop(1.0, 'rgba(35, 35, 45, 0.75)');
+            tintGrad.addColorStop(0.0, 'rgba(40, 40, 50, 0.65)');
+            tintGrad.addColorStop(0.3, 'rgba(20, 20, 26, 0.30)');
+            tintGrad.addColorStop(0.7, 'rgba(10, 10, 15, 0.20)');
+            tintGrad.addColorStop(1.0, 'rgba(30, 30, 40, 0.55)');
         } else {
-            tintGrad.addColorStop(0.0, `rgba(${r}, ${g}, ${b}, 0.65)`);
-            tintGrad.addColorStop(0.3, `rgba(${r}, ${g}, ${b}, 0.30)`);
-            tintGrad.addColorStop(0.7, `rgba(${r}, ${g}, ${b}, 0.20)`);
-            tintGrad.addColorStop(1.0, `rgba(${r}, ${g}, ${b}, 0.55)`);
+            tintGrad.addColorStop(0.0, `rgba(${r}, ${g}, ${b}, 0.50)`);
+            tintGrad.addColorStop(0.3, `rgba(${r}, ${g}, ${b}, 0.20)`);
+            tintGrad.addColorStop(0.7, `rgba(${r}, ${g}, ${b}, 0.12)`);
+            tintGrad.addColorStop(1.0, `rgba(${r}, ${g}, ${b}, 0.40)`);
         }
 
         gCtx.fillStyle = tintGrad;
         gCtx.fillText(mainVal, 0, 0);
 
-        // Step D: Slim 3D Directional Refractions & Bevels (source-atop)
+        // Step D: Micro-Precision 3D Directional Refractions & Bevels (source-atop)
         gCtx.globalCompositeOperation = 'source-atop';
 
-        // 1. Bottom-Right Dark Refraction Shadow
-        gCtx.lineWidth = 14;
-        gCtx.strokeStyle = isBlack ? 'rgba(0, 0, 0, 0.90)' : 'rgba(0, 0, 0, 0.50)';
-        gCtx.strokeText(mainVal, 4, 5);
+        // 1. Bottom-Right Dark Refraction Shadow (Micro-precision stroke width 3.0px)
+        gCtx.lineWidth = 3.0;
+        gCtx.strokeStyle = isBlack ? 'rgba(0, 0, 0, 0.85)' : 'rgba(0, 0, 0, 0.45)';
+        gCtx.strokeText(mainVal, 1.0, 1.5);
 
-        // 2. Top-Left Specular Light Highlight
-        gCtx.lineWidth = 8;
+        // 2. Top-Left Specular Light Highlight (Micro-precision stroke width 2.0px)
+        gCtx.lineWidth = 2.0;
         gCtx.strokeStyle = 'rgba(255, 255, 255, 0.90)';
-        gCtx.strokeText(mainVal, -3, -4);
+        gCtx.strokeText(mainVal, -1.0, -1.0);
 
         // 3. Inner Accent Contour Glow
-        gCtx.lineWidth = 5;
-        gCtx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.65)`;
+        gCtx.lineWidth = 1.5;
+        gCtx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.50)`;
         gCtx.strokeText(mainVal, 0, 0);
 
         // Step E: Outer Beveled Slim Perimeter Rim (source-over)
         gCtx.globalCompositeOperation = 'source-over';
-        gCtx.lineWidth = 5;
-        gCtx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.85)`;
+        gCtx.lineWidth = 2.0;
+        gCtx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.80)`;
         gCtx.strokeText(mainVal, 0, 0);
 
-        gCtx.lineWidth = 2;
-        gCtx.strokeStyle = 'rgba(255, 255, 255, 0.70)';
-        gCtx.strokeText(mainVal, -1, -1);
+        gCtx.lineWidth = 1.0;
+        gCtx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
+        gCtx.strokeText(mainVal, -0.5, -0.5);
 
         gCtx.restore();
     }
 
-    // 4. Grounding Ambient Shadow & Draw Glass Composite onto Main Canvas
+    // 4. Grounding Ambient Drop Shadow & Composite Draw
     ctx.save();
-    ctx.translate(x, heroY);
-    ctx.scale(finalScaleX, 1.0);
-    ctx.font = `${fontWeight} ${finalFontSize}px 'Inter', sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
-    ctx.shadowBlur = 40;
-    ctx.shadowOffsetY = 20;
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.01)';
-    ctx.fillText(mainVal, 0, 0);
-    ctx.restore();
-
-    ctx.save();
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.40)';
+    ctx.shadowBlur = 30;
+    ctx.shadowOffsetY = 15;
     ctx.drawImage(glassCanvas, 0, 0);
     ctx.restore();
 
