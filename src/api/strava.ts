@@ -331,13 +331,13 @@ export function formatActivityStats(activity: StravaActivity): StickerStats {
         if (activity.type === 'Run' || activity.type === 'VirtualRun' ||
             activity.type === 'Walk' || activity.type === 'Hike') {
             stats.subValue = formatPace(activity.average_speed);
-            stats.subLabel = 'Pace';
+            stats.subLabel = '/km';
             stats.maxPace = calculateMaxPace(activity.max_speed);
             stats.maxPaceLabel = 'Max Pace';
             stats.maxPaceUnit = 'min/km';
         } else if (activity.type === 'Swim' || activity.type === 'OpenWaterSwim') {
             stats.subValue = formatSwimPace(activity.average_speed);
-            stats.subLabel = 'Pace';
+            stats.subLabel = '/100m';
             stats.maxPace = '0:00';
         } else {
             stats.subValue = formatSpeedKmh(activity.average_speed);

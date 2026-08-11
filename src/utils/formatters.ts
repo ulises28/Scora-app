@@ -17,10 +17,9 @@ export const dayNamesNormal = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thur
 export function formatDateNarrative(rawDate: string): string {
     if (!rawDate) return '';
     try {
-        const datePart = rawDate.split('T')[0];
-        const [year, month, day] = datePart.split('-');
-        const mIdx = parseInt(month, 10) - 1;
-        return `${monthsTitleCase[mIdx]} ${day}`;
+        const d = new Date(rawDate);
+        if (isNaN(d.getTime())) return '';
+        return `${monthsTitleCase[d.getMonth()]} ${d.getDate().toString().padStart(2, '0')}`;
     } catch (e) {
         return '';
     }
@@ -32,8 +31,8 @@ export function formatDateNarrative(rawDate: string): string {
 export function formatDayName(rawDate: string): string {
     if (!rawDate) return '';
     try {
-        const datePart = rawDate.split('T')[0];
-        const d = new Date(datePart + 'T12:00:00');
+        const d = new Date(rawDate);
+        if (isNaN(d.getTime())) return '';
         return dayNamesFull[d.getDay()];
     } catch (e) {
         return '';
@@ -41,19 +40,18 @@ export function formatDayName(rawDate: string): string {
 }
 
 /**
- * Formats a raw ISO date into '12:34 PM' style
+ * Formats a raw ISO date into '12:34 PM' style (Browser Local Time)
  */
 export function formatTime(rawDate: string): string {
     if (!rawDate) return '';
     try {
-        const timePart = rawDate.split('T')[1]?.replace('Z', '') || '';
-        const [hours, minutes] = timePart.split(':');
-        if (!hours || !minutes) return '';
-        
-        let h = parseInt(hours, 10);
+        const d = new Date(rawDate);
+        if (isNaN(d.getTime())) return '';
+        let h = d.getHours();
+        const m = d.getMinutes().toString().padStart(2, '0');
         const ampm = h >= 12 ? 'PM' : 'AM';
         h = h % 12 || 12;
-        return `${h}:${minutes} ${ampm}`;
+        return `${h}:${m} ${ampm}`;
     } catch (e) {
         return '';
     }
@@ -65,10 +63,9 @@ export function formatTime(rawDate: string): string {
 export function formatDateShort(rawDate: string): string {
     if (!rawDate) return '';
     try {
-        const datePart = rawDate.split('T')[0];
-        const [year, month, day] = datePart.split('-');
-        const mIdx = parseInt(month, 10) - 1;
-        return `${months[mIdx]} ${day}`;
+        const d = new Date(rawDate);
+        if (isNaN(d.getTime())) return '';
+        return `${months[d.getMonth()]} ${d.getDate().toString().padStart(2, '0')}`;
     } catch (e) {
         return '';
     }
@@ -80,11 +77,9 @@ export function formatDateShort(rawDate: string): string {
 export function formatDayAndNumber(rawDate: string): string {
     if (!rawDate) return '';
     try {
-        const datePart = rawDate.split('T')[0];
-        const d = new Date(datePart + 'T12:00:00');
-        const dayName = dayNamesFull[d.getDay()];
-        const dayNum = String(d.getDate()).padStart(2, '0');
-        return `${dayName} ${dayNum}`;
+        const d = new Date(rawDate);
+        if (isNaN(d.getTime())) return '';
+        return `${dayNamesFull[d.getDay()]} ${d.getDate().toString().padStart(2, '0')}`;
     } catch (e) {
         return '';
     }
@@ -96,11 +91,9 @@ export function formatDayAndNumber(rawDate: string): string {
 export function formatDayAndNumberNormal(rawDate: string): string {
     if (!rawDate) return '';
     try {
-        const datePart = rawDate.split('T')[0];
-        const d = new Date(datePart + 'T12:00:00');
-        const dayName = dayNamesNormal[d.getDay()];
-        const dayNum = String(d.getDate()).padStart(2, '0');
-        return `${dayName} ${dayNum}`;
+        const d = new Date(rawDate);
+        if (isNaN(d.getTime())) return '';
+        return `${dayNamesNormal[d.getDay()]} ${d.getDate().toString().padStart(2, '0')}`;
     } catch (e) {
         return '';
     }

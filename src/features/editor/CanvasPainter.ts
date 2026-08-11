@@ -8555,8 +8555,8 @@ export function drawSocialPill(ctx: CanvasRenderingContext2D, stats: any, textCo
     const h = 120;
     const locationStr = (stats.location || (stats.hasDistance ? 'LOCAL ROUTE' : 'TRAINING')).toUpperCase();
     const paceOrCal = stats.hasDistance
-        ? (s2.label === 'PACE' ? s2.value + ' /KM' : s2.value)
-        : (s2.label === 'KCAL' ? s2.value + ' KCAL' : s2.value);
+        ? `${s2.value} ${s2.label}`
+        : (s2.label === 'KCAL' ? `${s2.value} KCAL` : s2.value);
 
     const distOrTime = stats.hasDistance ? `${stats.distanceVal} KM` : `${stats.timeStr}`;
     const pillText = `${distOrTime}   •   ${paceOrCal}   •   ${locationStr}`;
