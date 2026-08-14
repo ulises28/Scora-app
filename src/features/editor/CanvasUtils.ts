@@ -38,7 +38,7 @@ export function getThemeColors(textColor: string): ThemeColors {
     return {
         solid: `rgb(${base})`,
         trans: `rgba(${base}, ${alphaValue})`,
-        label: isDark ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.75)',
+        label: isDark ? 'rgba(0,0,0,0.75)' : 'rgba(255,255,255,0.75)',
         accent: accent,
     };
 }
@@ -263,14 +263,14 @@ export function drawMetricBlock(
  * Standardizes mapping from raw Strava types to Scora "Studio Precision" labels.
  */
 export function normalizeSport(type: string): string {
-    if (!type) return 'Training';
+    if (!type) return 'Workout';
     const lower = type.toLowerCase();
     
     // 1. TRAINING (HIIT, Gym, Crossfit, etc.)
     if (lower.includes('weight') || lower.includes('workout') || lower.includes('gym') || 
         lower.includes('training') || lower.includes('crossfit') || lower.includes('hiit') || 
         lower.includes('yoga') || lower.includes('pilates')) {
-        return 'Training';
+        return 'Workout';
     }
     // 2. RIDE (The "Action" word for all Cycling)
     if (lower.includes('ride') || lower.includes('cycle') || lower.includes('bike')) {
@@ -306,7 +306,7 @@ export function getDynamicStats(stats: any) {
     // 1. Initial Standard Metrics
     const distText = stats.distanceVal || '0.00';
     const paceText = (stats.subValue || '').split(' ')[0] || '0:00';
-    const paceLabel = (stats.subLabel || (type === 'Ride' ? 'KM/H' : 'PACE')).toUpperCase();
+    const paceLabel = (stats.subLabel && !stats.subLabel.includes('Heartrate') ? stats.subLabel : (type === 'Ride' ? 'AVG SPEED' : 'PACE')).toUpperCase();
     const timeText = stats.timeStr || '0:00';
 
     // 2. The Unique Slot Filler (Studio Precision)

@@ -299,13 +299,13 @@ export function formatActivityStats(activity: StravaActivity): StickerStats {
         polyline: activity.map?.summary_polyline || '',
         avgHeartrate: activity.average_heartrate ? Math.round(activity.average_heartrate) : null,
         maxHeartrate: activity.max_heartrate ? Math.round(activity.max_heartrate) : null,
-        startTime: formatTime(activity.start_date),
-        date: formatDateNarrative(activity.start_date),
-        dayName: formatDayName(activity.start_date),
-        dayAndNumber: formatDayAndNumber(activity.start_date),
-        rawDate: activity.start_date,
+        startTime: formatTime(activity.start_date_local || activity.start_date),
+        date: formatDateNarrative(activity.start_date_local || activity.start_date),
+        dayName: formatDayName(activity.start_date_local || activity.start_date),
+        dayAndNumber: formatDayAndNumber(activity.start_date_local || activity.start_date),
+        rawDate: activity.start_date_local || activity.start_date,
         avgTemp: (activity.average_temp !== undefined && activity.average_temp !== null) ? String(Math.round(activity.average_temp)) : null,
-        hasDistance: activity.distance > 0,
+        hasDistance: activity.distance > 0 && DISTANCE_SPORTS.has(activity.type),
         activityType: activity.type,
         calories: activity.calories ? String(Math.round(activity.calories)) : (activity.kilojoules ? String(Math.round(activity.kilojoules * 0.239)) : null),
     };
@@ -389,10 +389,10 @@ export function formatActivityStats(activity: StravaActivity): StickerStats {
         energy: activity.calories ? { label: 'Energy', value: String(Math.round(activity.calories)), unit: 'kcal' } : (activity.kilojoules ? { label: 'Energy', value: String(Math.round(activity.kilojoules * 0.239)), unit: 'kcal' } : null),
         pr_count: activity.pr_count ? { label: 'PRs', value: String(activity.pr_count), unit: '' } : null,
         location: locationStr ? { label: 'Location', value: locationStr, unit: '' } : null,
-        type: { label: 'Type', value: (activity.type === 'WeightTraining' || activity.type === 'Workout') ? 'Gym' : activity.type, unit: '' },
+        type: { label: 'Type', value: activity.type === 'WeightTraining' ? 'Workout' : activity.type, unit: '' },
         name: { label: 'Name', value: stats.shortTitle || '', unit: '' },
         start_time: { label: 'Time', value: stats.startTime || '', unit: '' },
-        date_long: { label: 'Date', value: formatDayAndNumberNormal(activity.start_date), unit: '' }
+        date_long: { label: 'Date', value: formatDayAndNumberNormal(activity.start_date_local || activity.start_date), unit: '' }
     };
 
     let p_list: string[] = [];

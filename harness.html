@@ -285,11 +285,20 @@
     <div class="harness-container">
         <!-- Canvas Preview Pane -->
         <div class="preview-pane">
-            <div class="canvas-container">
+            <div style="position: absolute; top: 1.5rem; left: 1.5rem; display: flex; gap: 0.5rem; z-index: 10;">
+                <button class="btn-primary" id="btn-mode-single" style="padding: 0.5rem 1rem; font-size: 0.8rem;">Single Mode</button>
+                <button class="btn-secondary" id="btn-mode-gallery" style="padding: 0.5rem 1rem; font-size: 0.8rem;">Gallery Mode</button>
+            </div>
+
+            <div class="canvas-container" id="single-canvas-container">
                 <canvas id="harness-canvas"></canvas>
             </div>
+
+            <div id="gallery-canvas-container" style="display: none; width: 100%; height: 100%; overflow-y: auto; padding-top: 3rem; align-items: start; align-content: start; gap: 1.5rem;">
+                <!-- Gallery items injected here -->
+            </div>
             
-            <div class="canvas-actions">
+            <div class="canvas-actions" id="single-canvas-actions">
                 <button class="btn-secondary" id="btn-export">💾 Exportar Imagen (PNG)</button>
             </div>
         </div>
@@ -320,6 +329,8 @@
                         <option value="carrera_mañana">Run: Carrera por la mañana</option>
                         <option value="vuelta_ciclista">Ride: Vuelta ciclista</option>
                         <option value="pesas">Gym: Entrenamiento Pesas</option>
+                        <option value="stress_text">Stress: Long Text Strings</option>
+                        <option value="stress_numbers">Stress: Extreme & Missing Data</option>
                     </select>
                 </div>
 
@@ -417,9 +428,14 @@
                         <h3>🤖 AI Rule Auditor</h3>
                         <span class="audit-status-badge status-idle" id="audit-status">Idle</span>
                     </div>
-                    <button class="btn-primary" id="btn-run-audit" style="width: 100%; font-size: 0.85rem; padding: 0.5rem 1rem;">
-                        Analizar Normativa (Gemini)
-                    </button>
+                    <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+                        <button class="btn-primary" id="btn-run-audit" style="flex: 1; font-size: 0.85rem; padding: 0.5rem;">
+                            Analizar Actual
+                        </button>
+                        <button class="btn-secondary" id="btn-run-audit-all" style="flex: 1; font-size: 0.85rem; padding: 0.5rem;">
+                            Audit All
+                        </button>
+                    </div>
                     <div class="audit-results" id="audit-results-container">
                         <p style="color: var(--text-secondary); margin: 0; font-style: italic; text-align: center;">
                             Haz clic en el botón para auditar este template contra las reglas de diseño y variables.

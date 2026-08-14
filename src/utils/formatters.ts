@@ -16,8 +16,9 @@ export const dayNamesNormal = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thur
  */
 export function formatDateNarrative(rawDate: string): string {
     if (!rawDate) return '';
+    const localDate = rawDate.endsWith('Z') ? rawDate.slice(0, -1) : rawDate;
     try {
-        const d = new Date(rawDate);
+        const d = new Date(localDate);
         if (isNaN(d.getTime())) return '';
         return `${monthsTitleCase[d.getMonth()]} ${d.getDate().toString().padStart(2, '0')}`;
     } catch (e) {
@@ -30,8 +31,9 @@ export function formatDateNarrative(rawDate: string): string {
  */
 export function formatDayName(rawDate: string): string {
     if (!rawDate) return '';
+    const localDate = rawDate.endsWith('Z') ? rawDate.slice(0, -1) : rawDate;
     try {
-        const d = new Date(rawDate);
+        const d = new Date(localDate);
         if (isNaN(d.getTime())) return '';
         return dayNamesFull[d.getDay()];
     } catch (e) {
@@ -44,8 +46,9 @@ export function formatDayName(rawDate: string): string {
  */
 export function formatTime(rawDate: string): string {
     if (!rawDate) return '';
+    const localDate = rawDate.endsWith('Z') ? rawDate.slice(0, -1) : rawDate;
     try {
-        const d = new Date(rawDate);
+        const d = new Date(localDate);
         if (isNaN(d.getTime())) return '';
         let h = d.getHours();
         const m = d.getMinutes().toString().padStart(2, '0');
@@ -62,8 +65,9 @@ export function formatTime(rawDate: string): string {
  */
 export function formatDateShort(rawDate: string): string {
     if (!rawDate) return '';
+    const localDate = rawDate.endsWith('Z') ? rawDate.slice(0, -1) : rawDate;
     try {
-        const d = new Date(rawDate);
+        const d = new Date(localDate);
         if (isNaN(d.getTime())) return '';
         return `${months[d.getMonth()]} ${d.getDate().toString().padStart(2, '0')}`;
     } catch (e) {
@@ -76,8 +80,9 @@ export function formatDateShort(rawDate: string): string {
  */
 export function formatDayAndNumber(rawDate: string): string {
     if (!rawDate) return '';
+    const localDate = rawDate.endsWith('Z') ? rawDate.slice(0, -1) : rawDate;
     try {
-        const d = new Date(rawDate);
+        const d = new Date(localDate);
         if (isNaN(d.getTime())) return '';
         return `${dayNamesFull[d.getDay()]} ${d.getDate().toString().padStart(2, '0')}`;
     } catch (e) {
@@ -90,8 +95,9 @@ export function formatDayAndNumber(rawDate: string): string {
  */
 export function formatDayAndNumberNormal(rawDate: string): string {
     if (!rawDate) return '';
+    const localDate = rawDate.endsWith('Z') ? rawDate.slice(0, -1) : rawDate;
     try {
-        const d = new Date(rawDate);
+        const d = new Date(localDate);
         if (isNaN(d.getTime())) return '';
         return `${dayNamesNormal[d.getDay()]} ${d.getDate().toString().padStart(2, '0')}`;
     } catch (e) {
