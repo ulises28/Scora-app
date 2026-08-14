@@ -76,4 +76,69 @@ describe.concurrent('Sticker Integrity: Modular Contract', () => {
         expect(totalIdentifiers, `Discovery yielded 0 identifiers. Check for Variable Blindness in CanvasPainter.ts.`).toBeGreaterThan(0);
     });
 
+    /**
+     * Test 4: Execution Safety (Render Harness)
+     * Verifies that each sticker can render without throwing runtime exceptions.
+     */
+    describe('Sticker Render Safety', () => {
+        // Mock minimal stats for Run and Gym/Workout
+        const runStats = {
+            hasDistance: true,
+            distanceVal: "10.05",
+            mainValue: "10.05 km",
+            mainLabel: "Distance",
+            subValue: "4:09",
+            subLabel: "/km",
+            timeStr: "41:46",
+            startTime: "12:04 PM",
+            date: "March 29, 2026",
+            dayName: "Sunday",
+            dayAndNumber: "Sun 29",
+            location: "Cuauhtémoc",
+            region: "CDMX",
+            avgHeartrate: 167,
+            maxHeartrate: 177,
+            calories: "1068",
+            avgTemp: "17",
+            polyline: "yhpuBrtl|QZWr@..."
+        };
+
+        const workoutStats = {
+            hasDistance: false,
+            mainValue: "1h 11m",
+            mainLabel: "Duration",
+            subValue: "122",
+            subLabel: "bpm",
+            timeStr: "1h 11m",
+            avgHeartrate: 122,
+            maxHeartrate: 172,
+            startTime: "8:10 AM",
+            date: "March 2, 2026",
+            dayName: "Monday",
+            dayAndNumber: "Mon 2",
+            location: "SECRET LOCATION",
+            region: "World"
+        };
+
+        const representativeTestTemplates = ACTIVE_TEMPLATES.filter(t => 
+            ['circle-letters', 'classic-stack'].includes(t.id)
+        );
+
+        it.each(representativeTestTemplates)('should execute render() on "$id" without exceptions', (sticker) => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 1080;
+            canvas.height = 1920;
+            const ctx = canvas.getContext('2d')!;
+
+            const stats = sticker.category === 'workout' ? workoutStats : runStats;
+
+            // Call render directly
+            expect(() => {
+                sticker.render(ctx, stats, 'white', true);
+            }).not.toThrow();
+        });
+    });
+
 });
+
+

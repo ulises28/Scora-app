@@ -3242,68 +3242,87 @@ export function drawCondesaStack(ctx: CanvasRenderingContext2D, stats: any, text
 // ─── New Stickers Support Helpers ──────────────────────────────────────────
 
 export function drawStackedEditorial(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
-    const { s1, s2, s3, hasMap } = getDynamicStats(stats);
-    // The user's selected color drives the map. Text is always white.
+    const { s1, hasMap } = getDynamicStats(stats);
     const { accent: accentColor } = buildColors(textColor);
 
     const cx = 540;
     const safeW = 960;
 
-    // Parse the day name from the raw date
     const dateStrRaw = stats.rawDate || '';
     const rawDate = dateStrRaw ? new Date(dateStrRaw.replace('Z', '')) : new Date();
     const dayLabel = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(rawDate).toUpperCase();
 
     ctx.save();
-
-    // NO SHADOWS - pure flat editorial style
     ctx.shadowColor = 'transparent';
     ctx.shadowBlur = 0;
 
-    // 1. Map Route (Drawn FIRST so it's behind text)
-    if (hasMap && stats.polyline) {
-        drawRoutePath(ctx, stats.polyline, cx, 930, 800, {
-            color: accentColor, // Only the map changes color!
-            strokeWidth: 20
-        });
-    }
-
     const mainFont = "'Archivo Black', sans-serif";
-    ctx.fillStyle = '#ffffff'; // Text is permanently white
+    ctx.fillStyle = '#ffffff'; 
     ctx.textAlign = 'center';
     ctx.textBaseline = 'alphabetic';
 
-    // 2. Giant Day Name at Top (Squeezed down to y=750)
-    // Scale to fill exactly 960px
-    ctx.font = `900 100px ${mainFont}`;
+    // 1. Top text (SUNDAY)
+    ctx.font = `900 120px ${mainFont}`;
     const topW = Math.max(1, ctx.measureText(dayLabel).width);
-    let topSize = Math.floor(100 * (safeW / topW));
-    if (!isFinite(topSize) || topSize > 400) topSize = 400; // Cap height
+    let topScale = safeW / topW;
+    ctx.save();
+    ctx.translate(cx, 450); 
+    ctx.scale(topScale, topScale);
+    ctx.fillText(dayLabel, 0, 0);
+    ctx.restore();
 
-    ctx.font = `900 ${topSize}px ${mainFont}`;
-    ctx.fillText(dayLabel, cx, 750);
+    // 2. Map Route
+    if (hasMap && stats.polyline) {
+        const coords = decodePolyline(stats.polyline);
+        if (coords && coords.length > 0) {
+            // Find bounds
+            let minLat = Infinity, maxLat = -Infinity;
+            let minLng = Infinity, maxLng = -Infinity;
+            for (const [lat, lng] of coords) {
+                if (lat < minLat) minLat = lat;
+                if (lat > maxLat) maxLat = lat;
+                if (lng < minLng) minLng = lng;
+                if (lng > maxLng) maxLng = lng;
+            }
+            const w = maxLng - minLng;
+            const h = maxLat - minLat;
+            const scale = Math.min(800 / (w || 1), 600 / (h || 1));
+            
+            const getX = (lng: number) => cx + (lng - minLng - w / 2) * scale;
+            const getY = (lat: number) => 800 - (lat - minLat - h / 2) * scale;
+            
+            const step = Math.max(1, Math.floor(coords.length / 15));
+            const simplified = [];
+            for (let i = 0; i < coords.length; i += step) {
+                simplified.push(coords[i]);
+            }
+            if (simplified[simplified.length - 1] !== coords[coords.length - 1]) {
+                simplified.push(coords[coords.length - 1]);
+            }
+            
+            ctx.beginPath();
+            ctx.moveTo(getX(simplified[0][1]), getY(simplified[0][0]));
+            for (let i = 1; i < simplified.length; i++) {
+                ctx.lineTo(getX(simplified[i][1]), getY(simplified[i][0]));
+            }
+            ctx.strokeStyle = accentColor;
+            ctx.lineWidth = 10;
+            ctx.lineJoin = 'bevel';
+            ctx.lineCap = 'butt';
+            ctx.stroke();
+        }
+    }
 
-    // 3. Giant Distance at Bottom (Squeezed up to y=1150)
-    const valText = String(s1.value);
-    const unitText = String(s1.label);
-    const distText = `${valText} ${unitText}`;
-
-    ctx.font = `900 100px ${mainFont}`;
+    // 3. Bottom text (12.02 KM)
+    const distText = `${s1.value} ${s1.label}`.toUpperCase();
+    ctx.font = `900 120px ${mainFont}`;
     const botW = Math.max(1, ctx.measureText(distText).width);
-    let botSize = Math.floor(100 * (safeW / botW));
-    if (!isFinite(botSize) || botSize > 400) botSize = 400; // Cap height
-
-    ctx.font = `900 ${botSize}px ${mainFont}`;
-    ctx.fillText(distText, cx, 1150);
-
-    // 4. Sub-Metrics (Directly below distance)
-    const subText = `${s2.value} ${s2.label}   /   ${s3.value} ${s3.label}`.toUpperCase();
-    ctx.font = `900 36px ${mainFont}`;
-    // Force sub-metrics to be white too, per instruction: "the letter should stay white"
-    ctx.fillStyle = '#ffffff';
-    if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "4px";
-    ctx.fillText(subText, cx, 1220);
-    if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "0px";
+    let botScale = safeW / botW;
+    ctx.save();
+    ctx.translate(cx, 1150);
+    ctx.scale(botScale, botScale);
+    ctx.fillText(distText, 0, 0);
+    ctx.restore();
 
     ctx.restore();
 }
@@ -8273,22 +8292,18 @@ export function drawEditorialCorners(ctx: CanvasRenderingContext2D, stats: any, 
 }
 
 export function drawMusicPlayerPill(ctx: CanvasRenderingContext2D, stats: any, textColor: string, showLogo = true) {
-    const { s1, s2, s3 } = getDynamicStats(stats);
-    const colors = buildColors(textColor);
-
+    const { s1 } = getDynamicStats(stats);
+    
     const w = 900;
-    const h = 280;
+    const h = 360; // Taller to fit large buttons comfortably
     const x = 540 - w / 2;
-    const y = 250; // Moved UP just below the global logo
+    const y = 250; 
 
     // Dark frosted pill
     ctx.beginPath();
     ctx.roundRect(x, y, w, h, 30);
-    ctx.fillStyle = 'rgba(10, 15, 25, 0.9)'; // Deep dark blue/black
+    ctx.fillStyle = 'rgba(10, 15, 25, 0.95)'; // Deep dark blue/black
     ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
-    ctx.lineWidth = 2;
-    ctx.stroke();
 
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
@@ -8296,62 +8311,164 @@ export function drawMusicPlayerPill(ctx: CanvasRenderingContext2D, stats: any, t
     // Song Title (Activity Name)
     ctx.fillStyle = '#ffffff';
     let titleStr = stats.title || "Workout Session";
-    let titleFontSize = 48;
+    let titleFontSize = 52;
     ctx.font = `700 ${titleFontSize}px 'Plus Jakarta Sans'`;
 
-    // Auto-shrink title if it's too long (e.g. "Vuelta ciclista por la mañana")
-    if (ctx.measureText(titleStr).width > 750) {
-        titleFontSize = 38;
+    // Auto-shrink title if it's too long
+    if (ctx.measureText(titleStr).width > 700) {
+        titleFontSize = 42;
         ctx.font = `700 ${titleFontSize}px 'Plus Jakarta Sans'`;
-        if (ctx.measureText(titleStr).width > 750) {
+        if (ctx.measureText(titleStr).width > 700) {
             titleStr = titleStr.substring(0, 32) + '...';
         }
     }
-    ctx.fillText(titleStr, x + 50, y + 70);
+    ctx.fillText(titleStr, x + 60, y + 80);
 
-    // Artist (Sport Type) - Enforcing normalizeSport to fix "WeightTraining" -> "Training"
-    ctx.font = "500 32px 'Plus Jakarta Sans'";
-    ctx.fillStyle = 'rgba(255,255,255,0.6)';
-    ctx.fillText(normalizeSport(stats.type), x + 50, y + 120);
+    // Artist
+    ctx.font = "400 32px 'Plus Jakarta Sans'";
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.fillText(normalizeSport(stats.type), x + 60, y + 130);
+
+    // (+) Button top right
+    ctx.beginPath();
+    ctx.arc(x + w - 70, y + 90, 22, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    // plus lines
+    ctx.beginPath();
+    ctx.moveTo(x + w - 70, y + 90 - 10);
+    ctx.lineTo(x + w - 70, y + 90 + 10);
+    ctx.moveTo(x + w - 70 - 10, y + 90);
+    ctx.lineTo(x + w - 70 + 10, y + 90);
+    ctx.stroke();
 
     // Progress Bar Background
     ctx.beginPath();
-    ctx.roundRect(x + 50, y + 175, w - 100, 6, 3);
-    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.roundRect(x + 60, y + 195, w - 120, 5, 2.5);
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
     ctx.fill();
 
-    // Progress Bar Fill (Accent Color!)
+    // Progress Bar Fill
     ctx.beginPath();
-    ctx.roundRect(x + 50, y + 175, (w - 100) * 0.4, 6, 3);
-    ctx.fillStyle = colors.accent;
+    ctx.roundRect(x + 60, y + 195, (w - 120) * 0.35, 5, 2.5);
+    ctx.fillStyle = 'rgba(255,255,255,0.8)';
     ctx.fill();
 
     // Progress Bar Dot
     ctx.beginPath();
-    ctx.arc(x + 50 + (w - 100) * 0.4, y + 178, 10, 0, Math.PI * 2);
+    ctx.arc(x + 60 + (w - 120) * 0.35, y + 197.5, 7, 0, Math.PI * 2);
     ctx.fillStyle = '#ffffff';
     ctx.fill();
 
-    // Times / Stats (Explicitly adding units to avoid guessing)
-    ctx.font = "500 22px 'Plus Jakarta Sans'";
-    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    // Time Labels
+    ctx.font = "500 16px 'Plus Jakarta Sans'";
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
     ctx.textAlign = 'left';
-    ctx.fillText(`${s1.value} ${s1.label}`, x + 50, y + 215);
+    ctx.fillText("0:02", x + 60, y + 220);
     ctx.textAlign = 'right';
-    ctx.fillText(`- ${s2.value} ${s2.label}`, x + w - 50, y + 215);
+    let durationLabel = stats.hasDistance && stats.timeStr ? `-${stats.timeStr}` : "-4:25";
+    ctx.fillText(durationLabel, x + w - 60, y + 220);
 
-    // Play button (Accent Color!)
+    // Playback Controls Row
+    const controlY = y + 285;
+    const cx = x + w / 2;
+
+    // Shuffle Icon (Left)
+    const sx = cx - 280;
+    ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+    ctx.lineWidth = 3.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    
+    // Line 1: Top-left to bottom-right
     ctx.beginPath();
-    ctx.arc(x + w / 2, y + 225, 30, 0, Math.PI * 2);
-    ctx.fillStyle = colors.accent;
+    ctx.moveTo(sx - 14, controlY - 8);
+    ctx.lineTo(sx - 4, controlY - 8);
+    ctx.lineTo(sx + 4, controlY + 8);
+    ctx.lineTo(sx + 14, controlY + 8);
+    ctx.stroke();
+    
+    // Arrow 1
+    ctx.beginPath();
+    ctx.moveTo(sx + 8, controlY + 2);
+    ctx.lineTo(sx + 14, controlY + 8);
+    ctx.lineTo(sx + 8, controlY + 14);
+    ctx.stroke();
+
+    // Line 2: Bottom-left to top-right
+    ctx.beginPath();
+    ctx.moveTo(sx - 14, controlY + 8);
+    ctx.lineTo(sx - 4, controlY + 8);
+    ctx.lineTo(sx - 1, controlY + 2);
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.moveTo(sx + 1, controlY - 2);
+    ctx.lineTo(sx + 4, controlY - 8);
+    ctx.lineTo(sx + 14, controlY - 8);
+    ctx.stroke();
+
+    // Arrow 2
+    ctx.beginPath();
+    ctx.moveTo(sx + 8, controlY - 14);
+    ctx.lineTo(sx + 14, controlY - 8);
+    ctx.lineTo(sx + 8, controlY - 2);
+    ctx.stroke();
+
+    // Previous Icon
+    const px = cx - 130;
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.beginPath();
+    ctx.moveTo(px - 10, controlY); 
+    ctx.lineTo(px + 10, controlY - 12); 
+    ctx.lineTo(px + 10, controlY + 12); 
+    ctx.fill();
+    ctx.fillRect(px - 14, controlY - 12, 4, 24);
+
+    // Play/Pause button (huge gray circle as in the reference)
+    ctx.beginPath();
+    ctx.arc(cx, controlY, 48, 0, Math.PI * 2);
+    ctx.fillStyle = '#b3b3b3'; 
     ctx.fill();
 
-    // Pause bars
-    ctx.fillStyle = '#0a0f19'; // Match dark pill bg to punch through the white/accent circle
+    // Pause bars (dark pill background color)
+    ctx.fillStyle = '#0a0f19'; 
     ctx.beginPath();
-    ctx.roundRect(x + w / 2 - 10, y + 212, 6, 26, 2);
-    ctx.roundRect(x + w / 2 + 4, y + 212, 6, 26, 2);
+    ctx.roundRect(cx - 12, controlY - 15, 8, 30, 2);
+    ctx.roundRect(cx + 4, controlY - 15, 8, 30, 2);
     ctx.fill();
+
+    // Next Icon
+    const nx = cx + 130;
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.beginPath();
+    ctx.moveTo(nx + 10, controlY); 
+    ctx.lineTo(nx - 10, controlY - 12); 
+    ctx.lineTo(nx - 10, controlY + 12); 
+    ctx.fill();
+    ctx.fillRect(nx + 10, controlY - 12, 4, 24);
+
+    // Repeat Icon (Right)
+    const rx = cx + 270;
+    ctx.beginPath();
+    ctx.moveTo(rx + 4, controlY + 10);
+    ctx.lineTo(rx - 8, controlY + 10);
+    ctx.arcTo(rx - 14, controlY + 10, rx - 14, controlY + 4, 6);
+    ctx.lineTo(rx - 14, controlY - 4);
+    ctx.arcTo(rx - 14, controlY - 10, rx - 8, controlY - 10, 6);
+    ctx.lineTo(rx + 8, controlY - 10);
+    ctx.arcTo(rx + 14, controlY - 10, rx + 14, controlY - 4, 6);
+    ctx.lineTo(rx + 14, controlY + 4);
+    ctx.arcTo(rx + 14, controlY + 10, rx + 8, controlY + 10, 6);
+    ctx.lineTo(rx + 6, controlY + 10);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(rx + 8, controlY + 6);
+    ctx.lineTo(rx + 3, controlY + 10);
+    ctx.lineTo(rx + 8, controlY + 14);
+    ctx.stroke();
 }
 
 export function drawBoldEditorialDay(ctx: CanvasRenderingContext2D, stats: any, textColor: string, showLogo = true) {

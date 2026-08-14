@@ -11,7 +11,8 @@ export default defineConfig({
         rollupOptions: {
             input: {
                 main: 'index.html',
-                support: 'support.html'
+                support: 'support.html',
+                harness: 'harness.html'
             }
         }
     }

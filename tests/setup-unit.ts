@@ -94,3 +94,20 @@ if (typeof HTMLCanvasElement !== 'undefined') {
   restore: vi.fn()
 })) as any;
 }
+
+// 3. Mock Image loading in JSDOM to prevent hanging on asset requests
+if (typeof HTMLImageElement !== 'undefined') {
+  Object.defineProperty(HTMLImageElement.prototype, 'src', {
+    set(val) {
+      setTimeout(() => {
+        if (typeof this.onload === 'function') {
+          this.onload();
+        }
+      }, 0);
+    },
+    get() {
+      return '';
+    }
+  });
+}
+

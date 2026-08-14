@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canvas Sticker Harness - Scora</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/src/styles/styles.css">
+    <style>
+        :root {
+            --harness-bg: #090d16;
+            --sidebar-w: 420px;
+            --accent-cyan: #22d3ee;
+        }
+
+        body {
+            background-color: var(--harness-bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        /* Split Layout */
+        .harness-container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Left Side: Preview Panel */
+        .preview-pane {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            background: radial-gradient(circle at center, #151d30 0%, #090d16 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .canvas-container {
+            position: relative;
+            max-width: 100%;
+            max-height: calc(100vh - 120px);
+            aspect-ratio: 9/16;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: #1e293b;
+        }
+
+        #harness-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .canvas-actions {
+            margin-top: 1.5rem;
+            display: flex;
+            gap: 1rem;
+        }
+
+        /* Right Side: Sidebar Controls */
+        .control-sidebar {
+            width: var(--sidebar-w);
+            background: #0f172a;
+            border-left: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            box-shadow: -10px 0 30px rgba(0,0,0,0.2);
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .sidebar-header h1 {
+            font-size: 1.25rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            margin: 0;
+            color: #fff;
+        }
+
+        .btn-link-back {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: var(--transit);
+        }
+
+        .btn-link-back:hover {
+            color: var(--accent-cyan);
+        }
+
+        .sidebar-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+        }
+
+        /* Form styling */
+        .section-title {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            margin: 1.5rem 0 0.75rem 0;
+            padding-bottom: 0.25rem;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        .section-title:first-child {
+            margin-top: 0;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+        }
+
+        .form-control, select {
+            width: 100%;
+            background: #1e293b;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 6px;
+            padding: 0.6rem 0.75rem;
+            color: #fff;
+            font-family: inherit;
+            font-size: 0.9rem;
+            box-sizing: border-box;
+            transition: var(--transit);
+        }
+
+        .form-control:focus, select:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.15);
+        }
+
+        .inline-group {
+            display: grid;
+            grid-template-cols: 1fr 1fr;
+            gap: 0.75rem;
+        }
+
+        /* Buttons */
+        .btn-primary {
+            background: var(--accent-cyan);
+            color: #0f172a;
+            font-weight: 700;
+            border: none;
+            border-radius: 6px;
+            padding: 0.75rem 1.5rem;
+            font-family: inherit;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: var(--transit);
+            text-align: center;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -5px rgba(34, 211, 238, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+            font-weight: 600;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            padding: 0.75rem 1.5rem;
+            font-family: inherit;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: var(--transit);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* AI Auditor Section */
+        .audit-panel {
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .audit-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .audit-header h3 {
+            margin: 0;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .audit-status-badge {
+            font-size: 0.75rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 100px;
+            font-weight: 700;
+        }
+
+        .status-idle { background: rgba(255,255,255,0.1); color: #fff; }
+        .status-loading { background: rgba(234, 179, 8, 0.2); color: #facc15; }
+        .status-passed { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+        .status-failed { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+
+        .audit-results {
+            font-size: 0.8rem;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .audit-violation-item {
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+        }
+        
+        .audit-violation-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .violation-severity {
+            display: inline-block;
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            font-weight: 800;
+            padding: 0.05rem 0.3rem;
+            border-radius: 3px;
+            margin-bottom: 0.25rem;
+        }
+
+        .severity-high { background: rgba(239, 68, 68, 0.3); color: #f87171; }
+        .severity-medium { background: rgba(234, 179, 8, 0.3); color: #facc15; }
+        .severity-low { background: rgba(59, 130, 246, 0.3); color: #60a5fa; }
+
+        .violation-details {
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="harness-container">
+        <!-- Canvas Preview Pane -->
+        <div class="preview-pane">
+            <div class="canvas-container">
+                <canvas id="harness-canvas"></canvas>
+            </div>
+            
+            <div class="canvas-actions">
+                <button class="btn-secondary" id="btn-export">💾 Exportar Imagen (PNG)</button>
+            </div>
+        </div>
+
+        <!-- Sidebar Panel Controls -->
+        <div class="control-sidebar">
+            <div class="sidebar-header">
+                <h1>SCORA HARNESS</h1>
+                <a href="/" class="btn-link-back">← Volver</a>
+            </div>
+
+            <div class="sidebar-scroll">
+                
+                <!-- Presets & Templates -->
+                <div class="section-title">Template & Datos</div>
+                
+                <div class="form-group">
+                    <label for="select-template">Seleccionar Template</label>
+                    <select id="select-template">
+                        <!-- Populated dynamically from StickerRegistry -->
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="select-preset">Preajustes de Actividad (Demo)</label>
+                    <select id="select-preset">
+                        <option value="lululemon">Run: Lululemon 10k</option>
+                        <option value="carrera_mañana">Run: Carrera por la mañana</option>
+                        <option value="vuelta_ciclista">Ride: Vuelta ciclista</option>
+                        <option value="pesas">Gym: Entrenamiento Pesas</option>
+                    </select>
+                </div>
+
+                <!-- Color & Styling -->
+                <div class="section-title">Personalización Estética Title</div>
+
+                <div class="form-group">
+                    <label for="select-text-color">Color de Texto / Contraste</label>
+                    <select id="select-text-color">
+                        <option value="white">Blanco (Estándar)</option>
+                        <option value="black">Negro (Aislado)</option>
+                        <option value="#22d3ee">Cyan Accent (#22d3ee)</option>
+                        <option value="#ff007f">Pink Accent (#ff007f)</option>
+                        <option value="#eab308">Yellow Accent (#eab308)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="select-background">Fondo de Lienzo</label>
+                    <select id="select-background">
+                        <option value="dark-grid">Grid Deportivo Oscuro</option>
+                        <option value="solid-black">Negro Sólido</option>
+                        <option value="solid-slate">Gris Deportivo (Slate)</option>
+                        <option value="demo-photo-1">Foto Demo: Atardecer Corriendo</option>
+                        <option value="custom">Subir Foto Propia...</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="group-custom-bg" style="display:none;">
+                    <label for="input-bg-file">Seleccionar Foto de Fondo</label>
+                    <input type="file" id="input-bg-file" accept="image/*" class="form-control" />
+                </div>
+
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" id="check-logo" checked />
+                        Mostrar logotipo branding (SCORA.)
+                    </label>
+                </div>
+
+                <!-- Custom Stats Data Override -->
+                <div class="section-title">Modificar Datos (Tiempo Real)</div>
+
+                <div class="form-group">
+                    <label for="input-title">Título de Actividad</label>
+                    <input type="text" id="input-title" class="form-control" value="Lululemon 10k" />
+                </div>
+
+                <div class="inline-group">
+                    <div class="form-group">
+                        <label for="input-distance">Distancia (e.g. 10.05 km)</label>
+                        <input type="text" id="input-distance" class="form-control" value="10.05 km" />
+                    </div>
+                    <div class="form-group">
+                        <label for="input-duration">Duración (e.g. 41:46)</label>
+                        <input type="text" id="input-duration" class="form-control" value="41:46" />
+                    </div>
+                </div>
+
+                <div class="inline-group">
+                    <div class="form-group">
+                        <label for="input-pace">Ritmo / Velocidad (e.g. 4:09)</label>
+                        <input type="text" id="input-pace" class="form-control" value="4:09" />
+                    </div>
+                    <div class="form-group">
+                        <label for="input-pace-unit">Unidad Ritmo (e.g. /km)</label>
+                        <input type="text" id="input-pace-unit" class="form-control" value="/km" />
+                    </div>
+                </div>
+
+                <div class="inline-group">
+                    <div class="form-group">
+                        <label for="input-hr">Frec. Cardíaca (bpm)</label>
+                        <input type="number" id="input-hr" class="form-control" value="167" />
+                    </div>
+                    <div class="form-group">
+                        <label for="input-calories">Calorías (kcal)</label>
+                        <input type="number" id="input-calories" class="form-control" value="1068" />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="input-location">Ubicación / Geocode</label>
+                    <input type="text" id="input-location" class="form-control" value="Cuauhtémoc" />
+                </div>
+
+                <div class="form-group">
+                    <label for="input-date">Fecha (e.g. March 29, 2026)</label>
+                    <input type="text" id="input-date" class="form-control" value="March 29, 2026" />
+                </div>
+
+                <!-- AI compliance checks -->
+                <div class="audit-panel">
+                    <div class="audit-header">
+                        <h3>🤖 AI Rule Auditor</h3>
+                        <span class="audit-status-badge status-idle" id="audit-status">Idle</span>
+                    </div>
+                    <button class="btn-primary" id="btn-run-audit" style="width: 100%; font-size: 0.85rem; padding: 0.5rem 1rem;">
+                        Analizar Normativa (Gemini)
+                    </button>
+                    <div class="audit-results" id="audit-results-container">
+                        <p style="color: var(--text-secondary); margin: 0; font-style: italic; text-align: center;">
+                            Haz clic en el botón para auditar este template contra las reglas de diseño y variables.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Harness script bundle entry -->
+    <script type="module" src="/src/harness.ts"></script>
+</body>
+</html>
