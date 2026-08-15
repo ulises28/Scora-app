@@ -3138,7 +3138,7 @@ export function drawNarrativeHighlight(ctx: CanvasRenderingContext2D, stats: any
  */
 export function drawCondesaStack(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
     const { s1, s2, s3 } = getDynamicStats(stats);
-    
+
     const cy = 400;
     const startX = 110;
     const rightCol = 580;
@@ -3154,10 +3154,10 @@ export function drawCondesaStack(ctx: CanvasRenderingContext2D, stats: any, text
     const rawDate = stats.rawDate ? new Date(stats.rawDate) : new Date();
     const weekday = new Intl.DateTimeFormat('es-ES', { weekday: 'long' }).format(rawDate).toUpperCase();
     const dayNum = rawDate.getDate().toString().padStart(2, '0');
-    
+
     // Fallback if no start time is provided
     const startTimeResult = (stats.startTime || '10:24 AM').toUpperCase();
-    
+
     const locationNameResult = (stats.location || 'MEXICO').toUpperCase();
 
     ctx.save();
@@ -3175,13 +3175,13 @@ export function drawCondesaStack(ctx: CanvasRenderingContext2D, stats: any, text
     function renderSolidItem(text: string, x: number, y: number, size: number, weight = '900', spacing = '-0.05em') {
         ctx.font = `${weight} ${size}px 'Space Grotesk', sans-serif`;
         (ctx as any).letterSpacing = spacing;
-        
+
         // Optical alignment for leading '1' which has a large left-side bearing in Space Grotesk
         let offsetX = 0;
         if (text.startsWith('1')) {
             offsetX = -5;
         }
-        
+
         ctx.fillText(text, x + offsetX, y);
     }
 
@@ -3242,7 +3242,7 @@ export function drawStackedEditorial(ctx: CanvasRenderingContext2D, stats: any, 
     ctx.shadowBlur = 0;
 
     const mainFont = "'Archivo Black', sans-serif";
-    ctx.fillStyle = '#ffffff'; 
+    ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'alphabetic';
 
@@ -3251,7 +3251,7 @@ export function drawStackedEditorial(ctx: CanvasRenderingContext2D, stats: any, 
     const topW = Math.max(1, ctx.measureText(dayLabel).width);
     let topScale = safeW / topW;
     ctx.save();
-    ctx.translate(cx, 450); 
+    ctx.translate(cx, 450);
     ctx.scale(topScale, topScale);
     ctx.fillText(dayLabel, 0, 0);
     ctx.restore();
@@ -3272,10 +3272,10 @@ export function drawStackedEditorial(ctx: CanvasRenderingContext2D, stats: any, 
             const w = maxLng - minLng;
             const h = maxLat - minLat;
             const scale = Math.min(800 / (w || 1), 600 / (h || 1));
-            
+
             const getX = (lng: number) => cx + (lng - minLng - w / 2) * scale;
             const getY = (lat: number) => 800 - (lat - minLat - h / 2) * scale;
-            
+
             const step = Math.max(1, Math.floor(coords.length / 15));
             const simplified = [];
             for (let i = 0; i < coords.length; i += step) {
@@ -3284,7 +3284,7 @@ export function drawStackedEditorial(ctx: CanvasRenderingContext2D, stats: any, 
             if (simplified[simplified.length - 1] !== coords[coords.length - 1]) {
                 simplified.push(coords[coords.length - 1]);
             }
-            
+
             ctx.beginPath();
             ctx.moveTo(getX(simplified[0][1]), getY(simplified[0][0]));
             for (let i = 1; i < simplified.length; i++) {
@@ -3386,7 +3386,7 @@ export function drawThinPath(ctx: CanvasRenderingContext2D, stats: any, textColo
     const sansFont = "'Outfit', sans-serif";
 
     ctx.save();
-    
+
     // Apply Anti-Ghosting Shadow for contrast
     applyAntiGhostingShadow(ctx, textColor);
 
@@ -5814,7 +5814,7 @@ export function drawFinishLine(ctx: CanvasRenderingContext2D, stats: any, textCo
     ctx.beginPath();
     ctx.roundRect(cx - boxW / 2, boxY - boxH / 2, boxW, boxH, 210);
     ctx.clip();
-    
+
     const glossGrad = ctx.createLinearGradient(cx - boxW / 2, boxY - boxH / 2, cx - boxW / 2, boxY);
     glossGrad.addColorStop(0, 'rgba(255, 255, 255, 0.35)');
     glossGrad.addColorStop(1, 'rgba(255, 255, 255, 0.0)');
@@ -6308,7 +6308,7 @@ export function drawNoteAccentSticker(ctx: CanvasRenderingContext2D, stats: any,
     ctx.beginPath();
     ctx.roundRect(menuX, menuY, menuW, menuH, menuH / 2);
     ctx.clip();
-    
+
     const glossGrad = ctx.createLinearGradient(menuX, menuY, menuX, menuY + menuH / 2);
     glossGrad.addColorStop(0, isLightTheme ? 'rgba(255, 255, 255, 0.6)' : 'rgba(255, 255, 255, 0.35)');
     glossGrad.addColorStop(1, 'rgba(255, 255, 255, 0.0)');
@@ -8203,11 +8203,11 @@ export function drawEditorialCorners(ctx: CanvasRenderingContext2D, stats: any, 
 
 export function drawMusicPlayerPill(ctx: CanvasRenderingContext2D, stats: any, textColor: string, showLogo = true) {
     const { s1 } = getDynamicStats(stats);
-    
+
     const w = 900;
     const h = 360; // Taller to fit large buttons comfortably
     const x = 540 - w / 2;
-    const y = 250; 
+    const y = 250;
 
     // Dark frosted pill
     ctx.beginPath();
@@ -8290,7 +8290,7 @@ export function drawMusicPlayerPill(ctx: CanvasRenderingContext2D, stats: any, t
     ctx.lineWidth = 3.5;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    
+
     // Line 1: Top-left to bottom-right
     ctx.beginPath();
     ctx.moveTo(sx - 14, controlY - 8);
@@ -8298,7 +8298,7 @@ export function drawMusicPlayerPill(ctx: CanvasRenderingContext2D, stats: any, t
     ctx.lineTo(sx + 4, controlY + 8);
     ctx.lineTo(sx + 14, controlY + 8);
     ctx.stroke();
-    
+
     // Arrow 1
     ctx.beginPath();
     ctx.moveTo(sx + 8, controlY + 2);
@@ -8312,7 +8312,7 @@ export function drawMusicPlayerPill(ctx: CanvasRenderingContext2D, stats: any, t
     ctx.lineTo(sx - 4, controlY + 8);
     ctx.lineTo(sx - 1, controlY + 2);
     ctx.stroke();
-    
+
     ctx.beginPath();
     ctx.moveTo(sx + 1, controlY - 2);
     ctx.lineTo(sx + 4, controlY - 8);
@@ -8330,20 +8330,20 @@ export function drawMusicPlayerPill(ctx: CanvasRenderingContext2D, stats: any, t
     const px = cx - 130;
     ctx.fillStyle = 'rgba(255,255,255,0.7)';
     ctx.beginPath();
-    ctx.moveTo(px - 10, controlY); 
-    ctx.lineTo(px + 10, controlY - 12); 
-    ctx.lineTo(px + 10, controlY + 12); 
+    ctx.moveTo(px - 10, controlY);
+    ctx.lineTo(px + 10, controlY - 12);
+    ctx.lineTo(px + 10, controlY + 12);
     ctx.fill();
     ctx.fillRect(px - 14, controlY - 12, 4, 24);
 
     // Play/Pause button (huge gray circle as in the reference)
     ctx.beginPath();
     ctx.arc(cx, controlY, 48, 0, Math.PI * 2);
-    ctx.fillStyle = '#b3b3b3'; 
+    ctx.fillStyle = '#b3b3b3';
     ctx.fill();
 
     // Pause bars (dark pill background color)
-    ctx.fillStyle = '#0a0f19'; 
+    ctx.fillStyle = '#0a0f19';
     ctx.beginPath();
     ctx.roundRect(cx - 12, controlY - 15, 8, 30, 2);
     ctx.roundRect(cx + 4, controlY - 15, 8, 30, 2);
@@ -8353,9 +8353,9 @@ export function drawMusicPlayerPill(ctx: CanvasRenderingContext2D, stats: any, t
     const nx = cx + 130;
     ctx.fillStyle = 'rgba(255,255,255,0.7)';
     ctx.beginPath();
-    ctx.moveTo(nx + 10, controlY); 
-    ctx.lineTo(nx - 10, controlY - 12); 
-    ctx.lineTo(nx - 10, controlY + 12); 
+    ctx.moveTo(nx + 10, controlY);
+    ctx.lineTo(nx - 10, controlY - 12);
+    ctx.lineTo(nx - 10, controlY + 12);
     ctx.fill();
     ctx.fillRect(nx + 10, controlY - 12, 4, 24);
 
@@ -8780,12 +8780,23 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     const unscaledW = Math.ceil(textMetrics.width) + padding * 2;
     const unscaledH = Math.ceil(finalFontSize * 1.5);
 
+    // ── INVERSE-SCALE COMPENSATED SSAA PIPELINE ──
+    // 1. SSAA: Render at 3x to ensure pristine anti-aliasing.
+    // 2. Inverse-Scale Compensation: We scale the context by `finalScaleX` here 
+    //    so the squish happens internally. Then, we manually divide horizontal 
+    //    stroke offsets by `finalScaleX` to guarantee uniformly thick borders!
+    const SSAA = 3; 
+    const drawW = unscaledW * finalScaleX;
+    const drawH = unscaledH;
+    
     const glassCanvas = document.createElement('canvas');
-    glassCanvas.width = unscaledW;
-    glassCanvas.height = unscaledH;
+    glassCanvas.width = drawW * SSAA;
+    glassCanvas.height = drawH * SSAA;
     const gc = glassCanvas.getContext('2d');
 
     if (gc) {
+        // Apply the visual squish to the context itself!
+        gc.scale(SSAA * finalScaleX, SSAA); 
         const cx = unscaledW / 2;
         const cy = unscaledH / 2;
         const halfH = finalFontSize / 2;
@@ -8795,82 +8806,136 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
         gc.textBaseline = 'middle';
 
         // ══════════════════════════════════════════════════════════════
-        // CRITICAL: ZERO strokeText calls in this entire pipeline.
-        // strokeText strokes ALL sub-paths including inner counter holes
-        // of 0, 4, 5, 6, 8, 9 — there is NO Canvas 2D API to stroke
-        // only the outer contour. Glass rim is simulated with fillText
-        // + directional canvas shadows instead.
+        // NEW PIPELINE: Compensated Faux-Stroke Glass
         // ══════════════════════════════════════════════════════════════
 
-        // ── Layer 1: Ambient Glass Halo (soft glow around entire glyph) ──
-        gc.shadowColor = `rgba(${hr}, ${hg}, ${hb}, 0.80)`;
-        gc.shadowBlur = 18;
-        gc.shadowOffsetX = 0;
-        gc.shadowOffsetY = 0;
-        gc.fillStyle = 'rgba(255, 255, 255, 0.01)';
-        gc.fillText(mainVal, cx, cy);
+        const dr = Math.round(r * 0.4);
+        const dg = Math.round(g * 0.4);
+        const db = Math.round(b * 0.4);
+        const hr = Math.round(r + (255 - r) * 0.70);
+        const hg = Math.round(g + (255 - g) * 0.70);
+        const hb = Math.round(b + (255 - b) * 0.70);
 
-        // ── Layer 2: Top Specular Rim Highlight (white light hitting top edge) ──
-        gc.shadowColor = 'rgba(255, 255, 255, 0.98)';
-        gc.shadowBlur = 6;
-        gc.shadowOffsetX = 0;
-        gc.shadowOffsetY = -4;
-        gc.fillStyle = 'rgba(255, 255, 255, 0.01)';
-        gc.fillText(mainVal, cx, cy);
+        // ── Helper: Compensated Outer Rim ──
+        const createOuterRim = (colorOrGradient: string | CanvasGradient, visualLineWidth: number) => {
+            const edgeCanvas = document.createElement('canvas');
+            edgeCanvas.width = drawW * SSAA;
+            edgeCanvas.height = drawH * SSAA;
+            const ec = edgeCanvas.getContext('2d');
+            if (!ec) return edgeCanvas;
+            
+            ec.scale(SSAA * finalScaleX, SSAA);
+            ec.font = `${fontWeight} ${finalFontSize}px 'Montserrat', sans-serif`;
+            ec.textAlign = 'center';
+            ec.textBaseline = 'middle';
 
-        // ── Layer 3: Bottom Shadow Rim (dark grounding shadow under bottom edge) ──
-        gc.shadowColor = 'rgba(0, 0, 0, 0.75)';
-        gc.shadowBlur = 6;
-        gc.shadowOffsetX = 0;
-        gc.shadowOffsetY = 5;
-        gc.fillStyle = 'rgba(0, 0, 0, 0.01)';
-        gc.fillText(mainVal, cx, cy);
+            ec.fillStyle = colorOrGradient;
+            
+            // 1. Compensated Faux-Stroke (64 steps for absolute smoothness)
+            // By dividing the X-offset by finalScaleX, we push the fill further 
+            // out horizontally, perfectly countering the squish factor to create 
+            // an absolute uniformly thick 360-degree border. No strokeText bugs!
+            const steps = 64;
+            for (let i = 0; i < steps; i++) {
+                const angle = (i / steps) * Math.PI * 2;
+                const dx = (Math.cos(angle) * visualLineWidth) / finalScaleX; 
+                const dy = Math.sin(angle) * visualLineWidth;
+                ec.fillText(mainVal, cx + dx, cy + dy);
+            }
 
-        // ── Layer 4: Crystal Glass Body Fill (translucent gradient) ──
-        gc.shadowColor = 'transparent';
-        gc.shadowBlur = 0;
-        gc.shadowOffsetY = 0;
+            // 2. Carve out interior
+            ec.globalCompositeOperation = 'destination-out';
+            ec.fillStyle = 'black'; 
+            ec.fillText(mainVal, cx, cy);
+            
+            return edgeCanvas;
+        };
+
+        // ── Helper: Compensated Inner Bevel ──
+        const createBevel = (color: string | CanvasGradient, visualShiftX: number, visualShiftY: number) => {
+            const edgeCanvas = document.createElement('canvas');
+            edgeCanvas.width = drawW * SSAA;
+            edgeCanvas.height = drawH * SSAA;
+            const ec = edgeCanvas.getContext('2d');
+            if (!ec) return edgeCanvas;
+
+            ec.scale(SSAA * finalScaleX, SSAA);
+            ec.font = `${fontWeight} ${finalFontSize}px 'Montserrat', sans-serif`;
+            ec.textAlign = 'center';
+            ec.textBaseline = 'middle';
+
+            ec.fillStyle = color;
+            // Compensate the bevel shift!
+            const dx = visualShiftX / finalScaleX;
+            const dy = visualShiftY;
+            ec.fillText(mainVal, cx + dx, cy + dy);
+
+            ec.globalCompositeOperation = 'destination-out';
+            ec.fillText(mainVal, cx, cy);
+            
+            return edgeCanvas;
+        };
+        
+        // ── Helper: 1:1 Composite Drawer ──
+        // Since `gc` has a squish scale applied, drawing an already-squished
+        // offscreen canvas onto it will double-squish it! We must reset transform.
+        const composite1to1 = (canvas: HTMLCanvasElement) => {
+            gc.save();
+            gc.setTransform(1, 0, 0, 1, 0, 0); // Reset to physical 1:1 mapping
+            gc.drawImage(canvas, 0, 0);
+            gc.restore();
+        };
+
+        // ── Layer 1: Caustic Drop Shadow ──
+        const shadowCanvas = document.createElement('canvas');
+        shadowCanvas.width = drawW * SSAA;
+        shadowCanvas.height = drawH * SSAA;
+        const sc = shadowCanvas.getContext('2d');
+        if (sc) {
+            sc.scale(SSAA * finalScaleX, SSAA);
+            sc.font = `${fontWeight} ${finalFontSize}px 'Montserrat', sans-serif`;
+            sc.textAlign = 'center';
+            sc.textBaseline = 'middle';
+            
+            sc.shadowColor = `rgba(${hr}, ${hg}, ${hb}, 0.60)`;
+            sc.shadowBlur = 12;
+            sc.shadowOffsetY = 4;
+            sc.fillStyle = `rgba(${r}, ${g}, ${b}, 1.0)`;
+            sc.fillText(mainVal, cx, cy);
+
+            sc.globalCompositeOperation = 'destination-out';
+            sc.fillText(mainVal, cx, cy);
+            composite1to1(shadowCanvas);
+        }
+
+        // ── Layer 2: Dense Liquid Core ──
         const glassFill = gc.createLinearGradient(0, cy - halfH, 0, cy + halfH);
-        glassFill.addColorStop(0.00, 'rgba(255, 255, 255, 0.80)');
-        glassFill.addColorStop(0.12, `rgba(${hr}, ${hg}, ${hb}, 0.40)`);
-        glassFill.addColorStop(0.45, `rgba(${r}, ${g}, ${b}, 0.12)`);
-        glassFill.addColorStop(0.75, `rgba(${r}, ${g}, ${b}, 0.20)`);
-        glassFill.addColorStop(1.00, 'rgba(15, 15, 15, 0.60)');
+        glassFill.addColorStop(0.00, `rgba(255, 255, 255, 0.45)`);
+        glassFill.addColorStop(0.40, `rgba(${r}, ${g}, ${b}, 0.20)`);
+        glassFill.addColorStop(1.00, `rgba(${dr}, ${dg}, ${db}, 0.35)`);
         gc.fillStyle = glassFill;
-        gc.fillText(mainVal, cx, cy);
+        gc.fillText(mainVal, cx, cy); // Draws squished natively because gc is scaled
 
-        // ── Layer 5: -45° Specular Surface Glare Sweep (source-atop, clipped to glyph) ──
-        gc.globalCompositeOperation = 'source-atop';
-        const glareGrad = gc.createLinearGradient(
-            cx - halfH * 0.85, cy - halfH * 0.85,
-            cx + halfH * 0.85, cy + halfH * 0.85
-        );
-        glareGrad.addColorStop(0.00, 'rgba(255, 255, 255, 0.85)');
-        glareGrad.addColorStop(0.22, 'rgba(255, 255, 255, 0.30)');
-        glareGrad.addColorStop(0.50, 'rgba(255, 255, 255, 0.02)');
-        glareGrad.addColorStop(0.78, 'rgba(0, 0, 0, 0.18)');
-        glareGrad.addColorStop(1.00, 'rgba(0, 0, 0, 0.55)');
-        gc.fillStyle = glareGrad;
-        gc.fillRect(0, 0, unscaledW, unscaledH);
+        // ── Layer 3: Compensated 360-Degree Glowing Border ──
+        const borderFill = gc.createLinearGradient(0, cy - halfH, 0, cy + halfH);
+        borderFill.addColorStop(0.00, 'rgba(255, 255, 255, 0.95)');
+        borderFill.addColorStop(0.40, `rgba(${hr}, ${hg}, ${hb}, 0.75)`);
+        borderFill.addColorStop(0.70, `rgba(${r}, ${g}, ${b}, 0.50)`);
+        borderFill.addColorStop(1.00, `rgba(${dr}, ${dg}, ${db}, 0.95)`);
+        
+        const pristineRim = createOuterRim(borderFill, 2);
+        composite1to1(pristineRim);
 
-        // ── Layer 6: Bright Top-Edge Specular Pass (source-over fillText with top shadow) ──
-        gc.globalCompositeOperation = 'source-over';
-        gc.shadowColor = 'rgba(255, 255, 255, 0.95)';
-        gc.shadowBlur = 10;
-        gc.shadowOffsetX = 0;
-        gc.shadowOffsetY = -3;
-        gc.fillStyle = 'rgba(255, 255, 255, 0.25)';
-        gc.fillText(mainVal, cx, cy);
+        // ── Layer 4: Compensated Mathematical Bevels ──
+        const specularBevel = createBevel('rgba(255, 255, 255, 0.95)', -1.5, -1.5);
+        composite1to1(specularBevel);
 
-        // Reset shadows
-        gc.shadowColor = 'transparent';
-        gc.shadowBlur = 0;
-        gc.shadowOffsetY = 0;
+        const shadowBevel = createBevel(`rgba(${dr}, ${dg}, ${db}, 0.95)`, 1.5, 1.5);
+        composite1to1(shadowBevel);
+
     }
 
     // 4. Composite offscreen glass onto main canvas with grounding shadow
-    const drawW = unscaledW * finalScaleX;
-    const drawH = unscaledH;
     const drawX = x - drawW / 2;
     const drawY = heroY - drawH / 2;
 
@@ -8879,6 +8944,7 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.shadowBlur = 28;
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 12;
+    // drawW/drawH are passed to map 1:1 with the main canvas physical resolution!
     ctx.drawImage(glassCanvas, drawX, drawY, drawW, drawH);
     ctx.restore();
 
