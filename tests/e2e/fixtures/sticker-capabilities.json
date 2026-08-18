@@ -7,8 +7,7 @@
     "modes": {
       "run": {
         "metrics": [
-          "distance",
-          "time"
+          "distance"
         ],
         "labels": [
           "KM"
@@ -17,8 +16,7 @@
       },
       "bike": {
         "metrics": [
-          "distance",
-          "time"
+          "distance"
         ],
         "labels": [
           "KM"
@@ -43,7 +41,6 @@
       "run": {
         "metrics": [
           "distance",
-          "time",
           "date"
         ],
         "labels": [
@@ -54,7 +51,6 @@
       "bike": {
         "metrics": [
           "distance",
-          "time",
           "date"
         ],
         "labels": [
@@ -211,17 +207,31 @@
     "compact": false,
     "modes": {
       "run": {
-        "metrics": [],
-        "labels": [],
+        "metrics": [
+          "distance",
+          "pace"
+        ],
+        "labels": [
+          "KM",
+          "/KM"
+        ],
         "metadata": []
       },
       "bike": {
-        "metrics": [],
-        "labels": [],
+        "metrics": [
+          "distance",
+          "pace"
+        ],
+        "labels": [
+          "KM",
+          "KM/H"
+        ],
         "metadata": []
       },
       "workout": {
-        "metrics": [],
+        "metrics": [
+          "time"
+        ],
         "labels": [],
         "metadata": []
       }
@@ -488,7 +498,6 @@
         "metrics": [
           "distance",
           "pace",
-          "time",
           "date"
         ],
         "labels": [
@@ -624,8 +633,7 @@
     "modes": {
       "run": {
         "metrics": [
-          "distance",
-          "time"
+          "distance"
         ],
         "labels": [
           "KM"

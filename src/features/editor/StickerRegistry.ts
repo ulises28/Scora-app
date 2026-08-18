@@ -17,7 +17,7 @@ export const ACTIVE_STICKER_LIST: StickerDefinition[] = [
     { id: 'note-accent', supportsCustomColor: true, category: 'all', supportsBlackText: true, preferredCase: 'title', features: { distance: true, duration: true, paceSpeed: true }, render: Renderers.drawNoteAccentSticker },
     { id: 'narrative-highlight', category: 'all', supportsBlackText: true, preferredCase: 'lowercase', features: { distance: true, duration: true, paceSpeed: true, date: true, location: true }, render: Renderers.drawNarrativeHighlight },
     { id: 'micro-map-pill', supportsCustomColor: true, category: 'all', supportsBlackText: true, compact: true, features: { distance: true, duration: true, paceSpeed: true, map: true }, render: Renderers.drawMicroMapPill },
-    { id: 'chrome-v1', category: 'all', features: {}, render: Renderers.drawChromeHighContrastSticker },
+    { id: 'chrome-v1', category: 'all', features: { distance: true, duration: true, paceSpeed: true }, render: Renderers.drawChromeHighContrastSticker },
     { id: 'wave_title', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, duration: true, paceSpeed: true, date: true }, render: Renderers.drawWaveTitle },
     { id: 'music-player-pill', supportsCustomColor: true, category: 'all', supportsBlackText: true, compact: true, features: { distance: true, duration: true, paceSpeed: true }, render: Renderers.drawMusicPlayerPill },
     { id: 'floating-neon-path', supportsCustomColor: true, category: 'distance', supportsBlackText: true, compact: true, features: { distance: true, duration: true, paceSpeed: true, map: true }, render: Renderers.drawFloatingNeonPath },

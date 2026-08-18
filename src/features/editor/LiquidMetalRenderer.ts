@@ -67,6 +67,7 @@ uniform bool u_isImage;
 uniform vec3 u_metalColorDark;
 uniform vec3 u_metalColorLight;
 uniform float u_holoIntensity;
+uniform int u_themeMode; // 0 = Standard, 1 = Burnt Titanium
 
 in vec2 v_uv;
 out vec4 fragColor;
@@ -84,7 +85,7 @@ void main() {
     
     // WIDE SAMPLING: By sampling further away, we average out the 8-bit stair-stepping 
     // from the heightmap, completely eliminating the pixelated jagged banding!
-    float offset = 4.0; 
+    float offset = 8.0; // Increased to 8.0 to completely smooth out 8-bit quantization noise
     float hL = texture(u_image, texUV - vec2(texel.x * offset, 0.0)).r;
     float hR = texture(u_image, texUV + vec2(texel.x * offset, 0.0)).r;
     float hD = texture(u_image, texUV - vec2(0.0, texel.y * offset)).r;
@@ -135,17 +136,32 @@ void main() {
     // Calculate Fresnel (glancing angle) for physical coatings
     float fresnel = 1.0 - max(dot(N, viewDir), 0.0);
     
-    // Smoothly fade out extreme edge fresnel to prevent harsh, unblended colored halos
-    float edgeFade = smoothstep(0.0, 0.2, opacity);
+    // Smoothly fade out extreme edge fresnel using the normal's Z depth to prevent flat colored margins
+    float edgeFade = smoothstep(0.0, 0.2, opacity) * smoothstep(0.05, 0.3, N.z);
     
-    // Y2K Chromatic Iridescence (Thin-film interference)
-    // Upgraded to emulate the specific Cyan/Magenta split-lighting seen in premium Y2K renders
-    vec3 holoColor1 = vec3(0.0, 0.9, 1.0); // Cyan
-    vec3 holoColor2 = vec3(0.9, 0.1, 0.9); // Magenta
-    vec3 baseHolo = mix(holoColor1, holoColor2, smoothstep(-0.5, 0.5, N.x - N.y));
-    // Add the interference waves inside the neon bands
-    vec3 holo = baseHolo * (0.5 + 0.5 * cos(vec3(0.0, 2.0, 4.0) + (N.x + N.y) * 8.0 - u_time * 2.0));
-    color += holo * fresnel * u_holoIntensity * edgeFade * 1.5; // Boosted intensity for that glossy look
+    // Y2K Chromatic Iridescence or Burnt Titanium
+    if (u_themeMode == 1) {
+        // Burnt Titanium: Structured chromatic mapping based on Fresnel (glancing angle)
+        vec3 burntColor;
+        if (fresnel < 0.4) {
+            // Core to mid-glance: Dark metallic fading to intense Gold/Amber
+            burntColor = mix(vec3(0.0), vec3(0.9, 0.6, 0.1), smoothstep(0.1, 0.4, fresnel));
+        } else if (fresnel < 0.7) {
+            // Mid-glance to steep: Amber fading to Deep Purple/Magenta
+            burntColor = mix(vec3(0.9, 0.6, 0.1), vec3(0.6, 0.1, 0.8), smoothstep(0.4, 0.7, fresnel));
+        } else {
+            // Absolute edge: Deep Purple fading to Scorched Blue
+            burntColor = mix(vec3(0.6, 0.1, 0.8), vec3(0.1, 0.3, 0.9), smoothstep(0.7, 1.0, fresnel));
+        }
+        color += burntColor * edgeFade * 2.0;
+    } else {
+        // Standard Y2K Thin-film interference
+        vec3 holoColor1 = vec3(0.0, 0.9, 1.0); // Cyan
+        vec3 holoColor2 = vec3(0.9, 0.1, 0.9); // Magenta
+        vec3 baseHolo = mix(holoColor1, holoColor2, smoothstep(-0.5, 0.5, N.x - N.y));
+        vec3 holo = baseHolo * (0.5 + 0.5 * cos(vec3(0.0, 2.0, 4.0) + (N.x + N.y) * 8.0 - u_time * 2.0));
+        color += holo * fresnel * u_holoIntensity * edgeFade * 1.5;
+    }
     
     // Add sharp metallic rim lighting, tapered off at the absolute boundary
     color += u_metalColorLight * pow(fresnel, 5.0) * 1.5 * edgeFade;
@@ -158,8 +174,8 @@ void main() {
     vec3 lightDir2 = normalize(vec3(-0.6, 0.3, 0.8)); // Secondary cool rim light
     
     // Primary core highlight (Blinding white)
-    float spec1 = pow(max(dot(N, lightDir1), 0.0), 150.0) * edgeAlpha;
-    float spec2 = pow(max(dot(N, lightDir1), 0.0), 40.0) * edgeAlpha; 
+    float spec1 = pow(max(dot(N, lightDir1), 0.0), 80.0) * edgeAlpha; // Reduced from 150 to 80 to prevent 8-bit precision noise
+    float spec2 = pow(max(dot(N, lightDir1), 0.0), 30.0) * edgeAlpha; 
     
     // Secondary edge highlight (Adds complex studio depth)
     float spec3 = pow(max(dot(N, lightDir2), 0.0), 90.0) * edgeAlpha;
@@ -187,6 +203,11 @@ void main() {
     // Flare color tinted slightly purple/magenta as in the reference
     vec3 flareColor = mix(vec3(1.0), vec3(0.8, 0.4, 1.0), 0.5); 
     color += flareColor * (streak1 + streak2) * flareBase * 15.0; // Massive multiplier for the "bling"
+    
+    // Force the absolute border to be the darkest color (Crush all highlights at the edge)
+    // This gives the sticker a thick, heavy, grounded look instead of a glowing edge
+    float borderDarken = smoothstep(0.0, 0.25, N.z);
+    color *= borderDarken;
     
     // Output with smoothed alpha to prevent jagged borders
     fragColor = vec4(color, opacity * edgeAlpha);
@@ -546,11 +567,15 @@ export async function applyLiquidMetalEffect(sourceDataURL: string, width: numbe
   // Base Holographic/Iridescence intensity
   // Turned off for classic metals to preserve pure colors
   let holoIntensity = 0.0;
-  if (theme === 'titanium') holoIntensity = 1.0; // Extreme neon split-lighting for Titanium
+  let themeMode = 0; // 0 = Standard, 1 = Burnt Titanium
+  if (theme === 'titanium') themeMode = 1; 
   if (theme === 'obsidian') holoIntensity = 0.0;
 
   const locHolo = gl.getUniformLocation(program, "u_holoIntensity");
   if (locHolo) gl.uniform1f(locHolo, holoIntensity);
+  
+  const locTheme = gl.getUniformLocation(program, "u_themeMode");
+  if (locTheme) gl.uniform1i(locTheme, themeMode);
   
   // Tweak these values for the perfect "Liquid Chrome" look
   gl.uniform1f(gl.getUniformLocation(program, "u_softness"), 1.2); // Smoother gradients

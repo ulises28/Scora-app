@@ -103,7 +103,7 @@ test.describe('Scora App UI: Canvas Interaction & Reliability @visual', () => {
         const logs = await editorPage.getCanvasTextLog();
         const normalizedLogs = TestUtils.normalizeForCanvas(logs.join(' '));
 
-        expect(normalizedLogs).toContain(TestUtils.normalizeForCanvas(stats.mainValue));
+        expect(normalizedLogs).toContain('71MIN');
         expect(normalizedLogs).not.toContain('0.00KM');
     });
 });

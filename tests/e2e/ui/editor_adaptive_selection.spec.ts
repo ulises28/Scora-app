@@ -57,7 +57,7 @@ test.describe('Scora App UI: Data Fallback Intelligence @regression', () => {
         const feedPage = new FeedPage(page);
         const editorPage = new EditorPage(page);
 
-        const workoutSticker = TEMPLATE_REGISTRY.find(t => t.category === 'workout') || 
+        const workoutSticker = TEMPLATE_REGISTRY.find(t => t.id === 'micro-map-pill') || 
                                TEMPLATE_REGISTRY.find(t => t.id === 'science-pro')!;
         const runActivity = TestUtils.findFirstActivityWithDistance()!;
 

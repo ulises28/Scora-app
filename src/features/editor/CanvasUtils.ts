@@ -303,36 +303,73 @@ export function getDynamicStats(stats: any) {
     const type = normalizeSport(rawType);
     const hasMap = !!stats.polyline;
 
-    // 1. Initial Standard Metrics
-    const distText = stats.distanceVal || '0.00';
-    const paceText = (stats.subValue || '').split(' ')[0] || '0:00';
-    const paceLabel = (stats.subLabel && !stats.subLabel.includes('Heartrate') ? stats.subLabel : (type === 'Ride' ? 'AVG SPEED' : 'PACE')).toUpperCase();
-    const timeText = stats.timeStr || '0:00';
-
-    // 2. The Unique Slot Filler (Studio Precision)
     // Create a pool of available unique data points to avoid duplication
-    const pool: { value: string; label: string }[] = [];
+    const pool: { value: string; unit: string; label: string }[] = [];
     
-    if (hasDistance) {
-        pool.push({ value: distText, label: 'KM' });
-        pool.push({ value: paceText, label: paceLabel });
-        pool.push({ value: timeText, label: 'TIME' });
-    } else {
-        pool.push({ value: timeText, label: 'DURATION' });
-        const hr = stats.hr || stats.avgHeartrate || (stats.average_heartrate ? Math.round(stats.average_heartrate) : null);
-        if (hr) pool.push({ value: `${hr}`, label: 'BPM' });
-        
-        const maxHr = stats.max_heartrate || stats.maxHeartrate || (stats.max_hr ? Math.round(stats.max_hr) : null);
-        const sufferScore = stats.suffer_score || stats.sufferScore;
-        if (maxHr) pool.push({ value: `${maxHr}`, label: 'MAX HR' });
-        else if (sufferScore) pool.push({ value: `${sufferScore}`, label: 'SUFFER' });
+    // Parse time/duration correctly (e.g. from "1h 11m" into "71" and "min")
+    const timeText = stats.timeStr || '0:00';
+    let durationVal = timeText;
+    let durationUnit = '';
+    
+    // Attempt to convert "1h 11m" -> "71", "min"
+    if (timeText.includes('h') || timeText.includes('m')) {
+        const hMatch = timeText.match(/(\d+)h/);
+        const mMatch = timeText.match(/(\d+)m/);
+        let totalMins = 0;
+        if (hMatch) totalMins += parseInt(hMatch[1]) * 60;
+        if (mMatch) totalMins += parseInt(mMatch[1]);
+        if (totalMins > 0) {
+            durationVal = String(totalMins);
+            durationUnit = 'min';
+        }
     }
 
-    // Secondary Fallbacks (Metadata) to avoid duplication or '0' values
+    if (hasDistance) {
+        // Distance
+        const distText = stats.distanceVal || '0.00';
+        pool.push({ value: distText, unit: 'km', label: 'DISTANCE' });
+
+        // Pace / Speed
+        const subValFull = stats.subValue || '';
+        const paceVal = subValFull.split(' ')[0] || '0:00';
+        
+        const uType = type.toUpperCase();
+        if (uType === 'RIDE' || uType === 'BIKE' || uType === 'SKI') {
+            pool.push({ value: paceVal, unit: 'km/h', label: 'SPEED' });
+        } else if (uType === 'SWIM') {
+            pool.push({ value: paceVal, unit: '/100m', label: 'PACE' });
+        } else {
+            // Run, Walk, Hike
+            pool.push({ value: paceVal, unit: '/km', label: 'PACE' });
+        }
+
+        // Duration
+        pool.push({ value: durationVal, unit: durationUnit, label: 'DURATION' });
+    } else {
+        // Duration
+        pool.push({ value: durationVal, unit: durationUnit, label: 'DURATION' });
+
+        // Heart Rate
+        const hr = stats.hr || stats.avgHeartrate || (stats.average_heartrate ? Math.round(stats.average_heartrate) : null);
+        if (hr) {
+            pool.push({ value: `${hr}`, unit: 'bpm', label: 'HEART RATE' });
+        }
+        
+        // Suffer Score / Max HR
+        const maxHr = stats.max_heartrate || stats.maxHeartrate || (stats.max_hr ? Math.round(stats.max_hr) : null);
+        const sufferScore = stats.suffer_score || stats.sufferScore;
+        if (maxHr) {
+            pool.push({ value: `${maxHr}`, unit: 'bpm', label: 'MAX HR' });
+        } else if (sufferScore) {
+            pool.push({ value: `${sufferScore}`, unit: '', label: 'RELATIVE EFFORT' });
+        }
+    }
+
+    // Secondary Fallbacks (Metadata) to avoid duplication or empty slots
     const metaPool = [
-        { value: stats.startTime || '', label: 'START' },
-        { value: stats.date || '', label: 'DATE' },
-        { value: (stats.location && stats.location !== 'Unknown') ? stats.location : '', label: 'LOCATION' }
+        { value: stats.startTime || '', unit: '', label: 'START' },
+        { value: stats.date || '', unit: '', label: 'DATE' },
+        { value: (stats.location && stats.location !== 'Unknown') ? stats.location : '', unit: '', label: 'LOCATION' }
     ];
 
     metaPool.forEach(m => {
@@ -342,9 +379,9 @@ export function getDynamicStats(stats: any) {
     });
 
     // Final Slot Extraction
-    const s1 = pool[0] || { value: '-', label: '' };
-    const s2 = pool[1] || { value: '-', label: '' };
-    const s3 = pool[2] || { value: '-', label: '' };
+    const s1 = pool[0] || { value: '-', unit: '', label: '' };
+    const s2 = pool[1] || { value: '-', unit: '', label: '' };
+    const s3 = pool[2] || { value: '-', unit: '', label: '' };
 
     return { s1, s2, s3, hasMap, type };
 }

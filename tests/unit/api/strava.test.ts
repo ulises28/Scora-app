@@ -25,7 +25,7 @@ describe('formatActivityStats', () => {
         expect(result.timeStr).toBe('1h 1m');
         expect(result.mainValue).toBe('5.00 km');
         expect(result.mainLabel).toBe('Distance');
-        expect(result.subLabel).toBe('Pace');
+        expect(result.subLabel).toBe('/km');
         expect(result.subValue).toBe('5:00 /km');
         expect(result.hasMap).toBe(true);
         expect(result.calories).toBe('204'); // 852.1 kilojoules * 0.239
@@ -68,7 +68,7 @@ describe('formatActivityStats', () => {
         const result = formatActivityStats(mockRide as any);
 
         expect(result.mainLabel).toBe('Distance');
-        expect(result.subLabel).toBe('Avg Speed');
+        expect(result.subLabel).toBe('km/h');
         expect(result.subValue).toBe('16.9 km/h');
         expect(result.maxPace).toBe('27.7'); // 7.6 * 3.6
         expect(result.maxPaceLabel).toBe('Max Speed');
@@ -91,7 +91,7 @@ describe('formatActivityStats', () => {
         expect(result.type).toBe('Swim');
         expect(result.mainLabel).toBe('Distance');
         expect(result.mainValue).toBe('1.00 km');
-        expect(result.subLabel).toBe('Pace');
+        expect(result.subLabel).toBe('/100m');
         expect(result.subValue).toBe('2:00 /100m');
     });
 

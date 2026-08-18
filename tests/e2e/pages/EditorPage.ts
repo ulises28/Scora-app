@@ -60,9 +60,9 @@ export class EditorPage extends BasePage {
                 
                 const original = CanvasRenderingContext2D.prototype.fillText;
                 window._scoraCanvasTextLog = [];
-                window._scoraSettledId = 0;
-                window._scoraLastDrawId = 0;
-                window._scoraIsSettled = true;
+                window._scoraSettledId = window._scoraSettledId || 0;
+                window._scoraLastDrawId = window._scoraLastDrawId || 0;
+                window._scoraIsSettled = window._scoraIsSettled !== false;
                 window._scoraDrawCount = 0;
 
                 CanvasRenderingContext2D.prototype.fillText = function(text) {
@@ -166,6 +166,7 @@ export class EditorPage extends BasePage {
         // Returns instantly (usually <100ms) on success.
         const currentId = await this.page.evaluate(() => (window as any)._scoraSettledId || 0);
         
+        console.log("waitForDrawSettled START. id:", currentId, "isSettled:", await this.page.evaluate(() => (window as any)._scoraIsSettled), "settledId:", await this.page.evaluate(() => (window as any)._scoraSettledId), "lastDraw:", await this.page.evaluate(() => (window as any)._scoraLastDrawId));
         await this.page.waitForFunction((id) => {
             const win = window as any;
             return win._scoraIsSettled === true && win._scoraSettledId >= id;

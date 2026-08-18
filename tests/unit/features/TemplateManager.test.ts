@@ -91,7 +91,9 @@ describe('TemplateManager', () => {
             expect(manager.template).toBe(template);
             // 1 on init + 1 on click = 2
             const config = STICKER_REGISTRY[template];
-            const expectedColor = config?.supportsCustomColor ? '#ffffff' : 'white';
+            const expectedColor = template.startsWith('chrome') 
+                ? 'rosegold' 
+                : (config?.supportsCustomColor ? '#ffffff' : 'white');
             expect(mockOnChange).toHaveBeenLastCalledWith(template, expectedColor, true);
 
             // Exactly this dot should be active; all others must not be

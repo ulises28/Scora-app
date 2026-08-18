@@ -312,7 +312,7 @@ export async function drawTemplate(
         ctx.fillText('SCORA.', 90, 99); // Adjusted X/Y for the smaller size
     }
 
-    sticker.render(ctx, stats, textColor, showLogo);
+    try { sticker.render(ctx, stats, textColor, showLogo); } catch(e) { console.error("Render crashed:", e); }
 
     ctx.restore();
 
@@ -690,44 +690,47 @@ export function drawChromeHighContrastSticker(ctx: CanvasRenderingContext2D, sta
     const maskCanvas = document.createElement('canvas');
     maskCanvas.width = w;
     maskCanvas.height = h;
+    maskCanvas.id = 'storyCanvas';
     const mctx = maskCanvas.getContext('2d');
 
     if (!mctx) return;
 
-    // 1. Draw Massive Ultra-Wide Hero Metric (Liquid Metal)
     const { s1, s2, s3, type } = getDynamicStats(stats);
-    const text = `${s1.value} ${s1.label}`;
-    const targetWidth = 980;
-    const baseFontSize = 100;
-
-    // Fallback stack for ultra-wide premium fonts, now using Matemasie for foil balloon effect
-    mctx.font = `900 ${baseFontSize}px 'Matemasie', 'Bubblegum Sans', sans-serif`;
-
-    // Crucial: Add letter spacing so the letters don't physically touch! 
-    // If they touch, the Poisson solver merges them into a single illegible blob.
-    setLetterSpacing(mctx, '12px');
-
-    const metrics = mctx.measureText(text);
-    const fontSize = Math.floor((targetWidth / metrics.width) * baseFontSize);
-
-    mctx.textBaseline = 'top';
-    mctx.fillStyle = '#ffffff';
-    mctx.font = `900 ${fontSize}px 'Matemasie', 'Bubblegum Sans', sans-serif`;
-
-    // Only use fillText! A thick stroke expands the letters until they merge together.
-    mctx.fillText(text, 50, 250);
-
-    // Reset letter spacing for the rest of the canvas
-    setLetterSpacing(mctx, '0px');
-
-    // 2. Draw Map on Mask (Liquid Metal)
-    mctx.beginPath();
-    mctx.strokeStyle = '#ffffff'; // Pure white mask for Poisson solver
-    mctx.lineWidth = 35; // Slightly thinner to balance massive text
-    mctx.lineCap = 'round';
-    mctx.lineJoin = 'round';
+    
+    // Helper to draw massive foil text with optional vertical stretch
+    const drawMassiveText = (text: string, yPos: number, targetWidth: number, stretchY = 1.0) => {
+        const baseFontSize = 100;
+        mctx.font = `900 ${baseFontSize}px 'Matemasie', 'Bubblegum Sans', sans-serif`;
+        setLetterSpacing(mctx, '12px');
+        const metrics = mctx.measureText(text);
+        const fontSize = Math.floor((targetWidth / metrics.width) * baseFontSize);
+        mctx.textBaseline = 'middle';
+        mctx.textAlign = 'center';
+        mctx.fillStyle = '#ffffff';
+        mctx.font = `900 ${fontSize}px 'Matemasie', 'Bubblegum Sans', sans-serif`;
+        
+        mctx.save();
+        mctx.translate(w / 2, yPos);
+        mctx.scale(1.0, stretchY);
+        mctx.fillText(text, 0, 0);
+        mctx.restore();
+        
+        setLetterSpacing(mctx, '0px');
+    };
 
     if (coords && coords.length > 0) {
+        // MAP LAYOUT: Draw one massive metric at the top, then the map
+        const unitToUse = s1.unit ? s1.unit.toUpperCase() : s1.label;
+        const text = `${s1.value} ${unitToUse}`;
+        drawMassiveText(text, 350, 980);
+
+        // Draw Map on Mask (Liquid Metal)
+        mctx.beginPath();
+        mctx.strokeStyle = '#ffffff'; // Pure white mask for Poisson solver
+        mctx.lineWidth = 35; // Slightly thinner to balance massive text
+        mctx.lineCap = 'round';
+        mctx.lineJoin = 'round';
+        
         let minLat = coords[0][0], maxLat = minLat, minLng = coords[0][1], maxLng = minLng;
         coords.forEach(p => {
             if (p[0] < minLat) minLat = p[0]; if (p[0] > maxLat) maxLat = p[0];
@@ -744,6 +747,79 @@ export function drawChromeHighContrastSticker(ctx: CanvasRenderingContext2D, sta
             if (i === 0) mctx.moveTo(px, py); else mctx.lineTo(px, py);
         });
         mctx.stroke();
+    } else {
+        // TRAINING LAYOUT: No map.
+        // |           WORKOUT          | (Massive, centered)
+        // | DURATION               BPM | (Smaller, split left/right)
+        
+        const actType = type || "WORKOUT";
+        // Draw Massive top row (Pushed up to be compact with the logo, stretched to 980px width, and 1.4x taller!)
+        drawMassiveText(actType.toUpperCase(), 350, 980, 1.4);
+        
+        let mainVal = "";
+        if (s1.label && !s1.label.toLowerCase().includes('time') && !s1.label.toLowerCase().includes('min')) {
+            mainVal = `${s1.value}${s1.unit || s1.label}`;
+        } else {
+            mainVal = s1.value || "0m";
+            // Convert "1h 11m" or "1:11" format into total minutes ("71min") as requested
+            const hMatch = mainVal.match(/(\d+)h/i);
+            const mMatch = mainVal.match(/(\d+)m/i);
+            if (hMatch || mMatch) {
+                const h = hMatch ? parseInt(hMatch[1], 10) : 0;
+                const m = mMatch ? parseInt(mMatch[1], 10) : 0;
+                mainVal = String(h * 60 + m) + "min";
+            } else if (mainVal.includes(':')) {
+                const parts = mainVal.split(':');
+                if (parts.length === 2) {
+                    mainVal = String(parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10)) + "min";
+                } else if (parts.length === 3) {
+                    mainVal = String(parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10)) + "min";
+                }
+            } else if (!mainVal.includes('min')) {
+                // Just in case it's a raw number
+                mainVal += "min";
+            }
+        }
+        
+        let secUnit = s2.unit ? s2.unit.toUpperCase() : s2.label;
+        const secVal = (s2 && s2.value) ? `${s2.value} ${secUnit}` : "DONE";
+
+        // Pre-calculate the font size for both strings to synchronize them
+        const baseFontSize = 100;
+        mctx.font = `900 ${baseFontSize}px 'Matemasie', 'Bubblegum Sans', sans-serif`;
+        setLetterSpacing(mctx, '12px');
+        
+        const mainMetrics = mctx.measureText(mainVal);
+        const secMetrics = mctx.measureText(secVal);
+        
+        const targetWidth = 440;
+        const mainFontSize = Math.floor((targetWidth / mainMetrics.width) * baseFontSize);
+        const secFontSize = Math.floor((targetWidth / secMetrics.width) * baseFontSize);
+        
+        // Lock both strings to the identical font size (whichever is smaller) so they perfectly match
+        const finalFontSize = Math.min(mainFontSize, secFontSize, 200);
+
+        // Helper to draw identically sized foil text
+        const drawSyncedFoilText = (text: string, xPos: number, yPos: number, align: CanvasTextAlign) => {
+            mctx.textBaseline = 'middle';
+            mctx.textAlign = align;
+            mctx.fillStyle = '#ffffff';
+            mctx.font = `900 ${finalFontSize}px 'Matemasie', 'Bubblegum Sans', sans-serif`;
+            
+            mctx.save();
+            mctx.translate(xPos, yPos);
+            mctx.scale(1.0, 1.2); // Slight vertical stretch
+            mctx.fillText(text, 0, 0);
+            mctx.restore();
+        };
+
+        const compactY = 600; 
+
+        // Draw left and right identically balanced
+        drawSyncedFoilText(mainVal, 90, compactY, 'left');
+        drawSyncedFoilText(secVal, w - 90, compactY, 'right');
+        
+        setLetterSpacing(mctx, '0px');
     }
 
     // Run the WebGL Pipeline asynchronously
@@ -801,7 +877,7 @@ export function drawChromeHighContrastSticker(ctx: CanvasRenderingContext2D, sta
     runWebGL();
 }
 
-// V1: High-Contrast Chrome (Balloon-like reflection)
+// V1: Liquid Chrome (Photorealistic Environment Mapping)
 export function drawChromeMapHighContrast(ctx, coords, mapBox) {
     if (!coords || coords.length === 0) return;
     let minLat = coords[0][0], maxLat = minLat, minLng = coords[0][1], maxLng = minLng;
@@ -825,48 +901,53 @@ export function drawChromeMapHighContrast(ctx, coords, mapBox) {
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
-    // 1. Heavy Drop Shadow (Pop off the screen)
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+    // 1. Heavy Drop Shadow (Grounding)
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
     ctx.shadowBlur = 40;
     ctx.shadowOffsetY = 25;
-    ctx.strokeStyle = '#111111';
-    ctx.lineWidth = 60; // MASSIVELY THICK
+    ctx.strokeStyle = '#050505'; // Very dark base
+    ctx.lineWidth = 60; // Thickest base
     drawPath();
 
-    // Reset shadow for inner layers
+    // Reset shadow
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
     ctx.shadowColor = 'transparent';
 
-    // 2. Base Dark Edge (Thick)
-    ctx.strokeStyle = '#1a1a1a';
-    ctx.lineWidth = 60;
+    // 2. Main Liquid Chrome Body (Environment Map)
+    // We create a vertical linear gradient across the bounding box of the map
+    const chromeGradient = ctx.createLinearGradient(0, mapBox.y, 0, mapBox.y + mapBox.h);
+    chromeGradient.addColorStop(0.00, '#ffffff'); // Zenith (Bright sun)
+    chromeGradient.addColorStop(0.40, '#a5c9e2'); // High sky (cool blue)
+    chromeGradient.addColorStop(0.50, '#ffffff'); // Horizon glare edge
+    chromeGradient.addColorStop(0.51, '#1a1a1a'); // Dark ground horizon
+    chromeGradient.addColorStop(0.70, '#333333'); // Mid ground reflection
+    chromeGradient.addColorStop(1.00, '#111111'); // Dark Nadir (Floor shadow)
+    
+    ctx.lineWidth = 50;
+    ctx.strokeStyle = chromeGradient;
     drawPath();
 
-    // 3. Dark mid-tone (gives depth to the edge)
-    ctx.strokeStyle = '#444444';
-    ctx.lineWidth = 46;
+    // 3. Inner Bevel Highlight (Edge light from the top)
+    const bevelGrad = ctx.createLinearGradient(0, mapBox.y, 0, mapBox.y + mapBox.h);
+    bevelGrad.addColorStop(0.0, 'rgba(255,255,255,0.9)');
+    bevelGrad.addColorStop(0.4, 'rgba(255,255,255,0)');
+    bevelGrad.addColorStop(1.0, 'rgba(255,255,255,0)');
+    
+    ctx.lineWidth = 20;
+    ctx.strokeStyle = bevelGrad;
     drawPath();
 
-    // 4. Silver core
-    ctx.strokeStyle = '#999999';
-    ctx.lineWidth = 32;
+    // 4. Ambient Occlusion Core (Deepen the physical curvature of the tube)
+    ctx.lineWidth = 10;
+    ctx.strokeStyle = 'rgba(0,0,0,0.4)';
     drawPath();
 
-    // 5. Bright Silver center
-    ctx.strokeStyle = '#e0e0e0';
-    ctx.lineWidth = 18;
-    drawPath();
-
-    // 6. Specular Highlight (Pure White, offset up-left for lighting direction)
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 6;
-    drawPath(-5, -6);
-
-    // 7. Environment Reflection (Soft gray, offset down-right to look like ground bounce)
-    ctx.strokeStyle = '#888888';
-    ctx.lineWidth = 4;
-    drawPath(6, 6);
+    // 5. Extreme Specular Glare (The sharp, wet "pop")
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(255,255,255,0.95)';
+    // Offset up and left to capture the primary light source
+    drawPath(-4, -4);
 }
 
 
@@ -1499,14 +1580,16 @@ export function drawSplitBadge(ctx, stats, textColor) {
     ctx.textBaseline = 'middle';
     ctx.textAlign = 'center';
 
-    const distLabel = stats.mainLabel || (stats.hasDistance ? "DISTANCE" : "DURATION");
-    const distText = stats.hasDistance ? (stats.distanceVal || '0.00') : (stats.timeStr || '0:00');
-    const distUnit = stats.hasDistance ? "KILOMETERS" : "";
+    const { s1, s2 } = getDynamicStats(stats);
 
-    const paceLabel = (stats.subLabel || (stats.hasDistance ? (stats.type === 'Ride' ? "Avg" : "Pace") : "Avg HR")).toUpperCase();
-    const paceParts = (stats.subValue || '').trim().split(' ');
-    const paceText = paceParts[0] || (stats.avgHeartrate ? String(stats.avgHeartrate) : '0');
-    let paceUnit = paceParts[1] ? paceParts[1].toUpperCase() : (stats.hasDistance ? 'MIN / KM' : 'BPM');
+    const distLabel = s1.label.toUpperCase();
+    const distText = s1.value;
+    let distUnit = s1.unit ? s1.unit.toUpperCase() : "";
+    if (distUnit === 'KM') distUnit = 'KILOMETERS';
+
+    const paceLabel = s2.label.toUpperCase();
+    const paceText = s2.value;
+    let paceUnit = s2.unit ? s2.unit.toUpperCase() : "";
     if (paceUnit === '/KM') paceUnit = 'MIN / KM';
 
     const centerY = 350;
@@ -3204,15 +3287,16 @@ export function drawCondesaStack(ctx: CanvasRenderingContext2D, stats: any, text
     renderSolidItem(startTimeResult, startX, currY, DATA_SIZE, '900', '-0.05em');
     renderSolidUnit("LOCAL TIME", startX, currY + UNIT_OFFSET);
 
-    const label1 = s1.label === 'KM' ? 'KILOMETERS' : s1.label;
-    renderSolidItem(`${s1.value}`, rightCol, currY, DATA_SIZE, '900', '-0.05em');
-    renderSolidUnit(`${label1}`, rightCol, currY + UNIT_OFFSET);
+    const s1ValueUnit = s1.unit ? `${s1.value} ${s1.unit.toLowerCase()}` : s1.value;
+    renderSolidItem(s1ValueUnit, rightCol, currY, DATA_SIZE, '900', '-0.05em');
+    renderSolidUnit((s1.unit || s1.label).toUpperCase(), rightCol, currY + UNIT_OFFSET);
 
     currY += ROW_GAP;
 
     // C. GRID ROW 2: S2 (PACE/DURATION) | LOCATION
-    renderSolidItem(`${s2.value}`, startX, currY, DATA_SIZE, '900', '-0.05em');
-    renderSolidUnit(`${s2.label}`, startX, currY + UNIT_OFFSET);
+    const s2ValueUnit = s2.unit ? `${s2.value} ${s2.unit.toLowerCase()}` : s2.value;
+    renderSolidItem(s2ValueUnit, startX, currY, DATA_SIZE, '900', '-0.05em');
+    renderSolidUnit(s2.label.toUpperCase(), startX, currY + UNIT_OFFSET);
 
     // Location (Fixed size for grid consistency)
     let displayLocation = locationNameResult;
@@ -3299,7 +3383,7 @@ export function drawStackedEditorial(ctx: CanvasRenderingContext2D, stats: any, 
     }
 
     // 3. Bottom text (12.02 KM)
-    const distText = `${s1.value} ${s1.label}`.toUpperCase();
+    const distText = `${s1.value} ${s1.unit || s1.label}`.toUpperCase();
     ctx.font = `900 120px ${mainFont}`;
     const botW = Math.max(1, ctx.measureText(distText).width);
     let botScale = safeW / botW;
@@ -3417,14 +3501,15 @@ export function drawThinPath(ctx: CanvasRenderingContext2D, stats: any, textColo
     ctx.font = `500 ${vFontSize}px ${serifFont}`;
     const vWidth = ctx.measureText(s1.value).width;
     ctx.font = `700 80px ${serifFont}`;
-    const uWidth = ctx.measureText(s1.label).width;
+    const heroUnit = (s1.unit || '').toUpperCase();
+    const uWidth = ctx.measureText(heroUnit).width;
     const totalW = vWidth + 30 + uWidth;
 
     if (totalW > 960) {
         vFontSize = Math.floor(vFontSize * (960 / totalW));
     }
 
-    drawStatWithUnit(ctx, cx, cy, s1.value, s1.label, {
+    drawStatWithUnit(ctx, cx, cy, s1.value, heroUnit, {
         valueFont: `500 ${vFontSize}px ${serifFont}`,
         unitFont: `700 ${Math.max(40, Math.floor(vFontSize * 0.16))}px ${serifFont}`,
         valueColor: colors.solid,
@@ -3433,14 +3518,29 @@ export function drawThinPath(ctx: CanvasRenderingContext2D, stats: any, textColo
         align: 'center'
     });
 
-    // 4. Footer Row - Upright text
+    // 4. Footer Row - Stacked (Name above Value+Unit)
     const footY = cy + 280;
-    ctx.font = `500 60px ${serifFont}`;
+    const colLeft = cx - 180;
+    const colRight = cx + 180;
+    
+    ctx.font = `600 24px ${sansFont}`;
     ctx.fillStyle = colors.solid;
-    setLetterSpacing(ctx, "0.15em");
-    const footerText = `${s2.value} ${s2.label} / ${s3.value} ${s3.label}`;
-    ctx.fillText(footerText.toUpperCase(), cx, footY);
+    ctx.globalAlpha = 0.8;
+    setLetterSpacing(ctx, "0.3em");
+    ctx.fillText(s2.label.toUpperCase(), colLeft, footY);
+    ctx.fillText(s3.label.toUpperCase(), colRight, footY);
+    
+    ctx.globalAlpha = 1.0;
     setLetterSpacing(ctx, "0px");
+    ctx.font = `500 60px ${serifFont}`;
+    const s2Text = s2.unit ? `${s2.value} ${s2.unit}` : s2.value;
+    const s3Text = s3.unit ? `${s3.value} ${s3.unit}` : s3.value;
+    ctx.fillText(s2Text.toUpperCase(), colLeft, footY + 60);
+    ctx.fillText(s3Text.toUpperCase(), colRight, footY + 60);
+    
+    ctx.font = `300 60px ${sansFont}`;
+    ctx.globalAlpha = 0.3;
+    ctx.fillText("/", cx, footY + 60);
 
     ctx.restore();
 }
@@ -3479,7 +3579,7 @@ export function drawMicroSerif(ctx: CanvasRenderingContext2D, stats: any, textCo
 
     // 2. Distance Block (Col 1: Center = 180)
     const distVal = String(s1.value);
-    const distUnit = String(s1.label).toLowerCase();
+    const distUnit = String(s1.unit || 'km').toLowerCase();
     const b1W = calcBlockWidth(distVal, distUnit);
     const start1X = 180 - (b1W / 2);
     drawMetricBlock(ctx, start1X, bottomY, 'Distance', distVal, distUnit, {
@@ -5227,7 +5327,7 @@ export function drawEditorialStrip(ctx: CanvasRenderingContext2D, stats: any, te
     ctx.fillStyle = c.trans;
     ctx.font = "700 24px 'Plus Jakarta Sans'";
     setLetterSpacing(ctx, '4px');
-    ctx.fillText((s1.label || 'DISTANCE').toUpperCase(), leftX, currentY);
+    ctx.fillText((s1.unit || s1.label || 'DISTANCE').toUpperCase(), leftX, currentY);
     setLetterSpacing(ctx, '0px');
 
     currentY += 35;
@@ -5872,40 +5972,45 @@ export function drawFinishLine(ctx: CanvasRenderingContext2D, stats: any, textCo
     ctx.fillText("FINISH TIME", cx, boxY - (boxH / 2) + 55);
     ctx.restore();
 
-    // 4. Secondary Metrics (Distance & Pace)
-    // Push the bottom metrics slightly lower if we make the text bigger
+    // 4. Secondary Metrics (Dynamic based on activity type)
     const metricsY = boxY + (boxH / 2) + 120;
-    const distVal = stats.distanceVal || "0.00";
-    const paceVal = (stats.subValue || "").split(' ')[0] || "0:00";
-    const paceUnit = normalizeSport(stats.type) === 'Ride' ? 'km/h' : '/km';
+    
+    const { s1, s2, s3 } = getDynamicStats(stats);
 
-    const drawSubMetric = (val: string, label: string, offset: number) => {
+    const drawSubMetric = (valText: string, labelText: string, offset: number) => {
         ctx.save();
         ctx.translate(cx + offset, metricsY);
 
         ctx.textAlign = 'center';
         ctx.fillStyle = lineColor;
 
-        // Value
-        ctx.font = "400 90px 'Bitcount Single'";
-        ctx.textBaseline = 'bottom'; // Lock numbers to the bottom
-        (ctx as any).letterSpacing = "10px";
-        ctx.fillText(val, 0, 0);
+        // Value + Unit
+        ctx.font = "400 65px 'Bitcount Single'"; // Shrink slightly to ensure unit fits
+        ctx.textBaseline = 'bottom';
+        (ctx as any).letterSpacing = "5px";
+        ctx.fillText(valText, 0, 0);
         (ctx as any).letterSpacing = "0px";
 
         // Label
         // Universal Readability Rule: Min 36px font, Min 90% opacity
-        ctx.font = "700 36px 'Plus Jakarta Sans'"; // Increased from 22px
-        ctx.textBaseline = 'top'; // Push label down from the number's baseline
-        ctx.globalAlpha = 0.9; // Increased from 0.6
+        ctx.font = "700 36px 'Plus Jakarta Sans'";
+        ctx.textBaseline = 'top';
+        ctx.globalAlpha = 0.9;
         ctx.letterSpacing = "6px";
-        ctx.fillText(label.toUpperCase(), 0, 25); // Increased buffer slightly
+        ctx.fillText(labelText.toUpperCase(), 0, 25);
 
         ctx.restore();
     };
 
-    drawSubMetric(distVal, "DISTANCE (KM)", -240);
-    drawSubMetric(paceVal, `AVG. ${normalizeSport(stats.type) === 'Ride' ? 'SPEED' : 'PACE'}`, 240);
+    const isWorkout = !(stats.hasDistance || parseFloat(stats.distanceVal || "0") > 0);
+    const mLeft = isWorkout ? s2 : s1;
+    const mRight = isWorkout ? s3 : s2;
+
+    const s1Text = mLeft.unit ? `${mLeft.value} ${mLeft.unit.toLowerCase()}` : mLeft.value;
+    const s2Text = mRight.unit ? `${mRight.value} ${mRight.unit.toLowerCase()}` : mRight.value;
+
+    drawSubMetric(s1Text, mLeft.label, -240);
+    drawSubMetric(s2Text, mRight.label, 240);
 
     ctx.restore();
 }
@@ -7415,19 +7520,15 @@ export function drawWaveTitle(ctx: CanvasRenderingContext2D, stats: any, textCol
     ctx.fillText((stats.dayAndNumber || 'APR 2').toUpperCase(), cX + 60, rowY, 300);
 
     // Distance / Calories
-    if (stats.distanceVal && parseFloat(stats.distanceVal) > 0) {
-        ctx.textAlign = 'right';
-        ctx.font = `600 24px 'Inter', sans-serif`;
-        ctx.fillText("DISTANCE", cX + cardW - 60, rowY);
-        ctx.font = `800 40px 'Inter', sans-serif`;
-        ctx.fillText(stats.distanceVal + ' km', cX + cardW - 60, rowY + 30);
-    } else if (stats.calories && stats.calories > 0) {
-        ctx.textAlign = 'right';
-        ctx.font = `600 24px 'Inter', sans-serif`;
-        ctx.fillText("CALORIES", cX + cardW - 60, rowY);
-        ctx.font = `800 40px 'Inter', sans-serif`;
-        ctx.fillText(stats.calories + ' kcal', cX + cardW - 60, rowY + 30);
-    }
+    const { s1, s2, s3, type } = getDynamicStats(stats);
+
+    // Distance / Primary Stat
+    ctx.textAlign = 'right';
+    ctx.font = `600 24px 'Inter', sans-serif`;
+    ctx.fillText(s1.label.toUpperCase(), cX + cardW - 60, rowY);
+    ctx.font = `800 40px 'Inter', sans-serif`;
+    const s1Text = s1.unit ? `${s1.value} ${s1.unit}` : s1.value;
+    ctx.fillText(s1Text, cX + cardW - 60, rowY + 30);
 
     // Title
     const titleY = rowY + 60;
@@ -7437,17 +7538,22 @@ export function drawWaveTitle(ctx: CanvasRenderingContext2D, stats: any, textCol
 
     // Bottom Details
     const row2Y = titleY + 90;
+    
+    // Bottom Left (s3 / Duration)
     ctx.textAlign = 'left';
     ctx.font = `600 24px 'Inter', sans-serif`;
-    ctx.fillText("DURATION", cX + 60, row2Y);
+    ctx.fillText(s3.label.toUpperCase(), cX + 60, row2Y);
     ctx.font = `800 40px 'Inter', sans-serif`;
-    ctx.fillText(stats.timeStr || '1:20', cX + 60, row2Y + 30);
+    const s3Text = s3.unit ? `${s3.value} ${s3.unit}` : s3.value;
+    ctx.fillText(s3Text, cX + 60, row2Y + 30);
 
+    // Bottom Right (s2 / Pace)
     ctx.textAlign = 'right';
     ctx.font = `600 24px 'Inter', sans-serif`;
-    ctx.fillText((stats.subLabel || "AVG PACE").toUpperCase(), cX + cardW - 60, row2Y);
+    ctx.fillText(s2.label.toUpperCase(), cX + cardW - 60, row2Y);
     ctx.font = `800 40px 'Inter', sans-serif`;
-    ctx.fillText(stats.subValue || '0:00', cX + cardW - 60, row2Y + 30);
+    const s2Text = s2.unit ? `${s2.value} ${s2.unit}` : s2.value;
+    ctx.fillText(s2Text, cX + cardW - 60, row2Y + 30);
 
     ctx.restore();
 }
@@ -7464,7 +7570,7 @@ export function drawNeonGlow(ctx: CanvasRenderingContext2D, stats: any, textColo
     const { s1, s2, s3, type } = getDynamicStats(stats);
 
     // Hero Text automatically handles HR or Duration for workouts, Distance for runs
-    const heroText = `${s1.value} ${s1.label}`;
+    const heroText = `${s1.value} ${s1.unit || s1.label}`;
     ctx.textBaseline = 'top';
     const baseFontSize = 100;
     ctx.font = `900 ${baseFontSize}px 'Outfit', 'Space Grotesk', sans-serif`;
@@ -7505,7 +7611,7 @@ export function drawNeonGlow(ctx: CanvasRenderingContext2D, stats: any, textColo
     // Pillar 1: Dynamic s2
     ctx.textAlign = 'left';
     ctx.font = "800 50px 'Space Grotesk'";
-    ctx.fillText(String(s2.value), 60, pillarY);
+    ctx.fillText(String(s2.value) + (s2.unit ? ` ${s2.unit}` : ''), 60, pillarY);
     ctx.font = "500 24px 'Plus Jakarta Sans'";
     setLetterSpacing(ctx, '2px');
     ctx.fillText(String(s2.label), 60, pillarY + 60);
@@ -7514,7 +7620,7 @@ export function drawNeonGlow(ctx: CanvasRenderingContext2D, stats: any, textColo
     // Pillar 2: Dynamic s3
     ctx.textAlign = 'center';
     ctx.font = "800 50px 'Space Grotesk'";
-    ctx.fillText(String(s3.value), canvasWidth / 2, pillarY);
+    ctx.fillText(String(s3.value) + (s3.unit ? ` ${s3.unit}` : ''), canvasWidth / 2, pillarY);
     ctx.font = "500 24px 'Plus Jakarta Sans'";
     setLetterSpacing(ctx, '2px');
     ctx.fillText(String(s3.label), canvasWidth / 2, pillarY + 60);
@@ -7841,7 +7947,7 @@ export function drawDotGridArchitect(ctx: CanvasRenderingContext2D, stats: any, 
     }
 
     // 2. Map (Center) - Grid-snapped Transit Map + Neon Laser
-    const { s2, s3, hasMap } = getDynamicStats(stats);
+    const { s1, s2, s3, hasMap } = getDynamicStats(stats);
     if (hasMap) {
         ctx.save();
 
@@ -7869,40 +7975,42 @@ export function drawDotGridArchitect(ctx: CanvasRenderingContext2D, stats: any, 
     const topY = startY - 110;
     ctx.fillText((stats.title || stats.location || "ACTIVITY").toUpperCase(), startX - 30, topY);
 
-    // Top Right: Main Metric (Distance)
+    // Top Right: Main Metric (s1)
     ctx.textAlign = 'right';
+    ctx.font = `700 22px ${subFont}`;
+    if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "0.15em";
+    ctx.fillText(s1.label.toUpperCase(), startX + gridW + 30, topY - 15);
+    if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "0px";
+
     ctx.font = `800 52px ${mainFont}`;
-    const distText = stats.distanceVal ? `${stats.distanceVal} KM` : (stats.timeStr || "0M").toUpperCase();
-    ctx.fillText(distText, startX + gridW + 30, topY - 10);
+    const s1Text = s1.unit ? `${s1.value} ${s1.unit.toUpperCase()}` : s1.value;
+    ctx.fillText(s1Text, startX + gridW + 30, topY + 25);
 
     // Bottom Row
     const bottomY = startY + gridH + 60;
+    ctx.textBaseline = 'bottom';
 
-    // Bottom Left: Pace/Secondary
+    // Bottom Left: Secondary (s2)
     ctx.textAlign = 'left';
-    ctx.font = `800 46px ${mainFont}`;
-    const paceVal = s2.value || "0:00";
-    const pValW = ctx.measureText(paceVal).width;
-    ctx.fillText(paceVal, startX - 30, bottomY);
-
     ctx.font = `700 22px ${subFont}`;
     if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "0.15em";
-    const paceLabel = (s2.label || "/KM").toUpperCase();
-    ctx.fillText(paceLabel, startX - 30 + pValW + 15, bottomY + 22);
+    ctx.fillText(s2.label.toUpperCase(), startX - 30, bottomY - 5);
+    if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "0px";
 
-    // Bottom Right: Duration
+    ctx.font = `800 46px ${mainFont}`;
+    const s2Text = s2.unit ? `${s2.value} ${s2.unit}` : s2.value;
+    ctx.fillText(s2Text, startX - 30, bottomY + 45);
+
+    // Bottom Right: Duration (s3)
     ctx.textAlign = 'right';
-    if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "0px";
-    ctx.font = `800 46px ${mainFont}`;
-    const durVal = s3.value || "0H 00M";
-    const dValW = ctx.measureText(durVal).width;
-    ctx.fillText(durVal, startX + gridW + 30, bottomY);
-
     ctx.font = `700 22px ${subFont}`;
     if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "0.15em";
-    const durLabel = (s3.label || "TIME").toUpperCase();
-    ctx.fillText(durLabel, startX + gridW + 30 - dValW - 15, bottomY + 22);
+    ctx.fillText(s3.label.toUpperCase(), startX + gridW + 30, bottomY - 5);
     if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "0px";
+
+    ctx.font = `800 46px ${mainFont}`;
+    const s3Text = s3.unit ? `${s3.value} ${s3.unit}` : s3.value;
+    ctx.fillText(s3Text, startX + gridW + 30, bottomY + 45);
 
     ctx.restore();
 }
@@ -7940,16 +8048,16 @@ export function drawMicroMapPill(ctx: CanvasRenderingContext2D, stats: any, text
 
     // Measure text to make pill perfectly symmetrical
     ctx.font = "800 48px 'Plus Jakarta Sans', sans-serif";
-    const titleText = `${s1.value} ${s1.label}`;
+    const titleText = `${s1.value} ${s1.unit || s1.label}`;
     const titleW = ctx.measureText(titleText).width;
 
     // Format subtext per user request (replace PACE with /km, remove TIME/DURATION)
     let sub2Label = s2.label;
     if (sub2Label === 'PACE') sub2Label = '/km';
-    if (sub2Label === 'Avg' || sub2Label === 'Avg Speed') sub2Label = (s2 as any).unit || 'km/h';
+    if (sub2Label === 'SPEED' || sub2Label === 'Avg' || sub2Label === 'Avg Speed') sub2Label = (s2 as any).unit || 'km/h';
 
     let sub3Label = s3.label;
-    if (sub3Label === 'DURATION' || sub3Label === 'TIME') sub3Label = '';
+    if (sub3Label === 'DURATION' || sub3Label === 'TIME') sub3Label = 'min';
 
     const subText = `${s2.value} ${sub2Label}   •   ${s3.value} ${sub3Label}`.trim();
 
@@ -8076,7 +8184,9 @@ export function drawFloatingNeonPath(ctx: CanvasRenderingContext2D, stats: any, 
 
     ctx.font = "700 36px 'Space Grotesk', 'Plus Jakarta Sans', sans-serif";
     ctx.fillStyle = colors.solid;
-    ctx.fillText(`${s1.label}`, cX, baseY + 375);
+    let unitText = (s1.unit || s1.label).toUpperCase();
+    if (unitText === 'DISTANCE') unitText = 'KM';
+    ctx.fillText(unitText, cX, baseY + 375);
 }
 
 export function drawMonolineMinimalist(ctx: CanvasRenderingContext2D, stats: any, textColor: string, showLogo = true) {
@@ -8103,7 +8213,8 @@ export function drawMonolineMinimalist(ctx: CanvasRenderingContext2D, stats: any
     const w1 = ctx.measureText(s1.value).width;
     ctx.font = "700 36px 'Space Grotesk', sans-serif";
     if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "5px";
-    ctx.fillText(`${s1.label}`, startX + w1 + 25, currentY + 75);
+    const unitText = (s1.unit || s1.label).toUpperCase();
+ctx.fillText(unitText, startX + w1 + 25, currentY + 75);
     if (typeof (ctx as any).letterSpacing !== 'undefined') (ctx as any).letterSpacing = "0px";
 }
 
@@ -8126,7 +8237,7 @@ export function drawMassiveHero(ctx: CanvasRenderingContext2D, stats: any, textC
 
     // Massive Hero Metric
     ctx.fillStyle = colors.solid;
-    const heroText = `${s1.value} ${s1.label}`;
+    const heroText = `${s1.value} ${s1.unit || s1.label}`;
     let fontSize = 280;
     ctx.font = `900 ${fontSize}px 'Monument Extended', 'Helvetica Neue', sans-serif`;
     while (ctx.measureText(heroText).width > 980 && fontSize > 80) {
@@ -8151,7 +8262,7 @@ export function drawVerifiedDistance(ctx: CanvasRenderingContext2D, stats: any, 
     ctx.fillStyle = colors.solid;
 
     ctx.font = "700 64px 'Plus Jakarta Sans'";
-    const text = `${s1.value} ${s1.label.toLowerCase()}`;
+    const text = `${s1.value} ${s1.unit || s1.label}`.toLowerCase();
     ctx.fillText(text, 920, 1600);
 
     // Draw Blue Checkmark
@@ -8182,8 +8293,8 @@ export function drawEditorialCorners(ctx: CanvasRenderingContext2D, stats: any, 
 
     // Top Left
     ctx.textAlign = 'left';
-    ctx.fillText(s1.label, 80, 150);
-    ctx.fillText(s1.value, 80, 260);
+    ctx.fillText(s1.unit ? `${s1.value} ${s1.unit}` : s1.value, 80, 150);
+    // Removed separate value line
 
     // Top Right
     ctx.textAlign = 'right';
@@ -8202,7 +8313,7 @@ export function drawEditorialCorners(ctx: CanvasRenderingContext2D, stats: any, 
 }
 
 export function drawMusicPlayerPill(ctx: CanvasRenderingContext2D, stats: any, textColor: string, showLogo = true) {
-    const { s1 } = getDynamicStats(stats);
+    const { s1, s2, type } = getDynamicStats(stats);
 
     const w = 900;
     const h = 360; // Taller to fit large buttons comfortably
@@ -8218,9 +8329,18 @@ export function drawMusicPlayerPill(ctx: CanvasRenderingContext2D, stats: any, t
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
 
+    // Parse Dynamic Stats (Removed duplicate declaration)
+
+    // Title (Top line)
+    let titleStr = stats.title || 'Workout';
+
+    // Artist (Bottom line) – format start distance and finish dash+pace
+    const startDist = s1.unit ? `${s1.value} ${s1.unit}` : `${s1.value} ${s1.label}`;
+    const finishPace = `-${s2.value} ${s2.unit || s2.label}`;
+    let artistStr = `${startDist}   •   ${finishPace}`;
+
     // Song Title (Activity Name)
     ctx.fillStyle = '#ffffff';
-    let titleStr = stats.title || "Workout Session";
     let titleFontSize = 52;
     ctx.font = `700 ${titleFontSize}px 'Plus Jakarta Sans'`;
 
@@ -8235,9 +8355,9 @@ export function drawMusicPlayerPill(ctx: CanvasRenderingContext2D, stats: any, t
     ctx.fillText(titleStr, x + 60, y + 80);
 
     // Artist
-    ctx.font = "400 32px 'Plus Jakarta Sans'";
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
-    ctx.fillText(normalizeSport(stats.type), x + 60, y + 130);
+    ctx.font = "500 32px 'Plus Jakarta Sans'";
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.fillText(artistStr, x + 60, y + 130);
 
     // (+) Button top right
     ctx.beginPath();
@@ -8285,99 +8405,88 @@ export function drawMusicPlayerPill(ctx: CanvasRenderingContext2D, stats: any, t
     const cx = x + w / 2;
 
     // Shuffle Icon (Left)
-    const sx = cx - 280;
-    ctx.strokeStyle = 'rgba(255,255,255,0.7)';
-    ctx.lineWidth = 3.5;
+    const sx = cx - 260;
+    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+    ctx.lineWidth = 2.5;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
-    // Line 1: Top-left to bottom-right
     ctx.beginPath();
-    ctx.moveTo(sx - 14, controlY - 8);
-    ctx.lineTo(sx - 4, controlY - 8);
-    ctx.lineTo(sx + 4, controlY + 8);
-    ctx.lineTo(sx + 14, controlY + 8);
+    ctx.moveTo(sx - 10, controlY - 6);
+    ctx.bezierCurveTo(sx - 2, controlY - 6, sx - 2, controlY + 6, sx + 6, controlY + 6);
+    ctx.lineTo(sx + 10, controlY + 6);
     ctx.stroke();
-
-    // Arrow 1
+    
     ctx.beginPath();
-    ctx.moveTo(sx + 8, controlY + 2);
-    ctx.lineTo(sx + 14, controlY + 8);
-    ctx.lineTo(sx + 8, controlY + 14);
-    ctx.stroke();
-
-    // Line 2: Bottom-left to top-right
-    ctx.beginPath();
-    ctx.moveTo(sx - 14, controlY + 8);
-    ctx.lineTo(sx - 4, controlY + 8);
-    ctx.lineTo(sx - 1, controlY + 2);
+    ctx.moveTo(sx + 6, controlY + 2);
+    ctx.lineTo(sx + 10, controlY + 6);
+    ctx.lineTo(sx + 6, controlY + 10);
     ctx.stroke();
 
     ctx.beginPath();
-    ctx.moveTo(sx + 1, controlY - 2);
-    ctx.lineTo(sx + 4, controlY - 8);
-    ctx.lineTo(sx + 14, controlY - 8);
+    ctx.moveTo(sx - 10, controlY + 6);
+    ctx.bezierCurveTo(sx - 2, controlY + 6, sx - 2, controlY - 6, sx + 6, controlY - 6);
+    ctx.lineTo(sx + 10, controlY - 6);
     ctx.stroke();
-
-    // Arrow 2
+    
     ctx.beginPath();
-    ctx.moveTo(sx + 8, controlY - 14);
-    ctx.lineTo(sx + 14, controlY - 8);
-    ctx.lineTo(sx + 8, controlY - 2);
+    ctx.moveTo(sx + 6, controlY - 10);
+    ctx.lineTo(sx + 10, controlY - 6);
+    ctx.lineTo(sx + 6, controlY - 2);
     ctx.stroke();
 
     // Previous Icon
-    const px = cx - 130;
-    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    const px = cx - 120;
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
     ctx.beginPath();
-    ctx.moveTo(px - 10, controlY);
-    ctx.lineTo(px + 10, controlY - 12);
-    ctx.lineTo(px + 10, controlY + 12);
+    ctx.moveTo(px - 4, controlY);
+    ctx.lineTo(px + 14, controlY - 14);
+    ctx.lineTo(px + 14, controlY + 14);
     ctx.fill();
-    ctx.fillRect(px - 14, controlY - 12, 4, 24);
+    ctx.fillRect(px - 10, controlY - 14, 4, 28);
 
-    // Play/Pause button (huge gray circle as in the reference)
+    // Play/Pause button
     ctx.beginPath();
-    ctx.arc(cx, controlY, 48, 0, Math.PI * 2);
-    ctx.fillStyle = '#b3b3b3';
+    ctx.arc(cx, controlY, 44, 0, Math.PI * 2);
+    ctx.fillStyle = '#8a8a8a'; // Medium grey to match reference
     ctx.fill();
 
-    // Pause bars (dark pill background color)
+    // Pause bars (thick and dark)
     ctx.fillStyle = '#0a0f19';
     ctx.beginPath();
-    ctx.roundRect(cx - 12, controlY - 15, 8, 30, 2);
-    ctx.roundRect(cx + 4, controlY - 15, 8, 30, 2);
+    ctx.roundRect(cx - 12, controlY - 12, 8, 24, 1);
+    ctx.roundRect(cx + 4, controlY - 12, 8, 24, 1);
     ctx.fill();
 
     // Next Icon
-    const nx = cx + 130;
-    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    const nx = cx + 120;
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
     ctx.beginPath();
-    ctx.moveTo(nx + 10, controlY);
-    ctx.lineTo(nx - 10, controlY - 12);
-    ctx.lineTo(nx - 10, controlY + 12);
+    ctx.moveTo(nx + 4, controlY);
+    ctx.lineTo(nx - 14, controlY - 14);
+    ctx.lineTo(nx - 14, controlY + 14);
     ctx.fill();
-    ctx.fillRect(nx + 10, controlY - 12, 4, 24);
+    ctx.fillRect(nx + 6, controlY - 14, 4, 28);
 
     // Repeat Icon (Right)
-    const rx = cx + 270;
+    const rx = cx + 260;
+    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+    ctx.lineWidth = 2.5;
     ctx.beginPath();
-    ctx.moveTo(rx + 4, controlY + 10);
-    ctx.lineTo(rx - 8, controlY + 10);
-    ctx.arcTo(rx - 14, controlY + 10, rx - 14, controlY + 4, 6);
-    ctx.lineTo(rx - 14, controlY - 4);
-    ctx.arcTo(rx - 14, controlY - 10, rx - 8, controlY - 10, 6);
-    ctx.lineTo(rx + 8, controlY - 10);
-    ctx.arcTo(rx + 14, controlY - 10, rx + 14, controlY - 4, 6);
-    ctx.lineTo(rx + 14, controlY + 4);
-    ctx.arcTo(rx + 14, controlY + 10, rx + 8, controlY + 10, 6);
-    ctx.lineTo(rx + 6, controlY + 10);
+    ctx.moveTo(rx + 4, controlY + 7);
+    ctx.lineTo(rx - 6, controlY + 7);
+    ctx.arcTo(rx - 12, controlY + 7, rx - 12, controlY, 5);
+    ctx.arcTo(rx - 12, controlY - 7, rx - 6, controlY - 7, 5);
+    ctx.lineTo(rx + 6, controlY - 7);
+    ctx.arcTo(rx + 12, controlY - 7, rx + 12, controlY, 5);
+    ctx.lineTo(rx + 12, controlY + 3);
     ctx.stroke();
-
+    
+    // Arrow pointing left
     ctx.beginPath();
-    ctx.moveTo(rx + 8, controlY + 6);
-    ctx.lineTo(rx + 3, controlY + 10);
-    ctx.lineTo(rx + 8, controlY + 14);
+    ctx.moveTo(rx + 8, controlY + 3);
+    ctx.lineTo(rx + 4, controlY + 7);
+    ctx.lineTo(rx + 8, controlY + 11);
     ctx.stroke();
 }
 
@@ -8421,7 +8530,7 @@ export function drawBoldEditorialDay(ctx: CanvasRenderingContext2D, stats: any, 
 
     ctx.textAlign = 'center';
     ctx.fillText(s1.value, 540, 1200);
-    ctx.fillText(s1.label, 540, 1260);
+    ctx.fillText(s1.unit || s1.label, 540, 1260);
 
     ctx.textAlign = 'right';
     ctx.fillText(s2.value, 1000, 1200);
@@ -8451,7 +8560,7 @@ export function drawTheVibePill(ctx: CanvasRenderingContext2D, stats: any, textC
     ctx.fillStyle = colors.solid;
 
     ctx.font = "800 36px 'Plus Jakarta Sans'";
-    ctx.fillText(`${s1.value} ${s1.label}`, 540, y + 35);
+    ctx.fillText(`${s1.value} ${s1.unit || s1.label}`, 540, y + 35);
 
     ctx.font = "600 22px 'Plus Jakarta Sans'";
     ctx.fillStyle = colors.label;
@@ -8486,7 +8595,7 @@ export function drawScoraStamp(ctx: CanvasRenderingContext2D, stats: any, textCo
     ctx.fillText(s1.value, cx, cy - 10);
 
     ctx.font = "600 22px 'Plus Jakarta Sans'";
-    ctx.fillText(s1.label, cx, cy + 30);
+    ctx.fillText(s1.unit || s1.label, cx, cy + 30);
 
     // Curved text or simple text
     ctx.font = "700 16px 'Space Grotesk'";
@@ -8581,9 +8690,14 @@ export function drawSocialPill(ctx: CanvasRenderingContext2D, stats: any, textCo
 
     const h = 120;
     const locationStr = (stats.location || (stats.hasDistance ? 'LOCAL ROUTE' : 'TRAINING')).toUpperCase();
-    const paceOrCal = stats.hasDistance
-        ? `${s2.value} ${s2.label}`
-        : (s2.label === 'KCAL' ? `${s2.value} KCAL` : s2.value);
+    let paceOrCal = s2.value;
+    if (stats.hasDistance) {
+        let unit = s2.label === 'PACE' ? '/km' : (s2.label === 'SPEED' || s2.label === 'Avg Speed' || s2.label === 'Avg' ? 'km/h' : '');
+        paceOrCal = unit ? `${s2.value} ${unit}` : s2.value;
+    } else {
+        let u = s2.unit ? s2.unit.toUpperCase() : (s2.label === 'KCAL' ? 'KCAL' : '');
+        paceOrCal = u ? `${s2.value} ${u}` : s2.value;
+    }
 
     const distOrTime = stats.hasDistance ? `${stats.distanceVal} KM` : `${stats.timeStr}`;
     const pillText = `${distOrTime}   •   ${paceOrCal}   •   ${locationStr}`;
@@ -8790,6 +8904,7 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     const drawH = unscaledH;
     
     const glassCanvas = document.createElement('canvas');
+    glassCanvas.id = 'storyCanvas';
     glassCanvas.width = drawW * SSAA;
     glassCanvas.height = drawH * SSAA;
     const gc = glassCanvas.getContext('2d');

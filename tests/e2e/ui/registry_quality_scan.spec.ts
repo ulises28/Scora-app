@@ -61,6 +61,7 @@ test.describe('Scora App UI: Registry Integrity (Deep Regression) [ @regression 
                 const { id } = template;
                 
                 // 🛡️ FRESH SLATE: Prevent text accumulation from previous stickers
+                console.log("Scanning template:", id);
                 await editorPage.clearCanvasTextLog();
                 
                 await editorPage.selectTemplate(id);
