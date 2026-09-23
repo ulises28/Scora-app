@@ -1,9 +1,35 @@
-import { ACTIVE_STICKER_LIST, ARCHIVED_STICKER_LIST } from './features/editor/StickerRegistry';
+import { ACTIVE_STICKER_LIST, ARCHIVED_STICKER_LIST, STICKER_REGISTRY } from './features/editor/StickerRegistry';
 import { drawTemplate, exportCanvas } from './features/editor/CanvasPainter';
+import { StickerStats } from './api/strava';
 
-// --- ACTIVITY PRESETS ---
-const PRESETS: Record<string, any> = {
+export interface HarnessPreset {
+    id: string;
+    name: string;
+    title: string;
+    distance: string;
+    duration: string;
+    pace: string;
+    paceUnit: string;
+    hr: string;
+    calories: string;
+    location: string;
+    date: string;
+    startTime: string;
+    dayName: string;
+    dayAndNumber: string;
+    avgTemp: string;
+    maxPace: string;
+    type: string;
+    hasMap: boolean;
+    polyline: string;
+    recommendedTemplates?: string[];
+}
+
+// --- EXPANDED ACTIVITY PRESETS (INCLUDING EDGE CASES & STRESS TESTS) ---
+const PRESETS: Record<string, HarnessPreset> = {
     lululemon: {
+        id: "lululemon",
+        name: "Run: Lululemon 10k (Standard)",
         title: "Lululemon 10k",
         distance: "10.05 km",
         duration: "41:46",
@@ -12,9 +38,19 @@ const PRESETS: Record<string, any> = {
         hr: "167",
         calories: "1068",
         location: "Cuauhtémoc",
-        date: "March 29, 2026"
+        date: "March 29, 2026",
+        startTime: "07:30 AM",
+        dayName: "Sunday",
+        dayAndNumber: "Sun 29",
+        avgTemp: "17",
+        maxPace: "3:48",
+        type: "Run",
+        hasMap: true,
+        polyline: "yhpuBrtl|QZWr@[NKRIP]@MEEg@Ko@Ck@GkAIkJ{@a@BmGg@OCKEKU?_@F]TeDj@wFPeCP{Al@aHvAwQNkAViEz@yIb@aGRmBLkBR{Dd@qFBmAG}@Kq@eByEs@eBWaA[w@Qk@{@oBOs@MeAEOa@g@m@eAmDuJUc@[u@c@yAMMC@?FF\\v@dB~CvId@hALd@VfBJP\\`@T`@jAdDdAfCRr@dAnCt@fBHZFd@J|@?`@q@pHIh@KnAQrAIbAEjAKj@Y`DKTMFWB}CWe@?i@DsARuBp@wAp@_Az@g@j@u@jAYt@Qx@ObB@pBD|@Ht@f@lDP~@`@pAdBfFvAnI`@lBh@bBN`@^n@NPPLL@DAHKDKZqEBMBADF?L]fFo@hGAZi@pGE|@S`BYdES~ACp@[bDYjE_@rDG`AQ`BEbASbBKbAIRKF_@@u@NiAf@UR}@pASl@Gj@AjBSxB@JDHpAL`@PBA?WPqAR_AN]bA_BZo@Jo@TyBLIzAAp@MNOh@qALQb@_@HSB_@ES]iAKQKK_@UiA_@GOAe@Bg@ZgDDw@J_Af@kHLcADu@XyC^eFFWLKNG^@rCXrARxBTvAHz@@p@CdBLtCHJL?HCFCDo@X_@^"
     },
     carrera_mañana: {
+        id: "carrera_mañana",
+        name: "Run: Carrera por la mañana",
         title: "Carrera por la mañana",
         distance: "10.40 km",
         duration: "59:14",
@@ -23,29 +59,99 @@ const PRESETS: Record<string, any> = {
         hr: "123",
         calories: "1075",
         location: "Roma Norte, CDMX",
-        date: "April 22, 2026"
+        date: "April 22, 2026",
+        startTime: "06:15 AM",
+        dayName: "Wednesday",
+        dayAndNumber: "Wed 22",
+        avgTemp: "14",
+        maxPace: "4:50",
+        type: "Run",
+        hasMap: true,
+        polyline: "yhpuBrtl|QZWr@[NKRIP]@MEEg@Ko@Ck@GkAIkJ{@a@BmGg@OCKEKU?_@F]TeDj@wFPeCP{Al@aHvAwQNkAViEz@yIb@aGRmBLkBR{Dd@qFBmAG}@Kq@eByEs@eBWaA[w@Qk@{@oBOs@MeAEOa@g@m@eAmDuJUc@[u@c@yAMMC@?FF"
     },
     vuelta_ciclista: {
+        id: "vuelta_ciclista",
+        name: "Ride: Vuelta ciclista matutina",
         title: "Vuelta ciclista matutina",
-        distance: "5.00 km",
-        duration: "31:01",
-        pace: "9.7",
+        distance: "25.40 km",
+        duration: "52:18",
+        pace: "29.1",
         paceUnit: "km/h",
-        hr: "97",
-        calories: "230",
-        location: "Cuauhtémoc",
-        date: "March 24, 2026"
+        hr: "142",
+        calories: "620",
+        location: "Paseo de la Reforma",
+        date: "March 24, 2026",
+        startTime: "08:00 AM",
+        dayName: "Tuesday",
+        dayAndNumber: "Tue 24",
+        avgTemp: "21",
+        maxPace: "44.5",
+        type: "Ride",
+        hasMap: true,
+        polyline: "yhpuBrtl|QZWr@[NKRIP]@MEEg@Ko@Ck@GkAIkJ{@a@BmGg@OCKEKU?_@F]TeDj@wFPeCP{Al@aHvAwQNkAViEz@yIb@aGRmBLkBR{Dd@qFBmAG}@Kq@eByEs@eBWaA[w@Qk@{@oBOs@MeAEOa@g@m@eAmDuJUc@[u@c@yAMMC@?FF\\v@dB~CvId@hALd@VfBJP\\`@T`@jAdDdAfCRr@dAnCt@fBHZFd@J"
     },
     pesas: {
-        title: "Entrenamiento con pesas",
+        id: "pesas",
+        name: "Gym: Entrenamiento con pesas (No Map / No Dist)",
+        title: "Entrenamiento de Fuerza",
         distance: "0.00 km",
         duration: "1h 11m",
         pace: "122",
         paceUnit: "bpm",
         hr: "122",
         calories: "450",
-        location: "SECRET LOCATION",
-        date: "March 2, 2026"
+        location: "Gym Polanco, CDMX",
+        date: "March 2, 2026",
+        startTime: "06:30 PM",
+        dayName: "Monday",
+        dayAndNumber: "Mon 02",
+        avgTemp: "22",
+        maxPace: "155",
+        type: "WeightTraining",
+        hasMap: false,
+        polyline: ""
+    },
+    stress_text: {
+        id: "stress_text",
+        name: "Edge Case: Ultra Long Strings (Overflow Test)",
+        title: "Maratón Internacional Nocturna de la Ciudad de México - Edición Especial Bicentenario 2026",
+        distance: "42.195 km",
+        duration: "3h 48m 12s",
+        pace: "5:24",
+        paceUnit: "min/km",
+        hr: "174",
+        calories: "3250",
+        location: "Avenida Paseo de la Reforma 222, Cuauhtémoc, Ciudad de México",
+        date: "September 30, 2026",
+        startTime: "05:00:00 AM",
+        dayName: "Wednesday",
+        dayAndNumber: "Wed 30",
+        avgTemp: "12",
+        maxPace: "4:10",
+        type: "Run",
+        hasMap: true,
+        polyline: "yhpuBrtl|QZWr@[NKRIP]@MEEg@Ko@Ck@GkAIkJ{@a@BmGg@OCKEKU?_@F]TeDj@wFPeCP{Al@aHvAwQNkAViEz@yIb@aGRmBLkBR{Dd@qFBmAG}@Kq@eByEs@eBWaA[w@Qk@{@oBOs@MeAEOa@g@m@eAmDuJUc@[u@c@yAMMC@?FF"
+    },
+    stress_numbers: {
+        id: "stress_numbers",
+        name: "Edge Case: Nulls / Empty Metrics (Zero State)",
+        title: "Paseo Rápido",
+        distance: "0.00 km",
+        duration: "00:00",
+        pace: "",
+        paceUnit: "",
+        hr: "",
+        calories: "",
+        location: "",
+        date: "Today",
+        startTime: "12:00 PM",
+        dayName: "Today",
+        dayAndNumber: "Today",
+        avgTemp: "",
+        maxPace: "",
+        type: "Workout",
+        hasMap: false,
+        polyline: ""
     }
 };
 
@@ -74,9 +180,13 @@ const auditStatus = document.getElementById('audit-status') as HTMLSpanElement;
 const auditResultsContainer = document.getElementById('audit-results-container') as HTMLDivElement;
 const canvasContainer = document.querySelector('.canvas-container') as HTMLDivElement;
 
+// Dynamic preset state store to allow full customisation
+let currentPresetState: HarnessPreset = { ...PRESETS.lululemon };
+
 // --- INITIALIZE DROPDOWNS ---
 function initDropdowns() {
     // Populate templates dropdown
+    selectTemplate.innerHTML = '';
     ACTIVE_STICKER_LIST.forEach(s => {
         const opt = document.createElement('option');
         opt.value = s.id;
@@ -91,6 +201,15 @@ function initDropdowns() {
         selectTemplate.appendChild(opt);
     });
 
+    // Populate preset dropdown
+    selectPreset.innerHTML = '';
+    Object.keys(PRESETS).forEach(k => {
+        const opt = document.createElement('option');
+        opt.value = k;
+        opt.textContent = PRESETS[k].name;
+        selectPreset.appendChild(opt);
+    });
+
     // Populate default preset values
     loadPreset('lululemon');
 }
@@ -99,6 +218,8 @@ function initDropdowns() {
 function loadPreset(presetKey: string) {
     const preset = PRESETS[presetKey];
     if (!preset) return;
+
+    currentPresetState = { ...preset };
 
     inputTitle.value = preset.title;
     inputDistance.value = preset.distance;
@@ -109,6 +230,23 @@ function loadPreset(presetKey: string) {
     inputCalories.value = preset.calories;
     inputLocation.value = preset.location;
     inputDate.value = preset.date;
+}
+
+// --- COMPATIBILITY VALIDATION ---
+function validateTemplateCompatibility(templateId: string, stats: StickerStats): { compatible: boolean; warning?: string } {
+    const def = STICKER_REGISTRY[templateId];
+    if (!def) return { compatible: true };
+
+    if (def.features?.map && !stats.hasMap) {
+        return { compatible: false, warning: `⚠️ "${templateId}" requiere mapa (polyline), pero la actividad no tiene ruta GPS.` };
+    }
+    if (def.features?.distance && !stats.hasDistance) {
+        return { compatible: false, warning: `⚠️ "${templateId}" está diseñado para actividades de distancia, pero la distancia es 0.00.` };
+    }
+    if (def.category === 'distance' && stats.type === 'WeightTraining') {
+        return { compatible: false, warning: `⚠️ Template "${templateId}" es de categoría "distance", incompatible con deportes estáticos.` };
+    }
+    return { compatible: true };
 }
 
 // --- RENDER DRAW LOOP ---
@@ -122,38 +260,56 @@ async function triggerRender() {
     const distanceVal = rawDist.replace(/[^\d.]/g, '');
     const hasDistance = parseFloat(distanceVal) > 0;
 
-    // Construct StickerStats object matching strava.ts structure
-    const stats = {
+    // Construct full StickerStats object with zero hardcoded assumptions
+    const stats: StickerStats = {
+        id: 999999,
         title: inputTitle.value,
         shortTitle: inputTitle.value.length > 22 ? inputTitle.value.slice(0, 22) + '…' : inputTitle.value,
-        type: selectPreset.value === 'pesas' ? 'WeightTraining' : (selectPreset.value === 'vuelta_ciclista' ? 'Ride' : 'Run'),
-        hasMap: selectPreset.value !== 'pesas',
-        polyline: selectPreset.value === 'pesas' ? '' : 'yhpuBrtl|QZWr@[NKRIP]@MEEg@Ko@Ck@GkAIkJ{@a@BmGg@OCKEKU?_@F]TeDj@wFPeCP{Al@aHvAwQNkAViEz@yIb@aGRmBLkBR{Dd@qFBmAG}@Kq@eByEs@eBWaA[w@Qk@{@oBOs@MeAEOa@g@m@eAmDuJUc@[u@c@yAMMC@?FF\\v@dB~CvId@hALd@VfBJP\\`@T`@jAdDdAfCRr@dAnCt@fBHZFd@J|@?`@q@pHIh@KnAQrAIbAEjAKj@Y`DKTMFWB}CWe@?i@DsARuBp@wAp@_Az@g@j@u@jAYt@Qx@ObB@pBD|@Ht@f@lDP~@`@pAdBfFvAnI`@lBh@bBN`@^n@NPPLL@DAHKDKZqEBMBADF?L]fFo@hGAZi@pGE|@S`BYdES~ACp@[bDYjE_@rDG`AQ`BEbASbBKbAIRKF_@@u@NiAf@UR}@pASl@Gj@AjBSxB@JDHpAL`@PBA?WPqAR_AN]bA_BZo@Jo@TyBLIzAAp@MNOh@qALQb@_@HSB_@ES]iAKQKK_@UiA_@GOAe@Bg@ZgDDw@J_Af@kHLcADu@XyC^eFFWLKNG^@rCXrARxBTvAHz@@p@CdBLtCHJL?HCFCDo@X_@^',
-        avgHeartrate: parseInt(inputHr.value) || null,
-        maxHeartrate: (parseInt(inputHr.value) ? parseInt(inputHr.value) + 10 : null),
-        startTime: "12:04 PM",
+        type: currentPresetState.type,
+        hasMap: currentPresetState.hasMap && currentPresetState.polyline.length > 0,
+        polyline: currentPresetState.polyline,
+        avgHeartrate: inputHr.value ? parseInt(inputHr.value, 10) : null,
+        maxHeartrate: inputHr.value ? parseInt(inputHr.value, 10) + 10 : null,
+        startTime: currentPresetState.startTime || "07:00 AM",
         date: inputDate.value,
-        dayName: "Sunday",
-        dayAndNumber: "Sun 29",
+        dayName: currentPresetState.dayName || "Sunday",
+        dayAndNumber: currentPresetState.dayAndNumber || "Sun 29",
         rawDate: new Date().toISOString(),
-        avgTemp: "17",
+        avgTemp: currentPresetState.avgTemp || null,
         hasDistance,
-        activityType: selectPreset.value === 'pesas' ? 'WeightTraining' : (selectPreset.value === 'vuelta_ciclista' ? 'Ride' : 'Run'),
+        activityType: currentPresetState.type,
         calories: inputCalories.value || null,
         location: inputLocation.value,
         region: "CDMX",
         timeStr: inputDuration.value,
         mainValue: hasDistance ? inputDistance.value : inputDuration.value,
-        distanceVal,
+        distanceVal: hasDistance ? distanceVal : "0.00",
         mainLabel: hasDistance ? "Distance" : "Duration",
         subValue: inputPace.value,
         subLabel: inputPaceUnit.value,
-        maxPace: "3:48",
+        maxPace: currentPresetState.maxPace || "3:48",
         maxPaceLabel: "Max Pace",
-        maxPaceUnit: "min/km"
+        maxPaceUnit: currentPresetState.paceUnit === "km/h" ? "km/h" : "min/km",
+        dataPoints: []
     };
 
-    // Draw using standard Scora CanvasPainter
+    // Check compatibility and show warning banner if mismatched
+    const comp = validateTemplateCompatibility(templateId, stats);
+    let banner = document.getElementById('harness-warning-banner');
+    if (!comp.compatible) {
+        if (!banner) {
+            banner = document.createElement('div');
+            banner.id = 'harness-warning-banner';
+            banner.style.cssText = 'background: rgba(239, 68, 68, 0.9); color: #fff; padding: 0.6rem 1rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600; margin-bottom: 1rem; text-align: center;';
+            canvasContainer.parentElement?.insertBefore(banner, canvasContainer);
+        }
+        banner.textContent = comp.warning || '';
+        banner.style.display = 'block';
+    } else if (banner) {
+        banner.style.display = 'none';
+    }
+
+    // Draw using standard Scora CanvasPainter at 1:1 canvas pixel resolution
     await drawTemplate('harness-canvas', stats, templateId, textColor, showLogo, false);
 }
 
@@ -202,8 +358,8 @@ async function runAiAudit() {
     try {
         const res = await fetch(`/api/check-rules?templateId=${templateId}`);
         if (!res.ok) {
-            const errData = await res.json();
-            throw new Error(errData.error || 'Server returned an error');
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.error || `HTTP ${res.status}: ${res.statusText}`);
         }
 
         const data = await res.json();
@@ -226,12 +382,12 @@ async function runAiAudit() {
             auditStatus.textContent = `FAIL (${data.score}/100)`;
 
             let violationsHtml = '';
-            data.violations.forEach((v: any) => {
+            (data.violations || []).forEach((v: any) => {
                 violationsHtml += `
                     <div class="audit-violation-item">
-                        <span class="violation-severity severity-${v.severity}">${v.severity}</span>
-                        <div style="font-weight: 700; color: #fff; margin-bottom: 0.2rem;">${v.rule}</div>
-                        <div class="violation-details">${v.details}</div>
+                        <span class="violation-severity severity-${v.severity || 'medium'}">${v.severity || 'Warning'}</span>
+                        <div style="font-weight: 700; color: #fff; margin-bottom: 0.2rem;">${v.rule || 'Violation'}</div>
+                        <div class="violation-details">${v.details || ''}</div>
                     </div>
                 `;
             });
@@ -318,11 +474,14 @@ document.addEventListener('DOMContentLoaded', () => {
     initDropdowns();
     updateBackground();
     
-    // Canvas sizing setup
+    // Canvas sizing setup - ensure exact 1080x1920 1:1 buffer rendering matching exportCanvas
     const canvas = document.getElementById('harness-canvas') as HTMLCanvasElement;
-    canvas.width = 1080;
-    canvas.height = 1920;
+    if (canvas) {
+        canvas.width = 1080;
+        canvas.height = 1920;
+    }
 
     bindEvents();
     triggerRender();
 });
+

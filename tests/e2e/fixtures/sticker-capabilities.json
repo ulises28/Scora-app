@@ -7,7 +7,8 @@
     "modes": {
       "run": {
         "metrics": [
-          "distance"
+          "distance",
+          "time"
         ],
         "labels": [
           "KM"
@@ -16,7 +17,8 @@
       },
       "bike": {
         "metrics": [
-          "distance"
+          "distance",
+          "time"
         ],
         "labels": [
           "KM"
@@ -498,6 +500,7 @@
         "metrics": [
           "distance",
           "pace",
+          "time",
           "date"
         ],
         "labels": [
@@ -633,7 +636,8 @@
     "modes": {
       "run": {
         "metrics": [
-          "distance"
+          "distance",
+          "time"
         ],
         "labels": [
           "KM"
