@@ -274,17 +274,19 @@ function renderActivityFeed(activities: any[]) {
     if (!activityListEl) return;
     activityListEl.innerHTML = "";
 
-    if (activities.length === 0) {
+    // Cap at 12 so a 3-col desktop grid fills exactly (no empty slots)
+    const list = activities.slice(0, 12);
+    if (list.length === 0) {
         activityListEl.innerHTML = "<p class='status-msg'>No hay entrenamientos recientes.</p>";
         return;
     }
 
-    activities.forEach(act => {
+    list.forEach(act => {
         const stats = formatActivityStats(act);
         const card = createActivityCard(stats, () => openStickerGrid(stats));
         activityListEl.appendChild(card);
     });
-    lastActivities = activities; // Cache raw data for enrichment
+    lastActivities = list; // Cache raw data for enrichment
 }
 
 // ============================================================

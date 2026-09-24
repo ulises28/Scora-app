@@ -43,7 +43,7 @@ export default async function handler(req: any, res: any) {
         } else {
             // Fetch activities list
             console.log(`[API] Fetching activities for session: ${sessionId}`);
-            const activitiesResponse = await fetch('https://www.strava.com/api/v3/athlete/activities?per_page=10', {
+            const activitiesResponse = await fetch('https://www.strava.com/api/v3/athlete/activities?per_page=12', {
                 headers: { 'Authorization': `Bearer ${access_token}` }
             });
             if (!activitiesResponse.ok) {
