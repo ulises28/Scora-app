@@ -352,7 +352,7 @@ export function drawLiquidGlyphs(ctx: CanvasRenderingContext2D, opts: LiquidGlyp
     const padding = 120;
     const unscaledW = Math.ceil(textMetrics.width) + padding * 2;
     const unscaledH = Math.ceil(fontSize * 1.5);
-    const SSAA = glassSsaa(ctx, fontSize);
+    const SSAA = Math.min(1, 1200 / Math.max(unscaledW * aspectScaleX, unscaledH, 1));
     const drawW = unscaledW * aspectScaleX;
     const drawH = unscaledH;
 
@@ -386,7 +386,7 @@ export function drawLiquidGlyphs(ctx: CanvasRenderingContext2D, opts: LiquidGlyp
         ec.textAlign = 'center';
         ec.textBaseline = 'middle';
         ec.fillStyle = colorOrGradient;
-        const steps = (ctx.canvas.width <= 640) ? 32 : 256;
+        const steps = 48;
         for (let i = 0; i < steps; i++) {
             const angle = (i / steps) * Math.PI * 2;
             const dx = (Math.cos(angle) * visualLineWidth) / aspectScaleX;

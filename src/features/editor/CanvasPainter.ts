@@ -296,18 +296,34 @@ export async function drawTemplate(
         canvas.height = bufH;
     }
 
-    // Chrome WebGL is far too heavy for thumbs — flat preview only
+    // Chrome WebGL is too heavy for thumbs — paint a metallic plaque preview
     if (isThumb && templateType.startsWith('chrome')) {
+        const { s1 } = getDynamicStats(stats);
         ctx.save();
         ctx.scale(canvas.width / TARGET_W, canvas.height / TARGET_H);
-        ctx.fillStyle = 'rgba(180, 180, 190, 0.35)';
+        // Soft chrome plate
+        const gx = 140, gy = 720, gw = 800, gh = 380;
+        const metal = ctx.createLinearGradient(gx, gy, gx + gw, gy + gh);
+        metal.addColorStop(0, '#f2f2f4');
+        metal.addColorStop(0.35, '#c8c8ce');
+        metal.addColorStop(0.55, '#f8f8fa');
+        metal.addColorStop(0.75, '#a8a8b0');
+        metal.addColorStop(1, '#e8e8ec');
+        ctx.fillStyle = metal;
         ctx.beginPath();
-        ctx.roundRect(180, 700, 720, 420, 40);
+        ctx.roundRect(gx, gy, gw, gh, 48);
         ctx.fill();
-        ctx.fillStyle = 'rgba(255,255,255,0.7)';
-        ctx.font = "700 80px 'Plus Jakarta Sans'";
+        ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        // Engraved metrics
+        ctx.fillStyle = 'rgba(40,40,48,0.85)';
         ctx.textAlign = 'center';
-        ctx.fillText('CHROME', 540, 940);
+        ctx.textBaseline = 'middle';
+        ctx.font = "800 120px 'Plus Jakarta Sans'";
+        ctx.fillText(s1?.value || '10.05', 540, gy + 150);
+        ctx.font = "600 56px 'Plus Jakarta Sans'";
+        ctx.fillText((s1?.unit || 'KM').toUpperCase(), 540, gy + 250);
         ctx.restore();
         return;
     }
@@ -352,12 +368,14 @@ export async function drawTemplate(
     };
 
     // ── Pass 1: art only — measure true sticker bounds ───────────────────────
-    // Thumbs skip the measure+refit double paint (editor open was blocking Safari/Android).
+    // Thumbs skip measure+refit. Heavy glass templates also skip (Safari P0:
+    // double-painting multi-canvas glass froze the tab).
     const wantLogo = !!showLogo;
     const isChrome = templateType.startsWith('chrome');
+    const isHeavyGlass = templateType.startsWith('glass-numbers') || templateType === 'glass-type' || templateType === 'digital-led';
     const LOGO_GAP = 12;
 
-    if (isThumb) {
+    if (isThumb || isHeavyGlass) {
         paintArtOnly();
         if (wantLogo && !isChrome) {
             paintLogo(56, 72, textColor);
@@ -9143,15 +9161,11 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     const unscaledH = Math.ceil(finalFontSize * 1.5);
 
     // ── INVERSE-SCALE COMPENSATED SSAA PIPELINE ──
-    // 1. SSAA: Render at 3x to ensure pristine anti-aliasing.
-    // 2. Inverse-Scale Compensation: We scale the context by `finalScaleX` here
-    //    so the squish happens internally. Then, we manually divide horizontal
-    //    stroke offsets by `finalScaleX` to guarantee uniformly thick borders!
-    // Thumbs / large heroes: lower SSAA (Safari memory P1)
-    const SSAA = (typeof ctx !== 'undefined' && ctx.canvas && ctx.canvas.width <= 640) ? 1
-        : (finalFontSize > 800 ? 2 : 2);
+    // Cap buffer size — Safari dies on multi-MB glass offscreens (P0)
     const drawW = unscaledW * finalScaleX;
     const drawH = unscaledH;
+    const maxEdge = 1200;
+    const SSAA = Math.min(1, maxEdge / Math.max(drawW, drawH, 1));
 
     const glassCanvas = document.createElement('canvas');
     glassCanvas.id = 'storyCanvas';
@@ -9196,9 +9210,8 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
 
             ec.fillStyle = colorOrGradient;
 
-            // Dense ring + micro-blur → continuous rim (no polygonal facets)
-            // Thumbs use fewer steps (CPU on mid-range Android)
-            const steps = (typeof ctx !== 'undefined' && ctx.canvas && ctx.canvas.width <= 640) ? 32 : 256;
+            // Dense enough to look smooth — 256 was a Safari CPU killer
+            const steps = 48;
             for (let i = 0; i < steps; i++) {
                 const angle = (i / steps) * Math.PI * 2;
                 const dx = (Math.cos(angle) * visualLineWidth) / finalScaleX;
