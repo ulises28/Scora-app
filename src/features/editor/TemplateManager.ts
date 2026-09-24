@@ -2,23 +2,25 @@ import { drawTemplate } from './CanvasPainter';
 import { MOCK_ACTIVITIES } from '../../api/mocks';
 import { formatActivityStats } from '../../api/strava';
 import { normalizeSport } from './CanvasUtils';
+import { isDebugLabelsHost } from '../../utils/debugHost';
 
 import { STICKER_LIST, STICKER_REGISTRY } from './StickerRegistry';
 import { TemplateFeatures } from './types';
 
 // ─── Template Registry — single source of truth ──────────────────────────────
-// Now imported from StickerRegistry.ts to prevent drift.
 export const TEMPLATE_REGISTRY = STICKER_LIST;
 
 export const TEMPLATES = TEMPLATE_REGISTRY.filter(t => !t.seasonal).map(t => t.id);
 
-// Variety for gallery previews
+// Variety for gallery previews (used when no activity is selected yet)
 const GALLERY_MOCKS = MOCK_ACTIVITIES.map(m => formatActivityStats(m));
 
 type OnChangeCallback = (template: string, color: string, showLogo: boolean) => void;
 
 /**
- * Handle visual sticker selection and synchronized navigation.
+ * Editor template strip: tap a thumb to switch the active sticker.
+ * Selection / browsing of the full catalog lives on the sticker grid screen.
+ * Live preview: main canvas + active thumb re-render when controls change.
  */
 export function initTemplateManager(onChange: OnChangeCallback) {
     let currentTemplates = [...TEMPLATES];
@@ -27,31 +29,64 @@ export function initTemplateManager(onChange: OnChangeCallback) {
     let currentMapColor = '#ffffff';
     let currentShowLogo = true;
     let currentActiveColor = 'white';
+    let currentActivityStats: any = null;
 
     const galleryContainer = document.getElementById('sticker-gallery');
     const dotsContainer = document.getElementById('template-dots');
     const btnPrev = document.getElementById('btn-template-prev') as HTMLButtonElement | null;
     const btnNext = document.getElementById('btn-template-next') as HTMLButtonElement | null;
 
+    function statsForGallery(index: number) {
+        if (currentActivityStats) return currentActivityStats;
+        return GALLERY_MOCKS[index % GALLERY_MOCKS.length];
+    }
+
+    let previewRaf: number | null = null;
+    function refreshGalleryPreviews() {
+        if (previewRaf !== null) return;
+        previewRaf = requestAnimationFrame(() => {
+            previewRaf = null;
+            const canvas = document.getElementById(`gallery-canvas-${currentTemplate}`) as HTMLCanvasElement | null;
+            if (!canvas) return;
+            const idx = currentTemplates.indexOf(currentTemplate);
+            const previewStats = statsForGallery(idx >= 0 ? idx : 0);
+            const config = STICKER_REGISTRY[currentTemplate];
+            let color = currentActiveColor;
+            if (currentTemplate.startsWith('chrome')) {
+                color = currentActiveColor;
+            } else if (config?.supportsCustomColor) {
+                color = currentMapColor;
+            } else {
+                color = currentTextColor;
+            }
+            drawTemplate(canvas.id, previewStats, currentTemplate, color, currentShowLogo, false);
+        });
+    }
+
     function renderGallery() {
         if (!galleryContainer) return;
         galleryContainer.innerHTML = '';
 
+        // One unified strip — all stickers together (no Mini | Full split).
+        // Name chips are debug-only (local/staging) — prod strip stays clean.
+        const showDebugLabels = isDebugLabelsHost();
+
         currentTemplates.forEach((id, i) => {
+            const config = STICKER_REGISTRY[id];
             const thumb = document.createElement('div');
             thumb.className = `sticker-thumb transparency-grid ${id === currentTemplate ? 'active' : ''}`;
             thumb.dataset.template = id;
-
+            thumb.setAttribute('role', 'button');
+            thumb.setAttribute('tabindex', '0');
+            thumb.setAttribute('aria-label', `Template ${id}`);
 
             const canvas = document.createElement('canvas');
             canvas.id = `gallery-canvas-${id}`;
-            canvas.width = 360;  // 2x scale for Retina feel
-            canvas.height = 640; // 2x scale for Retina feel
+            canvas.width = 360;
+            canvas.height = 640;
             thumb.appendChild(canvas);
 
-
-            // 🛡️ DEV-ONLY: Debug IDs (localhost only)
-            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            if (showDebugLabels) {
                 const label = document.createElement('span');
                 label.className = 'sticker-label';
                 label.innerText = id;
@@ -59,16 +94,27 @@ export function initTemplateManager(onChange: OnChangeCallback) {
             }
 
             thumb.onclick = () => setTemplate(id);
+            thumb.onkeydown = (e: KeyboardEvent) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setTemplate(id);
+                }
+            };
+
             galleryContainer.appendChild(thumb);
 
-            // Thumbnail Variety
-            const mockIndex = i % GALLERY_MOCKS.length;
-            const previewStats = GALLERY_MOCKS[mockIndex];
+            const previewStats = statsForGallery(i);
+            let color = 'white';
+            if (id.startsWith('chrome')) {
+                color = currentActiveColor;
+            } else if (config?.supportsCustomColor) {
+                color = currentMapColor;
+            } else {
+                color = currentTextColor;
+            }
 
-            // 🛡️ Studio Performance: Use requestAnimationFrame to throttle background renders
-            // This prevents the main thread from saturating during gallery initialization.
             requestAnimationFrame(async () => {
-                await drawTemplate(canvas.id, previewStats, id, 'white', false);
+                await drawTemplate(canvas.id, previewStats, id, color, currentShowLogo, false);
             });
         });
     }
@@ -87,33 +133,27 @@ export function initTemplateManager(onChange: OnChangeCallback) {
 
     function setTemplate(id: string) {
         if (!currentTemplates.includes(id)) {
-            // Fallback to first available if not found in current filtered set
             id = currentTemplates[0] || 'note-minimal';
         }
         currentTemplate = id;
 
-        // Sync Gallery Active State
         document.querySelectorAll('.sticker-thumb').forEach(el => {
             el.classList.toggle('active', (el as HTMLElement).dataset.template === id);
         });
-        
-        // Sync Dots (for E2E)
+
         document.querySelectorAll('.template-dot').forEach(el => {
             el.classList.toggle('active', (el as HTMLElement).dataset.template === id);
         });
 
-        // Sync Arrows
         const idx = currentTemplates.indexOf(id);
         if (btnPrev) btnPrev.disabled = idx <= 0;
         if (btnNext) btnNext.disabled = idx === currentTemplates.length - 1 || idx === -1;
 
-        // Auto-scroll gallery
         const activeThumb = galleryContainer?.querySelector(`.sticker-thumb[data-template="${id}"]`);
         if (activeThumb) {
             activeThumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
         }
 
-        // Show/Hide Color Controls
         const config = STICKER_REGISTRY[id];
         const colorToggleGroup = document.getElementById('color-toggle')?.parentElement;
         const mapColorGroup = document.getElementById('map-color-group');
@@ -139,7 +179,6 @@ export function initTemplateManager(onChange: OnChangeCallback) {
             chromeMaterialGroup?.classList.add('hidden');
         }
 
-        const activeShowLogo = config?.supportsCustomColor ? currentShowLogo : currentShowLogo; // Keep logic consistent
         currentActiveColor = activeColor;
         onChange(currentTemplate, currentActiveColor, currentShowLogo);
     }
@@ -157,7 +196,6 @@ export function initTemplateManager(onChange: OnChangeCallback) {
         opts.forEach((opt, i) => opt.addEventListener('click', (e) => { e.stopPropagation(); activate(i === 1); }));
     }
 
-    // Navigation Listeners
     btnPrev?.addEventListener('click', () => {
         const idx = currentTemplates.indexOf(currentTemplate);
         if (idx > 0) setTemplate(currentTemplates[idx - 1]);
@@ -168,6 +206,9 @@ export function initTemplateManager(onChange: OnChangeCallback) {
     });
 
     window.addEventListener('keydown', (e) => {
+        // Only when editor is the active screen
+        const editor = document.getElementById('screen-editor');
+        if (!editor?.classList.contains('active')) return;
         if (e.key === 'ArrowRight') {
             const idx = currentTemplates.indexOf(currentTemplate);
             if (idx < currentTemplates.length - 1 && idx !== -1) setTemplate(currentTemplates[idx + 1]);
@@ -178,7 +219,6 @@ export function initTemplateManager(onChange: OnChangeCallback) {
         }
     });
 
-    // Swipe Support (E2E)
     const wrapper = document.getElementById('canvas-wrapper');
     if (wrapper) {
         let startX = 0;
@@ -196,11 +236,13 @@ export function initTemplateManager(onChange: OnChangeCallback) {
         currentTextColor = isBlack ? 'black' : 'white';
         currentActiveColor = currentTextColor;
         onChange(currentTemplate, currentActiveColor, currentShowLogo);
+        refreshGalleryPreviews();
     });
 
     initToggle('logo-toggle', (isOff) => {
         currentShowLogo = !isOff;
         onChange(currentTemplate, currentActiveColor, currentShowLogo);
+        refreshGalleryPreviews();
     });
 
     const mapColorPicker = document.getElementById('map-color-picker') as HTMLInputElement | null;
@@ -210,11 +252,10 @@ export function initTemplateManager(onChange: OnChangeCallback) {
     function updateMapColorUI(color: string, skipChange = false) {
         currentMapColor = color;
         if (mapColorSwatch) mapColorSwatch.style.background = color;
-        const mapColorPicker = document.getElementById('map-color-picker') as HTMLInputElement;
-        const chromeMaterialSelect = document.getElementById('chrome-material-select') as HTMLSelectElement;
+        const picker = document.getElementById('map-color-picker') as HTMLInputElement;
 
-        if (mapColorPicker) {
-            mapColorPicker.value = color;
+        if (picker) {
+            picker.value = color;
         }
 
         if (mapColorValue) mapColorValue.innerText = color.toUpperCase();
@@ -223,6 +264,7 @@ export function initTemplateManager(onChange: OnChangeCallback) {
         if (!skipChange && config?.supportsCustomColor) {
             currentActiveColor = currentMapColor;
             onChange(currentTemplate, currentActiveColor, currentShowLogo);
+            refreshGalleryPreviews();
         }
     }
 
@@ -241,10 +283,10 @@ export function initTemplateManager(onChange: OnChangeCallback) {
             const val = (e.target as HTMLSelectElement).value;
             currentActiveColor = val;
             onChange(currentTemplate, val, currentShowLogo);
+            refreshGalleryPreviews();
         });
     }
 
-    // Initial State
     renderGallery();
     updateDots();
     setTemplate(currentTemplate);
@@ -254,39 +296,64 @@ export function initTemplateManager(onChange: OnChangeCallback) {
         get color() { return currentActiveColor; },
         get showLogo() { return currentShowLogo; },
         setTemplate,
-        filterByActivity: (stats: any) => {
-            // Studio Grade Classification: Expand "Gym" types to ensure proper sticker filtering
-            const isGym = ['Workout', 'WeightTraining', 'Yoga', 'FunctionalStrength', 'Crossfit'].includes(stats.type);
-            const isTraining = normalizeSport(stats.type) === 'Training' || isGym;
-            
+        /** Filter templates for an activity without forcing a reset (used by grid → editor). */
+        prepareForActivity: (actStats: any, preferredTemplate?: string) => {
+            currentActivityStats = actStats;
+            const isGym = ['Workout', 'WeightTraining', 'Yoga', 'FunctionalStrength', 'Crossfit'].includes(actStats.type);
+            const isTraining = normalizeSport(actStats.type) === 'Training' || isGym;
+
             currentTemplates = TEMPLATES.filter(id => {
                 const config = STICKER_REGISTRY[id];
                 const needsMap = config?.features?.map;
-                const hasMap = !!stats.polyline;
-
-                // 🛡️ Studio Rule 1: Hide map-based stickers if no polyline data is present
+                const hasMap = !!actStats.polyline;
                 if (needsMap && !hasMap) return false;
 
-                // 🛡️ Studio Rule 2: Hide distance-specific stickers for stationary activities
                 const needsDistance = config?.features?.distance;
-                const hasDistance = stats.hasDistance;
-                const supportsOthers = config?.features?.duration || 
-                                     config?.features?.heartRate || 
-                                     config?.features?.title || 
-                                     config?.features?.location || 
-                                     config?.features?.date || 
+                const hasDistance = actStats.hasDistance;
+                const supportsOthers = config?.features?.duration ||
+                                     config?.features?.heartRate ||
+                                     config?.features?.title ||
+                                     config?.features?.location ||
+                                     config?.features?.date ||
                                      config?.features?.map;
-
                 if (needsDistance && !hasDistance && !supportsOthers) return false;
-                
                 return true;
             });
 
             renderGallery();
             updateDots();
-            
-            // Always reset to the FIRST sticker in the list when switching activities.
-            // This ensures a fresh "Studio Gallery" experience.
+
+            const pick =
+                preferredTemplate && currentTemplates.includes(preferredTemplate)
+                    ? preferredTemplate
+                    : currentTemplates[0] || 'note-minimal';
+            setTemplate(pick);
+        },
+        filterByActivity: (actStats: any) => {
+            currentActivityStats = actStats;
+            const isGym = ['Workout', 'WeightTraining', 'Yoga', 'FunctionalStrength', 'Crossfit'].includes(actStats.type);
+            const isTraining = normalizeSport(actStats.type) === 'Training' || isGym;
+
+            currentTemplates = TEMPLATES.filter(id => {
+                const config = STICKER_REGISTRY[id];
+                const needsMap = config?.features?.map;
+                const hasMap = !!actStats.polyline;
+                if (needsMap && !hasMap) return false;
+
+                const needsDistance = config?.features?.distance;
+                const hasDistance = actStats.hasDistance;
+                const supportsOthers = config?.features?.duration ||
+                                     config?.features?.heartRate ||
+                                     config?.features?.title ||
+                                     config?.features?.location ||
+                                     config?.features?.date ||
+                                     config?.features?.map;
+                if (needsDistance && !hasDistance && !supportsOthers) return false;
+                return true;
+            });
+
+            renderGallery();
+            updateDots();
             setTemplate(currentTemplates[0] || 'note-minimal');
         }
     };

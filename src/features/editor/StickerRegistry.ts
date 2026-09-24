@@ -14,6 +14,7 @@ export const ACTIVE_STICKER_LIST: StickerDefinition[] = [
 
     { id: 'circle-letters', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, duration: true }, render: Renderers.drawCircleLetters },
     { id: 'glass-numbers', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, duration: true, date: true }, render: Renderers.drawGlassNumbers },
+    { id: 'glass-numbers-v2', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, duration: true, date: true }, render: Renderers.drawGlassNumbersV2 },
     { id: 'note-accent', supportsCustomColor: true, category: 'all', supportsBlackText: true, preferredCase: 'title', features: { distance: true, duration: true, paceSpeed: true }, render: Renderers.drawNoteAccentSticker },
     { id: 'narrative-highlight', category: 'all', supportsBlackText: true, preferredCase: 'lowercase', features: { distance: true, duration: true, paceSpeed: true, date: true, location: true }, render: Renderers.drawNarrativeHighlight },
     { id: 'micro-map-pill', supportsCustomColor: true, category: 'all', supportsBlackText: true, compact: true, features: { distance: true, duration: true, paceSpeed: true, map: true }, render: Renderers.drawMicroMapPill },
@@ -22,7 +23,6 @@ export const ACTIVE_STICKER_LIST: StickerDefinition[] = [
     { id: 'music-player-pill', supportsCustomColor: true, category: 'all', supportsBlackText: true, compact: true, features: { distance: true, duration: true, paceSpeed: true }, render: Renderers.drawMusicPlayerPill },
     { id: 'floating-neon-path', supportsCustomColor: true, category: 'distance', supportsBlackText: true, compact: true, features: { distance: true, duration: true, paceSpeed: true, map: true }, render: Renderers.drawFloatingNeonPath },
     { id: 'social-pill', supportsCustomColor: true, category: 'all', supportsBlackText: true, compact: true, features: { distance: true, duration: true }, render: Renderers.drawSocialPill },
-    { id: 'monoline-minimalist', supportsCustomColor: true, category: 'all', supportsBlackText: true, compact: true, features: { distance: true, duration: true, paceSpeed: true, map: true }, render: Renderers.drawMonolineMinimalist },
     { id: 'dot-grid-architect', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, duration: true, paceSpeed: true, map: true }, render: Renderers.drawDotGridArchitect },
     { id: 'neon_glow', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, duration: true, paceSpeed: true, date: true, location: true }, render: Renderers.drawNeonGlow },
     { id: 'dm', category: 'distance', features: { distance: true, paceSpeed: true, startTime: true, location: true }, render: Renderers.drawDMModular },
@@ -54,6 +54,7 @@ export const ACTIVE_STICKER_LIST: StickerDefinition[] = [
 // ─── 2. ARCHIVED / HIDDEN STICKERS ───────────────────────────────────────────
 // These are preserved in the code but hidden from the main UI Gallery.
 export const ARCHIVED_STICKER_LIST: StickerDefinition[] = [
+    { id: 'monoline-minimalist', supportsCustomColor: true, category: 'all', supportsBlackText: true, compact: true, features: { distance: true, duration: true, paceSpeed: true, map: true }, render: Renderers.drawMonolineMinimalist },
     { id: 'marker-highlight', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, duration: true }, render: Renderers.drawMarkerHighlight },
     { id: 'science-pro', category: 'all', supportsBlackText: false, features: { distance: true, heartRate: true, date: true, paceSpeed: false }, render: Renderers.drawSciencePro },
     { id: 'editorial-strip', supportsCustomColor: true, category: 'all', supportsBlackText: false, compact: true, features: { distance: true, duration: true, date: true }, render: Renderers.drawEditorialStrip },
@@ -85,7 +86,6 @@ export const ARCHIVED_STICKER_LIST: StickerDefinition[] = [
     { id: 'typewriter-mono', category: 'all', supportsBlackText: true, compact: true, features: { distance: true, duration: true, date: true }, render: Renderers.drawTypewriterMono },
     { id: 'brutal-slash', category: 'all', supportsBlackText: true, features: { duration: true }, render: Renderers.drawBrutalSlash },
     { id: 'swiss-minimal', category: 'distance', supportsBlackText: true, compact: true, features: { distance: true, duration: true }, render: Renderers.drawSwissMinimal },
-    { id: 'pure-map', category: 'distance', supportsBlackText: true, features: { map: true }, render: Renderers.drawPureMap },
     { id: 'track-record', category: 'distance', supportsBlackText: true, features: { distance: true }, render: Renderers.drawTrackRecord },
     { id: 'metric-thin', category: 'distance', supportsBlackText: true, features: { distance: true, paceSpeed: true }, render: Renderers.drawMetricThin },
     { id: 'stats', category: 'distance', supportsBlackText: true, features: { distance: true, paceSpeed: true }, render: Renderers.drawStatsModular },

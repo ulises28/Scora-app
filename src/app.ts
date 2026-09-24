@@ -3,8 +3,10 @@ import { openStravaAuth, saveStravaAuth, createAuthPopup, redirectToStravaAuth }
 import { removeLoader } from './components/Loader.js';
 import { showScreen } from './components/Navigation.js';
 import { createActivityCard } from './components/ActivityCard.js';
+import { initStickerGrid } from './components/StickerGrid.js';
 import { drawTemplate, exportCanvas } from './features/editor/CanvasPainter.js';
 import { initTemplateManager, TEMPLATES } from './features/editor/TemplateManager.js';
+import { copyCanvasToClipboard, saveCanvasAsPng } from './features/editor/StickerActions.js';
 import { MOCK_ACTIVITIES } from './api/mocks.js';
 import { Capacitor } from '@capacitor/core';
 import { App as CapApp, URLOpenListenerEvent } from '@capacitor/app';
@@ -190,47 +192,85 @@ const templateManager = initTemplateManager(async (template, color, showLogo) =>
 });
 
 /**
- * Abre el editor con la actividad seleccionada (Pantalla B)
+ * Abre el editor con la actividad + sticker elegidos en el grid
  */
-function openEditor(stats: any) {
+function openEditor(stats: any, preferredTemplate?: string) {
     // 0. Atomic data priming before any UI/Logic transitions
     const actIndex = lastActivities.findIndex(a => a.id === stats.id);
     stats.dayNumber = actIndex !== -1 ? (lastActivities.length - actIndex) : 1;
-    
+
     currentStats = stats;
     currentActivityId = stats.id;
 
     window.history.pushState({ screen: 'screen-editor', stats }, '', '#editor');
     showScreen('screen-editor');
-    
+
     const nameEl = document.getElementById('selected-activity-name');
     if (nameEl) nameEl.innerText = stats.shortTitle ?? stats.title;
 
-    // 1. Synchronous template reset (triggers onChange -> first high-precision draw)
-    templateManager.filterByActivity(stats);
-    templateManager.setTemplate(templateManager.template);
+    // 1. Filter templates for this activity; open the sticker the user tapped
+    templateManager.prepareForActivity(stats, preferredTemplate);
 
     // 2. High-Fidelity Geographic Enrichment (Async Phase)
-    // We get the raw activity from context or ID if needed.
     const rawActivity = lastActivities.find(a => a.id === stats.id);
     if (rawActivity) {
         enrichActivityWithGeo(rawActivity, stats).then(async smartStats => {
             Object.assign(currentStats, smartStats);
             console.log("[Geo] Smart Enrichment complete:", currentStats.location);
-            const nameEl = document.getElementById('selected-activity-name');
-            if (nameEl) nameEl.innerText = currentStats.shortTitle ?? currentStats.title;
-            // Force redraw with high-fidelity data
+            const nameEl2 = document.getElementById('selected-activity-name');
+            if (nameEl2) nameEl2.innerText = currentStats.shortTitle ?? currentStats.title;
             await drawTemplate('storyCanvas', currentStats, templateManager.template, templateManager.color, templateManager.showLogo, true);
         });
     }
 
-    // 2. Stabilize UI for Test Runner: Brief reveal management
+    // 3. Stabilize UI for Test Runner: Brief reveal management
     const canvasEl = document.getElementById('storyCanvas');
     if (canvasEl) {
         canvasEl.style.opacity = '0';
         setTimeout(() => { canvasEl.style.opacity = '1'; }, 50);
     }
 }
+
+/**
+ * Sticker grid (Pantalla intermedia): browse all templates for an activity.
+ * Tap → openEditor · Long-press → copy (handled inside StickerGrid).
+ */
+function openStickerGrid(stats: any) {
+    const actIndex = lastActivities.findIndex(a => a.id === stats.id);
+    stats.dayNumber = actIndex !== -1 ? (lastActivities.length - actIndex) : 1;
+    currentStats = stats;
+    currentActivityId = stats.id;
+
+    window.history.pushState({ screen: 'screen-stickers', stats }, '', '#stickers');
+    showScreen('screen-stickers');
+
+    const nameEl = document.getElementById('selected-activity-name');
+    if (nameEl) nameEl.innerText = stats.shortTitle ?? stats.title;
+
+    const chip = document.getElementById('selected-activity-chip');
+    if (chip) chip.textContent = `${stats.shortTitle ?? stats.title} · ${stats.mainValue ?? ''}`;
+
+    stickerGrid.render(stats);
+
+    // Enrich location in background so editor is ready when user opens it
+    const rawActivity = lastActivities.find(a => a.id === stats.id);
+    if (rawActivity) {
+        enrichActivityWithGeo(rawActivity, stats).then(smartStats => {
+            Object.assign(stats, smartStats);
+            // Re-render grid with enriched title/location if still on stickers screen
+            const screen = document.getElementById('screen-stickers');
+            if (screen?.classList.contains('active')) {
+                stickerGrid.render(stats);
+            }
+        });
+    }
+}
+
+// Instantiate grid after templateManager exists (declared below via function order —
+// initTemplateManager runs at module load before openStickerGrid is called).
+let stickerGrid = initStickerGrid((templateId) => {
+    if (currentStats) openEditor(currentStats, templateId);
+});
 
 /**
  * Renderiza las tarjetas de actividad (Pantalla A)
@@ -246,7 +286,7 @@ function renderActivityFeed(activities: any[]) {
 
     activities.forEach(act => {
         const stats = formatActivityStats(act);
-        const card = createActivityCard(stats, () => openEditor(stats));
+        const card = createActivityCard(stats, () => openStickerGrid(stats));
         activityListEl.appendChild(card);
     });
     lastActivities = activities; // Cache raw data for enrichment
@@ -725,23 +765,68 @@ async function initApp() {
 // --- EVENT LISTENERS GLOBALES ---
 
 const goHomeEl = document.getElementById('go-home');
-if (goHomeEl) goHomeEl.addEventListener('click', () => {
-    if (window.location.hash === '#editor') {
-        window.history.back();
-    } else {
-        showScreen('screen-feed');
-    }
-});
+function goHome() {
+    // Logo always returns to the first screen (activity feed / auth)
+    stopQueuePolling();
+    window.history.pushState({ screen: 'screen-feed' }, '', window.location.pathname);
+    showScreen('screen-feed');
+}
+if (goHomeEl) {
+    goHomeEl.addEventListener('click', goHome);
+    goHomeEl.addEventListener('keydown', (e) => {
+        if ((e as KeyboardEvent).key === 'Enter' || (e as KeyboardEvent).key === ' ') {
+            e.preventDefault();
+            goHome();
+        }
+    });
+}
 
 if (btnBack) btnBack.addEventListener('click', (e) => { e.preventDefault(); window.history.back(); });
 
 if (btnDownload) btnDownload.addEventListener('click', () => exportCanvas('storyCanvas'));
 
-// --- STUDIO PRECISION: Click-to-Copy Feature ---
+// --- STICKER SHEET: tap-to-copy + long-press-to-save on main preview ---
 let copyFeedbackTimeout: ReturnType<typeof setTimeout> | null = null;
+let canvasPressTimer: ReturnType<typeof setTimeout> | null = null;
+let canvasLongPressFired = false;
 const canvasWrapper = document.querySelector('.canvas-wrapper');
 if (canvasWrapper) {
+    const clearCanvasPress = () => {
+        if (canvasPressTimer !== null) {
+            clearTimeout(canvasPressTimer);
+            canvasPressTimer = null;
+        }
+    };
+
+    canvasWrapper.addEventListener('pointerdown', () => {
+        canvasLongPressFired = false;
+        canvasPressTimer = setTimeout(() => {
+            canvasLongPressFired = true;
+            const canvas = document.getElementById('storyCanvas') as HTMLCanvasElement;
+            void saveCanvasAsPng(canvas, 'scora-sticker');
+            if (copyFeedbackTimeout) clearTimeout(copyFeedbackTimeout);
+            canvasWrapper.classList.add('saving');
+            copyFeedbackTimeout = setTimeout(() => {
+                canvasWrapper.classList.remove('saving');
+                copyFeedbackTimeout = null;
+            }, 1500);
+        }, 550);
+    });
+    canvasWrapper.addEventListener('pointerup', clearCanvasPress);
+    canvasWrapper.addEventListener('pointercancel', clearCanvasPress);
+    canvasWrapper.addEventListener('pointerleave', clearCanvasPress);
+    canvasWrapper.addEventListener('pointermove', (e) => {
+        // Cancel long-press if the finger drifts (treat as swipe)
+        if (canvasPressTimer !== null && (e as PointerEvent).buttons) {
+            // keep timer; movement threshold handled lightly by pointerleave
+        }
+    });
+
     canvasWrapper.addEventListener('click', async () => {
+        if (canvasLongPressFired) {
+            canvasLongPressFired = false;
+            return;
+        }
         try {
             const canvas = document.getElementById('storyCanvas') as HTMLCanvasElement;
             if (!canvas) return;
@@ -754,30 +839,9 @@ if (canvasWrapper) {
                 copyFeedbackTimeout = null;
             }, 1500);
 
-            // ─── SAFARI COMPATIBLE COPY (FULL 1080x1920 STORY FRAME) ───
-            // Exports exact 1080x1920 canvas frame so preview matches Instagram 1:1
-            if (typeof window.ClipboardItem !== 'undefined') {
-                const imagePromise = new Promise<Blob>((resolve, reject) => {
-                    canvas.toBlob((blob) => {
-                        if (blob) resolve(blob);
-                        else reject(new Error("Canvas toBlob failed"));
-                    }, 'image/png');
-                });
-
-                const item = new window.ClipboardItem({ "image/png": imagePromise });
-                await navigator.clipboard.write([item]);
-                console.log("[Studio] Full frame sticker copied to clipboard.");
-            } else {
-                throw new Error("ClipboardItem not supported");
-            }
-
+            await copyCanvasToClipboard(canvas);
         } catch (err) {
-            if (err instanceof Error && err.message === "ClipboardItem not supported") {
-                // Silent fallback for non-secure/incompatible contexts
-                console.warn("[Studio] Clipboard API not available in this environment.");
-            } else {
-                console.error("[Studio] Clipboard API failed:", err);
-            }
+            console.error('[Studio] Clipboard API failed:', err);
         }
     });
 }
@@ -800,7 +864,13 @@ window.addEventListener('popstate', async (event) => {
             currentStats = event.state.stats;
             const nameEl = document.getElementById('selected-activity-name');
             if (nameEl) nameEl.innerText = currentStats.shortTitle ?? currentStats.title;
+            templateManager.prepareForActivity(currentStats, templateManager.template);
             await drawTemplate('storyCanvas', currentStats, templateManager.template, templateManager.color, templateManager.showLogo, true);
+        } else if (event.state.screen === 'screen-stickers' && event.state.stats) {
+            currentStats = event.state.stats;
+            const nameEl = document.getElementById('selected-activity-name');
+            if (nameEl) nameEl.innerText = currentStats.shortTitle ?? currentStats.title;
+            stickerGrid.render(currentStats);
         }
     } else {
         showScreen('screen-feed');

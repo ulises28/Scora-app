@@ -72,10 +72,20 @@ export class FeedPage extends BasePage {
         await expect(card.first()).toBeVisible();
     }
 
-    @step('Click Activity Card to open Editor')
+    @step('Click Activity Card → Sticker Grid → Editor')
     async openActivityEditor(activityName: string, stats?: string) {
         const card = this.getActivityCard(activityName, stats);
         await card.first().click();
+
+        // Intermediate sticker grid: tap first available sticker to open the editor
+        const gridScreen = this.page.getByTestId('screen-stickers');
+        await expect(gridScreen).toHaveClass(/active/, { timeout: 10000 });
+        const firstCell = this.page.locator('.sticker-grid-cell').first();
+        await firstCell.waitFor({ state: 'visible', timeout: 10000 });
+        await firstCell.click();
+
+        const editor = this.page.getByTestId('screen-editor');
+        await expect(editor).toHaveClass(/active/, { timeout: 10000 });
     }
 
     @step('Execute Full Admin Reset Flow')

@@ -45,6 +45,8 @@ This document is the **single authoritative specification** for the **`glass-num
 
 | Element | Alignment | Anchor (X, Y) | Target Bounding Box / Dimensions | Typography / Styling | Baseline & Spacing |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Date Header** | Center | (540, 180) | Width: ~600px, Height: 45px | Inter 600, 44px, `textColor` | `textBaseline = 'middle'` |
-| **Hero Glass Digits** | Center | (540, 640) | **Max Width: 640px**, Height: ~750px | **Inter 300 Light**, 850px base, `0.22x` aspect scale | `textBaseline = 'middle'` |
-| **Unit Label** | Center | (540, 1080) | Width: ~350px, Height: 48px | Inter 600, 48px, `textColor` | `textBaseline = 'middle'` |
+| **Date Header** | Center | (540, 180) | Width: ~600px, Height: 45px | Outfit 500, 44px, `textColor` | `textBaseline = 'middle'` |
+| **Hero Glass Digits** | Center | (540, 640) | **Max Width: 640px**, Height: ~750px | **Outfit 300 Light**, 850px base, `0.22x` aspect scale | `textBaseline = 'middle'` |
+| **Unit Label** | Center | (540, 1080) | Width: ~350px, Height: 48px | Outfit 500, 48px, `textColor` | `textBaseline = 'middle'` |
+
+> **Font note:** earlier drafts specified Inter 300/600. Inter is banned by `frontend-design-master`. **Outfit 300 / 500** preserves the slim geometric lock-screen feel and is already brand-loaded. Outfit axis is `300;400;500;700;800` (no 600).

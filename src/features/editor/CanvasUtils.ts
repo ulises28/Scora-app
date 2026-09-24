@@ -2,6 +2,163 @@
  * CanvasUtils.ts — Helpers to reduce boilerplate in Scora stickers.
  */
 
+export interface ContentBounds {
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+}
+
+/**
+ * Scans the canvas for non-transparent pixels and returns their bounding box.
+ * Used to detect the real sticker art (many templates only paint a small region
+ * of the 1080×1920 story frame).
+ */
+export function getContentBounds(canvas: HTMLCanvasElement, alphaThreshold = 8): ContentBounds | null {
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx || canvas.width < 2 || canvas.height < 2) return null;
+
+    const W = canvas.width;
+    const H = canvas.height;
+    let data: Uint8ClampedArray;
+    try {
+        data = ctx.getImageData(0, 0, W, H).data;
+    } catch {
+        return null;
+    }
+
+    let minX = W;
+    let minY = H;
+    let maxX = -1;
+    let maxY = -1;
+
+    for (let y = 0; y < H; y++) {
+        const row = y * W;
+        for (let x = 0; x < W; x++) {
+            const a = data[(row + x) * 4 + 3];
+            if (a > alphaThreshold) {
+                if (x < minX) minX = x;
+                if (x > maxX) maxX = x;
+                if (y < minY) minY = y;
+                if (y > maxY) maxY = y;
+            }
+        }
+    }
+
+    if (maxX < 0 || maxY < 0) return null;
+    return { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1 };
+}
+
+/**
+ * Computes a transform that maps `bounds` (in design space) into a centered,
+ * padded frame of `frameW`×`frameH`. Returns scale + translate for re-render.
+ *
+ * SIZING STANDARD (Phase 1):
+ * - Padding: 8% of the frame on each axis
+ * - Max scale: 1.6× (sparse stickers fill the frame without blowing up)
+ * - Result: sticker art has a consistent visual weight across templates
+ */
+export function fitBoundsTransform(
+    bounds: ContentBounds,
+    frameW: number,
+    frameH: number,
+    paddingRatio = 0.08,
+    maxScale = 1.6
+): { scale: number; tx: number; ty: number } {
+    const padX = frameW * paddingRatio;
+    const padY = frameH * paddingRatio;
+    const innerW = Math.max(1, frameW - padX * 2);
+    const innerH = Math.max(1, frameH - padY * 2);
+    const scale = Math.min(innerW / bounds.w, innerH / bounds.h, maxScale);
+    // Anchor: map bounds center → frame center
+    const tx = frameW / 2 - (bounds.x + bounds.w / 2) * scale;
+    const ty = frameH / 2 - (bounds.y + bounds.h / 2) * scale;
+    return { scale, tx, ty };
+}
+
+/** True when content already occupies most of the frame (full-bleed stickers). */
+export function boundsFillFrame(
+    bounds: ContentBounds | null,
+    frameW: number,
+    frameH: number,
+    minFill = 0.82
+): boolean {
+    if (!bounds) return true;
+    return bounds.w >= frameW * minFill && bounds.h >= frameH * minFill;
+}
+
+/**
+ * Crops the canvas to its non-transparent content (plus small padding).
+ * Short/wide stickers become short/wide canvases — no empty 9:16 letterbox
+ * in previews. Returns new size; empty content leaves the canvas untouched.
+ */
+export function cropCanvasToContent(canvas: HTMLCanvasElement, padRatio = 0.04): { w: number; h: number } {
+    const bounds = getContentBounds(canvas);
+    if (!bounds) return { w: canvas.width, h: canvas.height };
+
+    const pad = Math.max(2, Math.round(Math.max(bounds.w, bounds.h) * padRatio));
+    const x0 = Math.max(0, bounds.x - pad);
+    const y0 = Math.max(0, bounds.y - pad);
+    const x1 = Math.min(canvas.width, bounds.x + bounds.w + pad);
+    const y1 = Math.min(canvas.height, bounds.y + bounds.h + pad);
+    const w = x1 - x0;
+    const h = y1 - y0;
+    if (w < 2 || h < 2 || (w >= canvas.width - 1 && h >= canvas.height - 1)) {
+        return { w: canvas.width, h: canvas.height };
+    }
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return { w: canvas.width, h: canvas.height };
+
+    const snap = document.createElement('canvas');
+    snap.width = w;
+    snap.height = h;
+    const sctx = snap.getContext('2d');
+    if (!sctx) return { w: canvas.width, h: canvas.height };
+    sctx.drawImage(canvas, x0, y0, w, h, 0, 0, w, h);
+
+    canvas.width = w;
+    canvas.height = h;
+    ctx.drawImage(snap, 0, 0);
+    return { w, h };
+}
+
+/**
+ * Pads/centers a (possibly cropped) canvas into a fixed story frame (1080×1920).
+ * Used at export time so Instagram always gets a true story-sized PNG.
+ */
+export function padCanvasToFrame(
+    canvas: HTMLCanvasElement,
+    frameW = 1080,
+    frameH = 1920,
+    paddingRatio = 0.05
+): void {
+    if (canvas.width === frameW && canvas.height === frameH) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const snap = document.createElement('canvas');
+    snap.width = canvas.width;
+    snap.height = canvas.height;
+    const sctx = snap.getContext('2d');
+    if (!sctx) return;
+    sctx.drawImage(canvas, 0, 0);
+
+    canvas.width = frameW;
+    canvas.height = frameH;
+    ctx.clearRect(0, 0, frameW, frameH);
+
+    const padX = frameW * paddingRatio;
+    const padY = frameH * paddingRatio;
+    const scale = Math.min(
+        (frameW - padX * 2) / snap.width,
+        (frameH - padY * 2) / snap.height
+    );
+    const dw = snap.width * scale;
+    const dh = snap.height * scale;
+    ctx.drawImage(snap, (frameW - dw) / 2, (frameH - dh) / 2, dw, dh);
+}
+
 export interface ThemeColors {
     solid: string;
     trans: string;

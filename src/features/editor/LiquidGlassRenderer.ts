@@ -1,6 +1,10 @@
 /**
  * SCORA: Apple Liquid Glass Shader Engine (v1.3)
- * 
+ *
+ * NOT WIRED. Intentional: sticker export is a transparent PNG overlay.
+ * True refraction only helps when a photo backdrop exists at preview time.
+ * Primary glass path is GlassText.ts (Canvas 2D 6-layer, export-safe).
+ *
  * Recreates 3D Apple Liquid Glass visual optics directly inside text & shape glyphs:
  * 1. UNPACK_FLIP_Y_WEBGL Y-axis coordinate alignment with Canvas 2D space.
  * 2. Multi-sample heightmap (Slot 2) for smooth 3D curved glass bevels.

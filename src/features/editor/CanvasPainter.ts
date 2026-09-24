@@ -9,7 +9,8 @@
  *  - showLogo:  controls whether the SCORA. branding is drawn
  */
 
-import { getThemeColors, drawStatWithUnit, setLetterSpacing, drawRoutePath, decodePolyline, getDynamicStats, drawMetricBlock, parseDurationParts, drawDurationSequence, normalizeSport } from './CanvasUtils';
+import { getThemeColors, drawStatWithUnit, setLetterSpacing, drawRoutePath, decodePolyline, getDynamicStats, drawMetricBlock, parseDurationParts, drawDurationSequence, normalizeSport, getContentBounds, fitBoundsTransform, boundsFillFrame, cropCanvasToContent, padCanvasToFrame } from './CanvasUtils';
+import { drawGlassPanel, drawGlassText, drawLiquidGlyphs } from './GlassText';
 import { applyLiquidMetalEffect } from './LiquidMetalRenderer';
 import { StickerStats } from '../../api/strava';
 import { STICKER_REGISTRY } from './StickerRegistry';
@@ -256,7 +257,11 @@ export async function drawTemplate(
                     document.fonts.load("500 12px 'Plus Jakarta Sans'"),
                     document.fonts.load("700 12px 'Plus Jakarta Sans'"),
                     document.fonts.load("800 12px 'Plus Jakarta Sans'"),
-                    document.fonts.load("500 12px 'Elms Sans'")
+                    document.fonts.load("500 12px 'Elms Sans'"),
+                    document.fonts.load("300 12px 'Outfit'"),
+                    document.fonts.load("500 12px 'Outfit'"),
+                    document.fonts.load("200 12px 'Idiqlat'"),
+                    document.fonts.load("300 12px 'Idiqlat'")
                 ]),
                 new Promise(resolve => setTimeout(resolve, 500))
             ]);
@@ -279,12 +284,12 @@ export async function drawTemplate(
         return;
     }
 
-    // Standard Story resolution (1080 × 1920)
+    // Standard Story resolution (1080 × 1920) — Instagram Stories safe.
+    // Always paint at full story size, then crop to content for display.
+    // (Cropped thumbs re-render on the next draw with a fresh buffer.)
     const TARGET_W = 1080;
     const TARGET_H = 1920;
-
-    // Only set width/height if they aren't already proportionally set (avoids memory bombs on gallery)
-    if (canvas.width === 300 || canvas.width === 0) {
+    if (canvas.width !== TARGET_W || canvas.height !== TARGET_H) {
         canvas.width = TARGET_W;
         canvas.height = TARGET_H;
     }
@@ -292,29 +297,84 @@ export async function drawTemplate(
     const scaleX = canvas.width / TARGET_W;
     const scaleY = canvas.height / TARGET_H;
 
-    ctx.save();
-    ctx.scale(scaleX, scaleY);
-    ctx.clearRect(0, 0, TARGET_W, TARGET_H);
-
-    // ── Unified Registry Lookup ──────────────────────────────────────────────
-    const sticker = STICKER_REGISTRY[templateType] || STICKER_REGISTRY['minimal'];
-
-    // ── Optional SCORA branding ──────────────────────────────────────────────
-    if (showLogo && !templateType.startsWith('chrome')) {
+    /**
+     * Compact SCORA watermark — FIXED size in the 1080×1920 story frame.
+     * Never scales with sticker art (so it stays tiny on a photo).
+     * Docked tight above the sticker: logo baseline ≈ 12px above art top.
+     * Always resolves to a real CSS colour (chrome materials are names, not hex).
+     */
+    const paintLogo = (x: number, yBase: number, color: string) => {
+        const ink = color && color.startsWith('#')
+            ? color
+            : (color === 'black' ? '#0a0a0a' : '#ffffff');
+        ctx.save();
+        ctx.scale(scaleX, scaleY);
         ctx.textAlign = 'left';
+        ctx.textBaseline = 'alphabetic';
         ctx.beginPath();
-        ctx.arc(70, 90, 6, 0, Math.PI * 2); // Smaller dot
-        ctx.fillStyle = textColor; // Dot matches the text color for monochromatic stickers
+        ctx.arc(x + 5, yBase - 7, 4.5, 0, Math.PI * 2);
+        ctx.fillStyle = ink;
         ctx.fill();
+        ctx.font = "800 22px 'Plus Jakarta Sans'";
+        ctx.fillStyle = ink;
+        ctx.fillText('SCORA.', x + 16, yBase);
+        ctx.restore();
+    };
 
-        ctx.font = "800 28px 'Plus Jakarta Sans'"; // Reduced from 42px
-        ctx.fillStyle = textColor;
-        ctx.fillText('SCORA.', 90, 99); // Adjusted X/Y for the smaller size
+    const paintArtOnly = () => {
+        ctx.save();
+        ctx.scale(scaleX, scaleY);
+        ctx.clearRect(0, 0, TARGET_W, TARGET_H);
+        const sticker = STICKER_REGISTRY[templateType] || STICKER_REGISTRY['minimal'];
+        // Chrome draws the watermark itself AFTER async metal (clearRect would wipe ours).
+        // All other templates must NOT draw SCORA — we own one fixed-size mark.
+        const logoForRender = templateType.startsWith('chrome') ? showLogo : false;
+        try { sticker.render(ctx, stats, textColor, logoForRender); } catch (e) { console.error("Render crashed:", e); }
+        ctx.restore();
+    };
+
+    // ── Pass 1: art only — measure true sticker bounds ───────────────────────
+    paintArtOnly();
+    const artPx = getContentBounds(canvas);
+    const art = artPx
+        ? { x: artPx.x / scaleX, y: artPx.y / scaleY, w: artPx.w / scaleX, h: artPx.h / scaleY }
+        : null;
+
+    // One watermark for ALL templates when Logo is ON (fixed size, tight above art).
+    const wantLogo = !!showLogo;
+    const isChrome = templateType.startsWith('chrome');
+    const LOGO_GAP = 12; // design px between logo baseline and art top
+
+    // ── Pass 2: standard fit (centered, capped scale) + fixed-size watermark ─
+    if (art && !boundsFillFrame(
+        { x: art.x * scaleX, y: art.y * scaleY, w: art.w * scaleX, h: art.h * scaleY },
+        canvas.width, canvas.height
+    )) {
+        const { scale, tx, ty } = fitBoundsTransform(art, TARGET_W, TARGET_H, 0.08, 1.6);
+
+        ctx.save();
+        ctx.scale(scaleX, scaleY);
+        ctx.clearRect(0, 0, TARGET_W, TARGET_H);
+        ctx.translate(tx, ty);
+        ctx.scale(scale, scale);
+        const sticker = STICKER_REGISTRY[templateType] || STICKER_REGISTRY['minimal'];
+        const logoForRender = isChrome ? showLogo : false;
+        try { sticker.render(ctx, stats, textColor, logoForRender); } catch (e) { console.error("Render crashed:", e); }
+        ctx.restore();
+
+        if (wantLogo && !isChrome) {
+            const artTop = art.y * scale + ty;
+            const artLeft = art.x * scale + tx;
+            paintLogo(artLeft, artTop - LOGO_GAP, textColor);
+        }
+    } else if (wantLogo && !isChrome) {
+        // Full-bleed (or unmeasured art): still stamp the watermark
+        const y = art ? art.y - LOGO_GAP : 80;
+        const x = art ? art.x : 60;
+        paintLogo(x, y, textColor);
     }
 
-    try { sticker.render(ctx, stats, textColor, showLogo); } catch(e) { console.error("Render crashed:", e); }
-
-    ctx.restore();
+    // Keep the full 9:16 story frame (1080×1920) — WYSIWYG for Instagram Stories.
 
     // ARCHITECT NOTE: Deterministic synchronization signal for E2E tests
     if (isMain) {
@@ -681,6 +741,33 @@ export function drawMap(ctx, coords, mapBox) {
 
 // ─── Chrome Map Variations ──────────────────────────────────────────────────
 
+/**
+ * Compact SCORA watermark — fixed size in design space, tight above the art.
+ * Shared by the generic pipeline and async renderers (chrome metal).
+ */
+export function drawScoraWatermark(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    yBase: number,
+    color: string,
+    scale = 1
+) {
+    const ink = color && color.startsWith('#')
+        ? color
+        : (color === 'black' ? '#0a0a0a' : '#ffffff');
+    ctx.save();
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    ctx.beginPath();
+    ctx.arc(x + 5 * scale, yBase - 7 * scale, 4.5 * scale, 0, Math.PI * 2);
+    ctx.fillStyle = ink;
+    ctx.fill();
+    ctx.font = `800 ${22 * scale}px 'Plus Jakarta Sans'`;
+    ctx.fillStyle = ink;
+    ctx.fillText('SCORA.', x + 16 * scale, yBase);
+    ctx.restore();
+}
+
 export function drawChromeHighContrastSticker(ctx: CanvasRenderingContext2D, stats: any, textColor: string, showLogo = true) {
     const coords = decodePolyline(stats.polyline);
     const w = 1080;
@@ -849,22 +936,9 @@ export function drawChromeHighContrastSticker(ctx: CanvasRenderingContext2D, sta
 
             ctx.drawImage(glCanvas, 0, 0, w, h);
 
-            // --- Scora Logo ---
+            // Compact SCORA watermark AFTER metal (async clearRect would wipe a sync logo)
             if (showLogo) {
-                ctx.beginPath();
-                ctx.roundRect(50, 100, 160, 50, 25);
-                ctx.fillStyle = 'rgba(0,0,0,0.8)';
-                ctx.fill();
-                ctx.strokeStyle = 'rgba(255,255,255,0.15)';
-                ctx.lineWidth = 2;
-                ctx.stroke();
-
-                ctx.fillStyle = '#ffffff';
-                ctx.font = "800 20px 'Space Grotesk'";
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                setLetterSpacing(ctx, '2px');
-                ctx.fillText("SCORA", 130, 125);
+                drawScoraWatermark(ctx, 60, 120, '#ffffff');
             }
 
             ctx.restore();
@@ -3015,6 +3089,21 @@ export async function exportCanvas(canvasId: string) {
     const canvas = document.getElementById(canvasId) as HTMLCanvasElement;
     if (!canvas) return;
 
+    // Instagram Stories require 1080×1920. Cropped sticker art is centered
+    // back onto a full story frame before share/download.
+    let exportCanvasEl = canvas;
+    if (canvas.width !== 1080 || canvas.height !== 1920) {
+        const off = document.createElement('canvas');
+        off.width = canvas.width;
+        off.height = canvas.height;
+        const octx = off.getContext('2d');
+        if (octx) {
+            octx.drawImage(canvas, 0, 0);
+            padCanvasToFrame(off, 1080, 1920, 0.06);
+            exportCanvasEl = off;
+        }
+    }
+
     const now = new Date();
     const dateStr = now.toISOString().split('T')[0];
     const timeStr = [
@@ -3025,15 +3114,13 @@ export async function exportCanvas(canvasId: string) {
     const fileName = `scora-${dateStr}-${timeStr}.png`;
 
     // ─── OPTION A: Web Share API (iOS Safari ONLY) ───
-    // Standard download is "broken" on iOS Safari (saves to a hidden 'Files' folder).
-    // We use the Share Sheet here to allow "Save to Photos" directly.
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
         (/Macintosh/i.test(navigator.userAgent) && navigator.maxTouchPoints > 1) ||
         /Mobile/i.test(navigator.userAgent);
 
     if (isIOS && navigator.share && navigator.canShare) {
         try {
-            const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'));
+            const blob = await new Promise<Blob | null>(resolve => exportCanvasEl.toBlob(resolve, 'image/png'));
             if (blob) {
                 const file = new File([blob], fileName, { type: 'image/png' });
                 if (navigator.canShare({ files: [file] })) {
@@ -3042,7 +3129,7 @@ export async function exportCanvas(canvasId: string) {
                         title: 'Scora Sticker',
                         text: 'Created with Scora'
                     });
-                    return; // Success on iOS!
+                    return;
                 }
             }
         } catch (err) {
@@ -3051,10 +3138,9 @@ export async function exportCanvas(canvasId: string) {
     }
 
     // ─── OPTION B: Standard Download (Android & Desktop) ───
-    // Fast, single-tap experience.
     const link = document.createElement('a');
     link.download = fileName;
-    link.href = canvas.toDataURL('image/png');
+    link.href = exportCanvasEl.toDataURL('image/png');
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -3949,33 +4035,186 @@ function drawSprayPath(ctx: CanvasRenderingContext2D, coords: [number, number][]
     ctx.restore();
 }
 
+/**
+ * pure-map — first-class map card: route is the hero, stats as a glass footer.
+ * Requires stats.polyline (filtered out of the dock when no map data).
+ */
 export function drawPureMap(ctx: CanvasRenderingContext2D, stats: any, textColor = 'white') {
     if (!stats.polyline) return;
 
-    const lineColor = textColor.startsWith('#') ? textColor : (textColor === 'black' ? '#000000' : '#ffffff');
+    const ink = textColor.startsWith('#')
+        ? textColor
+        : (textColor === 'black' ? '#0a0a0a' : '#ffffff');
+    const accent = textColor === 'black' ? '#1a1a1a' : '#80cbc4';
     const coords = decodePolyline(stats.polyline);
-    if (!coords || coords.length === 0) return;
+    if (!coords || coords.length < 2) return;
 
-    const mapBox = { x: 140, y: 560, w: 800, h: 800 };
+    // Ambient card ground
+    const bg = ctx.createLinearGradient(0, 0, 1080, 1920);
+    bg.addColorStop(0, 'rgba(8, 12, 14, 0.97)');
+    bg.addColorStop(0.5, 'rgba(12, 18, 20, 0.95)');
+    bg.addColorStop(1, 'rgba(6, 8, 10, 0.98)');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, 1080, 1920);
 
+    const bloom = ctx.createRadialGradient(540, 780, 40, 540, 780, 520);
+    bloom.addColorStop(0, 'rgba(128, 203, 196, 0.16)');
+    bloom.addColorStop(1, 'rgba(128, 203, 196, 0)');
+    ctx.fillStyle = bloom;
+    ctx.fillRect(0, 200, 1080, 1200);
+
+    // Map plate (glass panel)
+    const plate = { x: 90, y: 340, w: 900, h: 900 };
+    ctx.save();
+    roundRectPath(ctx, plate.x, plate.y, plate.w, plate.h, 48);
+    const plateGrad = ctx.createLinearGradient(plate.x, plate.y, plate.x, plate.y + plate.h);
+    plateGrad.addColorStop(0, 'rgba(255, 255, 255, 0.07)');
+    plateGrad.addColorStop(1, 'rgba(255, 255, 255, 0.02)');
+    ctx.fillStyle = plateGrad;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.clip();
+
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+    ctx.lineWidth = 1;
+    for (let x = plate.x; x <= plate.x + plate.w; x += 60) {
+        ctx.beginPath();
+        ctx.moveTo(x, plate.y);
+        ctx.lineTo(x, plate.y + plate.h);
+        ctx.stroke();
+    }
+    for (let y = plate.y; y <= plate.y + plate.h; y += 60) {
+        ctx.beginPath();
+        ctx.moveTo(plate.x, y);
+        ctx.lineTo(plate.x + plate.w, y);
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    // Fit route into plate
     let minLat = coords[0][0], maxLat = minLat, minLng = coords[0][1], maxLng = minLng;
-    coords.forEach((p: any) => {
-        if (p[0] < minLat) minLat = p[0]; if (p[0] > maxLat) maxLat = p[0];
-        if (p[1] < minLng) minLng = p[1]; if (p[1] > maxLng) maxLng = p[1];
+    coords.forEach((p: [number, number]) => {
+        if (p[0] < minLat) minLat = p[0];
+        if (p[0] > maxLat) maxLat = p[0];
+        if (p[1] < minLng) minLng = p[1];
+        if (p[1] > maxLng) maxLng = p[1];
+    });
+    const pad = 70;
+    const boxW = plate.w - pad * 2;
+    const boxH = plate.h - pad * 2;
+    const latR = maxLat - minLat || 1e-6;
+    const lngR = maxLng - minLng || 1e-6;
+    const scale = Math.min(boxW / lngR, boxH / latR);
+    const xOff = plate.x + pad + (boxW - lngR * scale) / 2;
+    const yOff = plate.y + pad + (boxH - latR * scale) / 2;
+
+    const getXY = (p: [number, number]) => ({
+        x: xOff + (p[1] - minLng) * scale,
+        y: yOff + (maxLat - p[0]) * scale,
     });
 
-    const scale = Math.min(mapBox.w / (maxLng - minLng), mapBox.h / (maxLat - minLat));
-
-    const getXY = (p: [number, number]) => {
-        const x = mapBox.x + (p[1] - minLng) * scale + (mapBox.w - ((maxLng - minLng) * scale)) / 2;
-        const y = mapBox.y + mapBox.h - ((p[0] - minLat) * scale) - (mapBox.h - ((maxLat - minLat) * scale)) / 2;
-        return { x: x, y: y };
-    };
-
     ctx.save();
-    ctx.globalAlpha = 0.8;
-    drawSprayPath(ctx, coords, getXY, lineColor);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    coords.forEach((p, i) => {
+        const { x, y } = getXY(p);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+    });
+    ctx.strokeStyle = accent;
+    ctx.globalAlpha = 0.35;
+    ctx.lineWidth = 18;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = textColor === 'black' ? '#111' : '#e8fff9';
+    ctx.lineWidth = 7;
+    ctx.stroke();
+    const start = getXY(coords[0]);
+    const end = getXY(coords[coords.length - 1]);
+    ctx.fillStyle = accent;
+    ctx.beginPath();
+    ctx.arc(start.x, start.y, 12, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(end.x, end.y, 10, 0, Math.PI * 2);
+    ctx.fill();
     ctx.restore();
+
+    // Top label
+    ctx.fillStyle = ink;
+    ctx.textAlign = 'left';
+    ctx.font = "800 36px 'Plus Jakarta Sans'";
+    ctx.fillText('ROUTE', 90, 280);
+    ctx.fillStyle = accent;
+    ctx.font = "600 28px 'Plus Jakarta Sans'";
+    ctx.textAlign = 'right';
+    ctx.fillText(String((stats.date || stats.dayName || '')).toUpperCase(), 990, 280);
+    ctx.textAlign = 'left';
+
+    // Glass footer stats
+    const foot = { x: 90, y: 1320, w: 900, h: 360 };
+    ctx.save();
+    roundRectPath(ctx, foot.x, foot.y, foot.w, foot.h, 40);
+    const footGrad = ctx.createLinearGradient(foot.x, foot.y, foot.x, foot.y + foot.h);
+    footGrad.addColorStop(0, 'rgba(255, 255, 255, 0.10)');
+    footGrad.addColorStop(1, 'rgba(255, 255, 255, 0.03)');
+    ctx.fillStyle = footGrad;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.14)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.restore();
+
+    const title = String(stats.shortTitle || stats.title || '');
+    ctx.fillStyle = ink;
+    ctx.textAlign = 'left';
+    ctx.font = "700 44px 'Plus Jakarta Sans'";
+    ctx.fillText(truncateCanvasText(ctx, title, 820), 140, 1410);
+
+    ctx.font = "800 92px 'Plus Jakarta Sans'";
+    ctx.fillStyle = ink;
+    const primary = stats.hasDistance ? `${stats.distanceVal ?? ''} km` : String(stats.timeStr || '');
+    ctx.fillText(primary, 140, 1540);
+    ctx.font = "600 26px 'Plus Jakarta Sans'";
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.fillText(String(stats.mainLabel || 'DISTANCE').toUpperCase(), 140, 1590);
+
+    ctx.fillStyle = ink;
+    ctx.font = "700 52px 'Plus Jakarta Sans'";
+    ctx.fillText(String(stats.subValue || stats.timeStr || ''), 560, 1520);
+    ctx.font = "600 24px 'Plus Jakarta Sans'";
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.fillText(String(stats.subLabel || '').toUpperCase(), 560, 1570);
+
+    if (stats.hasDistance && stats.timeStr) {
+        ctx.fillStyle = 'rgba(255,255,255,0.7)';
+        ctx.font = "600 30px 'Plus Jakarta Sans'";
+        ctx.fillText(String(stats.timeStr), 140, 1645);
+    }
+}
+
+function roundRectPath(
+    ctx: CanvasRenderingContext2D,
+    x: number, y: number, w: number, h: number, r: number
+) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+
+function truncateCanvasText(ctx: CanvasRenderingContext2D, text: string, maxW: number): string {
+    if (ctx.measureText(text).width <= maxW) return text;
+    let t = text;
+    while (t.length > 1 && ctx.measureText(t + '…').width > maxW) t = t.slice(0, -1);
+    return t + '…';
 }
 
 
@@ -5890,46 +6129,17 @@ export function drawFinishLine(ctx: CanvasRenderingContext2D, stats: any, textCo
     const boxH = 420;
     const boxY = cy - 100;
 
-    // Outer Shadow
-    ctx.shadowColor = 'rgba(0,0,0,0.8)';
-    ctx.shadowBlur = 50;
-    ctx.shadowOffsetY = 15;
-
-    // Base Liquid Glass Gradient Fill (Dark)
-    const baseGrad = ctx.createLinearGradient(cx - boxW / 2, boxY - boxH / 2, cx - boxW / 2, boxY + boxH / 2);
-    baseGrad.addColorStop(0, 'rgba(255, 255, 255, 0.22)');
-    baseGrad.addColorStop(0.3, 'rgba(35, 35, 40, 0.65)');
-    baseGrad.addColorStop(1, 'rgba(15, 15, 18, 0.85)');
-
-    ctx.fillStyle = baseGrad;
-    ctx.beginPath();
-    ctx.roundRect(cx - boxW / 2, boxY - boxH / 2, boxW, boxH, 210);
-    ctx.fill();
+    // Clear frosted glass backplate
+    drawGlassPanel(ctx, {
+        x: cx - boxW / 2,
+        y: boxY - boxH / 2,
+        w: boxW,
+        h: boxH,
+        radius: 210,
+    });
 
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
-
-    // Specular Highlight / Glossy Top Half
-    ctx.save();
-    ctx.beginPath();
-    ctx.roundRect(cx - boxW / 2, boxY - boxH / 2, boxW, boxH, 210);
-    ctx.clip();
-
-    const glossGrad = ctx.createLinearGradient(cx - boxW / 2, boxY - boxH / 2, cx - boxW / 2, boxY);
-    glossGrad.addColorStop(0, 'rgba(255, 255, 255, 0.35)');
-    glossGrad.addColorStop(1, 'rgba(255, 255, 255, 0.0)');
-    ctx.fillStyle = glossGrad;
-    ctx.fillRect(cx - boxW / 2, boxY - boxH / 2, boxW, boxH / 2);
-    ctx.restore();
-
-    // Glossy Beveled Edge
-    const borderGrad = ctx.createLinearGradient(cx - boxW / 2, boxY - boxH / 2, cx - boxW / 2, boxY + boxH / 2);
-    borderGrad.addColorStop(0, 'rgba(255, 255, 255, 0.45)');
-    borderGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.15)');
-    borderGrad.addColorStop(1, 'rgba(255, 255, 255, 0.05)');
-    ctx.strokeStyle = borderGrad;
-    ctx.lineWidth = 2.5;
-    ctx.stroke();
 
     // 2. The Time (LED/Dot Matrix)
     const timeVal = stats.timeStr || "0:00:00";
@@ -6381,60 +6591,13 @@ export function drawNoteAccentSticker(ctx: CanvasRenderingContext2D, stats: any,
     const menuX = 540 - (menuW / 2);
     const menuY = yBaseline + 160;
 
-    // A. Outer Shadow
-    ctx.shadowColor = 'rgba(0,0,0,0.3)';
-    ctx.shadowBlur = 35;
-    ctx.shadowOffsetY = 15;
-
-    // B. Base Liquid Glass Gradient Fill
-    const baseGrad = ctx.createLinearGradient(menuX, menuY, menuX, menuY + menuH);
-    const isLightTheme = true; // Forced white glass
-    if (isLightTheme) {
-        baseGrad.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
-        baseGrad.addColorStop(0.3, 'rgba(240, 240, 245, 0.65)');
-        baseGrad.addColorStop(1, 'rgba(225, 225, 230, 0.85)');
-    } else {
-        baseGrad.addColorStop(0, 'rgba(255, 255, 255, 0.22)');
-        baseGrad.addColorStop(0.3, 'rgba(35, 35, 40, 0.65)');
-        baseGrad.addColorStop(1, 'rgba(15, 15, 18, 0.85)');
-    }
-
-    ctx.fillStyle = baseGrad;
-    ctx.beginPath();
-    ctx.roundRect(menuX, menuY, menuW, menuH, menuH / 2);
-    ctx.fill();
+    // A–D. Slim frosted liquid-glass action menu (6-layer panel language)
+    const isLightTheme = true;
+    drawGlassPanel(ctx, { x: menuX, y: menuY, w: menuW, h: menuH, radius: menuH / 2 });
 
     // Disable shadow for internal drawings to avoid double-shadowing
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
-
-    // C. Specular Highlight / Glossy Top Half
-    ctx.save();
-    ctx.beginPath();
-    ctx.roundRect(menuX, menuY, menuW, menuH, menuH / 2);
-    ctx.clip();
-
-    const glossGrad = ctx.createLinearGradient(menuX, menuY, menuX, menuY + menuH / 2);
-    glossGrad.addColorStop(0, isLightTheme ? 'rgba(255, 255, 255, 0.6)' : 'rgba(255, 255, 255, 0.35)');
-    glossGrad.addColorStop(1, 'rgba(255, 255, 255, 0.0)');
-    ctx.fillStyle = glossGrad;
-    ctx.fillRect(menuX, menuY, menuW, menuH / 2);
-    ctx.restore();
-
-    // D. Glossy Beveled Edge (Gradient Stroke)
-    const borderGrad = ctx.createLinearGradient(menuX, menuY, menuX, menuY + menuH);
-    if (isLightTheme) {
-        borderGrad.addColorStop(0, 'rgba(255, 255, 255, 0.7)');
-        borderGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.3)');
-        borderGrad.addColorStop(1, 'rgba(0, 0, 0, 0.12)');
-    } else {
-        borderGrad.addColorStop(0, 'rgba(255, 255, 255, 0.45)');
-        borderGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.15)');
-        borderGrad.addColorStop(1, 'rgba(255, 255, 255, 0.05)');
-    }
-    ctx.strokeStyle = borderGrad;
-    ctx.lineWidth = 2.5;
-    ctx.stroke();
 
     // Draw Subtle Dividers
     const dividerColor = isLightTheme ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.1)';
@@ -7444,50 +7607,13 @@ export function drawWaveTitle(ctx: CanvasRenderingContext2D, stats: any, textCol
     const cY = 250;
     const cornerRadius = 40;
 
-    // A. Soft Outer Ambient Drop Shadow
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
-    ctx.shadowBlur = 45;
-    ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 25;
-
-    // B. Multi-Stop Translucent Liquid Glass Fill (Fixed Neutral Frosted Glass)
-    const glassFill = ctx.createLinearGradient(cX, cY, cX, cY + cardH);
-    glassFill.addColorStop(0, 'rgba(255, 255, 255, 0.45)');   // Top specular sheen
-    glassFill.addColorStop(0.35, 'rgba(255, 255, 255, 0.15)'); // Core glass transparency
-    glassFill.addColorStop(0.70, 'rgba(255, 255, 255, 0.10)'); // Translucent glass body
-    glassFill.addColorStop(1.0, 'rgba(255, 255, 255, 0.35)');  // Bottom rim reflection
-
-    ctx.fillStyle = glassFill;
-    ctx.beginPath();
-    ctx.roundRect(cX, cY, cardW, cardH, cornerRadius);
-    ctx.fill();
+    // A–B. Slim frosted liquid-glass card (6-layer panel language)
+    drawGlassPanel(ctx, { x: cX, y: cY, w: cardW, h: cardH, radius: cornerRadius });
 
     // Disable shadow for internal drawings to avoid double-shadowing
     ctx.shadowColor = 'transparent';
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
-
-    // C. Specular Top Glass Reflection
-    ctx.save();
-    ctx.beginPath();
-    ctx.roundRect(cX, cY, cardW, cardH, cornerRadius);
-    ctx.clip();
-
-    const topReflection = ctx.createLinearGradient(cX, cY, cX, cY + cardH * 0.4);
-    topReflection.addColorStop(0, 'rgba(255, 255, 255, 0.40)');
-    topReflection.addColorStop(1, 'rgba(255, 255, 255, 0.0)');
-    ctx.fillStyle = topReflection;
-    ctx.fillRect(cX, cY, cardW, cardH * 0.4);
-    ctx.restore();
-
-    // D. Outer Glass Rim & Specular Accents
-    ctx.beginPath();
-    ctx.roundRect(cX, cY, cardW, cardH, cornerRadius);
-
-    // 1. Glass Rim
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
-    ctx.lineWidth = 3;
-    ctx.stroke();
 
     // E. Typography inside the glass card (Color selection changes ONLY the text/metrics!)
     const mainColor = textColor || '#ffffff';
@@ -8072,48 +8198,8 @@ export function drawMicroMapPill(ctx: CanvasRenderingContext2D, stats: any, text
     const x = 540 - w / 2;
     const y = 160;
 
-    // 1. Soft Outer Ambient Drop Shadow for Liquid Glass Pill
-    ctx.save();
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
-    ctx.shadowBlur = 30;
-    ctx.shadowOffsetY = 15;
-
-    // 2. Fixed Neutral Translucent Liquid Glass Fill (Pill stays neutral glass)
-    const glassFill = ctx.createLinearGradient(x, y, x, y + h);
-    glassFill.addColorStop(0, 'rgba(255, 255, 255, 0.45)');   // Top specular sheen
-    glassFill.addColorStop(0.35, 'rgba(255, 255, 255, 0.15)'); // Core transparency
-    glassFill.addColorStop(0.70, 'rgba(255, 255, 255, 0.10)'); // Translucent glass body
-    glassFill.addColorStop(1.0, 'rgba(255, 255, 255, 0.35)');  // Bottom rim reflection
-
-    ctx.fillStyle = glassFill;
-    ctx.beginPath();
-    ctx.roundRect(x, y, w, h, 35);
-    ctx.fill();
-
-    // Disable shadow for internal drawings to keep text razor sharp
-    ctx.shadowColor = 'transparent';
-    ctx.shadowBlur = 0;
-    ctx.shadowOffsetY = 0;
-
-    // 3. Specular Top Glass Reflection
-    ctx.save();
-    ctx.beginPath();
-    ctx.roundRect(x, y, w, h, 35);
-    ctx.clip();
-
-    const glossGrad = ctx.createLinearGradient(x, y, x, y + h * 0.4);
-    glossGrad.addColorStop(0, 'rgba(255, 255, 255, 0.40)');
-    glossGrad.addColorStop(1, 'rgba(255, 255, 255, 0.0)');
-    ctx.fillStyle = glossGrad;
-    ctx.fillRect(x, y, w, h * 0.4);
-    ctx.restore();
-
-    // 4. Outer Specular Glass Rim
-    ctx.beginPath();
-    ctx.roundRect(x, y, w, h, 35);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.65)';
-    ctx.lineWidth = 2.5;
-    ctx.stroke();
+    // 1–4. Slim frosted liquid-glass pill (6-layer panel language)
+    drawGlassPanel(ctx, { x, y, w, h, radius: 35 });
 
     // 5. Map & Text change color based on user color selection
     let contentColor = textColor || '#ffffff';
@@ -8847,27 +8933,28 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     const hg = Math.round(g + (255 - g) * 0.70);
     const hb = Math.round(b + (255 - b) * 0.70);
 
-    // 1. Top-Docked Date Header (Anchor Y = 180, zero overlap)
+    // 1. Date header — slightly larger, tight above digits
     const dateStr = stats.rawDate ? new Intl.DateTimeFormat('es-ES', { weekday: 'short', month: 'short', day: 'numeric' }).format(new Date(stats.rawDate.replace('Z', ''))) : 'Dom, 29 mar';
     const formattedDate = dateStr.charAt(0).toUpperCase() + dateStr.slice(1).replace('.', '');
 
     ctx.save();
-    ctx.font = "600 44px 'Montserrat', sans-serif";
+    ctx.font = "600 56px 'Montserrat', sans-serif";
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = textColor;
     ctx.shadowColor = 'rgba(0, 0, 0, 0.40)';
     ctx.shadowBlur = 10;
     ctx.shadowOffsetY = 4;
-    ctx.fillText(formattedDate, x, 180);
+    ctx.fillText(formattedDate, x, 160);
     ctx.restore();
 
-    // 2. Measure & Calculate Dynamic Auto-Fit Font Scaling for Hero Digits (Center Y = 640)
-    const heroY = 640;
-    const baseFontSize = 850;
+    // 2. Measure & Calculate Dynamic Auto-Fit Font Scaling for Hero Digits
+    //    Idiqlat Light — taller hero covering more of the vertical frame
+    const heroY = 780;
+    const baseFontSize = 1100;
     const aspectScaleX = 0.22;
     const maxAllowedWidth = 640;
-    const fontWeight = '400';
+    const fontWeight = '300';
 
     ctx.save();
     ctx.font = `${fontWeight} ${baseFontSize}px 'Montserrat', sans-serif`;
@@ -8896,13 +8983,13 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
 
     // ── INVERSE-SCALE COMPENSATED SSAA PIPELINE ──
     // 1. SSAA: Render at 3x to ensure pristine anti-aliasing.
-    // 2. Inverse-Scale Compensation: We scale the context by `finalScaleX` here 
-    //    so the squish happens internally. Then, we manually divide horizontal 
+    // 2. Inverse-Scale Compensation: We scale the context by `finalScaleX` here
+    //    so the squish happens internally. Then, we manually divide horizontal
     //    stroke offsets by `finalScaleX` to guarantee uniformly thick borders!
-    const SSAA = 3; 
+    const SSAA = 3;
     const drawW = unscaledW * finalScaleX;
     const drawH = unscaledH;
-    
+
     const glassCanvas = document.createElement('canvas');
     glassCanvas.id = 'storyCanvas';
     glassCanvas.width = drawW * SSAA;
@@ -8911,7 +8998,7 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
 
     if (gc) {
         // Apply the visual squish to the context itself!
-        gc.scale(SSAA * finalScaleX, SSAA); 
+        gc.scale(SSAA * finalScaleX, SSAA);
         const cx = unscaledW / 2;
         const cy = unscaledH / 2;
         const halfH = finalFontSize / 2;
@@ -8931,42 +9018,58 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
         const hg = Math.round(g + (255 - g) * 0.70);
         const hb = Math.round(b + (255 - b) * 0.70);
 
-        // ── Helper: Compensated Outer Rim ──
+        // ── Helper: Compensated Outer Rim (smooth continuous edge) ──
         const createOuterRim = (colorOrGradient: string | CanvasGradient, visualLineWidth: number) => {
             const edgeCanvas = document.createElement('canvas');
             edgeCanvas.width = drawW * SSAA;
             edgeCanvas.height = drawH * SSAA;
             const ec = edgeCanvas.getContext('2d');
             if (!ec) return edgeCanvas;
-            
+
             ec.scale(SSAA * finalScaleX, SSAA);
             ec.font = `${fontWeight} ${finalFontSize}px 'Montserrat', sans-serif`;
             ec.textAlign = 'center';
             ec.textBaseline = 'middle';
 
             ec.fillStyle = colorOrGradient;
-            
-            // 1. Compensated Faux-Stroke (64 steps for absolute smoothness)
-            // By dividing the X-offset by finalScaleX, we push the fill further 
-            // out horizontally, perfectly countering the squish factor to create 
-            // an absolute uniformly thick 360-degree border. No strokeText bugs!
-            const steps = 64;
+
+            // Dense ring + micro-blur → continuous rim (no polygonal facets)
+            const steps = 256;
             for (let i = 0; i < steps; i++) {
                 const angle = (i / steps) * Math.PI * 2;
-                const dx = (Math.cos(angle) * visualLineWidth) / finalScaleX; 
+                const dx = (Math.cos(angle) * visualLineWidth) / finalScaleX;
                 const dy = Math.sin(angle) * visualLineWidth;
                 ec.fillText(mainVal, cx + dx, cy + dy);
             }
 
-            // 2. Carve out interior
+            // Soften the ring into a continuous shape
+            const smooth = document.createElement('canvas');
+            smooth.width = edgeCanvas.width;
+            smooth.height = edgeCanvas.height;
+            const sm = smooth.getContext('2d');
+            if (sm) {
+                if ('filter' in sm) (sm as CanvasRenderingContext2D).filter = 'blur(1.2px)';
+                sm.drawImage(edgeCanvas, 0, 0);
+                if ('filter' in sm) (sm as CanvasRenderingContext2D).filter = 'none';
+                // Restore crisp interior cut after blur
+                sm.scale(SSAA * finalScaleX, SSAA);
+                sm.font = `${fontWeight} ${finalFontSize}px 'Montserrat', sans-serif`;
+                sm.textAlign = 'center';
+                sm.textBaseline = 'middle';
+                sm.globalCompositeOperation = 'destination-out';
+                sm.fillStyle = 'black';
+                sm.fillText(mainVal, cx, cy);
+                return smooth;
+            }
+
+            // Fallback: carve interior on unblurred ring
             ec.globalCompositeOperation = 'destination-out';
-            ec.fillStyle = 'black'; 
+            ec.fillStyle = 'black';
             ec.fillText(mainVal, cx, cy);
-            
             return edgeCanvas;
         };
 
-        // ── Helper: Compensated Inner Bevel ──
+        // ── Helper: Compensated Inner Bevel (soft, no hard line) ──
         const createBevel = (color: string | CanvasGradient, visualShiftX: number, visualShiftY: number) => {
             const edgeCanvas = document.createElement('canvas');
             edgeCanvas.width = drawW * SSAA;
@@ -8980,17 +9083,27 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
             ec.textBaseline = 'middle';
 
             ec.fillStyle = color;
-            // Compensate the bevel shift!
             const dx = visualShiftX / finalScaleX;
             const dy = visualShiftY;
             ec.fillText(mainVal, cx + dx, cy + dy);
 
             ec.globalCompositeOperation = 'destination-out';
             ec.fillText(mainVal, cx, cy);
-            
+
+            // Slight blur so the bevel doesn’t read as a hard contour line
+            const smooth = document.createElement('canvas');
+            smooth.width = edgeCanvas.width;
+            smooth.height = edgeCanvas.height;
+            const sm = smooth.getContext('2d');
+            if (sm) {
+                if ('filter' in sm) (sm as CanvasRenderingContext2D).filter = 'blur(0.8px)';
+                sm.drawImage(edgeCanvas, 0, 0);
+                if ('filter' in sm) (sm as CanvasRenderingContext2D).filter = 'none';
+                return smooth;
+            }
             return edgeCanvas;
         };
-        
+
         // ── Helper: 1:1 Composite Drawer ──
         // Since `gc` has a squish scale applied, drawing an already-squished
         // offscreen canvas onto it will double-squish it! We must reset transform.
@@ -9011,7 +9124,7 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
             sc.font = `${fontWeight} ${finalFontSize}px 'Montserrat', sans-serif`;
             sc.textAlign = 'center';
             sc.textBaseline = 'middle';
-            
+
             sc.shadowColor = `rgba(${hr}, ${hg}, ${hb}, 0.60)`;
             sc.shadowBlur = 12;
             sc.shadowOffsetY = 4;
@@ -9037,7 +9150,7 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
         borderFill.addColorStop(0.40, `rgba(${hr}, ${hg}, ${hb}, 0.75)`);
         borderFill.addColorStop(0.70, `rgba(${r}, ${g}, ${b}, 0.50)`);
         borderFill.addColorStop(1.00, `rgba(${dr}, ${dg}, ${db}, 0.95)`);
-        
+
         const pristineRim = createOuterRim(borderFill, 2);
         composite1to1(pristineRim);
 
@@ -9063,16 +9176,81 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.drawImage(glassCanvas, drawX, drawY, drawW, drawH);
     ctx.restore();
 
-    // 4. Symmetric Unit Label at Bottom (Anchor Y = 1080)
+    // 4. Unit — larger, tight under digits
     ctx.save();
-    ctx.font = "600 48px 'Montserrat', sans-serif";
+    ctx.font = "600 64px 'Montserrat', sans-serif";
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = textColor;
     ctx.shadowColor = 'rgba(0, 0, 0, 0.40)';
     ctx.shadowBlur = 10;
     ctx.shadowOffsetY = 4;
-    ctx.fillText(unit, x, 1080);
+    ctx.fillText(unit, x, 1180);
+    ctx.restore();
+}
+
+/**
+ * glass-numbers-v2 — liquid glass digits only (no card).
+ * Layout: date above → hero digits (liquid glass) → unit (km/min).
+ * Target: iOS "9:41 Liquid Glass" slabs — frosted, dual-rim, photo blurs through.
+ * For copy/paste over any Instagram photo as a transparent sticker.
+ */
+export function drawGlassNumbersV2(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const { s1 } = getDynamicStats(stats);
+    const hasDistance = Boolean(stats.hasDistance || (stats.distanceVal && parseFloat(stats.distanceVal) > 0));
+    const mainVal = s1?.value || (hasDistance ? '0.00' : '0');
+    const unit = (s1?.unit || (hasDistance ? 'km' : 'min')).toLowerCase();
+
+    const dateStr = stats.rawDate
+        ? new Intl.DateTimeFormat('es-ES', { weekday: 'short', month: 'short', day: 'numeric' }).format(new Date(stats.rawDate.replace('Z', '')))
+        : 'Dom, 29 mar';
+    const formattedDate = dateStr.charAt(0).toUpperCase() + dateStr.slice(1).replace('.', '');
+
+    const x = 540;
+    // Tight stack: date → digits → unit (9:41 density, no card)
+    const heroY = 780;
+    const baseSize = 520;
+    const maxW = 820;
+
+    ctx.save();
+    ctx.font = `300 ${baseSize}px 'Outfit', sans-serif`;
+    const measured = ctx.measureText(mainVal).width;
+    ctx.restore();
+    const heroFont = measured > maxW ? Math.floor(baseSize * (maxW / measured)) : baseSize;
+
+    // Date — slightly larger, tight above digits
+    ctx.save();
+    ctx.font = "500 56px 'Outfit', sans-serif";
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = textColor;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetY = 3;
+    ctx.fillText(formattedDate, x, heroY - heroFont * 0.58);
+    ctx.restore();
+
+    // Hero digits — liquid glass slabs (9:41)
+    drawLiquidGlyphs(ctx, {
+        text: mainVal,
+        x,
+        y: heroY,
+        fontFamily: 'Outfit',
+        fontWeight: '300',
+        fontSize: heroFont,
+        fill: 'rgba(255, 255, 255, 0.92)',
+    });
+
+    // Unit — km / min, tight under digits
+    ctx.save();
+    ctx.font = "500 64px 'Outfit', sans-serif";
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = textColor;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetY = 3;
+    ctx.fillText(unit, x, heroY + heroFont * 0.52);
     ctx.restore();
 }
 

@@ -345,7 +345,7 @@ function updateBackground() {
 // --- RUN AI RULE COMPLIANCE AUDIT ---
 async function runAiAudit() {
     const templateId = selectTemplate.value;
-    
+
     // UI Loading state
     auditStatus.className = 'audit-status-badge status-loading';
     auditStatus.textContent = 'Auditing...';
@@ -368,7 +368,7 @@ async function runAiAudit() {
         if (data.compliant) {
             auditStatus.className = 'audit-status-badge status-passed';
             auditStatus.textContent = `PASS (${data.score}/100)`;
-            
+
             auditResultsContainer.innerHTML = `
                 <div style="color: #4ade80; font-weight: 700; margin-bottom: 0.5rem; text-align: center;">
                     ✓ ¡El template sigue todas las directrices de Scora!
@@ -425,7 +425,7 @@ function bindEvents() {
             </p>
         `;
     });
-    
+
     selectPreset.addEventListener('change', () => {
         loadPreset(selectPreset.value);
         triggerRender();
@@ -441,7 +441,7 @@ function bindEvents() {
 
     // Live text/input changes
     const inputs = [
-        inputTitle, inputDistance, inputDuration, inputPace, 
+        inputTitle, inputDistance, inputDuration, inputPace,
         inputPaceUnit, inputHr, inputCalories, inputLocation, inputDate
     ];
     inputs.forEach(el => {
@@ -473,7 +473,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Setup initial state
     initDropdowns();
     updateBackground();
-    
+
     // Canvas sizing setup - ensure exact 1080x1920 1:1 buffer rendering matching exportCanvas
     const canvas = document.getElementById('harness-canvas') as HTMLCanvasElement;
     if (canvas) {
