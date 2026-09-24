@@ -13,7 +13,6 @@ import * as Renderers from './CanvasPainter';
 export const ACTIVE_STICKER_LIST: StickerDefinition[] = [
 
     { id: 'circle-letters', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, duration: true }, render: Renderers.drawCircleLetters },
-    { id: 'glass-numbers', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, duration: true, date: true }, render: Renderers.drawGlassNumbers },
     { id: 'glass-numbers-v2', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, duration: true, date: true }, render: Renderers.drawGlassNumbersV2 },
     { id: 'note-accent', supportsCustomColor: true, category: 'all', supportsBlackText: true, preferredCase: 'title', features: { distance: true, duration: true, paceSpeed: true }, render: Renderers.drawNoteAccentSticker },
     { id: 'narrative-highlight', category: 'all', supportsBlackText: true, preferredCase: 'lowercase', features: { distance: true, duration: true, paceSpeed: true, date: true, location: true }, render: Renderers.drawNarrativeHighlight },
@@ -57,6 +56,8 @@ export const ACTIVE_STICKER_LIST: StickerDefinition[] = [
 // ─── 2. ARCHIVED / HIDDEN STICKERS ───────────────────────────────────────────
 // These are preserved in the code but hidden from the main UI Gallery.
 export const ARCHIVED_STICKER_LIST: StickerDefinition[] = [
+    // User 2026-09-24: v2 is the product numbers sticker; v1 archived (not deleted).
+    { id: 'glass-numbers', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, duration: true, date: true }, render: Renderers.drawGlassNumbers },
     { id: 'monoline-minimalist', supportsCustomColor: true, category: 'all', supportsBlackText: true, compact: true, features: { distance: true, duration: true, paceSpeed: true, map: true }, render: Renderers.drawMonolineMinimalist },
     { id: 'marker-highlight', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, duration: true }, render: Renderers.drawMarkerHighlight },
     { id: 'science-pro', category: 'all', supportsBlackText: false, features: { distance: true, heartRate: true, date: true, paceSpeed: false }, render: Renderers.drawSciencePro },

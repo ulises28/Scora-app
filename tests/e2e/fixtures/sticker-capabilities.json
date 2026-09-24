@@ -34,44 +34,6 @@
       }
     }
   },
-  "glass-numbers": {
-    "version": "4.1",
-    "supportsCustomColor": true,
-    "supportsBlackText": true,
-    "compact": false,
-    "modes": {
-      "run": {
-        "metrics": [
-          "distance",
-          "time",
-          "date"
-        ],
-        "labels": [
-          "KM"
-        ],
-        "metadata": []
-      },
-      "bike": {
-        "metrics": [
-          "distance",
-          "time",
-          "date"
-        ],
-        "labels": [
-          "KM"
-        ],
-        "metadata": []
-      },
-      "workout": {
-        "metrics": [
-          "time",
-          "date"
-        ],
-        "labels": [],
-        "metadata": []
-      }
-    }
-  },
   "glass-numbers-v2": {
     "version": "4.1",
     "supportsCustomColor": true,
