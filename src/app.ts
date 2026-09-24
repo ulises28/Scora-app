@@ -413,25 +413,32 @@ async function initApp() {
     const stateSid = urlParams.get('state');
     const authError = urlParams.get('error');
 
-    // 🚨 STRAVA CANCEL / DENY: ?error=access_denied — recover login, never lock out
-    if (authError && !authCode) {
+    // True when this document is the OAuth popup (StravaAuth)
+    const isAuthPopup = window.name === 'StravaAuth' ||
+        (!!window.opener && window.opener !== window);
+
+    // 🚨 STRAVA CANCEL / DENY: never show Scora UI inside the popup — close it.
+    if (isAuthPopup && (authError || !authCode)) {
+        try {
+            window.opener?.postMessage({ type: 'strava_auth_cancelled' }, window.location.origin);
+        } catch { /* cross-opener */ }
+        try { window.close(); } catch { /* Safari */ }
+        // If close() is blocked, show only a tiny message (do not load the app)
+        document.body.innerHTML =
+            '<div style="font-family:sans-serif;color:#ccc;background:#111;height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px">Cancelado. Puedes cerrar esta ventana.</div>';
+        return;
+    }
+
+    // 🚨 STRAVA CANCEL on full-page redirect: recover login, never lock out
+    if (authError && !authCode && !isAuthPopup) {
         stopQueuePolling();
         sessionStorage.removeItem('scora_queue_session_id');
         sessionStorage.removeItem('scora_auth_mode');
         localStorage.removeItem('stravaAuth');
         window.history.replaceState({ screen: 'screen-feed' }, document.title, window.location.pathname);
-
-        // Free the Strava slot so the next user is not stuck
         try {
             await fetch('/api/admin-reset', { method: 'POST' }).catch(() => {});
         } catch { /* best-effort */ }
-
-        if (window.opener && window.opener !== window) {
-            window.opener.postMessage({ type: 'strava_auth_cancelled' }, window.location.origin);
-            window.close();
-            return;
-        }
-
         showScreen('screen-feed');
         if (authSection) authSection.classList.remove('hidden');
         if (activitySection) activitySection.classList.add('hidden');
