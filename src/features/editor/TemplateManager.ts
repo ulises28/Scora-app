@@ -101,17 +101,28 @@ export function initTemplateManager(onChange: OnChangeCallback) {
             };
 
             galleryContainer.appendChild(thumb);
-
-            // Lightweight visual preview for every thumb
-            const config = STICKER_REGISTRY[id];
-            const previewStats = statsForGallery(i);
-            let color = 'white';
-            if (id.startsWith('chrome')) color = currentActiveColor;
-            else if (config?.supportsCustomColor) color = currentMapColor;
-            else color = currentTextColor;
-            thumbPaintQueue.push({ canvasId: canvas.id, stats: previewStats, id, color, el: thumb });
+            // Instant design card in the strip (no drawTemplate)
+            paintDesignCard(canvas, id);
         });
-        pumpThumbQueue();
+    }
+
+    function paintDesignCard(canvas: HTMLCanvasElement, id: string) {
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        const w = canvas.width, h = canvas.height;
+        ctx.clearRect(0, 0, w, h);
+        ctx.fillStyle = 'rgba(255,255,255,0.04)';
+        ctx.fillRect(0, 0, w, h);
+        const cx = w / 2, cy = h * 0.45;
+        ctx.fillStyle = 'rgba(255,255,255,0.55)';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = '700 22px sans-serif';
+        const label = id.replace(/-/g, ' ').slice(0, 10).toUpperCase();
+        ctx.fillText(label, cx, cy);
+        ctx.fillStyle = 'rgba(255,255,255,0.25)';
+        ctx.font = '500 11px sans-serif';
+        ctx.fillText('PREVIEW', cx, cy + 28);
     }
 
     // ── Serialized lightweight thumb previews ──

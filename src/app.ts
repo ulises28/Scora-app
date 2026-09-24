@@ -417,13 +417,32 @@ async function initApp() {
     const isAuthPopup = window.name === 'StravaAuth' ||
         (!!window.opener && window.opener !== window);
 
+    /** Free the Strava slot we reserved in queue-join (Cancel must not block the app). */
+    const releaseQueueSlot = async () => {
+        const sid = stateSid || sessionStorage.getItem('scora_queue_session_id');
+        if (!sid || sid === 'fallback') return;
+        try {
+            await fetch('/api/queue-leave', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionId: sid }),
+            });
+        } catch { /* best-effort */ }
+    };
+
     // 🚨 STRAVA CANCEL / DENY: never show Scora UI inside the popup — close it.
     if (isAuthPopup && (authError || !authCode)) {
+        await releaseQueueSlot();
         try {
-            window.opener?.postMessage({ type: 'strava_auth_cancelled' }, window.location.origin);
-        } catch { /* cross-opener */ }
+            window.opener?.postMessage({ type: 'strava_auth_cancelled', sessionId: stateSid || sessionStorage.getItem('scora_queue_session_id') }, window.location.origin);
+        } catch { /* cross-opener (COOP) */ }
+        // BroadcastChannel fallback when opener is severed
+        try {
+            const bc = new BroadcastChannel('scora-auth');
+            bc.postMessage({ type: 'strava_auth_cancelled' });
+            bc.close();
+        } catch { /* older browsers */ }
         try { window.close(); } catch { /* Safari */ }
-        // If close() is blocked, show only a tiny message (do not load the app)
         document.body.innerHTML =
             '<div style="font-family:sans-serif;color:#ccc;background:#111;height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px">Cancelado. Puedes cerrar esta ventana.</div>';
         return;
@@ -432,13 +451,11 @@ async function initApp() {
     // 🚨 STRAVA CANCEL on full-page redirect: recover login, never lock out
     if (authError && !authCode && !isAuthPopup) {
         stopQueuePolling();
+        await releaseQueueSlot();
         sessionStorage.removeItem('scora_queue_session_id');
         sessionStorage.removeItem('scora_auth_mode');
         localStorage.removeItem('stravaAuth');
         window.history.replaceState({ screen: 'screen-feed' }, document.title, window.location.pathname);
-        try {
-            await fetch('/api/admin-reset', { method: 'POST' }).catch(() => {});
-        } catch { /* best-effort */ }
         showScreen('screen-feed');
         if (authSection) authSection.classList.remove('hidden');
         if (activitySection) activitySection.classList.add('hidden');
@@ -930,11 +947,29 @@ window.addEventListener('popstate', async (event) => {
     }
 });
 
+// Fallback when COOP severs window.opener between Strava → Scora popup
+try {
+    const authBc = new BroadcastChannel('scora-auth');
+    authBc.onmessage = (ev) => {
+        if (ev.data && ev.data.type === 'strava_auth_cancelled') {
+            window.postMessage({ type: 'strava_auth_cancelled' }, window.location.origin);
+        }
+    };
+} catch { /* ignore */ }
+
 // OAuth Callback Manager
 window.addEventListener('message', async (event) => {
     if (event.origin !== window.location.origin) return;
     if (event.data && event.data.type === 'strava_auth_cancelled') {
         stopQueuePolling();
+        const sid = (event.data as any).sessionId || sessionStorage.getItem('scora_queue_session_id');
+        if (sid && sid !== 'fallback') {
+            void fetch('/api/queue-leave', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionId: sid }),
+            }).catch(() => {});
+        }
         sessionStorage.removeItem('scora_queue_session_id');
         localStorage.removeItem('stravaAuth');
         if (btnLogin) {
