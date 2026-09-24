@@ -44,7 +44,7 @@ export const ACTIVE_STICKER_LIST: StickerDefinition[] = [
     { id: 'finish-line', supportsCustomColor: true, category: 'distance', supportsBlackText: false, features: { distance: true, duration: true, paceSpeed: true }, render: Renderers.drawFinishLine },
     { id: 'vhs-retro', category: 'distance', supportsBlackText: false, features: { distance: true, date: true, startTime: true }, render: Renderers.drawVHSRetro },
     { id: 'micro-serif', supportsCustomColor: true, category: 'distance', supportsBlackText: true, features: { distance: true, paceSpeed: true, map: true }, render: Renderers.drawMicroSerif },
-    { id: 'classic-stack', category: 'all', supportsBlackText: true, compact: true, features: { distance: true, duration: true, date: true }, render: Renderers.drawClassicStack },
+    { id: 'classic-stack', supportsCustomColor: true, category: 'all', supportsBlackText: true, compact: true, features: { distance: true, duration: true, date: true }, render: Renderers.drawClassicStack },
     { id: 'bold-day', supportsCustomColor: true, category: 'distance', supportsBlackText: true, preferredCase: 'uppercase', features: { distance: true, date: true }, seasonal: false, render: Renderers.drawBoldDay },
     { id: 'workout-receipt', category: 'distance', supportsBlackText: false, features: { distance: true, paceSpeed: true, duration: true, date: true }, render: Renderers.drawWorkoutReceipt },
     { id: 'condesa-stack', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, paceSpeed: true, startTime: true, date: true }, expectedMetadata: ['location', 'LOCAL TIME', 'LOCATION'], render: Renderers.drawCondesaStack },

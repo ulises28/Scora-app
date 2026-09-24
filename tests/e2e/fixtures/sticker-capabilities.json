@@ -1300,7 +1300,7 @@
   },
   "classic-stack": {
     "version": "4.1",
-    "supportsCustomColor": false,
+    "supportsCustomColor": true,
     "supportsBlackText": true,
     "compact": true,
     "modes": {
