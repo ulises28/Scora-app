@@ -411,6 +411,43 @@ async function initApp() {
     const urlParams = new URLSearchParams(window.location.search);
     const authCode = urlParams.get('code');
     const stateSid = urlParams.get('state');
+    const authError = urlParams.get('error');
+
+    // 🚨 STRAVA CANCEL / DENY: ?error=access_denied — recover login, never lock out
+    if (authError && !authCode) {
+        stopQueuePolling();
+        sessionStorage.removeItem('scora_queue_session_id');
+        sessionStorage.removeItem('scora_auth_mode');
+        localStorage.removeItem('stravaAuth');
+        window.history.replaceState({ screen: 'screen-feed' }, document.title, window.location.pathname);
+
+        // Free the Strava slot so the next user is not stuck
+        try {
+            await fetch('/api/admin-reset', { method: 'POST' }).catch(() => {});
+        } catch { /* best-effort */ }
+
+        if (window.opener && window.opener !== window) {
+            window.opener.postMessage({ type: 'strava_auth_cancelled' }, window.location.origin);
+            window.close();
+            return;
+        }
+
+        showScreen('screen-feed');
+        if (authSection) authSection.classList.remove('hidden');
+        if (activitySection) activitySection.classList.add('hidden');
+        if (activityListEl) {
+            activityListEl.innerHTML = `
+                <div class="error-container">
+                    <span class="error-title">AUTHORIZACIÓN CANCELADA</span>
+                    <p class='error-msg'>Cancelaste la conexión con Strava. Puedes intentarlo de nuevo cuando quieras.</p>
+                </div>`;
+        }
+        if (btnLogin) {
+            (btnLogin as HTMLButtonElement).disabled = false;
+            btnLogin.style.cursor = '';
+        }
+        return;
+    }
 
     if (!authCode) {
         checkInAppBrowser();
@@ -457,6 +494,8 @@ async function initApp() {
         window.close();
         return;
     }
+
+    // Popup cancel: error already handled above (posts strava_auth_cancelled).
 
     // 🔄 REDIRECT FLOW: User came back from Strava via full-page redirect (Safari/queue polling).
     // The authCode is in the URL but there is no opener — handle it directly.
@@ -887,6 +926,26 @@ window.addEventListener('popstate', async (event) => {
 // OAuth Callback Manager
 window.addEventListener('message', async (event) => {
     if (event.origin !== window.location.origin) return;
+    if (event.data && event.data.type === 'strava_auth_cancelled') {
+        stopQueuePolling();
+        sessionStorage.removeItem('scora_queue_session_id');
+        localStorage.removeItem('stravaAuth');
+        if (btnLogin) {
+            (btnLogin as HTMLButtonElement).disabled = false;
+            btnLogin.style.cursor = '';
+        }
+        showScreen('screen-feed');
+        if (authSection) authSection.classList.remove('hidden');
+        if (activitySection) activitySection.classList.add('hidden');
+        if (activityListEl) {
+            activityListEl.innerHTML = `
+                <div class="error-container">
+                    <span class="error-title">AUTHORIZACIÓN CANCELADA</span>
+                    <p class='error-msg'>Cancelaste la conexión con Strava. Puedes intentarlo de nuevo.</p>
+                </div>`;
+        }
+        return;
+    }
 
     if (event.data && event.data.type === 'strava_auth_success') {
         const newCode = event.data.code;

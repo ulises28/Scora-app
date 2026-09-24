@@ -296,34 +296,39 @@ export async function drawTemplate(
         canvas.height = bufH;
     }
 
-    // Chrome WebGL is too heavy for thumbs — paint a metallic plaque preview
+    // Chrome WebGL is too heavy for thumbs — chrome letterforms on dark
     if (isThumb && templateType.startsWith('chrome')) {
-        const { s1 } = getDynamicStats(stats);
+        const { s1, s2, type } = getDynamicStats(stats);
         ctx.save();
         ctx.scale(canvas.width / TARGET_W, canvas.height / TARGET_H);
-        // Soft chrome plate
-        const gx = 140, gy = 720, gw = 800, gh = 380;
-        const metal = ctx.createLinearGradient(gx, gy, gx + gw, gy + gh);
-        metal.addColorStop(0, '#f2f2f4');
-        metal.addColorStop(0.35, '#c8c8ce');
-        metal.addColorStop(0.55, '#f8f8fa');
-        metal.addColorStop(0.75, '#a8a8b0');
-        metal.addColorStop(1, '#e8e8ec');
-        ctx.fillStyle = metal;
-        ctx.beginPath();
-        ctx.roundRect(gx, gy, gw, gh, 48);
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(255,255,255,0.55)';
-        ctx.lineWidth = 3;
-        ctx.stroke();
-        // Engraved metrics
-        ctx.fillStyle = 'rgba(40,40,48,0.85)';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.font = "800 120px 'Plus Jakarta Sans'";
-        ctx.fillText(s1?.value || '10.05', 540, gy + 150);
-        ctx.font = "600 56px 'Plus Jakarta Sans'";
-        ctx.fillText((s1?.unit || 'KM').toUpperCase(), 540, gy + 250);
+        const title = (type || 'RUN').toUpperCase();
+        const hero = `${s1?.value || '10.05'}${s1?.unit ? ' ' + s1.unit.toUpperCase() : ''}`;
+        const sub = `${s2?.value || ''}${s2?.unit ? ' ' + s2.unit : ''}`;
+
+        const drawChromeText = (txt: string, cy: number, size: number) => {
+            ctx.save();
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = `800 ${size}px 'Plus Jakarta Sans', sans-serif`;
+            const w = ctx.measureText(txt).width;
+            const g = ctx.createLinearGradient(540 - w / 2, cy - size * 0.5, 540 + w / 2, cy + size * 0.5);
+            g.addColorStop(0, '#ffffff');
+            g.addColorStop(0.35, '#c8c8ce');
+            g.addColorStop(0.5, '#ffffff');
+            g.addColorStop(0.65, '#9a9aa2');
+            g.addColorStop(1, '#e8e8ee');
+            ctx.fillStyle = g;
+            ctx.shadowColor = 'rgba(0,0,0,0.55)';
+            ctx.shadowBlur = 12;
+            ctx.shadowOffsetY = 4;
+            ctx.fillText(txt, 540, cy);
+            ctx.shadowBlur = 0;
+            ctx.restore();
+        };
+
+        drawChromeText(title, 780, 140);
+        drawChromeText(hero, 980, 200);
+        if (sub) drawChromeText(sub, 1140, 90);
         ctx.restore();
         return;
     }
