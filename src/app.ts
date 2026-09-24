@@ -418,10 +418,10 @@ async function initApp() {
 
     setTimeout(removeLoader, 100);
 
-    // 👑 ADMIN BUTTON: Inject below the Strava login button whenever ?admin=scora is in the URL.
+    // 👑 ADMIN BUTTON: Always available with ?admin=scora (even when logged in / in queue)
     if (urlParams.get('admin') === 'scora') {
         const existingAdmin = document.getElementById('btn-admin-reset');
-        if (!existingAdmin && authSection) {
+        if (!existingAdmin) {
             const adminBtn = document.createElement('button');
             adminBtn.id = 'btn-admin-reset';
             adminBtn.dataset.testid = 'btn-admin-reset';
@@ -429,10 +429,22 @@ async function initApp() {
             adminBtn.innerHTML = '<span>🚨</span> ADMIN: FORCE RESET';
             adminBtn.title = 'Admin: Force-reset the Strava connection slot';
             adminBtn.onclick = handleAdminReset;
-            adminBtn.style.marginTop = '1rem';
-            adminBtn.style.padding = '0.6rem 1rem';
-            
-            authSection.appendChild(adminBtn);
+            adminBtn.style.cssText = [
+                'position:fixed',
+                'right:12px',
+                'bottom:12px',
+                'z-index:9999',
+                'margin:0',
+                'padding:0.7rem 1rem',
+                'background:rgba(255,82,82,0.15)',
+                'border:1px solid #ff5252',
+                'color:#ff5252',
+                'border-radius:12px',
+                'font-weight:800',
+                'font-size:0.85rem',
+                'cursor:pointer',
+            ].join(';');
+            document.body.appendChild(adminBtn);
             document.body.classList.add('admin-mode-active');
         }
     }
