@@ -3,6 +3,7 @@ import { MOCK_ACTIVITIES } from '../../api/mocks';
 import { formatActivityStats } from '../../api/strava';
 import { normalizeSport } from './CanvasUtils';
 import { isDebugLabelsHost } from '../../utils/debugHost';
+import { MOCK_STATS_WORKOUT } from '../../utils/catalogMocks';
 
 import { STICKER_LIST, STICKER_REGISTRY } from './StickerRegistry';
 import { TemplateFeatures } from './types';
@@ -14,6 +15,7 @@ export const TEMPLATES = TEMPLATE_REGISTRY.filter(t => !t.seasonal).map(t => t.i
 
 // Variety for gallery previews (used when no activity is selected yet)
 const GALLERY_MOCKS = MOCK_ACTIVITIES.map(m => formatActivityStats(m));
+const WORKOUT_MOCK = MOCK_STATS_WORKOUT;
 
 type OnChangeCallback = (template: string, color: string, showLogo: boolean) => void;
 
@@ -102,20 +104,17 @@ export function initTemplateManager(onChange: OnChangeCallback) {
 
             galleryContainer.appendChild(thumb);
 
-            // Real sticker preview (serialized — glass/chrome have thumb fast paths)
-            const config = STICKER_REGISTRY[id];
-            const previewStats = statsForGallery(i);
-            let color = 'white';
-            if (id.startsWith('chrome')) color = currentActiveColor;
-            else if (config?.supportsCustomColor) color = currentMapColor;
-            else color = currentTextColor;
-            thumbPaintQueue.push({ canvasId: canvas.id, stats: previewStats, id, color, el: thumb });
+            // Fixed mock mini — follow the ACTIVITY (workout vs run), not the sticker id
+            const act = currentActivityStats;
+            const isWorkoutAct = !act?.hasDistance || String(act?.type || '').match(/Workout|Weight|Yoga|Training|Strength|HIIT/i);
+            const mockStats = isWorkoutAct ? WORKOUT_MOCK : GALLERY_MOCKS[0];
+            thumbPaintQueue.push({ canvasId: canvas.id, mockStats, id });
         });
         pumpThumbQueue();
     }
 
-    // ── Serialized thumb previews (one at a time so Safari stays responsive) ──
-    const thumbPaintQueue: { canvasId: string; stats: any; id: string; color: string; el: HTMLElement }[] = [];
+    // Serialized minis — one paint at a time so Safari memory stays flat
+    const thumbPaintQueue: { canvasId: string; mockStats: any; id: string }[] = [];
     let thumbPainting = false;
     async function pumpThumbQueue() {
         if (thumbPainting) return;
@@ -123,16 +122,18 @@ export function initTemplateManager(onChange: OnChangeCallback) {
         while (thumbPaintQueue.length) {
             const job = thumbPaintQueue.shift()!;
             try {
-                await drawTemplate(job.canvasId, job.stats, job.id, job.color, currentShowLogo, false);
-            } catch { /* keep queue alive */ }
+                await drawTemplate(job.canvasId, job.mockStats, job.id, 'white', false);
+            } catch { /* keep strip alive */ }
             await new Promise(r => setTimeout(r, 0));
         }
         thumbPainting = false;
     }
 
     function paintThumb(id: string) {
-        // Previews are painted once on open — switching only redraws the main canvas
+        // Minis use fixed mock stats — switching only redraws the main canvas
     }
+
+    
 
     function updateDots() {
         if (!dotsContainer) return;

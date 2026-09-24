@@ -1,5 +1,22 @@
 import { describe, it, expect } from 'vitest';
-import { parseDurationParts } from '../../src/features/editor/CanvasUtils';
+import { parseDurationParts, deriveContrastInk } from '../../src/features/editor/CanvasUtils';
+
+describe('CanvasUtils -> deriveContrastInk', () => {
+    it('maps signature yellow to a deep red drop (ref pair)', () => {
+        const ink = deriveContrastInk('#fbbf24');
+        // Must be clearly darker and hue-pulled off yellow
+        expect(ink).toMatch(/^#[0-9a-f]{6}$/i);
+        expect(ink).not.toBe('#fbbf24');
+    });
+
+    it('falls back to print red for near-white', () => {
+        expect(deriveContrastInk('#ffffff')).toBe('#b91c1c');
+    });
+
+    it('falls back to yellow accent for near-black', () => {
+        expect(deriveContrastInk('#111111')).toBe('#fbbf24');
+    });
+});
 
 describe('CanvasUtils -> parseDurationParts', () => {
     

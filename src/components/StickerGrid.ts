@@ -2,6 +2,7 @@ import { drawTemplate } from '../features/editor/CanvasPainter';
 import { STICKER_REGISTRY, STICKER_LIST } from '../features/editor/StickerRegistry';
 import { copyCanvasToClipboard, flashFeedback } from '../features/editor/StickerActions';
 import { isDebugLabelsHost } from '../utils/debugHost';
+import { MOCK_STATS_RUN, MOCK_STATS_WORKOUT } from '../utils/catalogMocks';
 
 const LONG_PRESS_MS = 480;
 
@@ -156,14 +157,17 @@ export function initStickerGrid(onOpenEditor: OnOpenEditor) {
 
             container.appendChild(cell);
 
-            // Real preview, serialized (not all at once)
+            // Fixed mock mini — run mock for distance activities, workout mock for gym
             const { color, showLogo } = colorFor(id);
-            gridPaintQueue.push({ canvasId: canvas.id, id, color, showLogo, stats });
+            const isWorkoutAct = !stats?.hasDistance || String(stats?.type || '').match(/Workout|Weight|Yoga|Training|Strength|HIIT/i);
+            const miniStats = isWorkoutAct ? MOCK_STATS_WORKOUT : MOCK_STATS_RUN;
+            gridPaintQueue.push({ canvasId: canvas.id, id, color, showLogo, miniStats, fallbackLabel: id });
         });
         pumpGridQueue();
     }
 
-    const gridPaintQueue: { canvasId: string; id: string; color: string; showLogo: boolean; stats: any }[] = [];
+    // Serialized minis — one paint at a time so Safari memory stays flat
+    const gridPaintQueue: { canvasId: string; id: string; color: string; showLogo: boolean; miniStats: any; fallbackLabel: string }[] = [];
     let gridPainting = false;
     async function pumpGridQueue() {
         if (gridPainting) return;
@@ -171,8 +175,20 @@ export function initStickerGrid(onOpenEditor: OnOpenEditor) {
         while (gridPaintQueue.length) {
             const job = gridPaintQueue.shift()!;
             try {
-                await drawTemplate(job.canvasId, job.stats, job.id, job.color, job.showLogo, false);
-            } catch { /* keep going */ }
+                await drawTemplate(job.canvasId, job.miniStats, job.id, job.color, job.showLogo, false);
+            } catch {
+                const el = document.getElementById(job.canvasId) as HTMLCanvasElement | null;
+                const g = el?.getContext('2d');
+                if (g && el) {
+                    g.fillStyle = 'rgba(255,255,255,0.08)';
+                    g.fillRect(0, 0, el.width, el.height);
+                    g.fillStyle = 'rgba(255,255,255,0.55)';
+                    g.font = '700 14px sans-serif';
+                    g.textAlign = 'center';
+                    g.textBaseline = 'middle';
+                    g.fillText(job.fallbackLabel.replace(/-/g, ' ').toUpperCase().slice(0, 14), el.width / 2, el.height / 2);
+                }
+            }
             await new Promise(r => setTimeout(r, 0));
         }
         gridPainting = false;

@@ -1555,5 +1555,82 @@
         ]
       }
     }
+  },
+  "word-metric": {
+    "version": "4.1",
+    "supportsCustomColor": true,
+    "supportsBlackText": true,
+    "compact": false,
+    "modes": {
+      "run": {
+        "metrics": [
+          "distance",
+          "time"
+        ],
+        "labels": [
+          "KM",
+          "KILOMETERS",
+          "MINUTES"
+        ],
+        "metadata": []
+      },
+      "bike": {
+        "metrics": [
+          "distance",
+          "time"
+        ],
+        "labels": [
+          "KM",
+          "KILOMETERS",
+          "MINUTES"
+        ],
+        "metadata": []
+      },
+      "workout": {
+        "metrics": [
+          "time"
+        ],
+        "labels": [
+          "KILOMETERS",
+          "MINUTES"
+        ],
+        "metadata": []
+      }
+    }
+  },
+  "select-highlight": {
+    "version": "4.1",
+    "supportsCustomColor": true,
+    "supportsBlackText": false,
+    "compact": false,
+    "modes": {
+      "run": {
+        "metrics": [
+          "distance",
+          "time"
+        ],
+        "labels": [
+          "KM"
+        ],
+        "metadata": []
+      },
+      "bike": {
+        "metrics": [
+          "distance",
+          "time"
+        ],
+        "labels": [
+          "KM"
+        ],
+        "metadata": []
+      },
+      "workout": {
+        "metrics": [
+          "time"
+        ],
+        "labels": [],
+        "metadata": []
+      }
+    }
   }
 }

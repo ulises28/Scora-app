@@ -12,19 +12,6 @@
  * horizontal aspect scale applied at drawImage time.
  */
 
-/** Safari kills tabs that hold too many large canvases — cap glass buffers. */
-function glassSsaa(ctx: CanvasRenderingContext2D, fontSize: number): number {
-    const thumb = ctx.canvas.width <= 640;
-    if (thumb) return 1;
-    if (fontSize > 800) return 2;
-    return 2;
-}
-
-function releaseCanvas(c: HTMLCanvasElement): void {
-    c.width = 0;
-    c.height = 0;
-}
-
 export interface GlassTextColor {
     r: number;
     g: number;
@@ -43,8 +30,53 @@ export interface GlassTextOptions {
     color: GlassTextColor;
 }
 
-const SSAA = 3;
 const PAD = 80;
+
+/** Safari kills tabs that hold too many large canvases — cap glass buffers. */
+export function isThumbGlass(ctx: CanvasRenderingContext2D): boolean {
+    return (ctx.canvas?.width ?? 0) <= 640;
+}
+
+export function glassSsaa(ctx: CanvasRenderingContext2D): number {
+    // Quality tier (tests/unit/glass-buffer-budget): thumbs 1, main/export 2.
+    // WebKit raster cost is already capped via glassBufScale on thumbs.
+    return isThumbGlass(ctx) ? 1 : 2;
+}
+
+/** Extra downscale for thumbs so glass buffers are not story-sized. */
+export function glassBufScale(ctx: CanvasRenderingContext2D): number {
+    return isThumbGlass(ctx) ? 0.35 : 1;
+}
+
+/**
+ * Continuous rim without a 256-step orbit.
+ * Blur-dilate a single fillText, then cut the glyph interior — O(1) fills,
+ * no anisotropic fillText. Matches the accepted CFS look (soft continuous edge).
+ */
+export function paintContinuousRim(
+    ec: CanvasRenderingContext2D,
+    text: string,
+    cx: number,
+    cy: number,
+    fill: string | CanvasGradient,
+    rimPx: number
+): void {
+    ec.save();
+    if ('filter' in ec) (ec as CanvasRenderingContext2D).filter = `blur(${Math.max(0.6, rimPx * 0.55)}px)`;
+    ec.fillStyle = fill;
+    ec.fillText(text, cx, cy);
+    if ('filter' in ec) (ec as CanvasRenderingContext2D).filter = 'none';
+    ec.globalCompositeOperation = 'destination-out';
+    ec.fillStyle = 'black';
+    ec.fillText(text, cx, cy);
+    ec.globalCompositeOperation = 'source-over';
+    ec.restore();
+}
+
+export function releaseCanvas(c: HTMLCanvasElement): void {
+    c.width = 0;
+    c.height = 0;
+}
 
 /**
  * Samples dest under the glyph rect, blurs it, and composites it **inside the
@@ -61,7 +93,7 @@ function frostBackdropUnder(
     blurPx = 18
 ): void {
     // Thumbs / empty story frames: skip getImageData (Safari memory + CPU)
-    if (dest.canvas.width <= 640) return;
+    if (isThumbGlass(dest) || !dest.canvas) return;
     const ix = Math.max(0, Math.floor(destX));
     const iy = Math.max(0, Math.floor(destY));
     const iw = Math.min(Math.ceil(destW), dest.canvas.width - ix);
@@ -115,6 +147,9 @@ function frostBackdropUnder(
     dest.save();
     dest.drawImage(masked, ix, iy);
     dest.restore();
+    releaseCanvas(raw);
+    releaseCanvas(blurred);
+    releaseCanvas(masked);
 }
 
 /** Lift toward white — keeps glass clear/pearl, never black. */
@@ -135,20 +170,6 @@ export function drawGlassText(ctx: CanvasRenderingContext2D, opts: GlassTextOpti
     const { text, x, y, fontFamily, fontWeight, fontSize, aspectScaleX, color } = opts;
     if (!text) return;
 
-    // Thumb fast path — multi-canvas glass is story-sized (Safari P0)
-    if (ctx.canvas.width <= 640) {
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.scale(aspectScaleX, 1);
-        ctx.font = `${fontWeight} ${fontSize}px '${fontFamily}', sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillStyle = 'rgba(255,255,255,0.55)';
-        ctx.fillText(text, 0, 0);
-        ctx.restore();
-        return;
-    }
-
     // Pearl / clear glass palette — always light (user: no black-in-white)
     // Slight warm cream cast like the iOS 11:11 lock-screen slab
     const tint = lift({ r: color.r, g: color.g, b: Math.min(255, color.b + 8) }, 0.50);
@@ -157,10 +178,12 @@ export function drawGlassText(ctx: CanvasRenderingContext2D, opts: GlassTextOpti
 
     const font = `${fontWeight} ${fontSize}px '${fontFamily}', sans-serif`;
 
-    const meas = document.createElement('canvas').getContext('2d');
+    const measCanvas = document.createElement('canvas');
+    const meas = measCanvas.getContext('2d');
     if (!meas) return;
     meas.font = font;
     const tm = meas.measureText(text);
+    releaseCanvas(measCanvas);
     const ascent = tm.actualBoundingBoxAscent || fontSize * 0.72;
     const descent = tm.actualBoundingBoxDescent || fontSize * 0.08;
     const naturalW = Math.ceil(tm.width);
@@ -169,6 +192,7 @@ export function drawGlassText(ctx: CanvasRenderingContext2D, opts: GlassTextOpti
 
     const bufW = naturalW + PAD * 2;
     const bufH = naturalH;
+    const SSAA = glassSsaa(ctx);
     const off = document.createElement('canvas');
     off.width = bufW * SSAA;
     off.height = bufH * SSAA;
@@ -297,6 +321,8 @@ export function drawGlassText(ctx: CanvasRenderingContext2D, opts: GlassTextOpti
     }
 
     ctx.drawImage(off, destX, destY, destW, destH);
+    releaseCanvas(mask);
+    releaseCanvas(off);
 }
 
 export interface GlassPanelOptions {
@@ -329,40 +355,30 @@ export function drawLiquidGlyphs(ctx: CanvasRenderingContext2D, opts: LiquidGlyp
     const { text, x, y, fontFamily, fontWeight, fontSize, aspectScaleX = 1 } = opts;
     if (!text) return;
 
-    // Thumb fast path
-    if (ctx.canvas.width <= 640) {
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.scale(aspectScaleX, 1);
-        ctx.font = `${fontWeight} ${fontSize}px '${fontFamily}', sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillStyle = 'rgba(255,255,255,0.55)';
-        ctx.fillText(text, 0, 0);
-        ctx.restore();
-        return;
-    }
-
     const font = `${fontWeight} ${fontSize}px '${fontFamily}', sans-serif`;
-    const meas = document.createElement('canvas').getContext('2d');
+    const measCanvas = document.createElement('canvas');
+    const meas = measCanvas.getContext('2d');
     if (!meas) return;
     meas.font = font;
     const textMetrics = meas.measureText(text);
+    releaseCanvas(measCanvas);
 
     const padding = 120;
     const unscaledW = Math.ceil(textMetrics.width) + padding * 2;
     const unscaledH = Math.ceil(fontSize * 1.5);
-    const SSAA = Math.min(1, 1200 / Math.max(unscaledW * aspectScaleX, unscaledH, 1));
+    // Same cost model as v1 CFS: cap thumbs via glassBufScale, never scale() huge fonts without SSAA.
+    const SSAA = glassSsaa(ctx) * glassBufScale(ctx);
     const drawW = unscaledW * aspectScaleX;
     const drawH = unscaledH;
 
     const glassCanvas = document.createElement('canvas');
-    glassCanvas.width = drawW * SSAA;
-    glassCanvas.height = drawH * SSAA;
+    glassCanvas.width = Math.max(1, Math.ceil(unscaledW * SSAA));
+    glassCanvas.height = Math.max(1, Math.ceil(unscaledH * SSAA));
     const gc = glassCanvas.getContext('2d');
     if (!gc) return;
 
-    gc.scale(SSAA * aspectScaleX, SSAA);
+    // Paint in unscaled logical space (v1 contract) — squash only at final drawImage.
+    gc.scale(SSAA, SSAA);
     const cx = unscaledW / 2;
     const cy = unscaledH / 2;
     const halfH = fontSize / 2;
@@ -377,89 +393,66 @@ export function drawLiquidGlyphs(ctx: CanvasRenderingContext2D, opts: LiquidGlyp
 
     const createOuterRim = (colorOrGradient: string | CanvasGradient, visualLineWidth: number) => {
         const edgeCanvas = document.createElement('canvas');
-        edgeCanvas.width = drawW * SSAA;
-        edgeCanvas.height = drawH * SSAA;
+        edgeCanvas.width = Math.max(1, Math.ceil(unscaledW * SSAA));
+        edgeCanvas.height = Math.max(1, Math.ceil(unscaledH * SSAA));
         const ec = edgeCanvas.getContext('2d');
         if (!ec) return edgeCanvas;
-        ec.scale(SSAA * aspectScaleX, SSAA);
+        ec.scale(SSAA, SSAA);
         ec.font = font;
         ec.textAlign = 'center';
         ec.textBaseline = 'middle';
-        ec.fillStyle = colorOrGradient;
-        const steps = 48;
-        for (let i = 0; i < steps; i++) {
-            const angle = (i / steps) * Math.PI * 2;
-            const dx = (Math.cos(angle) * visualLineWidth) / aspectScaleX;
-            const dy = Math.sin(angle) * visualLineWidth;
-            ec.fillText(text, cx + dx, cy + dy);
-        }
-        // Smooth continuous rim (no polygonal facets)
-        const smooth = document.createElement('canvas');
-        smooth.width = edgeCanvas.width;
-        smooth.height = edgeCanvas.height;
-        const sm = smooth.getContext('2d');
-        if (sm) {
-            if ('filter' in sm) (sm as CanvasRenderingContext2D).filter = 'blur(1.2px)';
-            sm.drawImage(edgeCanvas, 0, 0);
-            if ('filter' in sm) (sm as CanvasRenderingContext2D).filter = 'none';
-            sm.scale(SSAA * aspectScaleX, SSAA);
-            sm.font = font;
-            sm.textAlign = 'center';
-            sm.textBaseline = 'middle';
-            sm.globalCompositeOperation = 'destination-out';
-            sm.fillStyle = 'black';
-            sm.fillText(text, cx, cy);
-            return smooth;
-        }
-        ec.globalCompositeOperation = 'destination-out';
-        ec.fillStyle = 'black';
-        ec.fillText(text, cx, cy);
+        // Wider in X so the final drawImage squash leaves a uniform rim
+        paintContinuousRim(ec, text, cx, cy, colorOrGradient, visualLineWidth / Math.max(aspectScaleX, 0.05));
         return edgeCanvas;
     };
 
     const createBevel = (color: string | CanvasGradient, visualShiftX: number, visualShiftY: number) => {
         const edgeCanvas = document.createElement('canvas');
-        edgeCanvas.width = drawW * SSAA;
-        edgeCanvas.height = drawH * SSAA;
+        edgeCanvas.width = Math.max(1, Math.ceil(unscaledW * SSAA));
+        edgeCanvas.height = Math.max(1, Math.ceil(unscaledH * SSAA));
         const ec = edgeCanvas.getContext('2d');
         if (!ec) return edgeCanvas;
-        ec.scale(SSAA * aspectScaleX, SSAA);
+        ec.scale(SSAA, SSAA);
         ec.font = font;
         ec.textAlign = 'center';
         ec.textBaseline = 'middle';
         ec.fillStyle = color;
+        // Compensate X for composite-time squash
         const dx = visualShiftX / aspectScaleX;
         const dy = visualShiftY;
         ec.fillText(text, cx + dx, cy + dy);
         ec.globalCompositeOperation = 'destination-out';
         ec.fillText(text, cx, cy);
-        const smooth = document.createElement('canvas');
-        smooth.width = edgeCanvas.width;
-        smooth.height = edgeCanvas.height;
-        const sm = smooth.getContext('2d');
-        if (sm) {
-            if ('filter' in sm) (sm as CanvasRenderingContext2D).filter = 'blur(0.8px)';
-            sm.drawImage(edgeCanvas, 0, 0);
-            if ('filter' in sm) (sm as CanvasRenderingContext2D).filter = 'none';
-            return smooth;
+        if ('filter' in ec) {
+            const smooth = document.createElement('canvas');
+            smooth.width = edgeCanvas.width;
+            smooth.height = edgeCanvas.height;
+            const sm = smooth.getContext('2d');
+            if (sm) {
+                if ('filter' in sm) (sm as CanvasRenderingContext2D).filter = 'blur(0.8px)';
+                sm.drawImage(edgeCanvas, 0, 0);
+                releaseCanvas(edgeCanvas);
+                return smooth;
+            }
         }
         return edgeCanvas;
     };
 
     const composite1to1 = (canvas: HTMLCanvasElement) => {
         gc.save();
-        gc.setTransform(1, 0, 0, 1, 0, 0);
-        gc.drawImage(canvas, 0, 0);
+        gc.setTransform(SSAA, 0, 0, SSAA, 0, 0);
+        gc.drawImage(canvas, 0, 0, unscaledW, unscaledH);
         gc.restore();
+        releaseCanvas(canvas);
     };
 
     // Layer 1: Caustic drop shadow
     const shadowCanvas = document.createElement('canvas');
-    shadowCanvas.width = drawW * SSAA;
-    shadowCanvas.height = drawH * SSAA;
+    shadowCanvas.width = Math.max(1, Math.ceil(unscaledW * SSAA));
+    shadowCanvas.height = Math.max(1, Math.ceil(unscaledH * SSAA));
     const sc = shadowCanvas.getContext('2d');
     if (sc) {
-        sc.scale(SSAA * aspectScaleX, SSAA);
+        sc.scale(SSAA, SSAA);
         sc.font = font;
         sc.textAlign = 'center';
         sc.textBaseline = 'middle';
@@ -530,6 +523,7 @@ export function drawGlassPanel(ctx: CanvasRenderingContext2D, opts: GlassPanelOp
         mk.fill();
         frostBackdropUnder(ctx, x, y, w, h, mask, 22);
     }
+    releaseCanvas(mask);
 
     // Soft ambient lift (warm glow when warm)
     ctx.save();

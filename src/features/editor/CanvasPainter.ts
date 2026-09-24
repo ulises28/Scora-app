@@ -9,8 +9,9 @@
  *  - showLogo:  controls whether the SCORA. branding is drawn
  */
 
-import { getThemeColors, drawStatWithUnit, setLetterSpacing, drawRoutePath, decodePolyline, getDynamicStats, drawMetricBlock, parseDurationParts, drawDurationSequence, normalizeSport, getContentBounds, fitBoundsTransform, boundsFillFrame, cropCanvasToContent, padCanvasToFrame } from './CanvasUtils';
-import { drawGlassPanel, drawGlassText, drawLiquidGlyphs } from './GlassText';
+import { getThemeColors, drawStatWithUnit, setLetterSpacing, drawRoutePath, decodePolyline, getDynamicStats, drawMetricBlock, parseDurationParts, drawDurationSequence, normalizeSport, getContentBounds, fitBoundsTransform, boundsFillFrame, cropCanvasToContent, padCanvasToFrame, deriveContrastInk } from './CanvasUtils';
+import { formatTime } from '../../utils/formatters';
+import { drawGlassPanel, drawGlassText, drawLiquidGlyphs, glassSsaa, glassBufScale, releaseCanvas, paintContinuousRim } from './GlassText';
 import { applyLiquidMetalEffect } from './LiquidMetalRenderer';
 import { StickerStats } from '../../api/strava';
 import { STICKER_REGISTRY } from './StickerRegistry';
@@ -250,19 +251,22 @@ export async function drawTemplate(
     showLogo = true,
     isMain = false // 🚀 Studio Grade: Only main canvas triggers E2E signals
 ) {
-    // Fonts load ONCE per session — not on every draw (Safari perf P0)
+    // Fonts: load faces used by stickers, but NEVER block paint on document.fonts.ready
+    // (WebKit can stall seconds on Google Fonts — that was the glass-numbers "10s" hitch).
     if (typeof document !== 'undefined' && 'fonts' in document) {
         const w = window as any;
         if (!w.__scoraFontsReady) {
             w.__scoraFontsReady = Promise.race([
                 Promise.all([
-                    document.fonts.load("500 12px 'Plus Jakarta Sans'"),
-                    document.fonts.load("700 12px 'Plus Jakarta Sans'"),
-                    document.fonts.load("800 12px 'Plus Jakarta Sans'"),
-                    document.fonts.load("300 12px 'Outfit'"),
-                    document.fonts.load("500 12px 'Outfit'"),
+                    document.fonts.load("800 120px 'Plus Jakarta Sans'"),
+                    document.fonts.load("700 80px 'Plus Jakarta Sans'"),
+                    document.fonts.load("500 48px 'Plus Jakarta Sans'"),
+                    document.fonts.load("300 24px 'Outfit'"),
+                    document.fonts.load("500 24px 'Outfit'"),
+                    document.fonts.load("300 24px 'Montserrat'"),
+                    document.fonts.load("600 24px 'Montserrat'"),
                 ]),
-                new Promise(resolve => setTimeout(resolve, 600))
+                new Promise(resolve => setTimeout(resolve, 400)),
             ]).catch(() => {});
         }
         await w.__scoraFontsReady;
@@ -383,7 +387,18 @@ export async function drawTemplate(
     if (isThumb || isHeavyGlass) {
         paintArtOnly();
         if (wantLogo && !isChrome) {
-            paintLogo(56, 72, textColor);
+            if (isThumb) {
+                // Thumbs: pin top-left (no getImageData — Safari P0)
+                paintLogo(56, 72, textColor);
+            } else {
+                // Main/export: dock tightly above the art (never frame-top)
+                const artPx = getContentBounds(canvas);
+                const artTop = artPx ? artPx.y / scaleY : 200;
+                const artLeft = artPx ? artPx.x / scaleX : 60;
+                const logoY = Math.min(Math.max(artTop - LOGO_GAP, 36), TARGET_H - 24);
+                const logoX = Math.min(Math.max(artLeft, 24), TARGET_W - 120);
+                paintLogo(logoX, logoY, textColor);
+            }
         }
         if (isMain) {
             const currentId = (window as any)._scoraLastDrawId;
@@ -3896,13 +3911,20 @@ export function drawPerformanceBars(ctx: CanvasRenderingContext2D, stats: Sticke
 export function drawLocationPill(ctx: CanvasRenderingContext2D, stats: any, textColor = 'white') {
     ctx.textBaseline = 'alphabetic';
 
-    // Get location
+    // Get location (dataPoints preferred; fall back so catalog minis never blank)
     let loc = stats.dataPoints?.find((p: any) => p.label === 'Location')?.value;
+    if (!loc || loc === '-') {
+        loc = (stats.location && stats.location !== 'Unknown') ? stats.location : '';
+    }
     if (!loc || loc === '-') {
         loc = '';
     }
 
-    const durParts = parseDurationParts(stats.mainValue || '');
+    const mainRaw = stats.mainValue
+        || (stats.distanceVal && stats.distanceVal !== '0.00' ? `${stats.distanceVal} ${stats.distanceUnit || 'km'}` : '')
+        || stats.timeStr
+        || '';
+    const durParts = parseDurationParts(mainRaw);
     const sGap = 8;
 
     // Measure total width
@@ -4388,7 +4410,7 @@ export function drawDualPill(ctx: CanvasRenderingContext2D, stats: any, textColo
     ctx.textBaseline = 'alphabetic';
 
     let loc = stats.dataPoints?.find((p: any) => p.label === 'Location')?.value;
-    if (!loc || loc === '-') loc = 'LOCATION';
+    if (!loc || loc === '-') loc = (stats.location && stats.location !== 'Unknown') ? stats.location : 'LOCATION';
 
     const rawVal = stats.mainValue || stats.distanceVal || '0.00';
     const isDuration = String(rawVal).includes('h') || String(rawVal).includes('m');
@@ -4595,7 +4617,7 @@ export function drawTinyGPS(ctx: CanvasRenderingContext2D, stats: any, textColor
     ctx.textBaseline = 'middle';
 
     let loc = stats.dataPoints?.find((p: any) => p.label === 'Location')?.value;
-    if (!loc || loc === '-') loc = 'LOCATION';
+    if (!loc || loc === '-') loc = (stats.location && stats.location !== 'Unknown') ? stats.location : 'LOCATION';
 
     const rawVal = stats.mainValue || stats.distanceVal || '0.00';
     const displayVal = String(rawVal).trim();
@@ -4687,9 +4709,13 @@ export function drawMagCover(ctx: CanvasRenderingContext2D, stats: any, textColo
 
 
 export function drawPulseRow(ctx: CanvasRenderingContext2D, stats: any, textColor = 'white') {
-    // Hidden if no HR
-    if (!stats.avgHeartrate && !stats.maxHeartrate) return;
-    const hr = stats.maxHeartrate || stats.avgHeartrate || '-';
+    // Hidden if no HR — accept max/avg camelCase, snake_case, or shorthand `hr`
+    const hr = stats.maxHeartrate
+        || stats.avgHeartrate
+        || stats.hr
+        || (stats.max_heartrate ? Math.round(stats.max_heartrate) : null)
+        || (stats.average_heartrate ? Math.round(stats.average_heartrate) : null);
+    if (!hr) return;
 
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
@@ -5655,19 +5681,29 @@ export function drawClassicStack(ctx: CanvasRenderingContext2D, stats: any, text
     const cx = 540;
     const cy = 400;
 
+    // Colors only — geometry/typography stay on the original hard-offset look.
+    // Default: signature yellow + red. Custom picker: primary fill + derived drop.
+    const isBlack = textColor === 'black';
+    const fillMain = isBlack
+        ? 'black'
+        : (textColor.startsWith('#') ? textColor : '#fbbf24');
+    const dropInk = isBlack
+        ? 'rgba(0,0,0,0.15)'
+        : (textColor.startsWith('#') ? deriveContrastInk(textColor) : '#b91c1c');
+
     ctx.save();
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
     // Hard Shadow Config
-    ctx.shadowColor = textColor === 'black' ? 'rgba(0,0,0,0.15)' : '#b91c1c';
+    ctx.shadowColor = dropInk;
     ctx.shadowOffsetX = 6;
     ctx.shadowOffsetY = 6;
     ctx.shadowBlur = 0;
 
     // 1. Value (Massive)
     ctx.font = `normal 900 320px ${sysFont}`;
-    ctx.fillStyle = textColor === 'black' ? 'black' : '#fbbf24';
+    ctx.fillStyle = fillMain;
     ctx.fillText(valText, cx, cy - 140);
 
     // 2. Unit
@@ -6939,7 +6975,7 @@ export function drawBoldDay(ctx: CanvasRenderingContext2D, stats: any, textColor
  * Image 3: STUDIO PRECISION
  * Unified Boldonse aesthetic, massive hero metric.
  * WORKOUT FALLBACK: Duration as hero.
- * BIKE FIX: Increased spacing and dynamic column widths.
+ * Layout: hero capped so it never collides with the three metric columns.
  */
 export function drawStudioPrecision(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
     const mainFont = "'Archivo Black', sans-serif";
@@ -6954,30 +6990,30 @@ export function drawStudioPrecision(ctx: CanvasRenderingContext2D, stats: any, t
         heroText = stats.calories && stats.calories !== '0' ? `${stats.calories} KCAL` : (stats.timeStr || '0:00');
     }
 
-    const startX = 60;
-    const endX = 1020;
-    // Push the hero metric as high up as possible to minimize vertical footprint
-    const startY = 220;
+    const startX = 48;
+    const endX = 1032;
+    const startY = 240;
 
     ctx.save();
     ctx.fillStyle = textColor;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
 
-    // Hero Metric - Maximize Horizontal Width exactly to 960px
+    // Hero — fill width, but CAP size so short strings cannot crush the metric row
     ctx.font = `400 100px ${mainFont}`;
-    const baseW = ctx.measureText(heroText).width;
+    const baseW = Math.max(1, ctx.measureText(heroText).width);
     let fontSize = Math.floor(100 * (960 / baseW));
-
+    fontSize = Math.max(96, Math.min(fontSize, 210));
     ctx.font = `400 ${fontSize}px ${mainFont}`;
-
-    // Fallback logic for Safari baseline issues if needed, but top works best for Archivo Black
     ctx.fillText(heroText, 540, startY);
+
+    // Real glyph box (Archivo Black is taller than fontSize * 0.75)
+    const heroM = ctx.measureText(heroText);
+    const heroH = (heroM.actualBoundingBoxAscent + heroM.actualBoundingBoxDescent) || fontSize * 0.9;
 
     // Sub-metrics
     const elevPoint = stats.dataPoints?.find(p => p.label.toUpperCase() === 'ELEVATION');
     const elevVal = elevPoint ? `${elevPoint.value}${elevPoint.unit}`.toUpperCase() : '0M';
-    const calVal = stats.calories && stats.calories !== '0' ? `${stats.calories} KCAL` : '0 KCAL';
 
     let metrics: { label: string; val: string }[] = [];
 
@@ -7010,32 +7046,38 @@ export function drawStudioPrecision(ctx: CanvasRenderingContext2D, stats: any, t
         ];
     }
 
-    // Collapse vertical space by squeezing exactly beneath the visual height of Archivo Black (approx 75%)
-    const rowY = startY + (fontSize * 0.75) + 30;
+    // Clear gap under the hero — never stack metrics on the digits
+    const rowY = startY + heroH + 64;
     const colW = (endX - startX) / 3;
+    const colMaxW = colW - 28;
 
     metrics.forEach((m, i) => {
-        let x = startX + (i * colW) + (colW / 2);
-        if (isBike && i === 0) x -= 20;
-        if (isBike && i === 1) x += 20;
+        const x = startX + (i * colW) + (colW / 2);
+
+        // Label ABOVE, value BELOW
+        ctx.globalAlpha = 0.75;
+        let lSize = 22;
+        ctx.font = `400 ${lSize}px ${mainFont}`;
+        while (ctx.measureText(m.label).width > colMaxW && lSize > 14) {
+            lSize -= 1;
+            ctx.font = `400 ${lSize}px ${mainFont}`;
+        }
+        if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = '0.06em'; }
+        ctx.textBaseline = 'top';
+        ctx.fillText(m.label, x, rowY);
+        if ((ctx as any).letterSpacing !== undefined) { (ctx as any).letterSpacing = '0px'; }
+
+        const labelH = (ctx.measureText(m.label).actualBoundingBoxAscent + ctx.measureText(m.label).actualBoundingBoxDescent) || lSize;
 
         ctx.globalAlpha = 1.0;
-        let mSize = 68;
+        let mSize = 64;
         ctx.font = `400 ${mSize}px ${mainFont}`;
-
-        while (ctx.measureText(m.val).width > (colW - 10) && mSize > 30) {
+        while (ctx.measureText(m.val).width > colMaxW && mSize > 28) {
             mSize -= 2;
             ctx.font = `400 ${mSize}px ${mainFont}`;
         }
-
-        ctx.textBaseline = 'bottom';
-        // Tightly collapse the value immediately above the label
-        ctx.fillText(m.val, x, rowY + 50);
-
-        ctx.globalAlpha = 0.8;
-        ctx.font = `400 24px ${mainFont}`;
         ctx.textBaseline = 'top';
-        ctx.fillText(m.label, x, rowY + 50);
+        ctx.fillText(m.val, x, rowY + labelH + 14);
     });
 
     ctx.restore();
@@ -7420,71 +7462,107 @@ export function drawTempoGraph(ctx: CanvasRenderingContext2D, stats: any, textCo
 }
 
 export function drawWavyQuote(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
-    // ROUTE PATH TYPOGRAPHY + V4 Editorial
+    // Route-path typography: day word + telemetry letters forming the GPS map
     const mainColor = textColor.startsWith('#') ? textColor : (textColor === 'black' ? '#000000' : '#ffffff');
+    const face = "'Helvetica Neue', Helvetica, Arial, sans-serif";
+    const leftX = 72;
+    const mapW = 936;
+    const rightX = leftX + mapW;
+
     ctx.save();
-
-    // 1. Massive Editorial Day of Week
-    const d = new Date(stats.rawDate || Date.now());
-    const dayStr = d.toLocaleString('en-US', { weekday: 'long' }).toUpperCase();
-
     ctx.fillStyle = mainColor;
     ctx.textBaseline = 'top';
     ctx.textAlign = 'left';
-    ctx.font = `900 120px 'Monument Extended', 'Cabinet Grotesk Black', sans-serif`;
 
-    // Scale to fill width
-    const metrics = ctx.measureText(dayStr);
-    const targetW = 960;
-    let fontSize = Math.floor((targetW / (metrics.width || 1)) * 120);
+    // 1. Header — clean geometric sans, width matches the map below
+    // Prefer full day; fall back to date if missing
+    let header = (stats.dayName || '').toUpperCase();
+    if (!header || header === 'UNDEFINED') {
+        const d = stats.rawDate ? new Date(stats.rawDate.replace('Z', '')) : new Date();
+        header = d.toLocaleString('en-US', { weekday: 'long' }).toUpperCase();
+    }
 
-    // Cap font size to avoid extreme heights on short days like "FRIDAY"
-    if (fontSize > 200) fontSize = 200;
+    const probe = 160;
+    ctx.font = `500 ${probe}px ${face}`;
+    const headerW = Math.max(1, ctx.measureText(header).width);
+    let fontSize = Math.floor(probe * (mapW / headerW));
+    fontSize = Math.max(88, Math.min(fontSize, 168));
+    ctx.font = `500 ${fontSize}px ${face}`;
+    while (ctx.measureText(header).width > mapW && fontSize > 72) {
+        fontSize -= 4;
+        ctx.font = `500 ${fontSize}px ${face}`;
+    }
+    ctx.fillText(header, leftX, 150);
 
-    ctx.font = `900 ${fontSize}px 'Monument Extended', 'Cabinet Grotesk Black', sans-serif`;
-    ctx.fillText(dayStr, 60, 140);
-    ctx.restore();
-    ctx.save();
+    // 2. Telemetry string along the route — accurate fields only
+    const { s1, s2, s3, hasMap } = getDynamicStats(stats);
+    const hr = stats.avgHeartrate || stats.hr || stats.maxHeartrate
+        || (stats.average_heartrate ? Math.round(stats.average_heartrate) : null);
+    const startStr = stats.startTime
+        || (stats.rawDate ? formatTime(stats.rawDate.replace('Z', '')) : '');
+    const paceVal = stats.subValue ? `${stats.subValue}${stats.subLabel ? stats.subLabel : ''}` : (s2?.value && s2?.unit ? `${s2.value}${s2.unit}` : '');
+    const distStr = stats.hasDistance && stats.distanceVal
+        ? `${stats.distanceVal}${(stats.distanceUnit || 'km').toUpperCase()}`
+        : `${s1.value}${s1.unit ? s1.unit.toUpperCase() : ''}`;
+    const durStr = (stats.timeStr || '').toUpperCase() || (s1.label === 'DURATION' ? `${s1.value}${s1.unit || ''}`.toUpperCase() : '');
+    const parts = [
+        distStr ? `DIST ${distStr}` : '',
+        durStr ? `TIME ${durStr}` : '',
+        paceVal ? `PACE ${paceVal.toUpperCase()}` : '',
+        startStr ? `START ${startStr.toUpperCase()}` : '',
+        hr ? `HR ${hr}` : '',
+    ].filter(Boolean);
+    const dataStr = (parts.join(' · ') + ' · ').toUpperCase();
 
-    // 2. Wavy Text On Path
-    if (stats.polyline) {
+    if (hasMap && stats.polyline) {
         const coords = decodePolyline(stats.polyline);
         if (coords && coords.length > 1) {
-            // Place map closer under the text
-            const mapY = 140 + fontSize + 20;
-            const mapBox = { x: 100, y: mapY, w: 880, h: 800 };
+            // Map hugs the day name — tight gap so the block stays compact
+            const mapY = 150 + fontSize + 12;
+            const mapH = 880;
+            const mapBox = { x: leftX, y: mapY, w: mapW, h: mapH };
 
             let minLat = coords[0][0], maxLat = minLat, minLng = coords[0][1], maxLng = minLng;
             coords.forEach((p: any) => {
                 if (p[0] < minLat) minLat = p[0]; if (p[0] > maxLat) maxLat = p[0];
                 if (p[1] < minLng) minLng = p[1]; if (p[1] > maxLng) maxLng = p[1];
             });
-            const scale = Math.min(mapBox.w / (maxLng - minLng || 1), mapBox.h / (maxLat - minLat || 1));
+            const spanLng = Math.max(maxLng - minLng, 1e-6);
+            const spanLat = Math.max(maxLat - minLat, 1e-6);
+            // Uniform scale — route silhouette stays true (never stretch axes)
+            const scale = Math.min(mapBox.w / spanLng, mapBox.h / spanLat);
+            const drawW = spanLng * scale;
+            const drawH = spanLat * scale;
+            const ox = mapBox.x + (mapBox.w - drawW) / 2;
+            const oy = mapBox.y + (mapBox.h - drawH) / 2;
 
-            // Align to top of mapBox to eliminate wasted vertical space
             const pts = coords.map((p: any) => ({
-                x: mapBox.x + (p[1] - minLng) * scale + (mapBox.w - ((maxLng - minLng) * scale)) / 2,
-                y: mapBox.y + ((maxLat - p[0]) * scale)
+                x: ox + (p[1] - minLng) * scale,
+                y: oy + (maxLat - p[0]) * scale,
             }));
 
+            // Resample equal arc-length so letter angles stay smooth
+            const segs: { x: number; y: number; dist: number; angle: number; dx: number; dy: number }[] = [];
             let totalPathDist = 0;
-            const segments = [];
             for (let i = 0; i < pts.length - 1; i++) {
                 const dx = pts[i + 1].x - pts[i].x;
                 const dy = pts[i + 1].y - pts[i].y;
                 const dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist > 0.1) {
-                    const angle = Math.atan2(dy, dx);
-                    segments.push({ ...pts[i], dist, angle, dx, dy });
+                if (dist > 0.25) {
+                    segs.push({ ...pts[i], dist, angle: Math.atan2(dy, dx), dx, dy });
                     totalPathDist += dist;
                 }
             }
+            if (!segs.length || totalPathDist < 8) {
+                ctx.restore();
+                return;
+            }
 
-            // Draw the actual route line (spine) slightly visible
+            // Soft spine so the route reads even where letters thin out
             ctx.beginPath();
             ctx.strokeStyle = mainColor;
-            ctx.globalAlpha = 0.2;
-            ctx.lineWidth = 2;
+            ctx.globalAlpha = 0.18;
+            ctx.lineWidth = 3;
             ctx.lineJoin = 'round';
             ctx.lineCap = 'round';
             pts.forEach((p: any, i: number) => {
@@ -7494,53 +7572,41 @@ export function drawWavyQuote(ctx: CanvasRenderingContext2D, stats: any, textCol
             ctx.stroke();
             ctx.globalAlpha = 1.0;
 
-            // Repeating Data String with detailed metrics
-            const startTimeStr = stats.rawDate ? new Date(stats.rawDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A';
-            const hrStr = stats.hr || stats.average_heartrate || 'N/A';
-            const dataStr = `DISTANCE: ${stats.distanceVal || '0.00'}KM • DURATION: ${stats.timeStr || '0M'} • PACE: ${stats.subValue || '0:00/KM'} • START: ${startTimeStr} • HR: ${hrStr} BPM • `.toUpperCase();
-
-            // Smaller font for easier grouping/forming the map
-            ctx.font = `800 14px 'Inter', sans-serif`;
+            // Dense telemetry ribbon — letters ON the path form the map shape
+            ctx.font = `600 16px ${face}`;
             ctx.fillStyle = mainColor;
             ctx.textBaseline = 'middle';
             ctx.textAlign = 'center';
 
             let currentDist = 0;
             let charIdx = 0;
-            let segIdx = 0;
+            let segCursor = 0;
+            let segStart = 0;
 
-            while (currentDist < totalPathDist && segIdx < segments.length) {
+            while (currentDist < totalPathDist) {
                 const char = dataStr[charIdx % dataStr.length];
-                const charW = ctx.measureText(char).width;
-                const advance = charW + 4;
-
-                let accumulated = 0;
-                let activeSeg = segments[0];
-                let distIntoSeg = 0;
-
-                for (let i = 0; i < segments.length; i++) {
-                    if (currentDist >= accumulated && currentDist <= accumulated + segments[i].dist) {
-                        activeSeg = segments[i];
-                        distIntoSeg = currentDist - accumulated;
-                        segIdx = i;
-                        break;
+                if (char !== ' ') {
+                    // Advance segment cursor
+                    while (segCursor < segs.length - 1
+                        && currentDist > segStart + segs[segCursor].dist) {
+                        segStart += segs[segCursor].dist;
+                        segCursor++;
                     }
-                    accumulated += segments[i].dist;
+                    const activeSeg = segs[segCursor];
+                    const distIntoSeg = currentDist - segStart;
+                    const ratio = Math.min(1, Math.max(0, distIntoSeg / activeSeg.dist));
+                    const charX = activeSeg.x + activeSeg.dx * ratio;
+                    const charY = activeSeg.y + activeSeg.dy * ratio;
+
+                    ctx.save();
+                    ctx.translate(charX, charY);
+                    ctx.rotate(activeSeg.angle);
+                    ctx.fillText(char, 0, 0);
+                    ctx.restore();
                 }
 
-                if (accumulated + activeSeg.dist < currentDist) break;
-
-                const ratio = distIntoSeg / activeSeg.dist;
-                const charX = activeSeg.x + activeSeg.dx * ratio;
-                const charY = activeSeg.y + activeSeg.dy * ratio;
-
-                ctx.save();
-                ctx.translate(charX, charY);
-                ctx.rotate(activeSeg.angle);
-                ctx.fillText(char, 0, -14);
-                ctx.restore();
-
-                currentDist += advance;
+                const charW = ctx.measureText(dataStr[charIdx % dataStr.length]).width;
+                currentDist += Math.max(8, charW + 1);
                 charIdx++;
             }
         }
@@ -7551,79 +7617,96 @@ export function drawWavyQuote(ctx: CanvasRenderingContext2D, stats: any, textCol
 
 export function drawRetroDistance(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
     const mainColor = textColor.startsWith('#') ? textColor : (textColor === 'white' ? '#ffffff' : '#042a9b');
-    const accentColor = textColor === 'white' ? '#042a9b' : '#ffffff';
+    const mono = "'VT323', 'Courier New', monospace";
 
     ctx.save();
 
-    // V4 TERMINAL CHAT BUBBLE (Extreme Compaction)
-    // We group all the retro stats into a tight, dark, translucent terminal bubble at the top left.
+    // Compact terminal pill — three clear cells (hero | stack | date), not one thin smear
+    const cardW = 960;
+    const cardH = 220;
+    const cX = 60;
+    const cY = 150;
 
-    const cardW = 980;
-    const cardH = 200; // Massively compressed from 600
-    const cX = 50;
-    const cY = 160;
-
-    // Terminal Bubble Glass
-    ctx.fillStyle = 'rgba(10, 10, 10, 0.85)'; // Dark terminal glass
+    ctx.fillStyle = 'rgba(10, 10, 10, 0.88)';
     ctx.shadowColor = 'rgba(0,0,0,0.5)';
     ctx.shadowBlur = 40;
-    ctx.shadowOffsetY = 20;
+    ctx.shadowOffsetY = 16;
     ctx.beginPath();
-    ctx.roundRect(cX, cY, cardW, cardH, 40); // Pill-like rounded corners
+    ctx.roundRect(cX, cY, cardW, cardH, 36);
     ctx.fill();
+    ctx.shadowColor = 'transparent';
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
-
-    // Inner bright stroke
-    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.strokeStyle = 'rgba(255,255,255,0.18)';
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    // Determine the main metric
-    let mainValue = stats.distanceVal ? `${stats.distanceVal} KM` : 'N/A';
-    let cell2Value = stats.timeStr || '0:00';
-    let cell3Value = (stats.subValue || '').split(' ')[0] || '0:00';
-    let label2 = 'TIME_ ';
-    let label3 = 'PACE_ ';
+    const hasDist = !!(stats.distanceVal && parseFloat(stats.distanceVal) > 0);
+    let hero = hasDist ? `${stats.distanceVal}` : (stats.timeStr || '0:00');
+    let heroUnit = hasDist ? 'KM' : '';
+    let r1Label = hasDist ? 'TIME_' : 'TYPE_';
+    let r1Val = hasDist ? (stats.timeStr || '0:00') : normalizeSport(stats.activityType || 'WORKOUT').toUpperCase();
+    let r2Label = hasDist ? 'PACE_' : 'BURN_';
+    let r2Val = hasDist
+        ? ((stats.subValue || '').split(' ')[0] || '0:00')
+        : `${stats.calories || '0'} KCAL`;
 
-    if (!stats.distanceVal || parseFloat(stats.distanceVal) === 0) {
-        mainValue = stats.timeStr || '0:00';
-        cell2Value = normalizeSport(stats.activityType || 'WORKOUT').toUpperCase();
-        cell3Value = (stats.calories || '0') + ' KCAL';
-        label2 = 'TYPE_ ';
-        label3 = 'BURN_ ';
-    }
-
-    // Terminal Monospace Typography
-    const textY = cY + cardH / 2;
-
-    // Column 1: Main Metric
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = mainColor;
-    ctx.font = `800 90px 'VT323', 'Courier New', monospace`;
-    ctx.fillText(mainValue, cX + 50, textY);
-
-    // Column 2 & 3: Secondary Stats
-    ctx.fillStyle = 'rgba(255,255,255,0.9)'; // Bright white for terminal data
-    ctx.font = `500 36px 'VT323', 'Courier New', monospace`;
-
-    // Use fixed positions to keep it structured like a terminal grid
-    ctx.fillText(`${label2}${cell2Value}`, cX + 520, textY - 25);
-    ctx.fillText(`${label3}${cell3Value}`, cX + 520, textY + 30);
-
-    // Date Stamp in the corner
-    ctx.textAlign = 'right';
-    ctx.fillStyle = 'rgba(255,255,255,0.5)'; // Dimmed
-    ctx.font = `400 24px 'VT323', 'Courier New', monospace`;
-
-    // Convert to short format so Wednesday doesn't overflow
     let dateStr = (stats.dayAndNumber || 'APR 2').toUpperCase();
-    dateStr = dateStr.replace('MONDAY', 'MON').replace('TUESDAY', 'TUE').replace('WEDNESDAY', 'WED')
+    dateStr = dateStr
+        .replace('MONDAY', 'MON').replace('TUESDAY', 'TUE').replace('WEDNESDAY', 'WED')
         .replace('THURSDAY', 'THU').replace('FRIDAY', 'FRI').replace('SATURDAY', 'SAT')
         .replace('SUNDAY', 'SUN');
 
-    ctx.fillText(`[${dateStr}]`, cX + cardW - 40, textY);
+    const midY = cY + cardH / 2;
+    const padL = 44;
+    const padR = 40;
+
+    // ── Cell 1: hero metric ──
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = mainColor;
+    ctx.font = `800 96px ${mono}`;
+    ctx.fillText(hero, cX + padL, midY);
+    const heroW = ctx.measureText(hero).width;
+    if (heroUnit) {
+        ctx.font = `800 52px ${mono}`;
+        ctx.fillText(heroUnit, cX + padL + heroW + 16, midY + 4);
+    }
+
+    // ── Cell 2: two readable rows (label left, value right-aligned in cell) ──
+    const col2X = cX + 500;
+    const col2Right = cX + 720;
+    const row1Y = midY - 36;
+    const row2Y = midY + 36;
+
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.font = `500 34px ${mono}`;
+    ctx.textAlign = 'left';
+    ctx.fillText(r1Label, col2X, row1Y);
+    ctx.fillText(r2Label, col2X, row2Y);
+
+    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+    ctx.font = `500 40px ${mono}`;
+    ctx.textAlign = 'right';
+    ctx.fillText(r1Val, col2Right, row1Y);
+    ctx.fillText(r2Val, col2Right, row2Y);
+
+    // ── Cell 3: date stamp ──
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.font = `400 28px ${mono}`;
+    ctx.fillText(`[${dateStr}]`, cX + cardW - padR, midY);
+
+    // Subtle cell dividers
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(col2X - 28, cY + 28);
+    ctx.lineTo(col2X - 28, cY + cardH - 28);
+    ctx.moveTo(cX + cardW - 160, cY + 28);
+    ctx.lineTo(cX + cardW - 160, cY + cardH - 28);
+    ctx.stroke();
 
     ctx.restore();
 }
@@ -9054,8 +9137,8 @@ export function drawBalloonLetters(ctx: CanvasRenderingContext2D, stats: any, te
 }
 
 function parseCanvasColor(colorStr: string): { r: number; g: number; b: number } {
+    const dummyCanvas = document.createElement('canvas');
     try {
-        const dummyCanvas = document.createElement('canvas');
         dummyCanvas.width = 1;
         dummyCanvas.height = 1;
         const dCtx = dummyCanvas.getContext('2d');
@@ -9067,28 +9150,12 @@ function parseCanvasColor(colorStr: string): { r: number; g: number; b: number }
         return { r: data[0], g: data[1], b: data[2] };
     } catch {
         return { r: 255, g: 255, b: 255 };
+    } finally {
+        releaseCanvas(dummyCanvas);
     }
 }
 
 export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
-    // THUMB/PREVIEW: glass offscreens are story-sized (thousands of px) — never on thumbs
-    if (ctx.canvas.width <= 640) {
-        const { s1 } = getDynamicStats(stats);
-        const hasD = Boolean(stats.hasDistance || (stats.distanceVal && parseFloat(stats.distanceVal) > 0));
-        const mainVal = s1?.value || (hasD ? '0.00' : '0');
-        const unit = (s1?.unit || (hasD ? 'km' : 'min')).toLowerCase();
-        ctx.save();
-        ctx.fillStyle = 'rgba(255,255,255,0.65)';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.font = "300 280px 'Montserrat', sans-serif";
-        ctx.fillText(mainVal, 540, 820);
-        ctx.font = "500 64px 'Montserrat', sans-serif";
-        ctx.fillText(unit, 540, 1180);
-        ctx.restore();
-        return;
-    }
-
     const hasDistance = Boolean(stats.hasDistance && stats.distanceVal && parseFloat(stats.distanceVal) > 0);
     let mainVal = hasDistance ? (stats.distanceVal || '0.00') : (stats.timeStr || stats.movingTime || '0:00');
 
@@ -9165,22 +9232,20 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     const unscaledW = Math.ceil(textMetrics.width) + padding * 2;
     const unscaledH = Math.ceil(finalFontSize * 1.5);
 
-    // ── INVERSE-SCALE COMPENSATED SSAA PIPELINE ──
-    // Cap buffer size — Safari dies on multi-MB glass offscreens (P0)
+    // ── 1:1 CFS + composite-time squash (never fillText under anisotropic scale) ──
+    const SSAA = glassSsaa(ctx) * glassBufScale(ctx);
     const drawW = unscaledW * finalScaleX;
     const drawH = unscaledH;
-    const maxEdge = 1200;
-    const SSAA = Math.min(1, maxEdge / Math.max(drawW, drawH, 1));
 
     const glassCanvas = document.createElement('canvas');
     glassCanvas.id = 'storyCanvas';
-    glassCanvas.width = drawW * SSAA;
-    glassCanvas.height = drawH * SSAA;
+    glassCanvas.width = Math.max(1, Math.ceil(unscaledW * SSAA));
+    glassCanvas.height = Math.max(1, Math.ceil(unscaledH * SSAA));
     const gc = glassCanvas.getContext('2d');
 
     if (gc) {
-        // Apply the visual squish to the context itself!
-        gc.scale(SSAA * finalScaleX, SSAA);
+        // Isotropic supersample only — horizontal squish happens at drawImage
+        gc.scale(SSAA, SSAA);
         const cx = unscaledW / 2;
         const cy = unscaledH / 2;
         const halfH = finalFontSize / 2;
@@ -9200,109 +9265,69 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
         const hg = Math.round(g + (255 - g) * 0.70);
         const hb = Math.round(b + (255 - b) * 0.70);
 
-        // ── Helper: Compensated Outer Rim (smooth continuous edge) ──
+        // ── Helper: Continuous Outer Rim (blur-dilate, no 256-step orbit) ──
         const createOuterRim = (colorOrGradient: string | CanvasGradient, visualLineWidth: number) => {
             const edgeCanvas = document.createElement('canvas');
-            edgeCanvas.width = drawW * SSAA;
-            edgeCanvas.height = drawH * SSAA;
+            edgeCanvas.width = Math.max(1, Math.ceil(unscaledW * SSAA));
+            edgeCanvas.height = Math.max(1, Math.ceil(unscaledH * SSAA));
             const ec = edgeCanvas.getContext('2d');
             if (!ec) return edgeCanvas;
-
-            ec.scale(SSAA * finalScaleX, SSAA);
+            ec.scale(SSAA, SSAA);
             ec.font = `${fontWeight} ${finalFontSize}px 'Montserrat', sans-serif`;
             ec.textAlign = 'center';
             ec.textBaseline = 'middle';
-
-            ec.fillStyle = colorOrGradient;
-
-            // Dense enough to look smooth — 256 was a Safari CPU killer
-            const steps = 48;
-            for (let i = 0; i < steps; i++) {
-                const angle = (i / steps) * Math.PI * 2;
-                const dx = (Math.cos(angle) * visualLineWidth) / finalScaleX;
-                const dy = Math.sin(angle) * visualLineWidth;
-                ec.fillText(mainVal, cx + dx, cy + dy);
-            }
-
-            // Soften the ring into a continuous shape
-            const smooth = document.createElement('canvas');
-            smooth.width = edgeCanvas.width;
-            smooth.height = edgeCanvas.height;
-            const sm = smooth.getContext('2d');
-            if (sm) {
-                if ('filter' in sm) (sm as CanvasRenderingContext2D).filter = 'blur(1.2px)';
-                sm.drawImage(edgeCanvas, 0, 0);
-                if ('filter' in sm) (sm as CanvasRenderingContext2D).filter = 'none';
-                // Restore crisp interior cut after blur
-                sm.scale(SSAA * finalScaleX, SSAA);
-                sm.font = `${fontWeight} ${finalFontSize}px 'Montserrat', sans-serif`;
-                sm.textAlign = 'center';
-                sm.textBaseline = 'middle';
-                sm.globalCompositeOperation = 'destination-out';
-                sm.fillStyle = 'black';
-                sm.fillText(mainVal, cx, cy);
-                return smooth;
-            }
-
-            // Fallback: carve interior on unblurred ring
-            ec.globalCompositeOperation = 'destination-out';
-            ec.fillStyle = 'black';
-            ec.fillText(mainVal, cx, cy);
+            paintContinuousRim(ec, mainVal, cx, cy, colorOrGradient, visualLineWidth / Math.max(finalScaleX, 0.05));
             return edgeCanvas;
         };
 
-        // ── Helper: Compensated Inner Bevel (soft, no hard line) ──
+        // ── Helper: Soft Inner Bevel ──
         const createBevel = (color: string | CanvasGradient, visualShiftX: number, visualShiftY: number) => {
             const edgeCanvas = document.createElement('canvas');
-            edgeCanvas.width = drawW * SSAA;
-            edgeCanvas.height = drawH * SSAA;
+            edgeCanvas.width = Math.max(1, Math.ceil(unscaledW * SSAA));
+            edgeCanvas.height = Math.max(1, Math.ceil(unscaledH * SSAA));
             const ec = edgeCanvas.getContext('2d');
             if (!ec) return edgeCanvas;
-
-            ec.scale(SSAA * finalScaleX, SSAA);
+            ec.scale(SSAA, SSAA);
             ec.font = `${fontWeight} ${finalFontSize}px 'Montserrat', sans-serif`;
             ec.textAlign = 'center';
             ec.textBaseline = 'middle';
-
             ec.fillStyle = color;
             const dx = visualShiftX / finalScaleX;
             const dy = visualShiftY;
             ec.fillText(mainVal, cx + dx, cy + dy);
-
             ec.globalCompositeOperation = 'destination-out';
             ec.fillText(mainVal, cx, cy);
-
-            // Slight blur so the bevel doesn’t read as a hard contour line
-            const smooth = document.createElement('canvas');
-            smooth.width = edgeCanvas.width;
-            smooth.height = edgeCanvas.height;
-            const sm = smooth.getContext('2d');
-            if (sm) {
-                if ('filter' in sm) (sm as CanvasRenderingContext2D).filter = 'blur(0.8px)';
-                sm.drawImage(edgeCanvas, 0, 0);
-                if ('filter' in sm) (sm as CanvasRenderingContext2D).filter = 'none';
-                return smooth;
+            if ('filter' in ec) {
+                const smooth = document.createElement('canvas');
+                smooth.width = edgeCanvas.width;
+                smooth.height = edgeCanvas.height;
+                const sm = smooth.getContext('2d');
+                if (sm) {
+                    if ('filter' in sm) (sm as CanvasRenderingContext2D).filter = 'blur(0.8px)';
+                    sm.drawImage(edgeCanvas, 0, 0);
+                    releaseCanvas(edgeCanvas);
+                    return smooth;
+                }
             }
             return edgeCanvas;
         };
 
         // ── Helper: 1:1 Composite Drawer ──
-        // Since `gc` has a squish scale applied, drawing an already-squished
-        // offscreen canvas onto it will double-squish it! We must reset transform.
         const composite1to1 = (canvas: HTMLCanvasElement) => {
             gc.save();
-            gc.setTransform(1, 0, 0, 1, 0, 0); // Reset to physical 1:1 mapping
-            gc.drawImage(canvas, 0, 0);
+            gc.setTransform(SSAA, 0, 0, SSAA, 0, 0);
+            gc.drawImage(canvas, 0, 0, unscaledW, unscaledH);
             gc.restore();
+            releaseCanvas(canvas);
         };
 
         // ── Layer 1: Caustic Drop Shadow ──
         const shadowCanvas = document.createElement('canvas');
-        shadowCanvas.width = drawW * SSAA;
-        shadowCanvas.height = drawH * SSAA;
+        shadowCanvas.width = Math.max(1, Math.ceil(unscaledW * SSAA));
+        shadowCanvas.height = Math.max(1, Math.ceil(unscaledH * SSAA));
         const sc = shadowCanvas.getContext('2d');
         if (sc) {
-            sc.scale(SSAA * finalScaleX, SSAA);
+            sc.scale(SSAA, SSAA);
             sc.font = `${fontWeight} ${finalFontSize}px 'Montserrat', sans-serif`;
             sc.textAlign = 'center';
             sc.textBaseline = 'middle';
@@ -9358,8 +9383,7 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.drawImage(glassCanvas, drawX, drawY, drawW, drawH);
     ctx.restore();
     // Free large glass bitmaps (Safari significant-memory reload)
-    glassCanvas.width = 0;
-    glassCanvas.height = 0;
+    releaseCanvas(glassCanvas);
 
     // 4. Unit — larger, tight under digits
     ctx.save();
@@ -9370,7 +9394,13 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     ctx.shadowColor = 'rgba(0, 0, 0, 0.40)';
     ctx.shadowBlur = 10;
     ctx.shadowOffsetY = 4;
-    ctx.fillText(unit, x, 1180);
+    // Unit BELOW the glyphs (half-height + gap — never mid-digit)
+    ctx.save();
+    ctx.font = `${fontWeight} ${finalFontSize}px 'Montserrat', sans-serif`;
+    const gm = ctx.measureText(mainVal);
+    const halfGlyph = (gm.actualBoundingBoxAscent + gm.actualBoundingBoxDescent) / 2;
+    ctx.restore();
+    ctx.fillText(unit, x, heroY + halfGlyph + 64);
     ctx.restore();
 }
 
@@ -9381,24 +9411,6 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
  * For copy/paste over any Instagram photo as a transparent sticker.
  */
 export function drawGlassNumbersV2(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
-    // THUMB/PREVIEW: skip heavy glass (Safari P0)
-    if (ctx.canvas.width <= 640) {
-        const { s1 } = getDynamicStats(stats);
-        const hasD = Boolean(stats.hasDistance || (stats.distanceVal && parseFloat(stats.distanceVal) > 0));
-        const mainVal = s1?.value || (hasD ? '0.00' : '0');
-        const unit = (s1?.unit || (hasD ? 'km' : 'min')).toLowerCase();
-        ctx.save();
-        ctx.fillStyle = 'rgba(255,255,255,0.65)';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.font = "300 220px 'Outfit', sans-serif";
-        ctx.fillText(mainVal, 540, 820);
-        ctx.font = "500 56px 'Outfit', sans-serif";
-        ctx.fillText(unit, 540, 1100);
-        ctx.restore();
-        return;
-    }
-
     const { s1 } = getDynamicStats(stats);
     const hasDistance = Boolean(stats.hasDistance || (stats.distanceVal && parseFloat(stats.distanceVal) > 0));
     const mainVal = s1?.value || (hasDistance ? '0.00' : '0');
@@ -9453,7 +9465,12 @@ export function drawGlassNumbersV2(ctx: CanvasRenderingContext2D, stats: any, te
     ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
     ctx.shadowBlur = 8;
     ctx.shadowOffsetY = 3;
-    ctx.fillText(unit, x, heroY + heroFont * 0.52);
+    ctx.save();
+    ctx.font = `300 ${heroFont}px 'Outfit', sans-serif`;
+    const gm2 = ctx.measureText(mainVal);
+    const halfG2 = (gm2.actualBoundingBoxAscent + gm2.actualBoundingBoxDescent) / 2;
+    ctx.restore();
+    ctx.fillText(unit, x, heroY + halfG2 + 56);
     ctx.restore();
 }
 
@@ -9665,5 +9682,199 @@ export function drawCircleLetters(ctx: CanvasRenderingContext2D, stats: any, tex
         currentX += w + charSpacing;
     });
 
+    ctx.restore();
+}
+
+// ─── Word Metric + Select Highlight (distance OR duration) ───────────────────
+
+const SPELL_ONES = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+const SPELL_TENS = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+
+function spellInt(n: number): string {
+    n = Math.max(0, Math.floor(n));
+    if (n < 20) return SPELL_ONES[n];
+    if (n < 100) {
+        const t = Math.floor(n / 10);
+        const o = n % 10;
+        return o ? `${SPELL_TENS[t]} ${SPELL_ONES[o]}` : SPELL_TENS[t];
+    }
+    if (n < 1000) {
+        const h = Math.floor(n / 100);
+        const rest = n % 100;
+        return rest ? `${SPELL_ONES[h]} hundred ${spellInt(rest)}` : `${SPELL_ONES[h]} hundred`;
+    }
+    const th = Math.floor(n / 1000);
+    const rest = n % 1000;
+    return rest ? `${spellInt(th)} thousand ${spellInt(rest)}` : `${spellInt(th)} thousand`;
+}
+
+function spellNumber(n: number): string {
+    if (!Number.isFinite(n)) return 'zero';
+    // Whole units only — 21.99 / 21.02 → "twenty one" (never "point…")
+    return spellInt(Math.floor(n));
+}
+
+/** Distance (km) or duration (minutes) for hero stickers — never hardcode units. */
+function resolveDistanceOrDuration(stats: any): {
+    display: string;
+    words: string;
+    unitLabel: string;
+    isDistance: boolean;
+} {
+    const hasDistance = Boolean(stats.hasDistance || (stats.distanceVal && parseFloat(stats.distanceVal) > 0));
+    if (hasDistance) {
+        const km = Math.floor(parseFloat(stats.distanceVal || '0') || 0);
+        const unit = (stats.distanceUnit || 'km').toLowerCase();
+        const unitLabel = unit.startsWith('m') && !unit.startsWith('mi')
+            ? (km === 1 ? 'METER' : 'METERS')
+            : (km === 1 ? 'KILOMETER' : 'KILOMETERS');
+        return {
+            display: `${stats.distanceVal || '0.00'} ${unit}`,
+            words: spellNumber(km),
+            unitLabel,
+            isDistance: true,
+        };
+    }
+
+    const timeText = String(stats.timeStr || stats.movingTime || stats.mainValue || '0m');
+    let mins = 0;
+    const hMatch = timeText.match(/(\d+)\s*h/i);
+    const mMatch = timeText.match(/(\d+)\s*m/i);
+    if (hMatch || mMatch) {
+        mins = (hMatch ? parseInt(hMatch[1], 10) : 0) * 60 + (mMatch ? parseInt(mMatch[1], 10) : 0);
+    } else if (timeText.includes(':')) {
+        const parts = timeText.split(':').map((p) => parseInt(p, 10) || 0);
+        if (parts.length === 3) mins = parts[0] * 60 + parts[1];
+        else if (parts.length === 2) mins = parts[0];
+    } else {
+        mins = parseInt(timeText, 10) || 0;
+    }
+    return {
+        display: timeText,
+        words: spellNumber(mins),
+        unitLabel: mins === 1 ? 'MINUTE' : 'MINUTES',
+        isDistance: false,
+    };
+}
+
+/**
+ * word-metric — IG type sample: large lowercase words + tracked unit caps.
+ * Whole units only (21.99 → "twenty one"). Fits inside the 1080 frame.
+ */
+export function drawWordMetric(ctx: CanvasRenderingContext2D, stats: any, textColor = 'white') {
+    const { words, unitLabel } = resolveDistanceOrDuration(stats);
+    const ink = textColor.startsWith('#') ? textColor : (textColor === 'black' ? '#000000' : '#ffffff');
+    const face = "'Helvetica Neue', Helvetica, Arial, sans-serif";
+
+    ctx.save();
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+
+    const leftX = 72;
+    const rightX = 1008;
+    const maxW = rightX - leftX;
+
+    // Hero — fill width but CAP so short words ("ten") never explode off-frame
+    const probe = 200;
+    ctx.font = `400 ${probe}px ${face}`;
+    const measured = Math.max(1, ctx.measureText(words).width);
+    let heroSize = Math.floor(probe * (maxW / measured));
+    heroSize = Math.max(96, Math.min(heroSize, 220));
+    ctx.font = `400 ${heroSize}px ${face}`;
+    // Re-clamp if still too wide
+    while (ctx.measureText(words).width > maxW && heroSize > 80) {
+        heroSize -= 4;
+        ctx.font = `400 ${heroSize}px ${face}`;
+    }
+
+    const heroBaseline = 1020;
+    ctx.fillStyle = ink;
+    ctx.fillText(words, leftX, heroBaseline);
+
+    // Unit — bold tracked caps; shrink so the full word stays inside the frame
+    let unitSize = Math.max(36, Math.round(heroSize * 0.2));
+    let tracking = '0.28em';
+    ctx.font = `700 ${unitSize}px ${face}`;
+    setLetterSpacing(ctx, tracking);
+    while (ctx.measureText(unitLabel).width > maxW && unitSize > 22) {
+        unitSize -= 2;
+        ctx.font = `700 ${unitSize}px ${face}`;
+        setLetterSpacing(ctx, tracking);
+    }
+    // Still overflows? tighten tracking
+    if (ctx.measureText(unitLabel).width > maxW) {
+        tracking = '0.12em';
+        setLetterSpacing(ctx, tracking);
+        while (ctx.measureText(unitLabel).width > maxW && unitSize > 18) {
+            unitSize -= 2;
+            ctx.font = `700 ${unitSize}px ${face}`;
+            setLetterSpacing(ctx, tracking);
+        }
+    }
+    ctx.fillText(unitLabel, leftX, heroBaseline + Math.round(unitSize * 1.4));
+    setLetterSpacing(ctx, '0px');
+    ctx.restore();
+}
+
+/**
+ * select-highlight — IG text-selection chrome around a yellow hero metric
+ * (distance or duration). Distinct from plain type: corner/edge handles.
+ */
+export function drawSelectHighlight(ctx: CanvasRenderingContext2D, stats: any, textColor = 'white') {
+    const { display } = resolveDistanceOrDuration(stats);
+    const accent = (textColor && textColor.startsWith('#') && textColor.toLowerCase() !== '#ffffff' && textColor.toLowerCase() !== '#fff')
+        ? textColor
+        : '#E8FF3A';
+
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    const cx = 540;
+    const cy = 860;
+    const baseSize = 132;
+    const maxW = 820;
+
+    ctx.font = `800 ${baseSize}px 'Plus Jakarta Sans', sans-serif`;
+    let size = baseSize;
+    let tw = ctx.measureText(display).width;
+    if (tw > maxW) {
+        size = Math.floor(baseSize * (maxW / tw));
+        ctx.font = `800 ${size}px 'Plus Jakarta Sans', sans-serif`;
+        tw = ctx.measureText(display).width;
+    }
+
+    const padX = 36;
+    const padY = 28;
+    const boxW = tw + padX * 2;
+    const boxH = size * 1.15 + padY * 2;
+    const bx = cx - boxW / 2;
+    const by = cy - boxH / 2;
+
+    // Selection frame (editor chrome)
+    ctx.strokeStyle = 'rgba(255,255,255,0.92)';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(bx, by, boxW, boxH);
+
+    const handle = 18;
+    const handles: [number, number][] = [
+        [bx, by], [bx + boxW / 2, by], [bx + boxW, by],
+        [bx, by + boxH / 2], [bx + boxW, by + boxH / 2],
+        [bx, by + boxH], [bx + boxW / 2, by + boxH], [bx + boxW, by + boxH],
+    ];
+    handles.forEach(([hx, hy]) => {
+        ctx.fillStyle = accent;
+        ctx.fillRect(hx - handle / 2, hy - handle / 2, handle, handle);
+        ctx.strokeStyle = 'rgba(20,20,22,0.85)';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(hx - handle / 2, hy - handle / 2, handle, handle);
+    });
+
+    // Hero metric — solid yellow (no transparency)
+    ctx.fillStyle = accent;
+    ctx.shadowColor = 'rgba(0,0,0,0.25)';
+    ctx.shadowBlur = 10;
+    ctx.shadowOffsetY = 4;
+    ctx.fillText(display, cx, cy + 2);
     ctx.restore();
 }

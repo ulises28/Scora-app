@@ -185,6 +185,72 @@ function isColorDark(hex: string) {
     return luma < 128;
 }
 
+function rgbToHsl(r: number, g: number, b: number): { h: number; s: number; l: number } {
+    r /= 255; g /= 255; b /= 255;
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const l = (max + min) / 2;
+    if (max === min) return { h: 0, s: 0, l: l * 100 };
+    const d = max - min;
+    const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    let h = 0;
+    if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+    else if (max === g) h = ((b - r) / d + 2) / 6;
+    else h = ((r - g) / d + 4) / 6;
+    return { h: h * 360, s: s * 100, l: l * 100 };
+}
+
+function hslToHex(h: number, s: number, l: number): string {
+    h = ((h % 360) + 360) % 360;
+    s = Math.min(100, Math.max(0, s)) / 100;
+    l = Math.min(100, Math.max(0, l)) / 100;
+    const c = (1 - Math.abs(2 * l - 1)) * s;
+    const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+    const m = l - c / 2;
+    let r = 0, g = 0, b = 0;
+    if (h < 60) { r = c; g = x; }
+    else if (h < 120) { r = x; g = c; }
+    else if (h < 180) { g = c; b = x; }
+    else if (h < 240) { g = x; b = c; }
+    else if (h < 300) { r = x; b = c; }
+    else { r = c; b = x; }
+    const to = (v: number) => Math.round((v + m) * 255).toString(16).padStart(2, '0');
+    return `#${to(r)}${to(g)}${to(b)}`;
+}
+
+/**
+ * Hard-offset / print-shadow ink from a primary fill (yellow → red relationship).
+ *
+ * Measure: rotate hue ≤42° toward red-magenta (350°) along the short arc,
+ * keep chroma high, drop lightness to ~38% of primary (capped 28–42%).
+ * That keeps the classic bright-fill + deep-contrast drop (e.g. #fbbf24 + #b91c1c)
+ * without a second picker.
+ */
+export function deriveContrastInk(primary: string): string {
+    if (!primary || !primary.startsWith('#')) return '#b91c1c';
+    const r = parseInt(primary.slice(1, 3), 16);
+    const g = parseInt(primary.slice(3, 5), 16);
+    const b = parseInt(primary.slice(5, 7), 16);
+    const { h, s, l } = rgbToHsl(r, g, b);
+
+    // Near-white / near-grey: no hue to ride — use the reference print red
+    if (s < 8) {
+        return l > 55 ? '#b91c1c' : '#fbbf24';
+    }
+
+    // Pull hue toward the red-magenta print-shadow band (350°)
+    const target = 350;
+    let delta = ((target - h + 540) % 360) - 180;
+    const step = Math.sign(delta || 1) * Math.min(Math.abs(delta), 42);
+    let h2 = h + step;
+    // Already red: push slightly into deep magenta-red so the drop still separates
+    if (Math.min(Math.abs(h2), Math.abs(h2 - 360)) < 18) h2 = 352;
+
+    const s2 = Math.min(100, Math.max(s * 0.92, 68));
+    const l2 = Math.min(42, Math.max(28, l * 0.42));
+    return hslToHex(h2, s2, l2);
+}
+
 export function getThemeColors(textColor: string): ThemeColors {
     const alphaValue = 0.8;
     let base = '255, 255, 255';

@@ -26,7 +26,9 @@ vi.stubGlobal('Path2D', Path2D);
 
 // 2. Mock HTMLCanvasElement.prototype.getContext
 if (typeof HTMLCanvasElement !== 'undefined') {
-  HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
+  HTMLCanvasElement.prototype.getContext = vi.fn(function (this: HTMLCanvasElement) {
+  return {
+  canvas: this,
   fillStyle: '',
   strokeStyle: '',
   lineWidth: 0,
@@ -92,7 +94,8 @@ if (typeof HTMLCanvasElement !== 'undefined') {
   
   save: vi.fn(),
   restore: vi.fn()
-})) as any;
+  };
+}) as any;
 }
 
 // 3. Mock Image loading in JSDOM to prevent hanging on asset requests
