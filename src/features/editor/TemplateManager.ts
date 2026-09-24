@@ -113,9 +113,10 @@ export function initTemplateManager(onChange: OnChangeCallback) {
                 color = currentTextColor;
             }
 
-            // Priority: visible/active first, rest deferred (editor must open fast)
+            // Only active + neighbors on open — rest after UI is interactive
             const job = { canvasId: canvas.id, stats: previewStats, id, color, el: thumb };
-            if (i < 8 || id === currentTemplate) thumbPaintQueue.unshift(job);
+            const activeIdx = currentTemplates.indexOf(currentTemplate);
+            if (id === currentTemplate || Math.abs(i - activeIdx) <= 2) thumbPaintQueue.unshift(job);
             else thumbPaintQueue.push(job);
         });
         pumpThumbQueue();
@@ -127,13 +128,15 @@ export function initTemplateManager(onChange: OnChangeCallback) {
     async function pumpThumbQueue() {
         if (thumbPainting) return;
         thumbPainting = true;
+        let n = 0;
         while (thumbPaintQueue.length) {
             const job = thumbPaintQueue.shift()!;
             try {
                 await drawTemplate(job.canvasId, job.stats, job.id, job.color, currentShowLogo, false);
             } catch { /* keep queue alive */ }
-            // Yield hard so Safari/Android stay responsive
-            await new Promise(r => setTimeout(r, 0));
+            n++;
+            // After the first few, throttle hard so Safari stays responsive
+            await new Promise(r => setTimeout(r, n < 5 ? 8 : 32));
         }
         thumbPainting = false;
     }

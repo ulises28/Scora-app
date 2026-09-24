@@ -135,6 +135,20 @@ export function drawGlassText(ctx: CanvasRenderingContext2D, opts: GlassTextOpti
     const { text, x, y, fontFamily, fontWeight, fontSize, aspectScaleX, color } = opts;
     if (!text) return;
 
+    // Thumb fast path — no offscreen (Safari P0)
+    if (ctx.canvas.width <= 640) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.scale(aspectScaleX, 1);
+        ctx.font = `${fontWeight} ${fontSize}px '${fontFamily}', sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = 'rgba(255,255,255,0.55)';
+        ctx.fillText(text, 0, 0);
+        ctx.restore();
+        return;
+    }
+
     // Pearl / clear glass palette — always light (user: no black-in-white)
     // Slight warm cream cast like the iOS 11:11 lock-screen slab
     const tint = lift({ r: color.r, g: color.g, b: Math.min(255, color.b + 8) }, 0.50);
@@ -314,6 +328,23 @@ export interface LiquidGlyphOptions {
 export function drawLiquidGlyphs(ctx: CanvasRenderingContext2D, opts: LiquidGlyphOptions & { aspectScaleX?: number }): void {
     const { text, x, y, fontFamily, fontWeight, fontSize, aspectScaleX = 1 } = opts;
     if (!text) return;
+
+    // ── THUMB FAST PATH: one pass, no offscreen (Safari P0) ──
+    if (ctx.canvas.width <= 640) {
+        ctx.save();
+        ctx.font = `${fontWeight} ${fontSize}px '${fontFamily}', sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor = 'rgba(255,255,255,0.5)';
+        ctx.shadowBlur = 8;
+        ctx.fillStyle = 'rgba(255,255,255,0.55)';
+        ctx.fillText(text, x, y);
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = 'rgba(255,255,255,0.35)';
+        ctx.fillText(text, x, y);
+        ctx.restore();
+        return;
+    }
 
     const font = `${fontWeight} ${fontSize}px '${fontFamily}', sans-serif`;
     const meas = document.createElement('canvas').getContext('2d');

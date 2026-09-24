@@ -250,24 +250,22 @@ export async function drawTemplate(
     showLogo = true,
     isMain = false // 🚀 Studio Grade: Only main canvas triggers E2E signals
 ) {
+    // Fonts load ONCE per session — not on every draw (Safari perf P0)
     if (typeof document !== 'undefined' && 'fonts' in document) {
-        try {
-            await Promise.race([
+        const w = window as any;
+        if (!w.__scoraFontsReady) {
+            w.__scoraFontsReady = Promise.race([
                 Promise.all([
                     document.fonts.load("500 12px 'Plus Jakarta Sans'"),
                     document.fonts.load("700 12px 'Plus Jakarta Sans'"),
                     document.fonts.load("800 12px 'Plus Jakarta Sans'"),
-                    document.fonts.load("500 12px 'Elms Sans'"),
                     document.fonts.load("300 12px 'Outfit'"),
                     document.fonts.load("500 12px 'Outfit'"),
-                    document.fonts.load("200 12px 'Idiqlat'"),
-                    document.fonts.load("300 12px 'Idiqlat'")
                 ]),
-                new Promise(resolve => setTimeout(resolve, 500))
-            ]);
-        } catch (e) {
-            console.warn("[Canvas] Font preloading failed:", e);
+                new Promise(resolve => setTimeout(resolve, 600))
+            ]).catch(() => {});
         }
+        await w.__scoraFontsReady;
     }
     const canvas = document.getElementById(canvasId) as HTMLCanvasElement;
     const ctx = canvas?.getContext('2d');
@@ -8395,302 +8393,373 @@ export function drawEditorialCorners(ctx: CanvasRenderingContext2D, stats: any, 
 }
 
 export function drawMusicPlayerPill(ctx: CanvasRenderingContext2D, stats: any, textColor: string, showLogo = true) {
-    // Ref: Now-Playing glass card — title, date, progress (dist ↔ pace), transport
-    const { s1, s2 } = getDynamicStats(stats);
-    const ink = textColor === 'black' ? 'rgba(20,20,20,0.92)' : 'rgba(255,255,255,0.95)';
-    const soft = textColor === 'black' ? 'rgba(20,20,20,0.55)' : 'rgba(255,255,255,0.55)';
+    // Spotify Now Playing — dark shell, album tile, title/subtitle, progress, transport
+    const { s1, s2, type } = getDynamicStats(stats);
+    const accent = (textColor && textColor.startsWith('#') && textColor.toLowerCase() !== '#ffffff')
+        ? textColor
+        : '#1DB954'; // Spotify green
+    const ink = '#ffffff';
+    const soft = 'rgba(255,255,255,0.55)';
 
-    const w = 860;
-    const h = 320;
+    const w = 880;
+    const h = 420;
     const x = 540 - w / 2;
-    const y = 720;
+    const y = 680;
     const cx = 540;
+    const pad = 36;
+    const art = 148;
 
-    // Dark frosted panel (original music-player background)
+    // Blue frosted shell (original music-player background)
     ctx.save();
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
-    ctx.shadowBlur = 28;
-    ctx.shadowOffsetY = 10;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
+    ctx.shadowBlur = 32;
+    ctx.shadowOffsetY = 12;
     ctx.beginPath();
-    ctx.roundRect(x, y, w, h, 48);
-    const panel = ctx.createLinearGradient(x, y, x, y + h);
-    panel.addColorStop(0, 'rgba(18, 24, 38, 0.92)');
-    panel.addColorStop(0.5, 'rgba(10, 15, 25, 0.88)');
-    panel.addColorStop(1, 'rgba(8, 10, 18, 0.94)');
-    ctx.fillStyle = panel;
+    ctx.roundRect(x, y, w, h, 28);
+    const shell = ctx.createLinearGradient(x, y, x, y + h);
+    shell.addColorStop(0, 'rgba(28, 38, 62, 0.94)');
+    shell.addColorStop(0.5, 'rgba(14, 22, 40, 0.92)');
+    shell.addColorStop(1, 'rgba(8, 12, 24, 0.96)');
+    ctx.fillStyle = shell;
     ctx.fill();
     ctx.restore();
     ctx.beginPath();
-    ctx.roundRect(x, y, w, h, 48);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.14)';
-    ctx.lineWidth = 1.5;
+    ctx.roundRect(x, y, w, h, 28);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+    ctx.lineWidth = 1;
     ctx.stroke();
-    // Soft top gloss
+
+    // Album-art tile (accent gradient + sport mark)
+    const ax = x + pad;
+    const ay = y + pad;
     ctx.save();
     ctx.beginPath();
-    ctx.roundRect(x, y, w, h, 48);
-    ctx.clip();
-    const gloss = ctx.createLinearGradient(x, y, x, y + h * 0.4);
-    gloss.addColorStop(0, 'rgba(255, 255, 255, 0.10)');
-    gloss.addColorStop(1, 'rgba(255, 255, 255, 0)');
-    ctx.fillStyle = gloss;
-    ctx.fillRect(x, y, w, h * 0.4);
+    ctx.roundRect(ax, ay, art, art, 12);
+    const artGrad = ctx.createLinearGradient(ax, ay, ax + art, ay + art);
+    artGrad.addColorStop(0, accent);
+    artGrad.addColorStop(1, '#0a0a0a');
+    ctx.fillStyle = artGrad;
+    ctx.fill();
     ctx.restore();
-
+    // Simple activity glyph
+    ctx.save();
+    ctx.fillStyle = 'rgba(255,255,255,0.92)';
+    ctx.font = "700 42px 'Outfit', sans-serif";
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
+    ctx.fillText(normalizeSport(type || 'Run').charAt(0), ax + art / 2, ay + art / 2);
+    ctx.restore();
 
-    let titleStr = stats.title || normalizeSport(stats.type || 'Workout');
-    let titleSize = 48;
-    ctx.font = `600 ${titleSize}px 'Outfit', 'Plus Jakarta Sans', sans-serif`;
-    if (ctx.measureText(titleStr).width > w - 100) {
-        titleSize = 38;
-        ctx.font = `600 ${titleSize}px 'Outfit', 'Plus Jakarta Sans', sans-serif`;
+    // Title + subtitle (track / artist)
+    const tx = ax + art + 28;
+    const maxTextW = x + w - pad - tx;
+    let titleStr = stats.title || normalizeSport(type || 'Workout');
+    ctx.font = "700 44px 'Outfit', 'Plus Jakarta Sans', sans-serif";
+    if (ctx.measureText(titleStr).width > maxTextW) {
+        ctx.font = "700 36px 'Outfit', 'Plus Jakarta Sans', sans-serif";
     }
-    if (ctx.measureText(titleStr).width > w - 100) {
-        titleStr = titleStr.slice(0, 28) + '\u2026';
+    if (ctx.measureText(titleStr).width > maxTextW) {
+        titleStr = titleStr.slice(0, 22) + '…';
     }
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
     ctx.fillStyle = ink;
-    ctx.fillText(titleStr, cx, y + 58);
+    ctx.fillText(titleStr, tx, ay + 48);
 
     const dateStr = stats.rawDate
         ? new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
             .format(new Date(stats.rawDate.replace('Z', '')))
-        : '';
-    ctx.font = "400 32px 'Outfit', 'Plus Jakarta Sans', sans-serif";
+        : normalizeSport(type || 'Run');
+    ctx.font = "400 30px 'Outfit', sans-serif";
     ctx.fillStyle = soft;
-    ctx.fillText(dateStr, cx, y + 110);
+    ctx.fillText(dateStr, tx, ay + 96);
 
-    const barX = x + 56;
-    const barY = y + 168;
-    const barW = w - 112;
+    // Progress bar
+    const barX = x + pad;
+    const barY = y + pad + art + 36;
+    const barW = w - pad * 2;
     ctx.beginPath();
-    ctx.roundRect(barX, barY, barW, 6, 3);
-    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.22)';
+    ctx.roundRect(barX, barY, barW, 4, 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.18)';
     ctx.fill();
     ctx.beginPath();
-    ctx.roundRect(barX, barY, barW * 0.42, 6, 3);
+    ctx.roundRect(barX, barY, barW * 0.45, 4, 2);
     ctx.fillStyle = ink;
     ctx.fill();
     ctx.beginPath();
-    ctx.arc(barX + barW * 0.42, barY + 3, 9, 0, Math.PI * 2);
+    ctx.arc(barX + barW * 0.45, barY + 2, 7, 0, Math.PI * 2);
     ctx.fillStyle = ink;
     ctx.fill();
 
-    ctx.font = "500 28px 'Outfit', 'Plus Jakarta Sans', sans-serif";
+    ctx.font = "500 26px 'Outfit', sans-serif";
     ctx.fillStyle = soft;
     ctx.textAlign = 'left';
-    ctx.fillText(`${s1.value}${s1.unit ? ' ' + s1.unit : ''}`, barX, barY + 36);
+    ctx.fillText(`${s1.value}${s1.unit ? ' ' + s1.unit : ''}`, barX, barY + 32);
     ctx.textAlign = 'right';
-    ctx.fillText(`${s2.value}${s2.unit ? ' ' + s2.unit : ''}`, barX + barW, barY + 36);
+    ctx.fillText(`${s2.value}${s2.unit ? ' ' + s2.unit : ''}`, barX + barW, barY + 32);
 
-    const tY = y + 250;
-    const slots = [cx - 240, cx - 80, cx + 80, cx + 240];
-    ctx.strokeStyle = ink;
+    // Transport row — Spotify: shuffle · prev · play · next · repeat
+    const tY = y + h - 72;
     ctx.fillStyle = ink;
+    ctx.strokeStyle = ink;
     ctx.lineWidth = 5;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
-    const drawPrev = (ox: number) => {
-        ctx.beginPath();
-        ctx.moveTo(ox + 14, tY - 16);
-        ctx.lineTo(ox - 8, tY);
-        ctx.lineTo(ox + 14, tY + 16);
-        ctx.closePath();
-        ctx.fill();
-        ctx.beginPath();
-        ctx.moveTo(ox + 34, tY - 16);
-        ctx.lineTo(ox + 12, tY);
-        ctx.lineTo(ox + 34, tY + 16);
-        ctx.closePath();
-        ctx.fill();
-    };
-    const drawNext = (ox: number) => {
-        ctx.beginPath();
-        ctx.moveTo(ox - 14, tY - 16);
-        ctx.lineTo(ox + 8, tY);
-        ctx.lineTo(ox - 14, tY + 16);
-        ctx.closePath();
-        ctx.fill();
-        ctx.beginPath();
-        ctx.moveTo(ox - 34, tY - 16);
-        ctx.lineTo(ox - 12, tY);
-        ctx.lineTo(ox - 34, tY + 16);
-        ctx.closePath();
-        ctx.fill();
-    };
-    const drawPause = (ox: number) => {
-        ctx.fillRect(ox - 14, tY - 18, 10, 36);
-        ctx.fillRect(ox + 4, tY - 18, 10, 36);
-    };
-    const drawAirplay = (ox: number) => {
-        ctx.beginPath();
-        ctx.roundRect(ox - 22, tY - 18, 44, 30, 6);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(ox - 12, tY + 20);
-        ctx.lineTo(ox, tY + 8);
-        ctx.lineTo(ox + 12, tY + 20);
-        ctx.closePath();
-        ctx.fill();
-    };
+    // Shuffle — clean crossing arrows
+    const shX = x + 90;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(shX - 20, tY - 12);
+    ctx.lineTo(shX - 6, tY - 12);
+    ctx.lineTo(shX + 6, tY + 12);
+    ctx.lineTo(shX + 20, tY + 12);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(shX - 20, tY + 12);
+    ctx.lineTo(shX - 6, tY + 12);
+    ctx.lineTo(shX + 6, tY - 12);
+    ctx.lineTo(shX + 20, tY - 12);
+    ctx.stroke();
+    // arrow heads
+    ctx.beginPath();
+    ctx.moveTo(shX + 12, tY + 6);
+    ctx.lineTo(shX + 20, tY + 12);
+    ctx.lineTo(shX + 12, tY + 18);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(shX + 12, tY - 18);
+    ctx.lineTo(shX + 20, tY - 12);
+    ctx.lineTo(shX + 12, tY - 6);
+    ctx.stroke();
 
-    drawPrev(slots[0] - 20);
-    drawPause(slots[1]);
-    drawNext(slots[2] + 20);
-    drawAirplay(slots[3]);
+    // Prev
+    const prevX = cx - 150;
+    ctx.beginPath();
+    ctx.moveTo(prevX + 12, tY - 16);
+    ctx.lineTo(prevX - 10, tY);
+    ctx.lineTo(prevX + 12, tY + 16);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(prevX + 32, tY - 16);
+    ctx.lineTo(prevX + 10, tY);
+    ctx.lineTo(prevX + 32, tY + 16);
+    ctx.closePath();
+    ctx.fill();
+
+    // Play (white circle + black triangle — Spotify)
+    ctx.beginPath();
+    ctx.arc(cx, tY, 42, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(cx - 10, tY - 18);
+    ctx.lineTo(cx + 20, tY);
+    ctx.lineTo(cx - 10, tY + 18);
+    ctx.closePath();
+    ctx.fillStyle = '#000000';
+    ctx.fill();
+
+    // Next
+    const nextX = cx + 150;
+    ctx.fillStyle = ink;
+    ctx.beginPath();
+    ctx.moveTo(nextX - 12, tY - 16);
+    ctx.lineTo(nextX + 10, tY);
+    ctx.lineTo(nextX - 12, tY + 16);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(nextX - 32, tY - 16);
+    ctx.lineTo(nextX - 10, tY);
+    ctx.lineTo(nextX - 32, tY + 16);
+    ctx.closePath();
+    ctx.fill();
+
+    // Repeat
+    const rpX = x + w - 90;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.roundRect(rpX - 18, tY - 12, 36, 24, 8);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(rpX + 10, tY - 18);
+    ctx.lineTo(rpX + 22, tY - 8);
+    ctx.lineTo(rpX + 10, tY + 2);
+    ctx.stroke();
 }
 
 /**
- * watch-face — Apple Watch style activity face.
- * Simple aesthetic, few stats, accent color from the picker.
+ * digital-led — old-photo / VCR date-stamp 7-segment LED digits.
+ * Orange glow (or picker color). Shows date, distance, and pace.
  */
-/**
- * glass-type — tall condensed glass letterforms (same family as glass-numbers / Image 1).
- * Simple: hero metric in glass type + unit. Accent color from the picker.
- * Not a watch UI — pure type over the photo.
- */
-export function drawGlassType(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
-    const { s1 } = getDynamicStats(stats);
+export function drawDigitalLed(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const { s1, s2 } = getDynamicStats(stats);
     const hasDistance = Boolean(stats.hasDistance || (stats.distanceVal && parseFloat(stats.distanceVal) > 0));
-    const mainVal = s1?.value || (hasDistance ? '0.00' : '0');
-    const unit = (s1?.unit || (hasDistance ? 'km' : 'min')).toLowerCase();
+    const distVal = hasDistance ? (s1?.value || '0.00') : '';
+    const distUnit = hasDistance ? (s1?.unit || 'km').toUpperCase() : '';
+    const paceVal = s2?.value || '';
+    const paceUnit = (s2?.unit || s2?.label || '').toUpperCase();
 
-    // Letters use the same tall glass material as glass-numbers (Image 1 style)
-    const x = 540;
-    const heroY = 900;
-    const baseFontSize = 1000;
-    const aspectScaleX = 0.24;
-    const maxAllowedWidth = 680;
-    const fontWeight = '300';
+    const dateStr = stats.rawDate
+        ? new Intl.DateTimeFormat('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' })
+            .format(new Date(stats.rawDate.replace('Z', '')))
+        : '01.01.25';
+
+    // LED orange (or picker accent)
+    const on = (textColor && textColor.startsWith('#') && textColor.toLowerCase() !== '#ffffff')
+        ? textColor
+        : '#FF6A00';
+    const off = 'rgba(255, 106, 0, 0.10)';
+
+    // ── 7-segment glyph (classic LED) ──
+    // segments: 0=top, 1=tl, 2=tr, 3=mid, 4=bl, 5=br, 6=bot
+    const DIGITS: Record<string, number[]> = {
+        '0': [1, 1, 1, 0, 1, 1, 1],
+        '1': [0, 0, 1, 0, 0, 1, 0],
+        '2': [1, 0, 1, 1, 1, 0, 1],
+        '3': [1, 0, 1, 1, 0, 1, 1],
+        '4': [0, 1, 1, 1, 0, 1, 0],
+        '5': [1, 1, 0, 1, 0, 1, 1],
+        '6': [1, 1, 0, 1, 1, 1, 1],
+        '7': [1, 0, 1, 0, 0, 1, 0],
+        '8': [1, 1, 1, 1, 1, 1, 1],
+        '9': [1, 1, 1, 1, 0, 1, 1],
+        ' ': [0, 0, 0, 0, 0, 0, 0],
+        ':': [0, 0, 0, 0, 0, 0, 0],
+        '.': [0, 0, 0, 0, 0, 0, 0],
+    };
+
+    const drawSeg = (
+        g: CanvasRenderingContext2D,
+        x: number, y: number,
+        w: number, h: number,
+        horizontal: boolean,
+        lit: boolean
+    ) => {
+        const t = Math.max(6, (horizontal ? h : w) * 0.22); // thickness
+        g.fillStyle = lit ? on : off;
+        g.shadowColor = lit ? on : 'transparent';
+        g.shadowBlur = lit ? 18 : 0;
+        g.beginPath();
+        if (horizontal) {
+            // hexagonal bar
+            const cy = y + h / 2;
+            g.moveTo(x + t * 0.5, cy);
+            g.lineTo(x + t, y + 2);
+            g.lineTo(x + w - t, y + 2);
+            g.lineTo(x + w - t * 0.5, cy);
+            g.lineTo(x + w - t, y + h - 2);
+            g.lineTo(x + t, y + h - 2);
+        } else {
+            const cx = x + w / 2;
+            g.moveTo(cx, y + t * 0.5);
+            g.lineTo(x + 2, y + t);
+            g.lineTo(x + 2, y + h - t);
+            g.lineTo(cx, y + h - t * 0.5);
+            g.lineTo(x + w - 2, y + h - t);
+            g.lineTo(x + w - 2, y + t);
+        }
+        g.closePath();
+        g.fill();
+        g.shadowBlur = 0;
+    };
+
+    const drawDigit = (g: CanvasRenderingContext2D, ch: string, x: number, y: number, dw: number, dh: number) => {
+        if (ch === ':') {
+            g.fillStyle = on;
+            g.shadowColor = on;
+            g.shadowBlur = 14;
+            const r = dw * 0.12;
+            g.beginPath();
+            g.arc(x + dw / 2, y + dh * 0.32, r, 0, Math.PI * 2);
+            g.fill();
+            g.beginPath();
+            g.arc(x + dw / 2, y + dh * 0.68, r, 0, Math.PI * 2);
+            g.fill();
+            g.shadowBlur = 0;
+            return;
+        }
+        if (ch === '.') {
+            g.fillStyle = on;
+            g.shadowColor = on;
+            g.shadowBlur = 14;
+            g.beginPath();
+            g.arc(x + dw / 2, y + dh * 0.9, dw * 0.1, 0, Math.PI * 2);
+            g.fill();
+            g.shadowBlur = 0;
+            return;
+        }
+        const seg = DIGITS[ch] || DIGITS[' '];
+        const t = Math.max(6, dw * 0.18);
+        const half = dh / 2;
+        // top / mid / bot
+        drawSeg(g, x + t * 0.4, y, dw - t * 0.8, t, true, !!seg[0]);
+        drawSeg(g, x + t * 0.4, y + half - t / 2, dw - t * 0.8, t, true, !!seg[3]);
+        drawSeg(g, x + t * 0.4, y + dh - t, dw - t * 0.8, t, true, !!seg[6]);
+        // sides
+        drawSeg(g, x, y + t * 0.4, t, half - t * 0.6, false, !!seg[1]);
+        drawSeg(g, x + dw - t, y + t * 0.4, t, half - t * 0.6, false, !!seg[2]);
+        drawSeg(g, x, y + half + t * 0.2, t, half - t * 0.6, false, !!seg[4]);
+        drawSeg(g, x + dw - t, y + half + t * 0.2, t, half - t * 0.6, false, !!seg[5]);
+    };
+
+    const drawLedText = (text: string, cx: number, baselineY: number, digitH: number) => {
+        const dw = digitH * 0.62;
+        const gap = digitH * 0.12;
+        const chars = text.split('');
+        let total = 0;
+        for (const ch of chars) {
+            total += (ch === ':' || ch === '.') ? dw * 0.45 : dw;
+            total += gap;
+        }
+        total -= gap;
+        let px = cx - total / 2;
+        const py = baselineY - digitH;
+        for (const ch of chars) {
+            const cw = (ch === ':' || ch === '.') ? dw * 0.45 : dw;
+            drawDigit(ctx, ch, px, py, cw, digitH);
+            px += cw + gap;
+        }
+    };
 
     ctx.save();
-    ctx.font = `${fontWeight} ${baseFontSize}px 'Montserrat', sans-serif`;
-    const rawMeasuredWidth = ctx.measureText(mainVal).width * aspectScaleX;
-    ctx.restore();
-    let scaleFactor = 1.0;
-    if (rawMeasuredWidth > maxAllowedWidth) {
-        scaleFactor = maxAllowedWidth / rawMeasuredWidth;
+    // Soft black film vignette so it reads like an old photo stamp
+    const vig = ctx.createRadialGradient(540, 900, 200, 540, 900, 1100);
+    vig.addColorStop(0, 'rgba(0,0,0,0)');
+    vig.addColorStop(1, 'rgba(0,0,0,0.25)');
+    ctx.fillStyle = vig;
+    ctx.fillRect(0, 0, 1080, 1920);
+
+    // Date stamp (smaller, top)
+    drawLedText(dateStr.replace(/\//g, '.'), 540, 520, 110);
+
+    // Distance (hero)
+    if (distVal) {
+        drawLedText(distVal, 540, 980, 280);
+        ctx.font = "600 56px 'Outfit', sans-serif";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = on;
+        ctx.shadowColor = on;
+        ctx.shadowBlur = 16;
+        ctx.fillText(distUnit, 540, 1080);
+        ctx.shadowBlur = 0;
     }
-    const finalFontSize = Math.floor(baseFontSize * scaleFactor);
-    const finalScaleX = aspectScaleX * scaleFactor;
 
-    ctx.save();
-    ctx.font = `${fontWeight} ${finalFontSize}px 'Montserrat', sans-serif`;
-    const textMetrics = ctx.measureText(mainVal);
-    ctx.restore();
-
-    const padding = 120;
-    const unscaledW = Math.ceil(textMetrics.width) + padding * 2;
-    const unscaledH = Math.ceil(finalFontSize * 1.5);
-    const SSAA = (ctx.canvas.width <= 640) ? 1 : 2;
-    const drawW = unscaledW * finalScaleX;
-    const drawH = unscaledH;
-
-    const glassCanvas = document.createElement('canvas');
-    glassCanvas.width = drawW * SSAA;
-    glassCanvas.height = drawH * SSAA;
-    const gc = glassCanvas.getContext('2d');
-    if (gc) {
-        gc.scale(SSAA * finalScaleX, SSAA);
-        const cx = unscaledW / 2;
-        const cy = unscaledH / 2;
-        const halfH = finalFontSize / 2;
-        gc.font = `${fontWeight} ${finalFontSize}px 'Montserrat', sans-serif`;
-        gc.textAlign = 'center';
-        gc.textBaseline = 'middle';
-
-        const r = 255, g = 255, b = 255;
-        const dr = 160, dg = 168, db = 180;
-        const hr = 255, hg = 255, hb = 255;
-
-        const createOuterRim = (colorOrGradient: string | CanvasGradient, visualLineWidth: number) => {
-            const edgeCanvas = document.createElement('canvas');
-            edgeCanvas.width = drawW * SSAA;
-            edgeCanvas.height = drawH * SSAA;
-            const ec = edgeCanvas.getContext('2d');
-            if (!ec) return edgeCanvas;
-            ec.scale(SSAA * finalScaleX, SSAA);
-            ec.font = `${fontWeight} ${finalFontSize}px 'Montserrat', sans-serif`;
-            ec.textAlign = 'center';
-            ec.textBaseline = 'middle';
-            ec.fillStyle = colorOrGradient;
-            const steps = SSAA <= 1 ? 32 : 256;
-            for (let i = 0; i < steps; i++) {
-                const angle = (i / steps) * Math.PI * 2;
-                const dx = (Math.cos(angle) * visualLineWidth) / finalScaleX;
-                const dy = Math.sin(angle) * visualLineWidth;
-                ec.fillText(mainVal, cx + dx, cy + dy);
-            }
-            ec.globalCompositeOperation = 'destination-out';
-            ec.fillStyle = 'black';
-            ec.fillText(mainVal, cx, cy);
-            return edgeCanvas;
-        };
-        const createBevel = (color: string | CanvasGradient, visualShiftX: number, visualShiftY: number) => {
-            const edgeCanvas = document.createElement('canvas');
-            edgeCanvas.width = drawW * SSAA;
-            edgeCanvas.height = drawH * SSAA;
-            const ec = edgeCanvas.getContext('2d');
-            if (!ec) return edgeCanvas;
-            ec.scale(SSAA * finalScaleX, SSAA);
-            ec.font = `${fontWeight} ${finalFontSize}px 'Montserrat', sans-serif`;
-            ec.textAlign = 'center';
-            ec.textBaseline = 'middle';
-            ec.fillStyle = color;
-            const dx = visualShiftX / finalScaleX;
-            const dy = visualShiftY;
-            ec.fillText(mainVal, cx + dx, cy + dy);
-            ec.globalCompositeOperation = 'destination-out';
-            ec.fillText(mainVal, cx, cy);
-            return edgeCanvas;
-        };
-        const composite1to1 = (canvas: HTMLCanvasElement) => {
-            gc.save();
-            gc.setTransform(1, 0, 0, 1, 0, 0);
-            gc.drawImage(canvas, 0, 0);
-            gc.restore();
-        };
-
-        // Liquid core
-        const glassFill = gc.createLinearGradient(0, cy - halfH, 0, cy + halfH);
-        glassFill.addColorStop(0.00, `rgba(255, 255, 255, 0.55)`);
-        glassFill.addColorStop(0.40, `rgba(${r}, ${g}, ${b}, 0.28)`);
-        glassFill.addColorStop(1.00, `rgba(${dr}, ${dg}, ${db}, 0.40)`);
-        gc.fillStyle = glassFill;
-        gc.fillText(mainVal, cx, cy);
-
-        // Glowing rim + bevels (Image 1 letter style)
-        const borderFill = gc.createLinearGradient(0, cy - halfH, 0, cy + halfH);
-        borderFill.addColorStop(0.00, 'rgba(255, 255, 255, 0.95)');
-        borderFill.addColorStop(0.40, `rgba(${hr}, ${hg}, ${hb}, 0.75)`);
-        borderFill.addColorStop(0.70, `rgba(${r}, ${g}, ${b}, 0.50)`);
-        borderFill.addColorStop(1.00, `rgba(${dr}, ${dg}, ${db}, 0.95)`);
-        composite1to1(createOuterRim(borderFill, 2));
-        composite1to1(createBevel('rgba(255, 255, 255, 0.95)', -1.5, -1.5));
-        composite1to1(createBevel(`rgba(${dr}, ${dg}, ${db}, 0.95)`, 1.5, 1.5));
+    // Pace
+    if (paceVal) {
+        drawLedText(paceVal.includes(':') ? paceVal : paceVal, 540, 1320, 140);
+        ctx.font = "500 40px 'Outfit', sans-serif";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = on;
+        ctx.globalAlpha = 0.85;
+        ctx.fillText(paceUnit, 540, 1410);
+        ctx.globalAlpha = 1;
     }
 
-    ctx.save();
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-    ctx.shadowBlur = 24;
-    ctx.shadowOffsetY = 10;
-    ctx.drawImage(glassCanvas, x - drawW / 2, heroY - drawH / 2, drawW, drawH);
-    ctx.restore();
-    glassCanvas.width = 0;
-    glassCanvas.height = 0;
-
-    // Unit under the glass letters
-    ctx.save();
-    ctx.font = "500 64px 'Montserrat', sans-serif";
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = textColor && textColor.startsWith('#') ? textColor : '#ffffff';
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
-    ctx.shadowBlur = 8;
-    ctx.shadowOffsetY = 3;
-    ctx.fillText(unit, x, 1320);
     ctx.restore();
 }
 
@@ -9023,6 +9092,24 @@ function parseCanvasColor(colorStr: string): { r: number; g: number; b: number }
 }
 
 export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    // Thumb fast path — skip multi-canvas glass (Safari P0)
+    if (ctx.canvas.width <= 640) {
+        const { s1 } = getDynamicStats(stats);
+        const hasD = Boolean(stats.hasDistance || (stats.distanceVal && parseFloat(stats.distanceVal) > 0));
+        const mainVal = s1?.value || (hasD ? '0.00' : '0');
+        const unit = (s1?.unit || (hasD ? 'km' : 'min')).toLowerCase();
+        ctx.save();
+        ctx.fillStyle = 'rgba(255,255,255,0.55)';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = "300 200px 'Montserrat', sans-serif";
+        ctx.fillText(mainVal, 540, 780);
+        ctx.font = "500 48px 'Montserrat', sans-serif";
+        ctx.fillText(unit, 540, 1180);
+        ctx.restore();
+        return;
+    }
+
     const hasDistance = Boolean(stats.hasDistance && stats.distanceVal && parseFloat(stats.distanceVal) > 0);
     let mainVal = hasDistance ? (stats.distanceVal || '0.00') : (stats.timeStr || stats.movingTime || '0:00');
 

@@ -362,35 +362,39 @@
       }
     }
   },
-  "glass-type": {
+  "digital-led": {
     "version": "4.1",
     "supportsCustomColor": true,
-    "supportsBlackText": true,
+    "supportsBlackText": false,
     "compact": false,
     "modes": {
       "run": {
         "metrics": [
           "distance",
-          "time"
+          "pace",
+          "date"
         ],
         "labels": [
-          "KM"
+          "KM",
+          "/KM"
         ],
         "metadata": []
       },
       "bike": {
         "metrics": [
           "distance",
-          "time"
+          "pace",
+          "date"
         ],
         "labels": [
-          "KM"
+          "KM",
+          "KM/H"
         ],
         "metadata": []
       },
       "workout": {
         "metrics": [
-          "time"
+          "date"
         ],
         "labels": [],
         "metadata": []
