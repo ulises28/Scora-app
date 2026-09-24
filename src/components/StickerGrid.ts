@@ -156,12 +156,23 @@ export function initStickerGrid(onOpenEditor: OnOpenEditor) {
             container.appendChild(cell);
 
             const { color, showLogo } = colorFor(id);
-            // Stagger renders so low-end phones don't choke
-            requestAnimationFrame(() => {
-                setTimeout(() => {
-                    void drawTemplate(canvas.id, stats, id, color, showLogo, false);
-                }, Math.min(i * 30, 450));
-            });
+            // Lazy: paint when near viewport (keeps first paint cheap on Android)
+            const paint = () => {
+                if (cell.dataset.painted) return;
+                cell.dataset.painted = '1';
+                void drawTemplate(canvas.id, stats, id, color, showLogo, false);
+            };
+            if (typeof IntersectionObserver !== 'undefined') {
+                const io = new IntersectionObserver((entries) => {
+                    if (entries.some(e => e.isIntersecting)) {
+                        io.disconnect();
+                        paint();
+                    }
+                }, { rootMargin: '200px' });
+                io.observe(cell);
+            } else {
+                setTimeout(paint, Math.min(i * 40, 400));
+            }
         });
     }
 

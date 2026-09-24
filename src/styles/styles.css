@@ -655,7 +655,7 @@ body {
 
 .canvas-wrapper {
     /* Phone frame: width capped by device size AND stage height → exact 9:16 */
-    width: min(100%, 300px, calc((100cqh - 20px) * 9 / 16));
+    width: min(100%, 280px, calc((100cqh - 12px) * 9 / 16));
     aspect-ratio: 9 / 16;
     height: auto;
     border-radius: 24px;
@@ -673,8 +673,18 @@ body {
 }
 @supports not (width: 1cqh) {
     .canvas-wrapper {
-        width: min(100%, 300px, calc(52dvh * 9 / 16));
+        width: min(100%, 280px, calc(46dvh * 9 / 16));
     }
+}
+/* Short Android / iOS viewports — keep preview + gallery + controls in one screen */
+@media (max-height: 740px) {
+    .canvas-wrapper {
+        width: min(100%, 220px, calc((100cqh - 8px) * 9 / 16));
+    }
+    .sticker-gallery { max-height: 96px; }
+    .canvas-hint { display: none; }
+    .editor-controls { gap: 10px; padding-top: 10px; padding-bottom: calc(10px + var(--safe-bottom)); }
+    .controls-panel { padding: 10px; }
 }
 .canvas-wrapper canvas {
     width: 100%;
@@ -1218,12 +1228,16 @@ canvas { width: 100%; height: 100%; display: block; transition: opacity 0.35s ea
     -webkit-backdrop-filter: var(--glass-shell);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
     flex-shrink: 0;
-    max-height: 108px;
+    max-height: 100px;
     position: relative;
     z-index: 10;
 }
 @media (min-width: 1000px) {
     .sticker-gallery { max-height: 116px; }
+}
+@media (max-height: 740px) {
+    .sticker-gallery { max-height: 88px; padding: 4px 6px; }
+    .sticker-thumb { flex: 0 0 44px; }
 }
 
 .sticker-gallery::-webkit-scrollbar { display: none; }

@@ -12,6 +12,19 @@
  * horizontal aspect scale applied at drawImage time.
  */
 
+/** Safari kills tabs that hold too many large canvases — cap glass buffers. */
+function glassSsaa(ctx: CanvasRenderingContext2D, fontSize: number): number {
+    const thumb = ctx.canvas.width <= 640;
+    if (thumb) return 1;
+    if (fontSize > 800) return 2;
+    return 2;
+}
+
+function releaseCanvas(c: HTMLCanvasElement): void {
+    c.width = 0;
+    c.height = 0;
+}
+
 export interface GlassTextColor {
     r: number;
     g: number;
@@ -47,6 +60,8 @@ function frostBackdropUnder(
     glyphMask: HTMLCanvasElement,
     blurPx = 18
 ): void {
+    // Thumbs / empty story frames: skip getImageData (Safari memory + CPU)
+    if (dest.canvas.width <= 640) return;
     const ix = Math.max(0, Math.floor(destX));
     const iy = Math.max(0, Math.floor(destY));
     const iw = Math.min(Math.ceil(destW), dest.canvas.width - ix);
@@ -309,7 +324,7 @@ export function drawLiquidGlyphs(ctx: CanvasRenderingContext2D, opts: LiquidGlyp
     const padding = 120;
     const unscaledW = Math.ceil(textMetrics.width) + padding * 2;
     const unscaledH = Math.ceil(fontSize * 1.5);
-    const SSAA = 3;
+    const SSAA = glassSsaa(ctx, fontSize);
     const drawW = unscaledW * aspectScaleX;
     const drawH = unscaledH;
 
@@ -343,7 +358,7 @@ export function drawLiquidGlyphs(ctx: CanvasRenderingContext2D, opts: LiquidGlyp
         ec.textAlign = 'center';
         ec.textBaseline = 'middle';
         ec.fillStyle = colorOrGradient;
-        const steps = 256;
+        const steps = (ctx.canvas.width <= 640) ? 32 : 256;
         for (let i = 0; i < steps; i++) {
             const angle = (i / steps) * Math.PI * 2;
             const dx = (Math.cos(angle) * visualLineWidth) / aspectScaleX;
@@ -460,6 +475,7 @@ export function drawLiquidGlyphs(ctx: CanvasRenderingContext2D, opts: LiquidGlyp
     ctx.shadowOffsetY = 12;
     ctx.drawImage(glassCanvas, destX, destY, drawW, drawH);
     ctx.restore();
+    releaseCanvas(glassCanvas);
 }
 
 /**

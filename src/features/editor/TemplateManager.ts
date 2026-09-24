@@ -113,10 +113,29 @@ export function initTemplateManager(onChange: OnChangeCallback) {
                 color = currentTextColor;
             }
 
-            requestAnimationFrame(async () => {
-                await drawTemplate(canvas.id, previewStats, id, color, currentShowLogo, false);
-            });
+            // Priority: visible/active first, rest deferred (editor must open fast)
+            const job = { canvasId: canvas.id, stats: previewStats, id, color, el: thumb };
+            if (i < 8 || id === currentTemplate) thumbPaintQueue.unshift(job);
+            else thumbPaintQueue.push(job);
         });
+        pumpThumbQueue();
+    }
+
+    // ── Serialized thumb painter (perf: avoid parallel full-catalog glass) ──
+    const thumbPaintQueue: { canvasId: string; stats: any; id: string; color: string; el: HTMLElement }[] = [];
+    let thumbPainting = false;
+    async function pumpThumbQueue() {
+        if (thumbPainting) return;
+        thumbPainting = true;
+        while (thumbPaintQueue.length) {
+            const job = thumbPaintQueue.shift()!;
+            try {
+                await drawTemplate(job.canvasId, job.stats, job.id, job.color, currentShowLogo, false);
+            } catch { /* keep queue alive */ }
+            // Yield hard so Safari/Android stay responsive
+            await new Promise(r => setTimeout(r, 0));
+        }
+        thumbPainting = false;
     }
 
     function updateDots() {

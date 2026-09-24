@@ -22,6 +22,26 @@
 
 **Scora** is a professional-grade rendering engine that converts **Strava API** polylines and metrics into customizable, high-resolution (1080x1920) assets ready for **Instagram Stories**, **TikTok**, and more. It is built on a **Bimodal Architectural Pattern**, optimizing for both rapid developer feedback and exhaustive production-grade verification.
 
+### Product surface
+- **Feed** → pick a Strava activity
+- **Sticker grid** → tap opens the editor · long-press copies a 1080×1920 PNG
+- **Editor** → 9:16 story preview, unified template strip, Color / Logo, Download
+- Sticker catalog is driven by `StickerRegistry.ts` (run `pnpm run sync:stickers` after changes)
+
+---
+
+## 📱 Mobile performance (important)
+
+Safari (iOS/macOS) will reload a tab with **“This webpage was reloaded because it was using significant memory”** if canvas bitmaps pile up. Sticker glass effects allocate several offscreen buffers per draw.
+
+**Mitigations in code:**
+- Gallery/grid thumbs render at **360×640** (logical 1080×1920 story space via scale) — not full-res bitmaps
+- Glass SSAA is **reduced on thumbs and large heroes** (1–2×, not 3×)
+- Temporary glass canvases are **released** (`width = 0`) after compositing
+- Backdrop `getImageData` sampling is **skipped on thumbs**
+
+**Still watch for:** opening the full catalog (37 stickers) on older iPhones. Prefer the activity → grid → single editor flow over reloading the editor repeatedly.
+
 ---
 
 ## 🤖 The Scora Integrity Engine (Auto-healing)

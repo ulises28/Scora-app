@@ -21,6 +21,7 @@ export const ACTIVE_STICKER_LIST: StickerDefinition[] = [
     { id: 'chrome-v1', category: 'all', features: { distance: true, duration: true, paceSpeed: true }, render: Renderers.drawChromeHighContrastSticker },
     { id: 'wave_title', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, duration: true, paceSpeed: true, date: true }, render: Renderers.drawWaveTitle },
     { id: 'music-player-pill', supportsCustomColor: true, category: 'all', supportsBlackText: true, compact: true, features: { distance: true, duration: true, paceSpeed: true }, render: Renderers.drawMusicPlayerPill },
+    { id: 'glass-type', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, duration: true }, render: Renderers.drawGlassType },
     { id: 'floating-neon-path', supportsCustomColor: true, category: 'distance', supportsBlackText: true, compact: true, features: { distance: true, duration: true, paceSpeed: true, map: true }, render: Renderers.drawFloatingNeonPath },
     { id: 'social-pill', supportsCustomColor: true, category: 'all', supportsBlackText: true, compact: true, features: { distance: true, duration: true }, render: Renderers.drawSocialPill },
     { id: 'dot-grid-architect', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, duration: true, paceSpeed: true, map: true }, render: Renderers.drawDotGridArchitect },

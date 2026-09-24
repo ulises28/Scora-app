@@ -284,14 +284,17 @@ export async function drawTemplate(
         return;
     }
 
-    // Standard Story resolution (1080 × 1920) — Instagram Stories safe.
-    // Always paint at full story size, then crop to content for display.
-    // (Cropped thumbs re-render on the next draw with a fresh buffer.)
+    // Story coordinate space is always 1080×1920 (Instagram WYSIWYG).
+    // Thumbs allocate a smaller bitmap (Safari memory) but paint in the same
+    // logical space via scaleX/scaleY — export/main preview stay full res.
     const TARGET_W = 1080;
     const TARGET_H = 1920;
-    if (canvas.width !== TARGET_W || canvas.height !== TARGET_H) {
-        canvas.width = TARGET_W;
-        canvas.height = TARGET_H;
+    const isThumb = canvasId.startsWith('gallery-canvas-') || canvasId.startsWith('grid-canvas-');
+    const bufW = isThumb ? 360 : TARGET_W;
+    const bufH = isThumb ? 640 : TARGET_H;
+    if (canvas.width !== bufW || canvas.height !== bufH) {
+        canvas.width = bufW;
+        canvas.height = bufH;
     }
 
     const scaleX = canvas.width / TARGET_W;
@@ -334,6 +337,27 @@ export async function drawTemplate(
     };
 
     // ── Pass 1: art only — measure true sticker bounds ───────────────────────
+    // Thumbs skip the measure+refit double paint (editor open was blocking Safari/Android).
+    const wantLogo = !!showLogo;
+    const isChrome = templateType.startsWith('chrome');
+    const LOGO_GAP = 12;
+
+    if (isThumb) {
+        paintArtOnly();
+        if (wantLogo && !isChrome) {
+            paintLogo(56, 72, textColor);
+        }
+        if (isMain) {
+            const currentId = (window as any)._scoraLastDrawId;
+            requestAnimationFrame(() => {
+                (window as any)._scoraIsSettled = true;
+                (window as any)._scoraSettledId = currentId;
+                (window as any)._scoraDrawCount = ((window as any)._scoraDrawCount || 0) + 1;
+            });
+        }
+        return;
+    }
+
     paintArtOnly();
     const artPx = getContentBounds(canvas);
     const art = artPx
@@ -341,9 +365,6 @@ export async function drawTemplate(
         : null;
 
     // One watermark for ALL templates when Logo is ON (fixed size, tight above art).
-    const wantLogo = !!showLogo;
-    const isChrome = templateType.startsWith('chrome');
-    const LOGO_GAP = 12; // design px between logo baseline and art top
 
     // ── Pass 2: standard fit (centered, capped scale) + fixed-size watermark ─
     if (art && !boundsFillFrame(
@@ -365,7 +386,10 @@ export async function drawTemplate(
         if (wantLogo && !isChrome) {
             const artTop = art.y * scale + ty;
             const artLeft = art.x * scale + tx;
-            paintLogo(artLeft, artTop - LOGO_GAP, textColor);
+            // Keep the mark inside the frame (never fly off / sit under the art)
+            const logoY = Math.min(Math.max(artTop - LOGO_GAP, 36), TARGET_H - 24);
+            const logoX = Math.min(Math.max(artLeft, 24), TARGET_W - 120);
+            paintLogo(logoX, logoY, textColor);
         }
     } else if (wantLogo && !isChrome) {
         // Full-bleed (or unmeasured art): still stamp the watermark
@@ -3397,11 +3421,16 @@ export function drawCondesaStack(ctx: CanvasRenderingContext2D, stats: any, text
 }
 
 export function drawStackedEditorial(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    // Ref: huge white day word · oversized color-changeable route · huge white distance
     const { s1, hasMap } = getDynamicStats(stats);
-    const { accent: accentColor } = buildColors(textColor);
+    // Letters ALWAYS white; only the map takes the user color
+    const ink = '#ffffff';
+    const routeColor = (textColor && textColor.startsWith('#') && textColor.toLowerCase() !== '#ffffff')
+        ? textColor
+        : (textColor === 'black' ? '#111111' : '#E8384F');
 
     const cx = 540;
-    const safeW = 960;
+    const safeW = 1000;
 
     const dateStrRaw = stats.rawDate || '';
     const rawDate = dateStrRaw ? new Date(dateStrRaw.replace('Z', '')) : new Date();
@@ -3410,71 +3439,38 @@ export function drawStackedEditorial(ctx: CanvasRenderingContext2D, stats: any, 
     ctx.save();
     ctx.shadowColor = 'transparent';
     ctx.shadowBlur = 0;
-
-    const mainFont = "'Archivo Black', sans-serif";
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = ink;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'alphabetic';
 
-    // 1. Top text (SUNDAY)
-    ctx.font = `900 120px ${mainFont}`;
+    const mainFont = "'Archivo Black', 'Arial Black', sans-serif";
+
+    // 1. Day word (SUNDAY) — huge, top
+    ctx.font = `400 140px ${mainFont}`;
     const topW = Math.max(1, ctx.measureText(dayLabel).width);
-    let topScale = safeW / topW;
+    const topScale = Math.min(1.5, safeW / topW);
     ctx.save();
-    ctx.translate(cx, 450);
+    ctx.translate(cx, 380);
     ctx.scale(topScale, topScale);
     ctx.fillText(dayLabel, 0, 0);
     ctx.restore();
 
-    // 2. Map Route
+    // 2. Route map — WAY bigger (fills the middle of the story)
     if (hasMap && stats.polyline) {
-        const coords = decodePolyline(stats.polyline);
-        if (coords && coords.length > 0) {
-            // Find bounds
-            let minLat = Infinity, maxLat = -Infinity;
-            let minLng = Infinity, maxLng = -Infinity;
-            for (const [lat, lng] of coords) {
-                if (lat < minLat) minLat = lat;
-                if (lat > maxLat) maxLat = lat;
-                if (lng < minLng) minLng = lng;
-                if (lng > maxLng) maxLng = lng;
-            }
-            const w = maxLng - minLng;
-            const h = maxLat - minLat;
-            const scale = Math.min(800 / (w || 1), 600 / (h || 1));
-
-            const getX = (lng: number) => cx + (lng - minLng - w / 2) * scale;
-            const getY = (lat: number) => 800 - (lat - minLat - h / 2) * scale;
-
-            const step = Math.max(1, Math.floor(coords.length / 15));
-            const simplified = [];
-            for (let i = 0; i < coords.length; i += step) {
-                simplified.push(coords[i]);
-            }
-            if (simplified[simplified.length - 1] !== coords[coords.length - 1]) {
-                simplified.push(coords[coords.length - 1]);
-            }
-
-            ctx.beginPath();
-            ctx.moveTo(getX(simplified[0][1]), getY(simplified[0][0]));
-            for (let i = 1; i < simplified.length; i++) {
-                ctx.lineTo(getX(simplified[i][1]), getY(simplified[i][0]));
-            }
-            ctx.strokeStyle = accentColor;
-            ctx.lineWidth = 10;
-            ctx.lineJoin = 'bevel';
-            ctx.lineCap = 'butt';
-            ctx.stroke();
-        }
+        drawRoutePath(ctx, stats.polyline, cx, 920, 980, {
+            color: routeColor,
+            strokeWidth: 14,
+        });
     }
 
-    // 3. Bottom text (12.02 KM)
-    const distText = `${s1.value} ${s1.unit || s1.label}`.toUpperCase();
-    ctx.font = `900 120px ${mainFont}`;
+    // 3. Distance (12.02 KM) — huge white, bottom
+    const unit = (s1.unit || s1.label || '').toUpperCase();
+    const distText = unit ? `${s1.value} ${unit}` : `${s1.value}`;
+    ctx.font = `400 140px ${mainFont}`;
     const botW = Math.max(1, ctx.measureText(distText).width);
-    let botScale = safeW / botW;
+    const botScale = Math.min(1.5, safeW / botW);
     ctx.save();
-    ctx.translate(cx, 1150);
+    ctx.translate(cx, 1380);
     ctx.scale(botScale, botScale);
     ctx.fillText(distText, 0, 0);
     ctx.restore();
@@ -8399,181 +8395,303 @@ export function drawEditorialCorners(ctx: CanvasRenderingContext2D, stats: any, 
 }
 
 export function drawMusicPlayerPill(ctx: CanvasRenderingContext2D, stats: any, textColor: string, showLogo = true) {
-    const { s1, s2, type } = getDynamicStats(stats);
+    // Ref: Now-Playing glass card — title, date, progress (dist ↔ pace), transport
+    const { s1, s2 } = getDynamicStats(stats);
+    const ink = textColor === 'black' ? 'rgba(20,20,20,0.92)' : 'rgba(255,255,255,0.95)';
+    const soft = textColor === 'black' ? 'rgba(20,20,20,0.55)' : 'rgba(255,255,255,0.55)';
 
-    const w = 900;
-    const h = 360; // Taller to fit large buttons comfortably
+    const w = 860;
+    const h = 320;
     const x = 540 - w / 2;
-    const y = 250;
+    const y = 720;
+    const cx = 540;
 
-    // Dark frosted pill
+    // Dark frosted panel (original music-player background)
+    ctx.save();
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+    ctx.shadowBlur = 28;
+    ctx.shadowOffsetY = 10;
     ctx.beginPath();
-    ctx.roundRect(x, y, w, h, 30);
-    ctx.fillStyle = 'rgba(10, 15, 25, 0.95)'; // Deep dark blue/black
+    ctx.roundRect(x, y, w, h, 48);
+    const panel = ctx.createLinearGradient(x, y, x, y + h);
+    panel.addColorStop(0, 'rgba(18, 24, 38, 0.92)');
+    panel.addColorStop(0.5, 'rgba(10, 15, 25, 0.88)');
+    panel.addColorStop(1, 'rgba(8, 10, 18, 0.94)');
+    ctx.fillStyle = panel;
     ctx.fill();
+    ctx.restore();
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, 48);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.14)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    // Soft top gloss
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, 48);
+    ctx.clip();
+    const gloss = ctx.createLinearGradient(x, y, x, y + h * 0.4);
+    gloss.addColorStop(0, 'rgba(255, 255, 255, 0.10)');
+    gloss.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    ctx.fillStyle = gloss;
+    ctx.fillRect(x, y, w, h * 0.4);
+    ctx.restore();
 
-    ctx.textAlign = 'left';
+    ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
-    // Parse Dynamic Stats (Removed duplicate declaration)
-
-    // Title (Top line)
-    let titleStr = stats.title || 'Workout';
-
-    // Artist (Bottom line) – format start distance and finish dash+pace
-    const startDist = s1.unit ? `${s1.value} ${s1.unit}` : `${s1.value} ${s1.label}`;
-    const finishPace = `-${s2.value} ${s2.unit || s2.label}`;
-    let artistStr = `${startDist}   •   ${finishPace}`;
-
-    // Song Title (Activity Name)
-    ctx.fillStyle = '#ffffff';
-    let titleFontSize = 52;
-    ctx.font = `700 ${titleFontSize}px 'Plus Jakarta Sans'`;
-
-    // Auto-shrink title if it's too long
-    if (ctx.measureText(titleStr).width > 700) {
-        titleFontSize = 42;
-        ctx.font = `700 ${titleFontSize}px 'Plus Jakarta Sans'`;
-        if (ctx.measureText(titleStr).width > 700) {
-            titleStr = titleStr.substring(0, 32) + '...';
-        }
+    let titleStr = stats.title || normalizeSport(stats.type || 'Workout');
+    let titleSize = 48;
+    ctx.font = `600 ${titleSize}px 'Outfit', 'Plus Jakarta Sans', sans-serif`;
+    if (ctx.measureText(titleStr).width > w - 100) {
+        titleSize = 38;
+        ctx.font = `600 ${titleSize}px 'Outfit', 'Plus Jakarta Sans', sans-serif`;
     }
-    ctx.fillText(titleStr, x + 60, y + 80);
+    if (ctx.measureText(titleStr).width > w - 100) {
+        titleStr = titleStr.slice(0, 28) + '\u2026';
+    }
+    ctx.fillStyle = ink;
+    ctx.fillText(titleStr, cx, y + 58);
 
-    // Artist
-    ctx.font = "500 32px 'Plus Jakarta Sans'";
-    ctx.fillStyle = 'rgba(255,255,255,0.6)';
-    ctx.fillText(artistStr, x + 60, y + 130);
+    const dateStr = stats.rawDate
+        ? new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
+            .format(new Date(stats.rawDate.replace('Z', '')))
+        : '';
+    ctx.font = "400 32px 'Outfit', 'Plus Jakarta Sans', sans-serif";
+    ctx.fillStyle = soft;
+    ctx.fillText(dateStr, cx, y + 110);
 
-    // (+) Button top right
+    const barX = x + 56;
+    const barY = y + 168;
+    const barW = w - 112;
     ctx.beginPath();
-    ctx.arc(x + w - 70, y + 90, 22, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    // plus lines
+    ctx.roundRect(barX, barY, barW, 6, 3);
+    ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.22)';
+    ctx.fill();
     ctx.beginPath();
-    ctx.moveTo(x + w - 70, y + 90 - 10);
-    ctx.lineTo(x + w - 70, y + 90 + 10);
-    ctx.moveTo(x + w - 70 - 10, y + 90);
-    ctx.lineTo(x + w - 70 + 10, y + 90);
-    ctx.stroke();
-
-    // Progress Bar Background
+    ctx.roundRect(barX, barY, barW * 0.42, 6, 3);
+    ctx.fillStyle = ink;
+    ctx.fill();
     ctx.beginPath();
-    ctx.roundRect(x + 60, y + 195, w - 120, 5, 2.5);
-    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    ctx.arc(barX + barW * 0.42, barY + 3, 9, 0, Math.PI * 2);
+    ctx.fillStyle = ink;
     ctx.fill();
 
-    // Progress Bar Fill
-    ctx.beginPath();
-    ctx.roundRect(x + 60, y + 195, (w - 120) * 0.35, 5, 2.5);
-    ctx.fillStyle = 'rgba(255,255,255,0.8)';
-    ctx.fill();
-
-    // Progress Bar Dot
-    ctx.beginPath();
-    ctx.arc(x + 60 + (w - 120) * 0.35, y + 197.5, 7, 0, Math.PI * 2);
-    ctx.fillStyle = '#ffffff';
-    ctx.fill();
-
-    // Time Labels
-    ctx.font = "500 16px 'Plus Jakarta Sans'";
-    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.font = "500 28px 'Outfit', 'Plus Jakarta Sans', sans-serif";
+    ctx.fillStyle = soft;
     ctx.textAlign = 'left';
-    ctx.fillText("0:02", x + 60, y + 220);
+    ctx.fillText(`${s1.value}${s1.unit ? ' ' + s1.unit : ''}`, barX, barY + 36);
     ctx.textAlign = 'right';
-    let durationLabel = stats.hasDistance && stats.timeStr ? `-${stats.timeStr}` : "-4:25";
-    ctx.fillText(durationLabel, x + w - 60, y + 220);
+    ctx.fillText(`${s2.value}${s2.unit ? ' ' + s2.unit : ''}`, barX + barW, barY + 36);
 
-    // Playback Controls Row
-    const controlY = y + 285;
-    const cx = x + w / 2;
-
-    // Shuffle Icon (Left)
-    const sx = cx - 260;
-    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
-    ctx.lineWidth = 2.5;
+    const tY = y + 250;
+    const slots = [cx - 240, cx - 80, cx + 80, cx + 240];
+    ctx.strokeStyle = ink;
+    ctx.fillStyle = ink;
+    ctx.lineWidth = 5;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
-    ctx.beginPath();
-    ctx.moveTo(sx - 10, controlY - 6);
-    ctx.bezierCurveTo(sx - 2, controlY - 6, sx - 2, controlY + 6, sx + 6, controlY + 6);
-    ctx.lineTo(sx + 10, controlY + 6);
-    ctx.stroke();
-    
-    ctx.beginPath();
-    ctx.moveTo(sx + 6, controlY + 2);
-    ctx.lineTo(sx + 10, controlY + 6);
-    ctx.lineTo(sx + 6, controlY + 10);
-    ctx.stroke();
+    const drawPrev = (ox: number) => {
+        ctx.beginPath();
+        ctx.moveTo(ox + 14, tY - 16);
+        ctx.lineTo(ox - 8, tY);
+        ctx.lineTo(ox + 14, tY + 16);
+        ctx.closePath();
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(ox + 34, tY - 16);
+        ctx.lineTo(ox + 12, tY);
+        ctx.lineTo(ox + 34, tY + 16);
+        ctx.closePath();
+        ctx.fill();
+    };
+    const drawNext = (ox: number) => {
+        ctx.beginPath();
+        ctx.moveTo(ox - 14, tY - 16);
+        ctx.lineTo(ox + 8, tY);
+        ctx.lineTo(ox - 14, tY + 16);
+        ctx.closePath();
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(ox - 34, tY - 16);
+        ctx.lineTo(ox - 12, tY);
+        ctx.lineTo(ox - 34, tY + 16);
+        ctx.closePath();
+        ctx.fill();
+    };
+    const drawPause = (ox: number) => {
+        ctx.fillRect(ox - 14, tY - 18, 10, 36);
+        ctx.fillRect(ox + 4, tY - 18, 10, 36);
+    };
+    const drawAirplay = (ox: number) => {
+        ctx.beginPath();
+        ctx.roundRect(ox - 22, tY - 18, 44, 30, 6);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(ox - 12, tY + 20);
+        ctx.lineTo(ox, tY + 8);
+        ctx.lineTo(ox + 12, tY + 20);
+        ctx.closePath();
+        ctx.fill();
+    };
 
-    ctx.beginPath();
-    ctx.moveTo(sx - 10, controlY + 6);
-    ctx.bezierCurveTo(sx - 2, controlY + 6, sx - 2, controlY - 6, sx + 6, controlY - 6);
-    ctx.lineTo(sx + 10, controlY - 6);
-    ctx.stroke();
-    
-    ctx.beginPath();
-    ctx.moveTo(sx + 6, controlY - 10);
-    ctx.lineTo(sx + 10, controlY - 6);
-    ctx.lineTo(sx + 6, controlY - 2);
-    ctx.stroke();
+    drawPrev(slots[0] - 20);
+    drawPause(slots[1]);
+    drawNext(slots[2] + 20);
+    drawAirplay(slots[3]);
+}
 
-    // Previous Icon
-    const px = cx - 120;
-    ctx.fillStyle = 'rgba(255,255,255,0.6)';
-    ctx.beginPath();
-    ctx.moveTo(px - 4, controlY);
-    ctx.lineTo(px + 14, controlY - 14);
-    ctx.lineTo(px + 14, controlY + 14);
-    ctx.fill();
-    ctx.fillRect(px - 10, controlY - 14, 4, 28);
+/**
+ * watch-face — Apple Watch style activity face.
+ * Simple aesthetic, few stats, accent color from the picker.
+ */
+/**
+ * glass-type — tall condensed glass letterforms (same family as glass-numbers / Image 1).
+ * Simple: hero metric in glass type + unit. Accent color from the picker.
+ * Not a watch UI — pure type over the photo.
+ */
+export function drawGlassType(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const { s1 } = getDynamicStats(stats);
+    const hasDistance = Boolean(stats.hasDistance || (stats.distanceVal && parseFloat(stats.distanceVal) > 0));
+    const mainVal = s1?.value || (hasDistance ? '0.00' : '0');
+    const unit = (s1?.unit || (hasDistance ? 'km' : 'min')).toLowerCase();
 
-    // Play/Pause button
-    ctx.beginPath();
-    ctx.arc(cx, controlY, 44, 0, Math.PI * 2);
-    ctx.fillStyle = '#8a8a8a'; // Medium grey to match reference
-    ctx.fill();
+    // Letters use the same tall glass material as glass-numbers (Image 1 style)
+    const x = 540;
+    const heroY = 900;
+    const baseFontSize = 1000;
+    const aspectScaleX = 0.24;
+    const maxAllowedWidth = 680;
+    const fontWeight = '300';
 
-    // Pause bars (thick and dark)
-    ctx.fillStyle = '#0a0f19';
-    ctx.beginPath();
-    ctx.roundRect(cx - 12, controlY - 12, 8, 24, 1);
-    ctx.roundRect(cx + 4, controlY - 12, 8, 24, 1);
-    ctx.fill();
+    ctx.save();
+    ctx.font = `${fontWeight} ${baseFontSize}px 'Montserrat', sans-serif`;
+    const rawMeasuredWidth = ctx.measureText(mainVal).width * aspectScaleX;
+    ctx.restore();
+    let scaleFactor = 1.0;
+    if (rawMeasuredWidth > maxAllowedWidth) {
+        scaleFactor = maxAllowedWidth / rawMeasuredWidth;
+    }
+    const finalFontSize = Math.floor(baseFontSize * scaleFactor);
+    const finalScaleX = aspectScaleX * scaleFactor;
 
-    // Next Icon
-    const nx = cx + 120;
-    ctx.fillStyle = 'rgba(255,255,255,0.6)';
-    ctx.beginPath();
-    ctx.moveTo(nx + 4, controlY);
-    ctx.lineTo(nx - 14, controlY - 14);
-    ctx.lineTo(nx - 14, controlY + 14);
-    ctx.fill();
-    ctx.fillRect(nx + 6, controlY - 14, 4, 28);
+    ctx.save();
+    ctx.font = `${fontWeight} ${finalFontSize}px 'Montserrat', sans-serif`;
+    const textMetrics = ctx.measureText(mainVal);
+    ctx.restore();
 
-    // Repeat Icon (Right)
-    const rx = cx + 260;
-    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.moveTo(rx + 4, controlY + 7);
-    ctx.lineTo(rx - 6, controlY + 7);
-    ctx.arcTo(rx - 12, controlY + 7, rx - 12, controlY, 5);
-    ctx.arcTo(rx - 12, controlY - 7, rx - 6, controlY - 7, 5);
-    ctx.lineTo(rx + 6, controlY - 7);
-    ctx.arcTo(rx + 12, controlY - 7, rx + 12, controlY, 5);
-    ctx.lineTo(rx + 12, controlY + 3);
-    ctx.stroke();
-    
-    // Arrow pointing left
-    ctx.beginPath();
-    ctx.moveTo(rx + 8, controlY + 3);
-    ctx.lineTo(rx + 4, controlY + 7);
-    ctx.lineTo(rx + 8, controlY + 11);
-    ctx.stroke();
+    const padding = 120;
+    const unscaledW = Math.ceil(textMetrics.width) + padding * 2;
+    const unscaledH = Math.ceil(finalFontSize * 1.5);
+    const SSAA = (ctx.canvas.width <= 640) ? 1 : 2;
+    const drawW = unscaledW * finalScaleX;
+    const drawH = unscaledH;
+
+    const glassCanvas = document.createElement('canvas');
+    glassCanvas.width = drawW * SSAA;
+    glassCanvas.height = drawH * SSAA;
+    const gc = glassCanvas.getContext('2d');
+    if (gc) {
+        gc.scale(SSAA * finalScaleX, SSAA);
+        const cx = unscaledW / 2;
+        const cy = unscaledH / 2;
+        const halfH = finalFontSize / 2;
+        gc.font = `${fontWeight} ${finalFontSize}px 'Montserrat', sans-serif`;
+        gc.textAlign = 'center';
+        gc.textBaseline = 'middle';
+
+        const r = 255, g = 255, b = 255;
+        const dr = 160, dg = 168, db = 180;
+        const hr = 255, hg = 255, hb = 255;
+
+        const createOuterRim = (colorOrGradient: string | CanvasGradient, visualLineWidth: number) => {
+            const edgeCanvas = document.createElement('canvas');
+            edgeCanvas.width = drawW * SSAA;
+            edgeCanvas.height = drawH * SSAA;
+            const ec = edgeCanvas.getContext('2d');
+            if (!ec) return edgeCanvas;
+            ec.scale(SSAA * finalScaleX, SSAA);
+            ec.font = `${fontWeight} ${finalFontSize}px 'Montserrat', sans-serif`;
+            ec.textAlign = 'center';
+            ec.textBaseline = 'middle';
+            ec.fillStyle = colorOrGradient;
+            const steps = SSAA <= 1 ? 32 : 256;
+            for (let i = 0; i < steps; i++) {
+                const angle = (i / steps) * Math.PI * 2;
+                const dx = (Math.cos(angle) * visualLineWidth) / finalScaleX;
+                const dy = Math.sin(angle) * visualLineWidth;
+                ec.fillText(mainVal, cx + dx, cy + dy);
+            }
+            ec.globalCompositeOperation = 'destination-out';
+            ec.fillStyle = 'black';
+            ec.fillText(mainVal, cx, cy);
+            return edgeCanvas;
+        };
+        const createBevel = (color: string | CanvasGradient, visualShiftX: number, visualShiftY: number) => {
+            const edgeCanvas = document.createElement('canvas');
+            edgeCanvas.width = drawW * SSAA;
+            edgeCanvas.height = drawH * SSAA;
+            const ec = edgeCanvas.getContext('2d');
+            if (!ec) return edgeCanvas;
+            ec.scale(SSAA * finalScaleX, SSAA);
+            ec.font = `${fontWeight} ${finalFontSize}px 'Montserrat', sans-serif`;
+            ec.textAlign = 'center';
+            ec.textBaseline = 'middle';
+            ec.fillStyle = color;
+            const dx = visualShiftX / finalScaleX;
+            const dy = visualShiftY;
+            ec.fillText(mainVal, cx + dx, cy + dy);
+            ec.globalCompositeOperation = 'destination-out';
+            ec.fillText(mainVal, cx, cy);
+            return edgeCanvas;
+        };
+        const composite1to1 = (canvas: HTMLCanvasElement) => {
+            gc.save();
+            gc.setTransform(1, 0, 0, 1, 0, 0);
+            gc.drawImage(canvas, 0, 0);
+            gc.restore();
+        };
+
+        // Liquid core
+        const glassFill = gc.createLinearGradient(0, cy - halfH, 0, cy + halfH);
+        glassFill.addColorStop(0.00, `rgba(255, 255, 255, 0.55)`);
+        glassFill.addColorStop(0.40, `rgba(${r}, ${g}, ${b}, 0.28)`);
+        glassFill.addColorStop(1.00, `rgba(${dr}, ${dg}, ${db}, 0.40)`);
+        gc.fillStyle = glassFill;
+        gc.fillText(mainVal, cx, cy);
+
+        // Glowing rim + bevels (Image 1 letter style)
+        const borderFill = gc.createLinearGradient(0, cy - halfH, 0, cy + halfH);
+        borderFill.addColorStop(0.00, 'rgba(255, 255, 255, 0.95)');
+        borderFill.addColorStop(0.40, `rgba(${hr}, ${hg}, ${hb}, 0.75)`);
+        borderFill.addColorStop(0.70, `rgba(${r}, ${g}, ${b}, 0.50)`);
+        borderFill.addColorStop(1.00, `rgba(${dr}, ${dg}, ${db}, 0.95)`);
+        composite1to1(createOuterRim(borderFill, 2));
+        composite1to1(createBevel('rgba(255, 255, 255, 0.95)', -1.5, -1.5));
+        composite1to1(createBevel(`rgba(${dr}, ${dg}, ${db}, 0.95)`, 1.5, 1.5));
+    }
+
+    ctx.save();
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+    ctx.shadowBlur = 24;
+    ctx.shadowOffsetY = 10;
+    ctx.drawImage(glassCanvas, x - drawW / 2, heroY - drawH / 2, drawW, drawH);
+    ctx.restore();
+    glassCanvas.width = 0;
+    glassCanvas.height = 0;
+
+    // Unit under the glass letters
+    ctx.save();
+    ctx.font = "500 64px 'Montserrat', sans-serif";
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = textColor && textColor.startsWith('#') ? textColor : '#ffffff';
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetY = 3;
+    ctx.fillText(unit, x, 1320);
+    ctx.restore();
 }
 
 export function drawBoldEditorialDay(ctx: CanvasRenderingContext2D, stats: any, textColor: string, showLogo = true) {
@@ -8986,7 +9104,9 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     // 2. Inverse-Scale Compensation: We scale the context by `finalScaleX` here
     //    so the squish happens internally. Then, we manually divide horizontal
     //    stroke offsets by `finalScaleX` to guarantee uniformly thick borders!
-    const SSAA = 3;
+    // Thumbs / large heroes: lower SSAA (Safari memory P1)
+    const SSAA = (typeof ctx !== 'undefined' && ctx.canvas && ctx.canvas.width <= 640) ? 1
+        : (finalFontSize > 800 ? 2 : 2);
     const drawW = unscaledW * finalScaleX;
     const drawH = unscaledH;
 
@@ -9034,7 +9154,8 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
             ec.fillStyle = colorOrGradient;
 
             // Dense ring + micro-blur → continuous rim (no polygonal facets)
-            const steps = 256;
+            // Thumbs use fewer steps (CPU on mid-range Android)
+            const steps = (typeof ctx !== 'undefined' && ctx.canvas && ctx.canvas.width <= 640) ? 32 : 256;
             for (let i = 0; i < steps; i++) {
                 const angle = (i / steps) * Math.PI * 2;
                 const dx = (Math.cos(angle) * visualLineWidth) / finalScaleX;
@@ -9175,6 +9296,9 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
     // drawW/drawH are passed to map 1:1 with the main canvas physical resolution!
     ctx.drawImage(glassCanvas, drawX, drawY, drawW, drawH);
     ctx.restore();
+    // Free large glass bitmaps (Safari significant-memory reload)
+    glassCanvas.width = 0;
+    glassCanvas.height = 0;
 
     // 4. Unit — larger, tight under digits
     ctx.save();
