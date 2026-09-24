@@ -1084,15 +1084,18 @@ canvas { width: 100%; height: 100%; display: block; transition: opacity 0.35s ea
 /* Story-frame catalog — standard 9:16 device previews (IG Story WYSIWYG) */
 .sticker-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
     margin-top: 0;
 }
 @media (min-width: 640px) {
-    .sticker-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .sticker-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
 }
 @media (min-width: 1024px) {
-    .sticker-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+    .sticker-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+}
+@media (min-width: 1400px) {
+    .sticker-grid { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px; }
 }
 
 .sticker-grid-cell {
@@ -1101,20 +1104,20 @@ canvas { width: 100%; height: 100%; display: block; transition: opacity 0.35s ea
     position: relative;
     display: flex;
     flex-direction: column;
-    /* Standard story / phone screen ratio */
+    /* Compact story thumbnail — more stickers per screen */
     aspect-ratio: 9 / 16;
-    border-radius: 22px;
+    border-radius: 14px;
     border: 1px solid rgba(255, 255, 255, 0.08);
     background: #0a0b0c;
     padding: 0;
     overflow: hidden;
     cursor: pointer;
     box-shadow:
-        0 10px 28px rgba(0, 0, 0, 0.4),
+        0 6px 16px rgba(0, 0, 0, 0.35),
         inset 0 1px 0 rgba(255, 255, 255, 0.05);
     transition: transform 0.3s var(--ease-out), border-color 0.25s ease, box-shadow 0.3s ease;
     animation: staggerIn 0.4s var(--ease-out) both;
-    animation-delay: calc(var(--cell-i, 0) * 28ms);
+    animation-delay: calc(var(--cell-i, 0) * 20ms);
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
 }
@@ -1139,6 +1142,22 @@ canvas { width: 100%; height: 100%; display: block; transition: opacity 0.35s ea
     /* subtle inner "screen" edge */
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
 }
+.sticker-card-static {
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.03);
+}
+.sticker-card-ph {
+    padding: 8px;
+    text-align: center;
+    font-family: var(--font-alt);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.5);
+    line-height: 1.25;
+}
 
 .sticker-card-stage canvas {
     width: 100%;
@@ -1151,11 +1170,11 @@ canvas { width: 100%; height: 100%; display: block; transition: opacity 0.35s ea
 /* Compact name chip over the bottom of the story frame */
 .sticker-card-label {
     position: absolute;
-    left: 8px;
-    right: 8px;
-    bottom: 8px;
+    left: 6px;
+    right: 6px;
+    bottom: 6px;
     z-index: 3;
-    padding: 6px 8px;
+    padding: 4px 6px;
     border-radius: 10px;
     font-family: var(--font-alt);
     font-size: 9px;
@@ -1284,6 +1303,26 @@ canvas { width: 100%; height: 100%; display: block; transition: opacity 0.35s ea
     position: relative;
     z-index: 10;
 }
+.sticker-thumb canvas[hidden] { display: none !important; }
+.sticker-thumb-ph {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    text-align: center;
+    font-family: var(--font-alt);
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.45);
+    background: rgba(255, 255, 255, 0.04);
+    pointer-events: none;
+}
+.sticker-thumb.has-render .sticker-thumb-ph { display: none; }
 
 /* Dev-Only Sticker Labels */
 .sticker-label {

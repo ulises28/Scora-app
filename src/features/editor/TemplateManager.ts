@@ -72,7 +72,6 @@ export function initTemplateManager(onChange: OnChangeCallback) {
         const showDebugLabels = isDebugLabelsHost();
 
         currentTemplates.forEach((id, i) => {
-            const config = STICKER_REGISTRY[id];
             const thumb = document.createElement('div');
             thumb.className = `sticker-thumb transparency-grid ${id === currentTemplate ? 'active' : ''}`;
             thumb.dataset.template = id;
@@ -82,8 +81,8 @@ export function initTemplateManager(onChange: OnChangeCallback) {
 
             const canvas = document.createElement('canvas');
             canvas.id = `gallery-canvas-${id}`;
-            canvas.width = 360;
-            canvas.height = 640;
+            canvas.width = 180;
+            canvas.height = 320;
             thumb.appendChild(canvas);
 
             if (showDebugLabels) {
@@ -103,42 +102,36 @@ export function initTemplateManager(onChange: OnChangeCallback) {
 
             galleryContainer.appendChild(thumb);
 
+            // Lightweight visual preview for every thumb
+            const config = STICKER_REGISTRY[id];
             const previewStats = statsForGallery(i);
             let color = 'white';
-            if (id.startsWith('chrome')) {
-                color = currentActiveColor;
-            } else if (config?.supportsCustomColor) {
-                color = currentMapColor;
-            } else {
-                color = currentTextColor;
-            }
-
-            // Only active + neighbors on open — rest after UI is interactive
-            const job = { canvasId: canvas.id, stats: previewStats, id, color, el: thumb };
-            const activeIdx = currentTemplates.indexOf(currentTemplate);
-            if (id === currentTemplate || Math.abs(i - activeIdx) <= 2) thumbPaintQueue.unshift(job);
-            else thumbPaintQueue.push(job);
+            if (id.startsWith('chrome')) color = currentActiveColor;
+            else if (config?.supportsCustomColor) color = currentMapColor;
+            else color = currentTextColor;
+            thumbPaintQueue.push({ canvasId: canvas.id, stats: previewStats, id, color, el: thumb });
         });
         pumpThumbQueue();
     }
 
-    // ── Serialized thumb painter (perf: avoid parallel full-catalog glass) ──
+    // ── Serialized lightweight thumb previews ──
     const thumbPaintQueue: { canvasId: string; stats: any; id: string; color: string; el: HTMLElement }[] = [];
     let thumbPainting = false;
     async function pumpThumbQueue() {
         if (thumbPainting) return;
         thumbPainting = true;
-        let n = 0;
         while (thumbPaintQueue.length) {
             const job = thumbPaintQueue.shift()!;
             try {
                 await drawTemplate(job.canvasId, job.stats, job.id, job.color, currentShowLogo, false);
             } catch { /* keep queue alive */ }
-            n++;
-            // After the first few, throttle hard so Safari stays responsive
-            await new Promise(r => setTimeout(r, n < 5 ? 8 : 32));
+            await new Promise(r => setTimeout(r, 0));
         }
         thumbPainting = false;
+    }
+
+    function paintThumb(id: string) {
+        // Thumb previews are painted once on open — switching only updates main canvas
     }
 
     function updateDots() {
@@ -162,6 +155,7 @@ export function initTemplateManager(onChange: OnChangeCallback) {
         document.querySelectorAll('.sticker-thumb').forEach(el => {
             el.classList.toggle('active', (el as HTMLElement).dataset.template === id);
         });
+        paintThumb(id);
 
         document.querySelectorAll('.template-dot').forEach(el => {
             el.classList.toggle('active', (el as HTMLElement).dataset.template === id);

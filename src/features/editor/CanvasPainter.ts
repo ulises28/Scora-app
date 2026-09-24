@@ -288,11 +288,28 @@ export async function drawTemplate(
     const TARGET_W = 1080;
     const TARGET_H = 1920;
     const isThumb = canvasId.startsWith('gallery-canvas-') || canvasId.startsWith('grid-canvas-');
-    const bufW = isThumb ? 360 : TARGET_W;
-    const bufH = isThumb ? 640 : TARGET_H;
+    // Keep the small thumb bitmap if already sized (do not upscale to 360×640)
+    const bufW = isThumb ? (canvas.width || 180) : TARGET_W;
+    const bufH = isThumb ? (canvas.height || 320) : TARGET_H;
     if (canvas.width !== bufW || canvas.height !== bufH) {
         canvas.width = bufW;
         canvas.height = bufH;
+    }
+
+    // Chrome WebGL is far too heavy for thumbs — flat preview only
+    if (isThumb && templateType.startsWith('chrome')) {
+        ctx.save();
+        ctx.scale(canvas.width / TARGET_W, canvas.height / TARGET_H);
+        ctx.fillStyle = 'rgba(180, 180, 190, 0.35)';
+        ctx.beginPath();
+        ctx.roundRect(180, 700, 720, 420, 40);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,0.7)';
+        ctx.font = "700 80px 'Plus Jakarta Sans'";
+        ctx.textAlign = 'center';
+        ctx.fillText('CHROME', 540, 940);
+        ctx.restore();
+        return;
     }
 
     const scaleX = canvas.width / TARGET_W;
@@ -8393,207 +8410,146 @@ export function drawEditorialCorners(ctx: CanvasRenderingContext2D, stats: any, 
 }
 
 export function drawMusicPlayerPill(ctx: CanvasRenderingContext2D, stats: any, textColor: string, showLogo = true) {
-    // Spotify Now Playing — dark shell, album tile, title/subtitle, progress, transport
-    const { s1, s2, type } = getDynamicStats(stats);
-    const accent = (textColor && textColor.startsWith('#') && textColor.toLowerCase() !== '#ffffff')
-        ? textColor
-        : '#1DB954'; // Spotify green
+    // Ref: dark navy Now-Playing card — title, date, progress, prev/pause/next/airplay
+    const { s1, s2 } = getDynamicStats(stats);
     const ink = '#ffffff';
     const soft = 'rgba(255,255,255,0.55)';
 
-    const w = 880;
-    const h = 420;
+    const w = 860;
+    const h = 300;
     const x = 540 - w / 2;
-    const y = 680;
+    const y = 740;
     const cx = 540;
-    const pad = 36;
-    const art = 148;
 
-    // Blue frosted shell (original music-player background)
+    // Dark navy frosted shell
     ctx.save();
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
-    ctx.shadowBlur = 32;
-    ctx.shadowOffsetY = 12;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+    ctx.shadowBlur = 28;
+    ctx.shadowOffsetY = 10;
     ctx.beginPath();
-    ctx.roundRect(x, y, w, h, 28);
+    ctx.roundRect(x, y, w, h, 40);
     const shell = ctx.createLinearGradient(x, y, x, y + h);
-    shell.addColorStop(0, 'rgba(28, 38, 62, 0.94)');
-    shell.addColorStop(0.5, 'rgba(14, 22, 40, 0.92)');
-    shell.addColorStop(1, 'rgba(8, 12, 24, 0.96)');
+    shell.addColorStop(0, 'rgba(32, 42, 68, 0.94)');
+    shell.addColorStop(0.45, 'rgba(18, 26, 48, 0.92)');
+    shell.addColorStop(1, 'rgba(10, 14, 28, 0.96)');
     ctx.fillStyle = shell;
     ctx.fill();
     ctx.restore();
     ctx.beginPath();
-    ctx.roundRect(x, y, w, h, 28);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
-    ctx.lineWidth = 1;
+    ctx.roundRect(x, y, w, h, 40);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+    ctx.lineWidth = 1.5;
     ctx.stroke();
 
-    // Album-art tile (accent gradient + sport mark)
-    const ax = x + pad;
-    const ay = y + pad;
-    ctx.save();
-    ctx.beginPath();
-    ctx.roundRect(ax, ay, art, art, 12);
-    const artGrad = ctx.createLinearGradient(ax, ay, ax + art, ay + art);
-    artGrad.addColorStop(0, accent);
-    artGrad.addColorStop(1, '#0a0a0a');
-    ctx.fillStyle = artGrad;
-    ctx.fill();
-    ctx.restore();
-    // Simple activity glyph
-    ctx.save();
-    ctx.fillStyle = 'rgba(255,255,255,0.92)';
-    ctx.font = "700 42px 'Outfit', sans-serif";
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(normalizeSport(type || 'Run').charAt(0), ax + art / 2, ay + art / 2);
-    ctx.restore();
 
-    // Title + subtitle (track / artist)
-    const tx = ax + art + 28;
-    const maxTextW = x + w - pad - tx;
-    let titleStr = stats.title || normalizeSport(type || 'Workout');
-    ctx.font = "700 44px 'Outfit', 'Plus Jakarta Sans', sans-serif";
-    if (ctx.measureText(titleStr).width > maxTextW) {
-        ctx.font = "700 36px 'Outfit', 'Plus Jakarta Sans', sans-serif";
+    // Title
+    let titleStr = stats.title || normalizeSport(stats.type || 'Workout');
+    let titleSize = 48;
+    ctx.font = `700 ${titleSize}px 'Outfit', 'Plus Jakarta Sans', sans-serif`;
+    if (ctx.measureText(titleStr).width > w - 80) {
+        titleSize = 40;
+        ctx.font = `700 ${titleSize}px 'Outfit', 'Plus Jakarta Sans', sans-serif`;
     }
-    if (ctx.measureText(titleStr).width > maxTextW) {
-        titleStr = titleStr.slice(0, 22) + '…';
+    if (ctx.measureText(titleStr).width > w - 80) {
+        titleStr = titleStr.slice(0, 26) + '…';
     }
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
     ctx.fillStyle = ink;
-    ctx.fillText(titleStr, tx, ay + 48);
+    ctx.fillText(titleStr, cx, y + 56);
 
+    // Date
     const dateStr = stats.rawDate
         ? new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
             .format(new Date(stats.rawDate.replace('Z', '')))
-        : normalizeSport(type || 'Run');
-    ctx.font = "400 30px 'Outfit', sans-serif";
+        : '';
+    ctx.font = "400 32px 'Outfit', sans-serif";
     ctx.fillStyle = soft;
-    ctx.fillText(dateStr, tx, ay + 96);
+    ctx.fillText(dateStr, cx, y + 108);
 
-    // Progress bar
-    const barX = x + pad;
-    const barY = y + pad + art + 36;
-    const barW = w - pad * 2;
+    // Progress
+    const barX = x + 48;
+    const barY = y + 158;
+    const barW = w - 96;
     ctx.beginPath();
-    ctx.roundRect(barX, barY, barW, 4, 2);
+    ctx.roundRect(barX, barY, barW, 5, 2.5);
     ctx.fillStyle = 'rgba(255,255,255,0.18)';
     ctx.fill();
     ctx.beginPath();
-    ctx.roundRect(barX, barY, barW * 0.45, 4, 2);
+    ctx.roundRect(barX, barY, barW * 0.45, 5, 2.5);
     ctx.fillStyle = ink;
     ctx.fill();
     ctx.beginPath();
-    ctx.arc(barX + barW * 0.45, barY + 2, 7, 0, Math.PI * 2);
+    ctx.arc(barX + barW * 0.45, barY + 2.5, 8, 0, Math.PI * 2);
     ctx.fillStyle = ink;
     ctx.fill();
 
-    ctx.font = "500 26px 'Outfit', sans-serif";
+    ctx.font = "500 28px 'Outfit', sans-serif";
     ctx.fillStyle = soft;
     ctx.textAlign = 'left';
-    ctx.fillText(`${s1.value}${s1.unit ? ' ' + s1.unit : ''}`, barX, barY + 32);
+    ctx.fillText(`${s1.value}${s1.unit ? ' ' + s1.unit : ''}`, barX, barY + 34);
     ctx.textAlign = 'right';
-    ctx.fillText(`${s2.value}${s2.unit ? ' ' + s2.unit : ''}`, barX + barW, barY + 32);
+    ctx.fillText(`${s2.value}${s2.unit ? ' ' + s2.unit : ''}`, barX + barW, barY + 34);
 
-    // Transport row — Spotify: shuffle · prev · play · next · repeat
-    const tY = y + h - 72;
+    // Transport: prev · pause · next · airplay
+    const tY = y + 235;
     ctx.fillStyle = ink;
     ctx.strokeStyle = ink;
     ctx.lineWidth = 5;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
-    // Shuffle — clean crossing arrows
-    const shX = x + 90;
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.moveTo(shX - 20, tY - 12);
-    ctx.lineTo(shX - 6, tY - 12);
-    ctx.lineTo(shX + 6, tY + 12);
-    ctx.lineTo(shX + 20, tY + 12);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(shX - 20, tY + 12);
-    ctx.lineTo(shX - 6, tY + 12);
-    ctx.lineTo(shX + 6, tY - 12);
-    ctx.lineTo(shX + 20, tY - 12);
-    ctx.stroke();
-    // arrow heads
-    ctx.beginPath();
-    ctx.moveTo(shX + 12, tY + 6);
-    ctx.lineTo(shX + 20, tY + 12);
-    ctx.lineTo(shX + 12, tY + 18);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(shX + 12, tY - 18);
-    ctx.lineTo(shX + 20, tY - 12);
-    ctx.lineTo(shX + 12, tY - 6);
-    ctx.stroke();
+    const drawPrev = (ox: number) => {
+        ctx.beginPath();
+        ctx.moveTo(ox + 14, tY - 16);
+        ctx.lineTo(ox - 8, tY);
+        ctx.lineTo(ox + 14, tY + 16);
+        ctx.closePath();
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(ox + 34, tY - 16);
+        ctx.lineTo(ox + 12, tY);
+        ctx.lineTo(ox + 34, tY + 16);
+        ctx.closePath();
+        ctx.fill();
+    };
+    const drawNext = (ox: number) => {
+        ctx.beginPath();
+        ctx.moveTo(ox - 14, tY - 16);
+        ctx.lineTo(ox + 8, tY);
+        ctx.lineTo(ox - 14, tY + 16);
+        ctx.closePath();
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(ox - 34, tY - 16);
+        ctx.lineTo(ox - 12, tY);
+        ctx.lineTo(ox - 34, tY + 16);
+        ctx.closePath();
+        ctx.fill();
+    };
+    const drawPause = (ox: number) => {
+        ctx.fillRect(ox - 14, tY - 18, 10, 36);
+        ctx.fillRect(ox + 4, tY - 18, 10, 36);
+    };
+    const drawAirplay = (ox: number) => {
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.roundRect(ox - 22, tY - 18, 44, 30, 6);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(ox - 12, tY + 22);
+        ctx.lineTo(ox, tY + 8);
+        ctx.lineTo(ox + 12, tY + 22);
+        ctx.closePath();
+        ctx.fill();
+    };
 
-    // Prev
-    const prevX = cx - 150;
-    ctx.beginPath();
-    ctx.moveTo(prevX + 12, tY - 16);
-    ctx.lineTo(prevX - 10, tY);
-    ctx.lineTo(prevX + 12, tY + 16);
-    ctx.closePath();
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(prevX + 32, tY - 16);
-    ctx.lineTo(prevX + 10, tY);
-    ctx.lineTo(prevX + 32, tY + 16);
-    ctx.closePath();
-    ctx.fill();
-
-    // Play (white circle + black triangle — Spotify)
-    ctx.beginPath();
-    ctx.arc(cx, tY, 42, 0, Math.PI * 2);
-    ctx.fillStyle = '#ffffff';
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(cx - 10, tY - 18);
-    ctx.lineTo(cx + 20, tY);
-    ctx.lineTo(cx - 10, tY + 18);
-    ctx.closePath();
-    ctx.fillStyle = '#000000';
-    ctx.fill();
-
-    // Next
-    const nextX = cx + 150;
-    ctx.fillStyle = ink;
-    ctx.beginPath();
-    ctx.moveTo(nextX - 12, tY - 16);
-    ctx.lineTo(nextX + 10, tY);
-    ctx.lineTo(nextX - 12, tY + 16);
-    ctx.closePath();
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(nextX - 32, tY - 16);
-    ctx.lineTo(nextX - 10, tY);
-    ctx.lineTo(nextX - 32, tY + 16);
-    ctx.closePath();
-    ctx.fill();
-
-    // Repeat
-    const rpX = x + w - 90;
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.roundRect(rpX - 18, tY - 12, 36, 24, 8);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(rpX + 10, tY - 18);
-    ctx.lineTo(rpX + 22, tY - 8);
-    ctx.lineTo(rpX + 10, tY + 2);
-    ctx.stroke();
+    drawPrev(cx - 220);
+    drawPause(cx - 60);
+    drawNext(cx + 80);
+    drawAirplay(cx + 220);
 }
 
-/**
- * digital-led — old-photo / VCR date-stamp 7-segment LED digits.
- * Orange glow (or picker color). Shows date, distance, and pace.
- */
 export function drawDigitalLed(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
     const { s1, s2 } = getDynamicStats(stats);
     const hasDistance = Boolean(stats.hasDistance || (stats.distanceVal && parseFloat(stats.distanceVal) > 0));
@@ -9092,19 +9048,19 @@ function parseCanvasColor(colorStr: string): { r: number; g: number; b: number }
 }
 
 export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
-    // Thumb fast path — skip multi-canvas glass (Safari P0)
+    // THUMB/PREVIEW: glass offscreens are story-sized (thousands of px) — never on thumbs
     if (ctx.canvas.width <= 640) {
         const { s1 } = getDynamicStats(stats);
         const hasD = Boolean(stats.hasDistance || (stats.distanceVal && parseFloat(stats.distanceVal) > 0));
         const mainVal = s1?.value || (hasD ? '0.00' : '0');
         const unit = (s1?.unit || (hasD ? 'km' : 'min')).toLowerCase();
         ctx.save();
-        ctx.fillStyle = 'rgba(255,255,255,0.55)';
+        ctx.fillStyle = 'rgba(255,255,255,0.65)';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.font = "300 200px 'Montserrat', sans-serif";
-        ctx.fillText(mainVal, 540, 780);
-        ctx.font = "500 48px 'Montserrat', sans-serif";
+        ctx.font = "300 280px 'Montserrat', sans-serif";
+        ctx.fillText(mainVal, 540, 820);
+        ctx.font = "500 64px 'Montserrat', sans-serif";
         ctx.fillText(unit, 540, 1180);
         ctx.restore();
         return;
@@ -9407,6 +9363,24 @@ export function drawGlassNumbers(ctx: CanvasRenderingContext2D, stats: any, text
  * For copy/paste over any Instagram photo as a transparent sticker.
  */
 export function drawGlassNumbersV2(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    // THUMB/PREVIEW: skip heavy glass (Safari P0)
+    if (ctx.canvas.width <= 640) {
+        const { s1 } = getDynamicStats(stats);
+        const hasD = Boolean(stats.hasDistance || (stats.distanceVal && parseFloat(stats.distanceVal) > 0));
+        const mainVal = s1?.value || (hasD ? '0.00' : '0');
+        const unit = (s1?.unit || (hasD ? 'km' : 'min')).toLowerCase();
+        ctx.save();
+        ctx.fillStyle = 'rgba(255,255,255,0.65)';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = "300 220px 'Outfit', sans-serif";
+        ctx.fillText(mainVal, 540, 820);
+        ctx.font = "500 56px 'Outfit', sans-serif";
+        ctx.fillText(unit, 540, 1100);
+        ctx.restore();
+        return;
+    }
+
     const { s1 } = getDynamicStats(stats);
     const hasDistance = Boolean(stats.hasDistance || (stats.distanceVal && parseFloat(stats.distanceVal) > 0));
     const mainVal = s1?.value || (hasDistance ? '0.00' : '0');

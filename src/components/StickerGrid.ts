@@ -80,21 +80,21 @@ export function initStickerGrid(onOpenEditor: OnOpenEditor) {
 
         container.innerHTML = '';
 
-        templates.forEach((id, i) => {
+        templates.forEach((id) => {
             const cell = document.createElement('button');
             cell.type = 'button';
             cell.className = 'sticker-grid-cell';
             cell.dataset.template = id;
             cell.setAttribute('aria-label', `Open editor for ${id}`);
 
-            // Uniform catalog card: stage (sticker) + label bar — competitor parity
+            // Visual preview canvas (lightweight — see how the sticker looks)
             const stage = document.createElement('div');
             stage.className = 'sticker-card-stage';
 
             const canvas = document.createElement('canvas');
             canvas.id = `grid-canvas-${id}`;
-            canvas.width = 360;
-            canvas.height = 640;
+            canvas.width = 180;
+            canvas.height = 320;
             stage.appendChild(canvas);
             cell.appendChild(stage);
 
@@ -155,24 +155,9 @@ export function initStickerGrid(onOpenEditor: OnOpenEditor) {
 
             container.appendChild(cell);
 
+            // Lightweight preview — real look, no full-res glass
             const { color, showLogo } = colorFor(id);
-            // Lazy: paint when near viewport (keeps first paint cheap on Android)
-            const paint = () => {
-                if (cell.dataset.painted) return;
-                cell.dataset.painted = '1';
-                void drawTemplate(canvas.id, stats, id, color, showLogo, false);
-            };
-            if (typeof IntersectionObserver !== 'undefined') {
-                const io = new IntersectionObserver((entries) => {
-                    if (entries.some(e => e.isIntersecting)) {
-                        io.disconnect();
-                        paint();
-                    }
-                }, { rootMargin: '200px' });
-                io.observe(cell);
-            } else {
-                setTimeout(paint, Math.min(i * 40, 400));
-            }
+            void drawTemplate(canvas.id, stats, id, color, showLogo, false);
         });
     }
 

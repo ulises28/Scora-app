@@ -135,7 +135,7 @@ export function drawGlassText(ctx: CanvasRenderingContext2D, opts: GlassTextOpti
     const { text, x, y, fontFamily, fontWeight, fontSize, aspectScaleX, color } = opts;
     if (!text) return;
 
-    // Thumb fast path — no offscreen (Safari P0)
+    // Thumb fast path — multi-canvas glass is story-sized (Safari P0)
     if (ctx.canvas.width <= 640) {
         ctx.save();
         ctx.translate(x, y);
@@ -329,19 +329,16 @@ export function drawLiquidGlyphs(ctx: CanvasRenderingContext2D, opts: LiquidGlyp
     const { text, x, y, fontFamily, fontWeight, fontSize, aspectScaleX = 1 } = opts;
     if (!text) return;
 
-    // ── THUMB FAST PATH: one pass, no offscreen (Safari P0) ──
+    // Thumb fast path
     if (ctx.canvas.width <= 640) {
         ctx.save();
+        ctx.translate(x, y);
+        ctx.scale(aspectScaleX, 1);
         ctx.font = `${fontWeight} ${fontSize}px '${fontFamily}', sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.shadowColor = 'rgba(255,255,255,0.5)';
-        ctx.shadowBlur = 8;
         ctx.fillStyle = 'rgba(255,255,255,0.55)';
-        ctx.fillText(text, x, y);
-        ctx.shadowBlur = 0;
-        ctx.fillStyle = 'rgba(255,255,255,0.35)';
-        ctx.fillText(text, x, y);
+        ctx.fillText(text, 0, 0);
         ctx.restore();
         return;
     }

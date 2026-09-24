@@ -252,16 +252,11 @@ function openStickerGrid(stats: any) {
 
     stickerGrid.render(stats);
 
-    // Enrich location in background so editor is ready when user opens it
+    // Enrich location in background so editor is ready — do NOT rebuild the grid
     const rawActivity = lastActivities.find(a => a.id === stats.id);
     if (rawActivity) {
         enrichActivityWithGeo(rawActivity, stats).then(smartStats => {
             Object.assign(stats, smartStats);
-            // Re-render grid with enriched title/location if still on stickers screen
-            const screen = document.getElementById('screen-stickers');
-            if (screen?.classList.contains('active')) {
-                stickerGrid.render(stats);
-            }
         });
     }
 }

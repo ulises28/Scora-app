@@ -27,14 +27,16 @@ export function getContentBounds(canvas: HTMLCanvasElement, alphaThreshold = 8):
         return null;
     }
 
+    // Sample every 2px — 4× faster, plenty accurate for fit (Safari P0)
+    const step = 2;
     let minX = W;
     let minY = H;
     let maxX = -1;
     let maxY = -1;
 
-    for (let y = 0; y < H; y++) {
+    for (let y = 0; y < H; y += step) {
         const row = y * W;
-        for (let x = 0; x < W; x++) {
+        for (let x = 0; x < W; x += step) {
             const a = data[(row + x) * 4 + 3];
             if (a > alphaThreshold) {
                 if (x < minX) minX = x;
