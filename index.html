@@ -166,39 +166,42 @@
                 <aside class="editor-controls">
                     <div class="controls-panel">
                         <div class="controls-row">
-                            <div class="toggle-group">
-                                <span class="controls-label">Color</span>
-                                <div class="toggle-pill" id="color-toggle" data-testid="color-toggle" role="switch" aria-checked="false"
-                                    title="Color del texto">
-                                    <span class="toggle-opt active" data-value="white">Blanco</span>
-                                    <span class="toggle-opt" data-value="black">Negro</span>
-                                    <span class="toggle-thumb"></span>
+                            <!-- Fixed-size color slot — toggle / picker / chrome share one cell so the dock never jumps -->
+                            <div class="control-slot" id="color-slot">
+                                <div class="toggle-group control-variant" id="color-text-group">
+                                    <span class="controls-label">Color</span>
+                                    <div class="toggle-pill" id="color-toggle" data-testid="color-toggle" role="switch" aria-checked="false"
+                                        title="Color del texto">
+                                        <span class="toggle-opt active" data-value="white">Blanco</span>
+                                        <span class="toggle-opt" data-value="black">Negro</span>
+                                        <span class="toggle-thumb"></span>
+                                    </div>
                                 </div>
-                            </div>
 
-                            <div class="toggle-group hidden" id="chrome-material-group">
-                                <span class="controls-label">Material</span>
-                                <div class="material-select-wrapper">
-                                    <select id="chrome-material-select" class="scora-select" data-testid="chrome-material">
-                                        <option value="rosegold">Rose Gold</option>
-                                        <option value="silver">Silver</option>
-                                        <option value="gold">Gold</option>
-                                        <option value="bronze">Bronze</option>
-                                        <option value="obsidian">Black Chrome</option>
-                                        <option value="emerald">Emerald</option>
-                                        <option value="sapphire">Sapphire</option>
-                                        <option value="rubi">Rubi</option>
-                                        <option value="titanium">Titanium</option>
-                                    </select>
+                                <div class="toggle-group control-variant control-off" id="chrome-material-group">
+                                    <span class="controls-label">Material</span>
+                                    <div class="material-select-wrapper">
+                                        <select id="chrome-material-select" class="scora-select" data-testid="chrome-material">
+                                            <option value="rosegold">Rose Gold</option>
+                                            <option value="silver">Silver</option>
+                                            <option value="gold">Gold</option>
+                                            <option value="bronze">Bronze</option>
+                                            <option value="obsidian">Black Chrome</option>
+                                            <option value="emerald">Emerald</option>
+                                            <option value="sapphire">Sapphire</option>
+                                            <option value="rubi">Rubi</option>
+                                            <option value="titanium">Titanium</option>
+                                        </select>
+                                    </div>
                                 </div>
-                            </div>
 
-                            <div class="toggle-group hidden" id="map-color-group">
-                                <span class="controls-label">Color</span>
-                                <div class="color-picker-wrapper" title="Elegir color de acento">
-                                    <div class="color-swatch" id="map-color-swatch"></div>
-                                    <span class="hex-value" id="map-color-value">#FFFFFF</span>
-                                    <input type="color" id="map-color-picker" value="#ffffff" data-testid="map-color-picker">
+                                <div class="toggle-group control-variant control-off" id="map-color-group">
+                                    <span class="controls-label">Color</span>
+                                    <div class="color-picker-wrapper" title="Elegir color de acento">
+                                        <div class="color-swatch" id="map-color-swatch"></div>
+                                        <span class="hex-value" id="map-color-value">#FFFFFF</span>
+                                        <input type="color" id="map-color-picker" value="#ffffff" data-testid="map-color-picker">
+                                    </div>
                                 </div>
                             </div>
 

@@ -251,25 +251,44 @@ export async function drawTemplate(
     showLogo = true,
     isMain = false // 🚀 Studio Grade: Only main canvas triggers E2E signals
 ) {
-    // Fonts: load faces used by stickers, but NEVER block paint on document.fonts.ready
-    // (WebKit can stall seconds on Google Fonts — that was the glass-numbers "10s" hitch).
+    // Fonts: preload sticker faces. Thumbs never block (Safari). Main chrome MUST
+    // wait for Matemasie — 400ms race used to paint fallback type until refresh.
     if (typeof document !== 'undefined' && 'fonts' in document) {
+        const isChrome = templateType.startsWith('chrome');
         const w = window as any;
-        if (!w.__scoraFontsReady) {
-            w.__scoraFontsReady = Promise.race([
+        const loadCore = () => Promise.all([
+            document.fonts.load("800 120px 'Plus Jakarta Sans'"),
+            document.fonts.load("700 80px 'Plus Jakarta Sans'"),
+            document.fonts.load("500 48px 'Plus Jakarta Sans'"),
+            document.fonts.load("300 24px 'Outfit'"),
+            document.fonts.load("500 24px 'Outfit'"),
+            document.fonts.load("300 24px 'Montserrat'"),
+            document.fonts.load("600 24px 'Montserrat'"),
+            document.fonts.load("900 120px 'Matemasie'"),
+            document.fonts.load("400 24px 'Bubblegum Sans'"),
+            document.fonts.load("900 40px 'VT323'"),
+        ]).catch(() => {});
+
+        if (isChrome && !canvasId.startsWith('gallery-canvas-') && !canvasId.startsWith('grid-canvas-')) {
+            // Main/export chrome: hard-require the real face before foil mask
+            await Promise.race([
                 Promise.all([
-                    document.fonts.load("800 120px 'Plus Jakarta Sans'"),
-                    document.fonts.load("700 80px 'Plus Jakarta Sans'"),
-                    document.fonts.load("500 48px 'Plus Jakarta Sans'"),
-                    document.fonts.load("300 24px 'Outfit'"),
-                    document.fonts.load("500 24px 'Outfit'"),
-                    document.fonts.load("300 24px 'Montserrat'"),
-                    document.fonts.load("600 24px 'Montserrat'"),
-                ]),
-                new Promise(resolve => setTimeout(resolve, 400)),
-            ]).catch(() => {});
+                    document.fonts.load("900 120px 'Matemasie'"),
+                    document.fonts.load("400 24px 'Bubblegum Sans'"),
+                    document.fonts.ready,
+                ]).catch(() => {}),
+                new Promise(resolve => setTimeout(resolve, 1200)),
+            ]);
+            await loadCore();
+        } else {
+            if (!w.__scoraFontsReady) {
+                w.__scoraFontsReady = Promise.race([
+                    loadCore(),
+                    new Promise(resolve => setTimeout(resolve, 400)),
+                ]).catch(() => {});
+            }
+            await w.__scoraFontsReady;
         }
-        await w.__scoraFontsReady;
     }
     const canvas = document.getElementById(canvasId) as HTMLCanvasElement;
     const ctx = canvas?.getContext('2d');

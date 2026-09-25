@@ -172,28 +172,29 @@ export function initTemplateManager(onChange: OnChangeCallback) {
         }
 
         const config = STICKER_REGISTRY[id];
-        const colorToggleGroup = document.getElementById('color-toggle')?.parentElement;
+        const colorToggleGroup = document.getElementById('color-text-group');
         const mapColorGroup = document.getElementById('map-color-group');
         const chromeMaterialGroup = document.getElementById('chrome-material-group');
         const chromeMaterialSelect = document.getElementById('chrome-material-select') as HTMLSelectElement;
 
         let activeColor = currentTextColor;
 
+        // Swap variants in the fixed color slot — never add/remove layout (no jump)
+        const setColorVariant = (active: 'text' | 'custom' | 'chrome') => {
+            colorToggleGroup?.classList.toggle('control-off', active !== 'text');
+            mapColorGroup?.classList.toggle('control-off', active !== 'custom');
+            chromeMaterialGroup?.classList.toggle('control-off', active !== 'chrome');
+        };
+
         if (id.startsWith('chrome')) {
-            colorToggleGroup?.classList.add('hidden');
-            mapColorGroup?.classList.add('hidden');
-            chromeMaterialGroup?.classList.remove('hidden');
+            setColorVariant('chrome');
             activeColor = chromeMaterialSelect ? chromeMaterialSelect.value : 'rosegold';
         } else if (config?.supportsCustomColor) {
-            colorToggleGroup?.classList.add('hidden');
-            mapColorGroup?.classList.remove('hidden');
-            chromeMaterialGroup?.classList.add('hidden');
+            setColorVariant('custom');
             activeColor = currentMapColor;
             updateMapColorUI(currentMapColor, true);
         } else {
-            colorToggleGroup?.classList.remove('hidden');
-            mapColorGroup?.classList.add('hidden');
-            chromeMaterialGroup?.classList.add('hidden');
+            setColorVariant('text');
         }
 
         currentActiveColor = activeColor;
