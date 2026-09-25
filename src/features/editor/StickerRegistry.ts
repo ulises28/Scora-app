@@ -58,6 +58,8 @@ export const ACTIVE_STICKER_LIST: StickerDefinition[] = [
 export const ARCHIVED_STICKER_LIST: StickerDefinition[] = [
     // User 2026-09-24: v2 is the product numbers sticker; v1 archived (not deleted).
     { id: 'glass-numbers', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, duration: true, date: true }, render: Renderers.drawGlassNumbers },
+    // User 2026-09-24: needs a lot of fixes — not ready for prod.
+    { id: 'race-countdown', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { date: true, title: true }, expectedLabels: ['WEEKS TO GO', 'DAYS TO GO'], render: Renderers.drawRaceCountdown },
     { id: 'monoline-minimalist', supportsCustomColor: true, category: 'all', supportsBlackText: true, compact: true, features: { distance: true, duration: true, paceSpeed: true, map: true }, render: Renderers.drawMonolineMinimalist },
     { id: 'marker-highlight', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, duration: true }, render: Renderers.drawMarkerHighlight },
     { id: 'science-pro', category: 'all', supportsBlackText: false, features: { distance: true, heartRate: true, date: true, paceSpeed: false }, render: Renderers.drawSciencePro },

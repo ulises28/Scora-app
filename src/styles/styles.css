@@ -815,10 +815,19 @@ canvas { width: 100%; height: 100%; display: block; transition: opacity 0.35s ea
     position: absolute;
     inset: 0;
     min-width: 0;
+    transition: none;
 }
 .control-slot > .control-variant.control-off {
     visibility: hidden;
+    opacity: 0;
     pointer-events: none;
+}
+/* Kill the accent thumb slide-flash when swapping color modes */
+.control-slot .toggle-thumb,
+.control-slot .toggle-pill,
+.control-slot .color-picker-wrapper,
+.control-slot .material-select-wrapper {
+    transition: none;
 }
 
 .controls-label {

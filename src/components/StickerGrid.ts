@@ -29,6 +29,8 @@ export function initStickerGrid(onOpenEditor: OnOpenEditor) {
         const config = STICKER_REGISTRY[id];
         // Default grid previews: white ink, logo on — editor can customize after open
         if (id.startsWith('chrome')) return { color: 'rosegold', showLogo: true };
+        // digital-led grid minis use the signature orange (not the editor default)
+        if (id === 'digital-led') return { color: '#FF6A00', showLogo: true };
         if (config?.supportsCustomColor) return { color: '#ffffff', showLogo: true };
         return { color: 'white', showLogo: true };
     }

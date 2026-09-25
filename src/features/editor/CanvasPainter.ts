@@ -11,6 +11,7 @@
 
 import { getThemeColors, drawStatWithUnit, setLetterSpacing, drawRoutePath, decodePolyline, getDynamicStats, drawMetricBlock, parseDurationParts, drawDurationSequence, normalizeSport, getContentBounds, fitBoundsTransform, boundsFillFrame, cropCanvasToContent, padCanvasToFrame, deriveContrastInk } from './CanvasUtils';
 import { formatTime } from '../../utils/formatters';
+import { getRaceEvent, daysUntil } from '../../utils/raceEvent';
 import { drawGlassPanel, drawGlassText, drawLiquidGlyphs, glassSsaa, glassBufScale, releaseCanvas, paintContinuousRim } from './GlassText';
 import { applyLiquidMetalEffect } from './LiquidMetalRenderer';
 import { StickerStats } from '../../api/strava';
@@ -401,7 +402,7 @@ export async function drawTemplate(
     const wantLogo = !!showLogo;
     const isChrome = templateType.startsWith('chrome');
     const isHeavyGlass = templateType.startsWith('glass-numbers') || templateType === 'glass-type' || templateType === 'digital-led';
-    const LOGO_GAP = 12;
+    const LOGO_GAP = 6;
 
     if (isThumb || isHeavyGlass) {
         paintArtOnly();
@@ -2396,167 +2397,212 @@ export function drawTrackGraphic(ctx, x, y, w, h) {
 }
 
 export function drawWorkoutReceipt(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
-    const monoFont = "'Space Mono', monospace";
-
-    const cx = 540;
-    const cy = 550;
-    const w = 640;
-    const h = 820;
-
+    const monoFont = "'Space Mono', 'Courier New', monospace";
     const isWorkout = !stats.hasDistance;
     const isRide = normalizeSport(stats.type) === 'Ride';
 
+    // Compact paper — high type:area ratio so fitBounds scale keeps text
+    // readable while the photo stays visible around the sticker.
+    const cx = 540;
+    const cy = 960;
+    const w = 430;
+    const h = 640;
+
     ctx.save();
     ctx.translate(cx, cy);
-    ctx.rotate(-1.5 * Math.PI / 180); // Classic slightly skewed receipt print
+    ctx.rotate(-0.6 * Math.PI / 180);
 
-    // 1. Physical Paper Shadow
-    ctx.shadowBlur = 45;
-    ctx.shadowColor = 'rgba(0,0,0,0.18)';
-    ctx.shadowOffsetY = 20;
+    const paper = '#f6f2ea';
+    const ink = '#121110';
+    const dim = 'rgba(18,17,16,0.5)';
 
-    // 2. Programmatic Serrated Zig-zag Paper Edges
-    const zigZagHeight = 12;
-    const teethCount = 36;
-    const toothWidth = w / teethCount;
+    // Paper body — rounded, tiny tear bites only at top/bottom (not jagged clipart)
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.28)';
+    ctx.shadowBlur = 32;
+    ctx.shadowOffsetY = 12;
 
+    const r = 14;
+    const bite = 7;
+    const step = 18;
     ctx.beginPath();
-    // Top Edge
-    ctx.moveTo(-w / 2, -h / 2 + zigZagHeight);
-    for (let i = 0; i <= teethCount; i++) {
-        const x = -w / 2 + i * toothWidth;
-        const y = -h / 2 + (i % 2 === 0 ? 0 : zigZagHeight);
-        ctx.lineTo(x, y);
+    ctx.moveTo(-w / 2 + r, -h / 2);
+    for (let x = -w / 2 + r; x < w / 2 - r; x += step) {
+        ctx.lineTo(Math.min(x + step * 0.5, w / 2 - r), -h / 2 - bite);
+        ctx.lineTo(Math.min(x + step, w / 2 - r), -h / 2);
     }
-    // Right Edge
-    ctx.lineTo(w / 2, h / 2 - zigZagHeight);
-    // Bottom Edge
-    for (let i = teethCount; i >= 0; i--) {
-        const x = -w / 2 + i * toothWidth;
-        const y = h / 2 - (i % 2 === 0 ? 0 : zigZagHeight);
-        ctx.lineTo(x, y);
+    ctx.lineTo(w / 2 - r, -h / 2);
+    ctx.quadraticCurveTo(w / 2, -h / 2, w / 2, -h / 2 + r);
+    ctx.lineTo(w / 2, h / 2 - r);
+    ctx.quadraticCurveTo(w / 2, h / 2, w / 2 - r, h / 2);
+    for (let x = w / 2 - r; x > -w / 2 + r; x -= step) {
+        ctx.lineTo(Math.max(x - step * 0.5, -w / 2 + r), h / 2 + bite);
+        ctx.lineTo(Math.max(x - step, -w / 2 + r), h / 2);
     }
-    // Left Edge
-    ctx.lineTo(-w / 2, -h / 2 + zigZagHeight);
+    ctx.lineTo(-w / 2 + r, h / 2);
+    ctx.quadraticCurveTo(-w / 2, h / 2, -w / 2, h / 2 - r);
+    ctx.lineTo(-w / 2, -h / 2 + r);
+    ctx.quadraticCurveTo(-w / 2, -h / 2, -w / 2 + r, -h / 2);
     ctx.closePath();
-
-    ctx.fillStyle = '#f5f4f0'; // Warm cream paper
+    ctx.fillStyle = paper;
     ctx.fill();
+    ctx.restore();
 
-    // 3. Clear shadows for text rendering
-    ctx.shadowBlur = 0;
-    ctx.shadowOffsetY = 0;
-    ctx.shadowColor = 'transparent';
+    const pad = 34;
+    const left = -w / 2 + pad;
+    const right = w / 2 - pad;
+    const mid = 0;
+    const colW = right - left;
 
-    // 4. Header Details
-    ctx.fillStyle = '#111111';
+    // Header
     ctx.textAlign = 'center';
+    ctx.fillStyle = ink;
+    ctx.font = `700 36px ${monoFont}`;
+    ctx.fillText('SCORA.', mid, -h / 2 + 58);
 
-    ctx.font = `800 32px ${monoFont}`;
-    ctx.fillText("SCORA.", 0, -h / 2 + 75);
+    ctx.font = `700 13px ${monoFont}`;
+    if ((ctx as any).letterSpacing !== undefined) (ctx as any).letterSpacing = '0.28em';
+    ctx.fillStyle = dim;
+    ctx.fillText('ACTIVITY RECEIPT', mid, -h / 2 + 82);
+    if ((ctx as any).letterSpacing !== undefined) (ctx as any).letterSpacing = '0px';
 
-    ctx.font = `700 18px ${monoFont}`;
-    ctx.fillText("WORKOUT SUMMARY RECEIPT", 0, -h / 2 + 110);
-
-    // Header Divider
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = '#111111';
+    // Rule
+    ctx.strokeStyle = 'rgba(18,17,16,0.22)';
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.moveTo(-w / 2 + 50, -h / 2 + 140);
-    ctx.lineTo(w / 2 - 50, -h / 2 + 140);
+    ctx.moveTo(left, -h / 2 + 102);
+    ctx.lineTo(right, -h / 2 + 102);
     ctx.stroke();
 
-    // Store Info Lines
-    ctx.textAlign = 'left';
-    ctx.font = `700 16px ${monoFont}`;
-    const dateStr = (stats.date || 'TODAY').toUpperCase();
-    const timeStr = (stats.startTime || '00:00 AM').toUpperCase();
-    ctx.fillText(`DATE: ${dateStr}`, -w / 2 + 50, -h / 2 + 175);
-    ctx.fillText(`TIME: ${timeStr}`, -w / 2 + 50, -h / 2 + 205);
-    ctx.fillText(`TYPE: ${normalizeSport(stats.type || 'RUN').toUpperCase()}`, -w / 2 + 50, -h / 2 + 235);
-
-    // Double Divider
-    ctx.beginPath();
-    ctx.moveTo(-w / 2 + 50, -h / 2 + 260); ctx.lineTo(w / 2 - 50, -h / 2 + 260);
-    ctx.moveTo(-w / 2 + 50, -h / 2 + 266); ctx.lineTo(w / 2 - 50, -h / 2 + 266);
-    ctx.stroke();
-
-    // 5. Line Items (Dotted Leaders)
-    const lineYStart = -h / 2 + 315;
-    const rowGap = 70;
-
-    const drawReceiptLine = (label: string, value: string, y: number) => {
-        ctx.font = `700 22px ${monoFont}`;
-        ctx.fillStyle = '#111111';
+    // Meta — tight rows
+    const metaY = -h / 2 + 132;
+    ctx.font = `700 15px ${monoFont}`;
+    const metaRows: [string, string][] = [
+        ['DATE', (stats.date || 'TODAY').toUpperCase()],
+        ['TIME', (stats.startTime || '—').toUpperCase()],
+        ['TYPE', normalizeSport(stats.type || 'RUN').toUpperCase()],
+    ];
+    metaRows.forEach(([label, value], i) => {
+        const y = metaY + i * 28;
+        ctx.fillStyle = dim;
         ctx.textAlign = 'left';
-        ctx.fillText(label, -w / 2 + 50, y);
-
+        ctx.fillText(label, left, y);
+        ctx.fillStyle = ink;
         ctx.textAlign = 'right';
-        ctx.fillText(value, w / 2 - 50, y);
+        ctx.fillText(value, right, y);
+    });
 
-        // Compute and draw dotted leaders
-        ctx.textAlign = 'left';
-        const labelW = ctx.measureText(label).width;
-        const valW = ctx.measureText(value).width;
-        const startX = -w / 2 + 50 + labelW + 10;
-        const endX = w / 2 - 50 - valW - 10;
-
-        let dotStr = "";
-        while (ctx.measureText(dotStr + ".").width < (endX - startX)) {
-            dotStr += ".";
-        }
-        ctx.fillText(dotStr, startX, y);
-    };
-
-    // Extract values based on activity context
-    const distLabel = isWorkout ? "DURATION" : "DISTANCE";
-    const distText = isWorkout ? (stats.timeStr || '0:00') : `${stats.distanceVal || '0.00'} KM`;
-
-    const paceLabel = isWorkout ? "HEART RATE" : (isRide ? "AVG" : "PACE");
-    const paceText = isWorkout ? (stats.avgHeartrate ? `${stats.avgHeartrate} BPM` : 'N/A') : (stats.subValue || 'N/A').toUpperCase();
-
-    const energyLabel = isWorkout ? "CALORIES" : "DURATION";
-    const energyText = isWorkout ? (stats.calories ? `${stats.calories} KCAL` : 'N/A') : (stats.timeStr || 'N/A').toUpperCase();
-
-    drawReceiptLine(distLabel, distText, lineYStart);
-    drawReceiptLine(paceLabel, paceText, lineYStart + rowGap);
-    drawReceiptLine(energyLabel, energyText, lineYStart + rowGap * 2);
-
-    // Location line
-    const locLabel = "LOCATION";
-    const locText = (stats.location || 'OUTDOORS').toUpperCase().substring(0, 16);
-    drawReceiptLine(locLabel, locText, lineYStart + rowGap * 3);
-
-    // Barcode Divider
-    ctx.setLineDash([5, 5]);
+    // Double rule
+    const ruleY = metaY + 88;
+    ctx.strokeStyle = 'rgba(18,17,16,0.22)';
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.moveTo(-w / 2 + 50, lineYStart + rowGap * 3 + 55);
-    ctx.lineTo(w / 2 - 50, lineYStart + rowGap * 3 + 55);
+    ctx.moveTo(left, ruleY);
+    ctx.lineTo(right, ruleY);
+    ctx.moveTo(left, ruleY + 5);
+    ctx.lineTo(right, ruleY + 5);
+    ctx.stroke();
+
+    // Stats — large values, small labels (high type:area)
+    const distLabel = isWorkout ? 'DURATION' : 'DISTANCE';
+    const distText = isWorkout ? (stats.timeStr || '0:00') : `${stats.distanceVal || '0.00'} KM`;
+    const paceLabel = isWorkout ? 'HEART RATE' : (isRide ? 'AVG SPEED' : 'PACE');
+    const paceText = isWorkout
+        ? (stats.avgHeartrate ? `${stats.avgHeartrate} BPM` : '—')
+        : (stats.subValue || '—').toUpperCase();
+    const energyLabel = isWorkout ? 'CALORIES' : 'DURATION';
+    const energyText = isWorkout
+        ? (stats.calories ? `${stats.calories} KCAL` : '—')
+        : (stats.timeStr || '—').toUpperCase();
+    const locText = (stats.location || 'OUTDOORS').toUpperCase().slice(0, 16);
+
+    const rows: [string, string][] = [
+        [distLabel, distText],
+        [paceLabel, paceText],
+        [energyLabel, energyText],
+        ['LOCATION', locText],
+    ];
+
+    let rowY = ruleY + 38;
+    rows.forEach(([label, value]) => {
+        ctx.fillStyle = dim;
+        ctx.textAlign = 'left';
+        ctx.font = `700 13px ${monoFont}`;
+        if ((ctx as any).letterSpacing !== undefined) (ctx as any).letterSpacing = '0.12em';
+        ctx.fillText(label, left, rowY);
+        if ((ctx as any).letterSpacing !== undefined) (ctx as any).letterSpacing = '0px';
+
+        ctx.fillStyle = ink;
+        ctx.textAlign = 'right';
+        let vSize = 26;
+        ctx.font = `700 ${vSize}px ${monoFont}`;
+        while (ctx.measureText(value).width > colW * 0.58 && vSize > 16) {
+            vSize -= 1;
+            ctx.font = `700 ${vSize}px ${monoFont}`;
+        }
+        ctx.fillText(value, right, rowY + 3);
+        rowY += 42;
+    });
+
+    // Tear line
+    rowY += 2;
+    ctx.setLineDash([4, 6]);
+    ctx.strokeStyle = 'rgba(18,17,16,0.3)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(left, rowY);
+    ctx.lineTo(right, rowY);
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // 6. Draw barcode
-    const barcodeY = h / 2 - 150;
-    const barcodeH = 65;
-    const barcodeW = w - 180;
-    const startX = -barcodeW / 2;
+    // ── Code-128-style barcode (dense modules, varied widths, guards + serial) ──
+    const serial = String(stats.id || 'SCORA').replace(/\D/g, '').slice(-13).padStart(13, '0');
+    const barY = rowY + 22;
+    const barH = 48;
+    const guardH = barH + 10;
+    const quiet = 10;
+    const seed = String(stats.id || stats.rawDate || 'scora');
 
-    ctx.fillStyle = '#111111';
-    let currX = startX;
-    // Deterministic bars
-    const bars = [3, 1, 4, 1, 2, 3, 1, 4, 2, 1, 3, 2, 1, 4, 1, 2, 3, 1, 4, 2, 1, 3, 2];
-    for (let i = 0; i < bars.length; i++) {
-        const barW = bars[i] * 3.5;
-        const gapW = ((i % 4) + 1.5) * 3;
-        ctx.fillRect(currX, barcodeY, barW, barcodeH);
-        currX += barW + gapW;
+    // Deterministic module widths (bar/space alternating), 1–3 modules wide
+    let hash = 2166136261;
+    for (let i = 0; i < seed.length; i++) {
+        hash ^= seed.charCodeAt(i);
+        hash = Math.imul(hash, 16777619);
     }
+    const nextMod = () => {
+        hash ^= hash << 13; hash ^= hash >>> 17; hash ^= hash << 5;
+        return 1 + ((hash >>> 0) % 3);
+    };
 
-    // Barcode serial label
+    // Start guard (EAN-like 1-1-1), data bars, stop guard
+    const mods: number[] = [1, 1, 1];
+    for (let i = 0; i < 34; i++) mods.push(nextMod());
+    mods.push(1, 1, 1);
+
+    const totalMods = mods.reduce((a, b) => a + b, 0) + quiet * 2;
+    const mod = colW / totalMods;
+    let bx = left + quiet * mod;
+    const isGuard = (i: number) => i < 3 || i >= mods.length - 3;
+
+    ctx.fillStyle = ink;
+    mods.forEach((mw, i) => {
+        const px = mw * mod;
+        // Even index = bar, odd = space (continuous packing — no extra gaps)
+        if (i % 2 === 0) {
+            const gh = isGuard(i) ? guardH : barH;
+            ctx.fillRect(bx, barY, Math.max(px - 0.15, 0.6), gh);
+        }
+        bx += px;
+    });
+
+    // Human-readable serial under the bars (split like retail codes)
     ctx.textAlign = 'center';
-    ctx.font = `700 15px ${monoFont}`;
-    const activityId = stats.id ? String(stats.id).substring(0, 12).toUpperCase() : 'FIT-REC-99';
-    ctx.fillText(`*SC-${activityId}*`, 0, barcodeY + barcodeH + 25);
+    ctx.font = `700 13px ${monoFont}`;
+    ctx.fillStyle = ink;
+    const serialFmt = serial.length >= 12
+        ? `${serial.slice(0, 1)} ${serial.slice(1, 7)} ${serial.slice(7)}`
+        : serial;
+    ctx.fillText(serialFmt, mid, barY + guardH + 22);
 
     ctx.restore();
 }
@@ -8688,11 +8734,14 @@ export function drawDigitalLed(ctx: CanvasRenderingContext2D, stats: any, textCo
             .format(new Date(stats.rawDate.replace('Z', '')))
         : '01.01.25';
 
-    // LED orange (or picker accent)
-    const on = (textColor && textColor.startsWith('#') && textColor.toLowerCase() !== '#ffffff')
+    // LED ink follows the picker. White = pure white (no orange bleed).
+    const on = (textColor && textColor.startsWith('#'))
         ? textColor
-        : '#FF6A00';
-    const off = 'rgba(255, 106, 0, 0.10)';
+        : (textColor === 'black' ? '#111111' : '#ffffff');
+    // Unlit segments: same hue, very low alpha — never orange when ink is white
+    const off = on.length === 7
+        ? `${on}14`
+        : 'rgba(255,255,255,0.08)';
 
     // ── 7-segment glyph (classic LED) ──
     // segments: 0=top, 1=tl, 2=tr, 3=mid, 4=bl, 5=br, 6=bot
@@ -8721,8 +8770,9 @@ export function drawDigitalLed(ctx: CanvasRenderingContext2D, stats: any, textCo
     ) => {
         const t = Math.max(6, (horizontal ? h : w) * 0.22); // thickness
         g.fillStyle = lit ? on : off;
+        // Soft glow only on lit segments, matching ink (no warm bleed on white)
         g.shadowColor = lit ? on : 'transparent';
-        g.shadowBlur = lit ? 18 : 0;
+        g.shadowBlur = lit ? 12 : 0;
         g.beginPath();
         if (horizontal) {
             // hexagonal bar
@@ -8806,13 +8856,7 @@ export function drawDigitalLed(ctx: CanvasRenderingContext2D, stats: any, textCo
     };
 
     ctx.save();
-    // Soft black film vignette so it reads like an old photo stamp
-    const vig = ctx.createRadialGradient(540, 900, 200, 540, 900, 1100);
-    vig.addColorStop(0, 'rgba(0,0,0,0)');
-    vig.addColorStop(1, 'rgba(0,0,0,0.25)');
-    ctx.fillStyle = vig;
-    ctx.fillRect(0, 0, 1080, 1920);
-
+    // No dark vignette — sticker must sit cleanly over photos
     // Date stamp (smaller, top)
     drawLedText(dateStr.replace(/\//g, '.'), 540, 520, 110);
 
@@ -9895,5 +9939,107 @@ export function drawSelectHighlight(ctx: CanvasRenderingContext2D, stats: any, t
     ctx.shadowBlur = 10;
     ctx.shadowOffsetY = 4;
     ctx.fillText(display, cx, cy + 2);
+    ctx.restore();
+}
+
+/**
+ * race-countdown — goal race / event teaser.
+ * Date chip + event name + weeks out. Clean editorial type (no clipart).
+ * Event from editor “Add event” (`getRaceEvent`) or stats.eventName/eventDate.
+ */
+export function drawRaceCountdown(ctx: CanvasRenderingContext2D, stats: any, textColor = 'white') {
+    const stored = getRaceEvent();
+    const name = String(stats?.eventName || stats?.raceName || stored.name || 'RACE DAY').trim();
+    const iso = String(stats?.eventDate || stats?.raceDate || stored.date || '');
+    const ink = textColor.startsWith('#') ? textColor : (textColor === 'black' ? '#0a0a0a' : '#ffffff');
+    const face = "'Helvetica Neue', Helvetica, Arial, sans-serif";
+    const leftX = 80;
+    const rightX = 1000;
+    const maxW = rightX - leftX;
+
+    const target = iso ? new Date(`${iso.slice(0, 10)}T00:00:00`) : null;
+    const valid = target && !Number.isNaN(target.getTime());
+    const days = valid ? daysUntil(iso.slice(0, 10)) : 0;
+    const weeks = Math.ceil(days / 7);
+
+    const monthShort = valid
+        ? target!.toLocaleString('en-US', { month: 'short' }).toUpperCase()
+        : 'RACE';
+    const dayNum = valid ? String(target!.getDate()) : '—';
+
+    // Countdown line
+    let countdown: string;
+    if (!valid) countdown = 'SET YOUR RACE DATE';
+    else if (days === 0) countdown = 'RACE DAY';
+    else if (days === 1) countdown = '1 DAY TO GO';
+    else if (days < 7) countdown = `${days} DAYS TO GO`;
+    else if (weeks === 1) countdown = '1 WEEK TO GO';
+    else countdown = `${weeks} WEEKS TO GO`;
+
+    ctx.save();
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+
+    // ── Date chip ──
+    const chipY = 620;
+    const chipH = 120;
+    const chipW = 220;
+    ctx.strokeStyle = ink;
+    ctx.globalAlpha = 0.9;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.roundRect(leftX, chipY, chipW, chipH, 8);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    ctx.fillStyle = ink;
+    ctx.textAlign = 'center';
+    ctx.font = `700 28px ${face}`;
+    if ((ctx as any).letterSpacing !== undefined) (ctx as any).letterSpacing = '0.2em';
+    ctx.fillText(monthShort, leftX + chipW / 2, chipY + 42);
+    if ((ctx as any).letterSpacing !== undefined) (ctx as any).letterSpacing = '0px';
+    ctx.font = `500 72px ${face}`;
+    ctx.fillText(dayNum, leftX + chipW / 2, chipY + 100);
+
+    // ── Event name — fill measure, never clip ──
+    ctx.textAlign = 'left';
+    const nameY = 860;
+    const nameProbe = 64;
+    ctx.font = `500 ${nameProbe}px ${face}`;
+    const nameW = Math.max(1, ctx.measureText(name).width);
+    let nameSize = Math.floor(nameProbe * (maxW / nameW));
+    nameSize = Math.max(36, Math.min(nameSize, 72));
+    ctx.font = `500 ${nameSize}px ${face}`;
+    while (ctx.measureText(name).width > maxW && nameSize > 28) {
+        nameSize -= 2;
+        ctx.font = `500 ${nameSize}px ${face}`;
+    }
+    ctx.fillStyle = ink;
+    ctx.fillText(name, leftX, nameY);
+
+    // ── Countdown tracked caps ──
+    const countY = nameY + 88;
+    let countSize = 36;
+    ctx.font = `700 ${countSize}px ${face}`;
+    setLetterSpacing(ctx, '0.28em');
+    while (ctx.measureText(countdown).width > maxW && countSize > 18) {
+        countSize -= 2;
+        ctx.font = `700 ${countSize}px ${face}`;
+        setLetterSpacing(ctx, '0.28em');
+    }
+    ctx.globalAlpha = 0.85;
+    ctx.fillText(countdown, leftX, countY);
+    setLetterSpacing(ctx, '0px');
+    ctx.globalAlpha = 1;
+
+    // ── Hairline under block ──
+    ctx.strokeStyle = ink;
+    ctx.globalAlpha = 0.25;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(leftX, countY + 36);
+    ctx.lineTo(rightX, countY + 36);
+    ctx.stroke();
+
     ctx.restore();
 }
