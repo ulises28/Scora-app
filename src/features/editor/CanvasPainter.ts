@@ -8729,20 +8729,21 @@ export function drawDigitalLed(ctx: CanvasRenderingContext2D, stats: any, textCo
     const paceVal = s2?.value || '';
     const paceUnit = (s2?.unit || s2?.label || '').toUpperCase();
 
-    // Date MM.DD.YY (LED dots, classic stamp)
+    // Date MM/DD/YY (slashes — digital watch)
     const dateStr = stats.rawDate
         ? new Intl.DateTimeFormat('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' })
             .format(new Date(stats.rawDate.replace('Z', '')))
-            .replace(/\//g, '.')
-        : '01.01.25';
+        : '01/01/25';
 
     const custom = textColor && textColor.startsWith('#');
-    const litColor = custom ? textColor! : (textColor === 'black' ? '#111111' : '#ffffff');
-    // Lit with soft bloom; unlit = visible ghost segments (off lights)
-    const LIT_A = 0.95;
-    const OFF_A = 0.18;
+    const ink = custom ? textColor! : (textColor === 'black' ? '#111111' : '#ffffff');
+    // Digital watch: lit slightly soft, unlit ghost segments stay visible
+    const LIT_A = 0.92;
+    const OFF_A = 0.14;
 
-    const DIGITS: Record<string, number[]> = {
+    // Classic 7-segment map
+    // 0=top 1=tl 2=tr 3=mid 4=bl 5=br 6=bot
+    const SEG: Record<string, number[]> = {
         '0': [1, 1, 1, 0, 1, 1, 1],
         '1': [0, 0, 1, 0, 0, 1, 0],
         '2': [1, 0, 1, 1, 1, 0, 1],
@@ -8753,61 +8754,44 @@ export function drawDigitalLed(ctx: CanvasRenderingContext2D, stats: any, textCo
         '7': [1, 0, 1, 0, 0, 1, 0],
         '8': [1, 1, 1, 1, 1, 1, 1],
         '9': [1, 1, 1, 1, 0, 1, 1],
-        ' ': [0, 0, 0, 0, 0, 0, 0],
-        ':': [0, 0, 0, 0, 0, 0, 0],
-        '.': [0, 0, 0, 0, 0, 0, 0],
     };
 
-    const drawSeg = (
+    /** Flat-ended segment bar with clear inset so neighbors never fuse. */
+    const bar = (
         g: CanvasRenderingContext2D,
-        x: number, y: number,
-        w: number, h: number,
+        x: number, y: number, w: number, h: number,
         horizontal: boolean,
         lit: boolean
     ) => {
-        const t = Math.max(6, (horizontal ? h : w) * 0.2);
         g.globalAlpha = lit ? LIT_A : OFF_A;
-        g.fillStyle = litColor;
+        g.fillStyle = ink;
         if (lit) {
-            g.shadowColor = litColor;
-            g.shadowBlur = t * 1.1;
+            g.shadowColor = ink;
+            g.shadowBlur = Math.min(w, h) * 0.55;
         }
-        g.beginPath();
+        const inset = horizontal ? w * 0.08 : h * 0.08;
         if (horizontal) {
-            const cy = y + h / 2;
-            g.moveTo(x + t * 0.5, cy);
-            g.lineTo(x + t, y + 1);
-            g.lineTo(x + w - t, y + 1);
-            g.lineTo(x + w - t * 0.5, cy);
-            g.lineTo(x + w - t, y + h - 1);
-            g.lineTo(x + t, y + h - 1);
+            g.fillRect(x + inset, y, w - inset * 2, h);
         } else {
-            const cx = x + w / 2;
-            g.moveTo(cx, y + t * 0.5);
-            g.lineTo(x + 1, y + t);
-            g.lineTo(x + 1, y + h - t);
-            g.lineTo(cx, y + h - t * 0.5);
-            g.lineTo(x + w - 1, y + h - t);
-            g.lineTo(x + w - 1, y + t);
+            g.fillRect(x, y + inset, w, h - inset * 2);
         }
-        g.closePath();
-        g.fill();
         g.shadowBlur = 0;
         g.globalAlpha = 1;
     };
 
     const drawDigit = (g: CanvasRenderingContext2D, ch: string, x: number, y: number, dw: number, dh: number) => {
+        // Separators
         if (ch === ':') {
             g.globalAlpha = LIT_A;
-            g.fillStyle = litColor;
-            g.shadowColor = litColor;
-            g.shadowBlur = 10;
-            const r = Math.min(dw, dh) * 0.11;
+            g.fillStyle = ink;
+            g.shadowColor = ink;
+            g.shadowBlur = 8;
+            const r = Math.min(dw, dh) * 0.1;
             g.beginPath();
-            g.arc(x + dw / 2, y + dh * 0.3, r, 0, Math.PI * 2);
+            g.arc(x + dw / 2, y + dh * 0.28, r, 0, Math.PI * 2);
             g.fill();
             g.beginPath();
-            g.arc(x + dw / 2, y + dh * 0.7, r, 0, Math.PI * 2);
+            g.arc(x + dw / 2, y + dh * 0.72, r, 0, Math.PI * 2);
             g.fill();
             g.shadowBlur = 0;
             g.globalAlpha = 1;
@@ -8815,76 +8799,98 @@ export function drawDigitalLed(ctx: CanvasRenderingContext2D, stats: any, textCo
         }
         if (ch === '.') {
             g.globalAlpha = LIT_A;
-            g.fillStyle = litColor;
-            g.shadowColor = litColor;
-            g.shadowBlur = 10;
+            g.fillStyle = ink;
+            g.shadowColor = ink;
+            g.shadowBlur = 8;
             g.beginPath();
-            g.arc(x + dw / 2, y + dh * 0.88, Math.min(dw, dh) * 0.1, 0, Math.PI * 2);
+            g.arc(x + dw / 2, y + dh * 0.9, Math.min(dw, dh) * 0.09, 0, Math.PI * 2);
             g.fill();
             g.shadowBlur = 0;
             g.globalAlpha = 1;
             return;
         }
+        if (ch === '/') {
+            g.globalAlpha = LIT_A;
+            g.fillStyle = ink;
+            g.shadowColor = ink;
+            g.shadowBlur = 8;
+            const sw = Math.max(4, dw * 0.12);
+            g.save();
+            g.translate(x + dw / 2, y + dh / 2);
+            g.rotate(-0.32);
+            g.fillRect(-sw / 2, -dh * 0.34, sw, dh * 0.68);
+            g.restore();
+            g.shadowBlur = 0;
+            g.globalAlpha = 1;
+            return;
+        }
 
-        const seg = DIGITS[ch] || DIGITS[' '];
-        const t = Math.max(6, dw * 0.18);
-        const half = dh / 2;
-        drawSeg(g, x + t * 0.55, y, dw - t * 1.1, t, true, !!seg[0]);
-        drawSeg(g, x + t * 0.55, y + half - t / 2, dw - t * 1.1, t, true, !!seg[3]);
-        drawSeg(g, x + t * 0.55, y + dh - t, dw - t * 1.1, t, true, !!seg[6]);
-        drawSeg(g, x, y + t * 0.55, t, half - t * 0.9, false, !!seg[1]);
-        drawSeg(g, x + dw - t, y + t * 0.55, t, half - t * 0.9, false, !!seg[2]);
-        drawSeg(g, x, y + half + t * 0.15, t, half - t * 0.9, false, !!seg[4]);
-        drawSeg(g, x + dw - t, y + half + t * 0.15, t, half - t * 0.9, false, !!seg[5]);
+        const on = SEG[ch];
+        if (!on) return; // unknown → skip (space-like)
+
+        // Segment size: thinner than half so blocks stay open (watch readability)
+        const tw = Math.max(5, dw * 0.16);       // horizontal bar thickness
+        const th = Math.max(5, dh * 0.11);       // vertical bar thickness
+        const mid = dh / 2;
+
+        // Always draw all 7 — unlit = ghost "off" light
+        bar(g, x + tw * 0.5, y, dw - tw, tw, true, !!on[0]);
+        bar(g, x + tw * 0.5, mid - tw / 2, dw - tw, tw, true, !!on[3]);
+        bar(g, x + tw * 0.5, dh - tw, dw - tw, tw, true, !!on[6]);
+        bar(g, x, y + tw * 0.5, tw, mid - tw, false, !!on[1]);
+        bar(g, x + dw - tw, y + tw * 0.5, tw, mid - tw, false, !!on[2]);
+        bar(g, x, mid + tw * 0.5, tw, mid - tw, false, !!on[4]);
+        bar(g, x + dw - tw, mid + tw * 0.5, tw, mid - tw, false, !!on[5]);
     };
 
     const drawLedText = (text: string, cx: number, baselineY: number, digitH: number) => {
-        const dw = digitH * 0.62;
-        const gap = digitH * 0.12;
+        const dw = digitH * 0.58;
+        const gap = digitH * 0.16;
+        const sepW = dw * 0.4;
         const chars = text.split('');
         let total = 0;
         for (const ch of chars) {
-            total += (ch === ':' || ch === '.') ? dw * 0.42 : dw;
+            total += (ch === ':' || ch === '.' || ch === '/') ? sepW : dw;
             total += gap;
         }
         total -= gap;
         let px = cx - total / 2;
         const py = baselineY - digitH;
         for (const ch of chars) {
-            const cw = (ch === ':' || ch === '.') ? dw * 0.42 : dw;
+            const cw = (ch === ':' || ch === '.' || ch === '/') ? sepW : dw;
             drawDigit(ctx, ch, px, py, cw, digitH);
             px += cw + gap;
         }
     };
 
     ctx.save();
-    // Reference hierarchy: date stamp · hero distance · pace — tight stack
-    drawLedText(dateStr, 540, 480, 115);
+    // Date · distance · pace (watch hierarchy)
+    drawLedText(dateStr, 540, 520, 115);
 
     if (distVal) {
-        drawLedText(distVal, 540, 860, 290);
-        ctx.font = "700 58px 'Outfit', sans-serif";
+        drawLedText(distVal, 540, 980, 290);
+        ctx.font = "700 64px 'Outfit', sans-serif";
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.globalAlpha = LIT_A;
-        ctx.fillStyle = litColor;
-        ctx.shadowColor = litColor;
+        ctx.fillStyle = ink;
+        ctx.shadowColor = ink;
         ctx.shadowBlur = 16;
-        ctx.fillText(distUnit, 540, 965);
+        ctx.fillText(distUnit, 540, 1100);
         ctx.shadowBlur = 0;
         ctx.globalAlpha = 1;
     }
 
     if (paceVal) {
-        drawLedText(paceVal, 540, 1180, 155);
-        ctx.font = "700 48px 'Outfit', sans-serif";
+        drawLedText(paceVal, 540, 1360, 155);
+        ctx.font = "700 52px 'Outfit', sans-serif";
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.globalAlpha = LIT_A;
-        ctx.fillStyle = litColor;
-        ctx.shadowColor = litColor;
+        ctx.fillStyle = ink;
+        ctx.shadowColor = ink;
         ctx.shadowBlur = 12;
-        ctx.fillText(paceUnit, 540, 1285);
+        ctx.fillText(paceUnit, 540, 1480);
         ctx.shadowBlur = 0;
         ctx.globalAlpha = 1;
     }
@@ -10058,6 +10064,230 @@ export function drawTrailSummary(ctx: CanvasRenderingContext2D, stats: any, text
         ctx.font = "500 72px 'Outfit', sans-serif";
         ctx.fillText(hr ? `${hr} BPM` : '—', 540, 1000);
     }
+
+    ctx.restore();
+}
+
+/**
+ * SKYLINE SPLITS — vertical split bars as a compact skyline under locked hero metrics.
+ * Distance mode: time hero + avg pace + split bars. Workout: duration + HR (no distance/pace).
+ */
+export function drawSkylineSplits(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const { solid, label: labelColor } = buildColors(textColor);
+    const { s1, s2, s3 } = getDynamicStats(stats);
+    const hasDistance = Boolean(stats.hasDistance || (stats.distanceVal && parseFloat(stats.distanceVal) > 0));
+    const face = "'Space Grotesk', 'Outfit', sans-serif";
+    const labelFace = "'Plus Jakarta Sans', 'Outfit', sans-serif";
+
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
+
+    // ── Header (top-anchored under Scora logo zone) ──
+    const headerY = 320;
+    setLetterSpacing(ctx, '2px');
+    ctx.font = `500 36px ${labelFace}`;
+    ctx.fillStyle = labelColor;
+    if (hasDistance) {
+        const dist = stats.distanceVal || s1.value || '0.00';
+        const unit = (stats.distanceUnit || s1.unit || 'km').toUpperCase();
+        const splitCount = stats.splits?.length || 0;
+        ctx.fillText(splitCount ? `SPLITS · ${dist} ${unit}` : `${dist} ${unit}`, 540, headerY);
+    } else {
+        ctx.fillText('SESSION SPLITS', 540, headerY);
+    }
+    setLetterSpacing(ctx, '0px');
+
+    // ── Hero + secondary (metric sync: shared size for paired rows) ──
+    const heroY = 460;
+    if (hasDistance) {
+        const timeVal = stats.timeStr || (s2.label === 'DURATION' ? s2.value : '') || '0:00';
+        ctx.fillStyle = solid;
+        ctx.font = `800 120px ${face}`;
+        ctx.fillText(timeVal, 540, heroY);
+
+        const paceVal = stats.subValue?.split(' ')[0] || s2.value || '0:00';
+        const paceUnit = s2.unit ? s2.unit : (stats.subLabel || '/km');
+        ctx.font = `500 40px ${labelFace}`;
+        ctx.fillStyle = labelColor;
+        setLetterSpacing(ctx, '1.5px');
+        ctx.fillText(`AVG. ${paceVal} ${paceUnit}`.toUpperCase(), 540, heroY + 52);
+        setLetterSpacing(ctx, '0px');
+    } else {
+        const durVal = stats.timeStr || s1.value || '0';
+        const durUnit = s1.unit ? s1.unit.toUpperCase() : '';
+        ctx.fillStyle = solid;
+        ctx.font = `800 120px ${face}`;
+        ctx.fillText(durVal, 540, heroY);
+        if (durUnit) {
+            ctx.font = `500 40px ${labelFace}`;
+            ctx.fillStyle = labelColor;
+            ctx.fillText(durUnit, 540, heroY + 52);
+        }
+        const hr = stats.avgHeartrate || stats.maxHeartrate || (s2.label.includes('HEART') ? s2.value : '');
+        if (hr) {
+            ctx.font = `500 40px ${labelFace}`;
+            ctx.fillStyle = labelColor;
+            setLetterSpacing(ctx, '1.5px');
+            ctx.fillText(`${hr} BPM`, 540, heroY + 96);
+            setLetterSpacing(ctx, '0px');
+        }
+    }
+
+    // ── Skyline bars (top-anchored block, compact) ──
+    const barTop = 620;
+    const barBase = 980;
+    const maxBarH = barBase - barTop;
+    const splits = Array.isArray(stats.splits) ? stats.splits : [];
+    const centerX = 540;
+    const usableW = 880;
+
+    ctx.strokeStyle = textColor === 'black' ? 'rgba(0,0,0,0.22)' : 'rgba(255,255,255,0.28)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(centerX - usableW / 2, barBase + 0.5);
+    ctx.lineTo(centerX + usableW / 2, barBase + 0.5);
+    ctx.stroke();
+
+    if (splits.length > 0) {
+        // Taller = faster (inverted split seconds), skyline aesthetic
+        let maxSec = 0;
+        let minSec = Infinity;
+        splits.forEach((s: any) => {
+            const sec = Number(s.seconds) || 0;
+            if (sec > maxSec) maxSec = sec;
+            if (sec > 0 && sec < minSec) minSec = sec;
+        });
+        const span = Math.max(maxSec - minSec, 1);
+
+        const n = splits.length;
+        const gap = n > 16 ? 6 : 12;
+        const barW = Math.max(10, (usableW - gap * (n - 1)) / n);
+        const totalW = n * barW + (n - 1) * gap;
+        const x0 = centerX - totalW / 2;
+
+        splits.forEach((s: any, i: number) => {
+            const sec = Number(s.seconds) || maxSec;
+            const t = 1 - (sec - minSec) / span; // 1 = fastest
+            const h = Math.max(12, 28 + t * (maxBarH - 28));
+            const x = x0 + i * (barW + gap);
+            const y = barBase - h;
+            const g = ctx.createLinearGradient(x, y, x, barBase);
+            if (textColor === 'black') {
+                g.addColorStop(0, 'rgba(0,0,0,0.92)');
+                g.addColorStop(1, 'rgba(0,0,0,0.35)');
+            } else {
+                g.addColorStop(0, 'rgba(255,255,255,0.95)');
+                g.addColorStop(1, 'rgba(255,255,255,0.35)');
+            }
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.roundRect(x, y, barW, h, 3);
+            ctx.fill();
+        });
+    } else {
+        // Quiet baseline when splits are not loaded — never fake per-km values
+        ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.18)' : 'rgba(255,255,255,0.18)';
+        ctx.fillRect(centerX - usableW / 2, barBase - 4, usableW, 4);
+    }
+
+    ctx.restore();
+}
+
+/**
+ * LAB DATAGRID — dense scientific metric table with 1px grid lines.
+ * Distance: DISTANCE / PACE / TIME / HR / ELEV. Workout: DURATION / HR / MAX HR (no distance/pace).
+ */
+export function drawLabDataGrid(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const { solid, label: labelColor } = buildColors(textColor);
+    const { s1, s2, s3 } = getDynamicStats(stats);
+    const hasDistance = Boolean(stats.hasDistance || (stats.distanceVal && parseFloat(stats.distanceVal) > 0));
+    const face = "'Space Grotesk', 'Outfit', sans-serif";
+    const labelFace = "'Plus Jakarta Sans', 'Outfit', sans-serif";
+
+    const elevPoint = stats.dataPoints?.find((p: any) => String(p.label || '').toUpperCase().includes('ELEV'));
+    const elevVal = stats.elevation || elevPoint?.value || '';
+    const hrAvg = stats.avgHeartrate || stats.hr || (s2.label.includes('HEART') ? s2.value : '');
+    const hrMax = stats.maxHeartrate || stats.max_heartrate || (s3.label.includes('MAX') ? s3.value : '');
+
+    type Row = { label: string; value: string; hide?: boolean };
+    let rows: Row[];
+    if (hasDistance) {
+        const dist = `${stats.distanceVal || s1.value || '0.00'} ${(stats.distanceUnit || s1.unit || 'km').toUpperCase()}`;
+        const paceUnit = (s2.unit || stats.subLabel || '/km').toUpperCase();
+        const pace = stats.subValue
+            ? `${stats.subValue.split(' ')[0]} ${paceUnit}`.trim()
+            : (s2.value ? `${s2.value} ${paceUnit}` : '');
+        rows = [
+            { label: 'DISTANCE', value: dist },
+            { label: 'PACE', value: pace, hide: !pace },
+            { label: 'TIME', value: stats.timeStr || (s3.label === 'DURATION' ? s3.value : '') || '', hide: !(stats.timeStr || s3.label === 'DURATION') },
+            { label: 'HR AVG', value: hrAvg ? `${hrAvg} BPM` : '', hide: !hrAvg },
+            { label: 'ELEV', value: elevVal ? `${elevVal} M` : '', hide: !elevVal },
+        ];
+    } else {
+        rows = [
+            { label: 'DURATION', value: stats.timeStr || s1.value || '', hide: !(stats.timeStr || s1.value) },
+            { label: 'HR AVG', value: hrAvg ? `${hrAvg} BPM` : '', hide: !hrAvg },
+            { label: 'MAX HR', value: hrMax ? `${hrMax} BPM` : '', hide: !hrMax },
+            { label: 'EFFORT', value: s3.label.includes('EFFORT') && s3.value !== '-' ? s3.value : '', hide: !(s3.label.includes('EFFORT') && s3.value !== '-') },
+        ];
+    }
+    rows = rows.filter(r => !r.hide && r.value);
+
+    ctx.save();
+    ctx.textBaseline = 'alphabetic';
+
+    const gw = 880;
+    const x0 = 540 - gw / 2;
+    const headerY = 300;
+    const rowH = 110;
+    const gridTop = 360;
+    const gridH = Math.max(rowH, rows.length * rowH);
+
+    // Header
+    ctx.textAlign = 'center';
+    setLetterSpacing(ctx, '2.5px');
+    ctx.font = `500 32px ${labelFace}`;
+    ctx.fillStyle = labelColor;
+    ctx.fillText('SESSION LOG', 540, headerY);
+    setLetterSpacing(ctx, '0px');
+
+    // Grid frame — sharp 1px lines (0.5 snap)
+    ctx.strokeStyle = textColor === 'black' ? 'rgba(0,0,0,0.22)' : 'rgba(255,255,255,0.22)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x0 + 0.5, gridTop + 0.5, gw, gridH);
+
+    const colX = x0 + gw * 0.42;
+    ctx.beginPath();
+    ctx.moveTo(colX + 0.5, gridTop);
+    ctx.lineTo(colX + 0.5, gridTop + gridH);
+    ctx.stroke();
+
+    for (let i = 1; i < rows.length; i++) {
+        const y = gridTop + i * rowH + 0.5;
+        ctx.beginPath();
+        ctx.moveTo(x0, y);
+        ctx.lineTo(x0 + gw, y);
+        ctx.stroke();
+    }
+
+    // Rows — explicit column anchors (never concatenated label strings)
+    rows.forEach((row, i) => {
+        const yMid = gridTop + i * rowH + rowH * 0.62;
+
+        setLetterSpacing(ctx, '1.5px');
+        ctx.font = `500 28px ${labelFace}`;
+        ctx.fillStyle = labelColor;
+        ctx.textAlign = 'left';
+        ctx.fillText(row.label, x0 + 24, yMid);
+        setLetterSpacing(ctx, '0px');
+
+        ctx.font = `700 42px ${face}`;
+        ctx.fillStyle = solid;
+        ctx.textAlign = 'right';
+        ctx.fillText(row.value, x0 + gw - 24, yMid);
+    });
 
     ctx.restore();
 }
