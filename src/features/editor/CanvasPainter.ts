@@ -8873,33 +8873,35 @@ export function drawDigitalLed(ctx: CanvasRenderingContext2D, stats: any, textCo
     };
 
     ctx.save();
-    // Digital watch stack: date · hero distance · pace (clear gaps, no overlap)
-    drawLedText(dateStr, 540, 560, 120);
+    // Tight stack: date · distance+KM · pace+/KM — units hug digits, rows close
+    drawLedText(dateStr, 540, 500, 110);
 
     if (distVal) {
-        drawLedText(distVal, 540, 1080, 300);
-        ctx.font = "700 64px 'Outfit', sans-serif";
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.globalAlpha = LIT_A;
-        ctx.fillStyle = litColor;
-        ctx.shadowColor = litColor;
-        ctx.shadowBlur = 16;
-        ctx.fillText(distUnit, 540, 1210);
-        ctx.shadowBlur = 0;
-        ctx.globalAlpha = 1;
-    }
-
-    if (paceVal) {
-        drawLedText(paceVal, 540, 1520, 160);
-        ctx.font = "700 52px 'Outfit', sans-serif";
+        drawLedText(distVal, 540, 860, 270);
+        // KM immediately under hero digits
+        ctx.font = "700 56px 'Outfit', sans-serif";
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.globalAlpha = LIT_A;
         ctx.fillStyle = litColor;
         ctx.shadowColor = litColor;
         ctx.shadowBlur = 12;
-        ctx.fillText(paceUnit, 540, 1630);
+        ctx.fillText(distUnit, 540, 910);
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = 1;
+    }
+
+    if (paceVal) {
+        drawLedText(paceVal, 540, 1140, 150);
+        // /KM immediately under pace
+        ctx.font = "700 44px 'Outfit', sans-serif";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.globalAlpha = LIT_A;
+        ctx.fillStyle = litColor;
+        ctx.shadowColor = litColor;
+        ctx.shadowBlur = 10;
+        ctx.fillText(paceUnit, 540, 1190);
         ctx.shadowBlur = 0;
         ctx.globalAlpha = 1;
     }
