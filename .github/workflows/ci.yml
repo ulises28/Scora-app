@@ -83,6 +83,76 @@ jobs:
       - name: Run Unit Tests
         run: pnpm test -- run
 
+  # Prompt/agent evals + code grader (1–10, merged score)
+  evals:
+    name: Eval Scorecard (cases + code grader)
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 11
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Snapshot lifecycle audit
+        run: npx tsx scripts/snapshot-audit.ts --json > test-results/snapshot-audit.json || true
+
+      - name: Code grader (syntax / secrets / overcode → 1–10)
+        run: |
+          mkdir -p test-results evals/reports/latest
+          npx tsx evals/graders/code-grader.ts --json > test-results/code-grader.json || true
+
+      - name: Eval scorecard (cases 1–10 + strengths/weaknesses/reasoning)
+        run: |
+          # Fixture mode: score recorded evidence; do not invent green
+          npx tsx evals/runners/run-evals.ts || true
+
+      - name: Merge model + code grader
+        run: |
+          npx tsx evals/graders/merge-graders.ts \
+            --code test-results/code-grader.json \
+            --model evals/reports/latest/evidence.json || true
+
+      - name: Publish eval summary
+        if: always()
+        run: |
+          {
+            echo "## Eval scorecard (1–10)"
+            if [ -f evals/reports/latest/scorecard.md ]; then
+              echo '```'
+              head -40 evals/reports/latest/scorecard.md
+              echo '```'
+            fi
+            if [ -f evals/reports/latest/merged-grader.json ]; then
+              echo "### Merged grader"
+              echo '```json'
+              cat evals/reports/latest/merged-grader.json
+              echo '```'
+            fi
+          } >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload eval reports
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: eval-reports
+          path: |
+            evals/reports/
+            test-results/code-grader.json
+            test-results/snapshot-audit.json
+          retention-days: 7
+
   # 🧠 Smart Environment Resolution: STG vs PROD
   resolve-env:
     runs-on: ubuntu-latest
@@ -199,48 +269,56 @@ jobs:
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           PLAYWRIGHT_JSON_OUTPUT_NAME: test-results/report.json
         run: |
-          # Logic: Update snapshots ONLY if manual override is set OR if drift is detected
-          echo "=== Debug Snapshot Flag ==="
+          # HONEST HEALER: baselines update ONLY on explicit manual input.
+          # Drift is advisory — never auto-enables --update-snapshots (qa-architecture.md §5.4).
+          echo "=== Snapshot policy (propose-only) ==="
           echo "github.event.inputs.update_snapshots: '${{ github.event.inputs.update_snapshots }}'"
           echo "inputs.update_snapshots: '${{ inputs.update_snapshots }}'"
           SNAPSHOT_FLAG=""
-          if [ "${{ github.event.inputs.update_snapshots }}" = "true" ] || [ "${{ inputs.update_snapshots }}" = "true" ] || [ "${{ steps.drift.outputs.drift_detected }}" = "true" ]; then
+          if [ "${{ github.event.inputs.update_snapshots }}" = "true" ] || [ "${{ inputs.update_snapshots }}" = "true" ]; then
             SNAPSHOT_FLAG="--update-snapshots"
-            echo "📸 Snapshot update enabled: passing --update-snapshots to Playwright"
+            echo "HUMAN ACCEPT: snapshot update enabled for this run"
           else
-            echo "🛡️ Snapshot update disabled"
+            echo "Snapshot update disabled (strict). Failures stay red until a human accepts."
           fi
 
           mkdir -p blob-report test-results
           npx playwright test --project=UI-Core --project=Mobile-Chrome $SNAPSHOT_FLAG --reporter=list,json
 
-          # 🕵️ Generate Triage Signal for diagnostics script
-          echo "{\"drift_detected\": ${{ steps.drift.outputs.drift_detected }}}" > test-results/TRIAGE_SIGNAL.json
-          
-      # 🏛️ Smart Self-Healing (Feature Branches)
-      # Condition: Auto-run on PRs OR if manual trigger is enabled.
-      - name: Direct Commit Updated Snapshots (Feature Branches)
-        if: always() && (github.event.inputs.update_snapshots == 'true' || inputs.update_snapshots == true || github.event_name == 'pull_request') && github.ref_name != 'master'
-        uses: stefanzweifel/git-auto-commit-action@v7
+          echo "{\"drift_detected\": ${{ steps.drift.outputs.drift_detected }}, \"accept_snapshots\": $([ -n \"$SNAPSHOT_FLAG\" ] && echo true || echo false), \"policy\": \"propose-only\"}" > test-results/TRIAGE_SIGNAL.json
+
+      # Explicit human-approved baseline PR only (never auto-commit on PR/push)
+      - name: Open Pull Request with Updated Snapshots (manual accept only)
+        if: always() && (github.event.inputs.update_snapshots == 'true' || inputs.update_snapshots == true) && github.ref_name != 'master'
+        uses: peter-evans/create-pull-request@v8
         with:
-          commit_message: "chore(testing): self-healing linux snapshots (docker-matrix)"
-          file_pattern: "tests/**/*.png tests/e2e/fixtures/sticker-capabilities.json"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore(testing): accepted linux snapshot baselines (human review)"
+          branch: ci/snapshot-accept
+          delete-branch: true
+          title: "CI: Accept snapshot baselines (requested)"
+          body: |
+            ### Snapshot baseline update (human-initiated)
+            Review the image diffs before merge. Merging updates Linux goldens.
+            Policy: this PR only opens when `update_snapshots` was explicitly true.
+          add-paths: |
+            tests/**/*.png
 
       - name: Open Pull Request with Updated Snapshots (Master Only)
-        if: always() && (github.event.inputs.update_snapshots == 'true' || inputs.update_snapshots == true || github.event_name == 'push') && github.ref_name == 'master'
+        if: always() && (github.event.inputs.update_snapshots == 'true' || inputs.update_snapshots == true) && github.ref_name == 'master'
         uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: "chore(testing): production snapshot calibration [skip ci]"
           branch: ci/prod-snapshot-calibration
           delete-branch: true
-          title: "🤖 CI: Production Snapshot Calibration"
+          title: "CI: Production Snapshot Calibration (requested)"
           body: |
-            ### 📸 Production Snapshot Update (Docker Calibrated)
+            ### Production snapshot update (Docker calibrated)
             Merging this will update baseline Linux snapshots.
+            Opened only when `update_snapshots` was explicitly true — not on drift.
           add-paths: |
             tests/**/*.png
-            tests/e2e/fixtures/sticker-capabilities.json
 
       - name: Upload Test Report
         uses: actions/upload-artifact@v6

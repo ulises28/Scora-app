@@ -1,0 +1,73 @@
+{
+  "$schema": "prompt-eval-case/v1",
+  "$comment": "Evaluation cases for prompts/agents/docs. Source of truth for what 'good' looks like. Change with review, same as visual baselines.",
+  "id": "sticker-lifecycle/new-sticker-happy-path",
+  "title": "User asks to create a new sticker",
+  "layer": "output+harness+grounding",
+  "risk": "Agent ships a sticker without display contract, mode coverage, or lifecycle registration",
+  "user_prompt": "Create a new sticker called 'summit-badge' that shows elevation and distance for mountain activities.",
+  "context": {
+    "docs": [
+      "tests/e2e/docs/qa-architecture.md",
+      "tests/e2e/docs/suite-health.md",
+      "src/features/editor/StickerRegistry.ts",
+      "scripts/sticker-sync.ts"
+    ],
+    "product_constraints": [
+      "never ship empty/text-only preview cards",
+      "workout vs distance render contract (hasDistance / sport branch)",
+      "same sticker may show different data per activity mode",
+      "after registry edits run pnpm run sync:stickers"
+    ]
+  },
+  "expect": {
+    "schema": "evals/contracts/agent-action-result.schema.json",
+    "must": [
+      "registers_sticker_in_ACTIVE_STICKER_LIST_with_features_and_category",
+      "declares_paintForm_if_non_numeric_paint",
+      "implements_mode_branch_run_and_workout_if_claimed",
+      "runs_sync_stickers",
+      "display_contract_lists_expected_metrics_per_mode",
+      "does_not_add_screenshots_to_force_green",
+      "unit_gate_passes_or_reports_blocker"
+    ],
+    "must_not": [
+      "hand_edits_sticker_capabilities_json",
+      "skips_workout_mode_when_features_claim_duration",
+      "claims_metrics_not_painted",
+      "pushes_to_master_without_user_push"
+    ]
+  },
+  "scoring": {
+    "contract": 0.5,
+    "harness": 0.2,
+    "grounding": 0.3
+  },
+  "pass_bar": 8,
+  "expected_generated_content": {
+    "files_must_exist": [
+      "src/features/editor/StickerRegistry.ts",
+      "src/features/editor/CanvasPainter.ts",
+      "tests/e2e/fixtures/sticker-capabilities.json"
+    ],
+    "registry_must_match": [
+      "id: 'summit-badge'",
+      "ACTIVE_STICKER_LIST"
+    ],
+    "renderer_must_match": [
+      "export function drawSummitBadge"
+    ],
+    "contract_must_match": [
+      "summit-badge"
+    ],
+    "forbidden_content": [
+      "hand-edit sticker-capabilities.json",
+      "--update-snapshots"
+    ],
+    "language": "typescript",
+    "must_validate_as": [
+      "typescript",
+      "json"
+    ]
+  }
+}

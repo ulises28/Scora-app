@@ -159,3 +159,30 @@ export function formatSpeedKmh(metersPerSecond: number): string {
     if (!metersPerSecond || metersPerSecond <= 0) return '0.0 km/h';
     return `${(metersPerSecond * 3.6).toFixed(1)} km/h`;
 }
+
+const SPELL_ONES = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+const SPELL_TENS = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+
+function spellInt(n: number): string {
+    n = Math.max(0, Math.floor(n));
+    if (n < 20) return SPELL_ONES[n];
+    if (n < 100) {
+        const t = Math.floor(n / 10);
+        const o = n % 10;
+        return o ? `${SPELL_TENS[t]} ${SPELL_ONES[o]}` : SPELL_TENS[t];
+    }
+    if (n < 1000) {
+        const h = Math.floor(n / 100);
+        const rest = n % 100;
+        return rest ? `${SPELL_ONES[h]} hundred ${spellInt(rest)}` : `${SPELL_ONES[h]} hundred`;
+    }
+    const th = Math.floor(n / 1000);
+    const rest = n % 1000;
+    return rest ? `${spellInt(th)} thousand ${spellInt(rest)}` : `${spellInt(th)} thousand`;
+}
+
+/** Whole units only (21.99 → "twenty one"). Shared by renderers and display-contract tests. */
+export function spellNumber(n: number): string {
+    if (!Number.isFinite(n)) return 'zero';
+    return spellInt(Math.floor(n));
+}

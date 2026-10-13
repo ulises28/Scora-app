@@ -1,33 +1,34 @@
 # ============================================================
 # Dockerfile.playwright
-# Purpose: Run Playwright E2E tests in an isolated container.
-# All browsers (Chromium, Firefox, WebKit) are pre-installed.
+# Purpose: Run Playwright E2E tests in an isolated Linux container.
+# All browsers (Chromium, Firefox, WebKit) are pre-installed in the base image.
 #
-# Build:  docker build -f Dockerfile.playwright -t scora-e2e .
-# Run:    docker run --rm scora-e2e
+# Build:  DOCKER_DEFAULT_PLATFORM=linux/amd64 docker build -f Dockerfile.playwright -t scora-e2e .
+# Run:    docker compose -f docker-compose.playwright.yml run --rm playwright pnpm exec playwright test --project=UI-Visual
 # ============================================================
 
 # Official Scora Runtime — includes Node, pnpm, Vercel CLI, and Playwright browsers
-FROM ghcr.io/ulises28/scora-runtime:latest
+FROM --platform=linux/amd64 ghcr.io/ulises28/scora-runtime:latest
 
-# Set working directory inside the container
 WORKDIR /app
 
-# Copy the rest of the project source
+# Install dependencies first for better layer caching
+COPY package.json pnpm-lock.yaml ./
+# esbuild postinstall must run for the binary; silence pnpm's ignored-builds exit
+RUN pnpm install --frozen-lockfile; \
+    pnpm rebuild esbuild || true; \
+    node -e "require('esbuild')" 2>/dev/null || npm rebuild esbuild
+
+# Project source
 COPY . .
 
-# Set up the config file required for the build/test pipeline
+# Config shim required by the test pipeline
 RUN cp src/config.example.ts src/config.ts
 
-# Expose the Vite dev server port (used by Playwright's webServer)
 EXPOSE 5500
 
-# Tell Playwright it's running in a CI-like environment:
-# - Retries enabled (2x)
-# - Workers set to 1
-# - forbidOnly enforced
+# CI-like environment inside the container
 ENV CI=true
 
-# Default command: run all E2E tests
-# Playwright will automatically start the Vite dev server (via webServer config)
-CMD ["npx", "playwright", "test"]
+# Default: full E2E (Playwright starts Vite via webServer)
+CMD ["pnpm", "exec", "playwright", "test"]

@@ -1,0 +1,83 @@
+{
+  "$schema": "prompt-eval-case/v1",
+  "id": "sticker-lifecycle/minimal-implementation-no-overcode",
+  "title": "New sticker quality: minimal implementation, no overcoding",
+  "layer": "output+grounding",
+  "risk": "Agent ships a 200-line factory, new abstraction layers, unused systems \u2014 product owner wants small readable stickers",
+  "user_prompt": "Create a simple sticker. Keep it minimal \u2014 I do not like overcoding.",
+  "criteria_doc": {
+    "source": "user preference 2026-10-12 + repo conventions",
+    "locks": [
+      "one export function drawX in CanvasPainter (or thin registry render)",
+      "reuse existing formatters / helpers; no new framework",
+      "no new files unless truly shared (prefer no new files)",
+      "no speculative flags, feature toggles, or plugin systems",
+      "paint the metrics the display contract lists \u2014 nothing more",
+      "copy an existing sticker's structure when possible (dupe > premature abstraction)"
+    ]
+  },
+  "complexity_budget": {
+    "max_renderer_loc": 120,
+    "max_new_files": 1,
+    "max_new_abstractions": 0,
+    "prefer_copy_from": [
+      "circle-letters",
+      "classic-stack",
+      "note-minimal"
+    ]
+  },
+  "expect": {
+    "must": [
+      "renderer_under_LOC_budget",
+      "no_new_shared_framework_or_base_class",
+      "no_unused_parameter_or_dead_helpers",
+      "registry_entry_is_one_line_like_peers",
+      "display_contract_only_lists_actually_painted_metrics",
+      "follows_existing_sticker_patterns"
+    ],
+    "must_not": [
+      "introduces_builder_or_strategy_pattern_for_one_sticker",
+      "adds_config_schema_or_plugin_api",
+      "extracts_shared_utils_used_by_only_one_sticker",
+      "ships_placeholder_or_empty_render_path",
+      "copies_glass_pipeline_into_a_simple_sticker"
+    ]
+  },
+  "scoring": {
+    "simplicity": 0.45,
+    "contract": 0.3,
+    "grounding": 0.25
+  },
+  "pass_bar": 8,
+  "eval_methods": {
+    "deterministic": [
+      "count_lines_in_export_function_draw*",
+      "count_new_unrelated_files_in_diff",
+      "grep_for_new_abstract_class_or_interface_in_features_editor"
+    ],
+    "rubric": [
+      {
+        "criterion": "reads_like_peer_stickers",
+        "minScore": 0,
+        "maxScore": 2
+      },
+      {
+        "criterion": "no_speculative_generality",
+        "minScore": 0,
+        "maxScore": 2
+      }
+    ]
+  },
+  "expected_generated_content": {
+    "max_new_files": 1,
+    "max_renderer_loc": 120,
+    "must_validate_as": [
+      "typescript"
+    ],
+    "forbidden_content": [
+      "class .*Factory",
+      "abstract class",
+      "plugin"
+    ]
+  }
+}

@@ -193,6 +193,15 @@ async function runAgent() {
         }
     });
 
+    // Single writer rule: only sticker-sync.ts (pnpm run sync:stickers) writes the fixture.
+    // This agent is an auditor. Pass --write only to replace the fixture after a deliberate review.
+    const allowWrite = process.argv.includes('--write');
+    if (!allowWrite) {
+        console.log(`🔎 Audit only (no write). ${stickerIds.length} stickers analyzed.`);
+        console.log(`   Authoritative generator: scripts/sticker-sync.ts (pnpm run sync:stickers).`);
+        console.log(`   Re-run with --write only after reviewing diffs (not the default path).`);
+        return;
+    }
     fs.writeFileSync(OUTPUT_PATH, JSON.stringify(capabilities, null, 2));
     console.log(`✅ Capabilites updated at ${OUTPUT_PATH} (${stickerIds.length} stickers synced)`);
 }

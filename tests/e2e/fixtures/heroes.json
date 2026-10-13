@@ -1,0 +1,16 @@
+{
+  "$comment": "Hero visual baselines — product-critical looks only. Not an exhaustive catalog dump. Each entry is (stickerId, mode) because the same sticker paints different data per activity. Add/remove only with review; use test:e2e:visual:accept to update pixels.",
+  "canonicalOs": "linux",
+  "heroes": [
+    { "id": "glass-numbers-v2", "mode": "run", "family": "glass-numbers", "why": "Product numbers sticker — liquid glass digits" },
+    { "id": "glass-numbers-v2", "mode": "workout", "family": "glass-numbers", "why": "Same sticker, duration glyphs on gym activities" },
+    { "id": "word-metric", "mode": "run", "family": "spelled-hero", "why": "Spelled kilometers + tracked unit" },
+    { "id": "word-metric", "mode": "workout", "family": "spelled-hero", "why": "Spelled minutes path" },
+    { "id": "studio-precision", "mode": "run", "family": "data-columns", "why": "Multi-metric columns layout" },
+    { "id": "micro-map-pill", "mode": "run", "family": "map-compact", "why": "Compact map + distance" },
+    { "id": "chrome-v1", "mode": "run", "family": "chrome-metal", "why": "WebGL metal path" },
+    { "id": "digital-led", "mode": "run", "family": "led-segments", "why": "Segment digits (non-fillText)" },
+    { "id": "circle-letters", "mode": "run", "family": "word-chain", "why": "Activity-word composition + distance" },
+    { "id": "circle-letters", "mode": "workout", "family": "word-chain", "why": "Distance-or-duration branch" }
+  ]
+}

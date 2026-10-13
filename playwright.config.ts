@@ -40,27 +40,34 @@ export default defineConfig({
     {
       name: 'UI-Core',
       use: { ...devices['Desktop Chrome'] },
-      grepInvert: /@regression/, // Fast UI tests (No backend needed)
+      // Practice / smoke loop: logic + DOM + data. No pixel goldens.
+      grepInvert: /@regression|@visual/,
+    },
+    {
+      name: 'UI-Visual',
+      use: { ...devices['Desktop Chrome'] },
+      // Hero baselines only (heroes.json). Accept via test:e2e:visual:accept.
+      grep: /@visual/,
     },
     {
       name: 'Regression-API',
       use: { ...devices['Desktop Chrome'] },
-      grep: /@regression/, // Scheduled midnight tests (Vercel needed)
+      grep: /@regression/, // Scheduled (mock or Vercel); includes display-contract data scan
     },
     {
       name: 'Mobile-Chrome',
       use: { ...devices['Pixel 5'] },
-      grepInvert: /@regression/,
+      grepInvert: /@regression|@visual/,
     },
     {
       name: 'Desktop-Safari',
       use: { ...devices['Desktop Safari'] },
-      grepInvert: /@regression/,
+      grepInvert: /@regression|@visual/,
     },
     {
       name: 'Mobile-Safari',
       use: { ...devices['iPhone 13'] },
-      grepInvert: /@regression/,
+      grepInvert: /@regression|@visual/,
     },
   ],
 

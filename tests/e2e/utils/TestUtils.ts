@@ -197,32 +197,23 @@ export const TestUtils = {
     },
 
     /**
-     * Fetch the 'Absolute Truth' metadata for a sticker from the Agent JSON.
+     * SOURCE OF TRUTH: display contract from sticker-capabilities.json.
+     * Metrics listed for a mode are what the canvas must paint in that mode.
+     * `display[metric]` is the paint form (numeric | spelled | segments | glyphs).
      */
     getStickerTruth(stickerId: string, mode: 'run' | 'bike' | 'workout') {
-        const cap = (capabilities as any)[stickerId];
-        if (!cap) return { metrics: [], labels: [], metadata: [] };
+        const root = (capabilities as any).stickers ?? capabilities;
+        const cap = root[stickerId];
+        if (!cap) return { metrics: [], labels: [], metadata: [], display: {} as Record<string, string> };
 
-        const modeTruth = cap.modes[mode];
-        let metrics = modeTruth.metrics || [];
-
-        // Obsidian Pivot: Some stickers are "toggles" (render EITHER distance OR duration)
-        // If it's a compact/pill sticker, we only expect the "primary" metric of the mode
-        const template = TEMPLATE_REGISTRY.find(t => t.id === stickerId);
-        const isToggle = template?.compact;
-
-        if (isToggle) {
-            if (mode === 'run' || mode === 'bike') {
-                metrics = metrics.filter((m: string) => m !== 'time' && m !== 'heartRate');
-            } else if (mode === 'workout') {
-                metrics = metrics.filter((m: string) => m !== 'distance' && m !== 'pace');
-            }
-        }
+        const modeTruth = cap.modes?.[mode];
+        if (!modeTruth) return { metrics: [], labels: [], metadata: [], display: {} as Record<string, string> };
 
         return {
-            metrics,
+            metrics: modeTruth.metrics || [],
             labels: (modeTruth.labels || []).filter((l: string) => l.length < 15 && !l.includes(';')),
-            metadata: (modeTruth.metadata || []).filter((m: string) => m.length < 20 && !m.includes(';'))
+            metadata: (modeTruth.metadata || []).filter((m: string) => m.length < 20 && !m.includes(';')),
+            display: (modeTruth.display || {}) as Record<string, string>,
         };
     },
 

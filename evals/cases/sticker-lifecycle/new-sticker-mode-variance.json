@@ -1,0 +1,63 @@
+{
+  "$schema": "prompt-eval-case/v1",
+  "id": "sticker-lifecycle/new-sticker-mode-variance",
+  "title": "New sticker must show different data by activity (run vs workout)",
+  "layer": "output+grounding",
+  "risk": "Agent writes one metric set for all modes; display contract lies; scan fails later or false-greens",
+  "user_prompt": "Add 'trail-summary' sticker: on runs show distance + pace + map; on gym workouts show duration + avg HR, no map.",
+  "context": {
+    "docs": [
+      "tests/e2e/docs/qa-architecture.md",
+      "tests/e2e/fixtures/sticker-capabilities.json",
+      "src/utils/catalogMocks.ts"
+    ],
+    "product_constraints": [
+      "unit of specification is (sticker x mode)",
+      "36/39 stickers already vary by mode",
+      "catalog minis must use MOCK_STATS_RUN vs MOCK_STATS_WORKOUT"
+    ]
+  },
+  "expect": {
+    "must": [
+      "registry_features_reflect_capabilities_not_wishes",
+      "sync_emits_run_metrics_distance_pace",
+      "sync_emits_workout_metrics_time_heartRate",
+      "sync_workout_mode_excludes_distance_and_pace",
+      "renderer_branches_on_hasDistance_or_sport",
+      "catalog_mock_for_workout_is_MOCK_STATS_WORKOUT"
+    ],
+    "must_not": [
+      "same_metrics_array_for_all_three_modes_without_reason",
+      "map_required_on_workout_without_polyline"
+    ]
+  },
+  "pass_bar": 9,
+  "expected_generated_content": {
+    "files_must_exist": [
+      "src/features/editor/StickerRegistry.ts",
+      "src/features/editor/CanvasPainter.ts"
+    ],
+    "registry_must_match": [
+      "trail-summary",
+      "hasDistance"
+    ],
+    "renderer_must_match": [
+      "export function drawTrailSummary",
+      "hasDistance"
+    ],
+    "contract_modes": {
+      "run": [
+        "distance",
+        "pace"
+      ],
+      "workout": [
+        "heartRate",
+        "time"
+      ]
+    },
+    "must_validate_as": [
+      "typescript",
+      "json"
+    ]
+  }
+}

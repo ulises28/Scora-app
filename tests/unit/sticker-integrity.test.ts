@@ -1,14 +1,16 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
 import { STICKER_LIST } from '../../src/features/editor/StickerRegistry';
-import capabilities from '../e2e/fixtures/sticker-capabilities.json' with { type: 'json' };
+import capabilitiesDoc from '../e2e/fixtures/sticker-capabilities.json' with { type: 'json' };
 
 /**
- * SCORA: Sticker Integrity Suite (v3.0 - Modular Contract)
- * 
- * Verifies that the Sticker Data Discovery (Agent) successfully 
- * validated the claims made in the Modular Sticker Registry.
+ * SCORA: Sticker Integrity Suite (v3.1 — Display Contract)
+ *
+ * sticker-capabilities.json is the SOURCE OF TRUTH for which data each sticker
+ * displays per mode. Generated only by `pnpm run sync:stickers`.
  */
+
+const capabilities = (capabilitiesDoc as any).stickers ?? capabilitiesDoc;
 
 describe.concurrent('Sticker Integrity: Modular Contract', () => {
 
@@ -20,12 +22,12 @@ describe.concurrent('Sticker Integrity: Modular Contract', () => {
      */
     it.each(ACTIVE_TEMPLATES)('should have discovery metadata for "$id"', (sticker) => {
         const entry = (capabilities as any)[sticker.id];
-        expect(entry, `Sticker "${sticker.id}" exists in Registry but not in sticker-capabilities.json. Run "npm run sync:stickers".`).toBeDefined();
+        expect(entry, `Sticker "${sticker.id}" exists in Registry but not in sticker-capabilities.json. Run "pnpm run sync:stickers".`).toBeDefined();
     });
 
     /**
      * Test 2: Feature Discovery Contract
-     * Ensures that every feature claimed in the StickerRegistry was 
+     * Ensures that every feature claimed in the StickerRegistry was
      * successfully identified by the code agent during discovery.
      */
     describe.concurrent('Feature Discovery Verification', () => {
@@ -38,25 +40,31 @@ describe.concurrent('Sticker Integrity: Modular Contract', () => {
             // 1. Distance Claim
             if (sticker.features.distance) {
                 const foundDistance = allModes.some(m => m.metrics?.includes('distance'));
-                expect(foundDistance, `Sticker "${sticker.id}" claims "distance" in Registry, but Agent failed to discover distance logic in renderer.`).toBe(true);
+                expect(foundDistance, `Sticker "${sticker.id}" claims "distance" in Registry, but display contract has no distance metric.`).toBe(true);
             }
 
             // 2. Pace/Speed Claim
             if (sticker.features.paceSpeed) {
                 const foundPace = allModes.some(m => m.metrics?.includes('pace'));
-                expect(foundPace, `Sticker "${sticker.id}" claims "paceSpeed" in Registry, but Agent failed to discover pace logic in renderer.`).toBe(true);
+                expect(foundPace, `Sticker "${sticker.id}" claims "paceSpeed" in Registry, but display contract has no pace metric.`).toBe(true);
             }
 
             // 3. Heart Rate Claim
             if (sticker.features.heartRate) {
                 const foundHR = allModes.some(m => m.metrics?.includes('heartRate'));
-                expect(foundHR, `Sticker "${sticker.id}" claims "heartRate" in Registry, but Agent failed to discover heartRate logic in renderer.`).toBe(true);
+                expect(foundHR, `Sticker "${sticker.id}" claims "heartRate" in Registry, but display contract has no heartRate metric.`).toBe(true);
             }
-            
+
             // 4. Map Claim
             if (sticker.features.map) {
                 const foundMap = allModes.some(m => m.metadata?.includes('MAP'));
-                expect(foundMap, `Sticker "${sticker.id}" claims "map" in Registry, but Agent failed to discover map/polyline logic in renderer.`).toBe(true);
+                expect(foundMap, `Sticker "${sticker.id}" claims "map" in Registry, but display contract has no MAP metadata.`).toBe(true);
+            }
+
+            // 5. Duration claim → at least workout mode paints time (unless alwaysShowDuration also covers run)
+            if (sticker.features.duration || sticker.features.alwaysShowDuration) {
+                const foundTime = allModes.some(m => m.metrics?.includes('time'));
+                expect(foundTime, `Sticker "${sticker.id}" claims duration but display contract has no time metric in any mode.`).toBe(true);
             }
         });
     });
@@ -142,3 +150,27 @@ describe.concurrent('Sticker Integrity: Modular Contract', () => {
 });
 
 
+
+describe('Churn contract: sticker-sync feature keys', () => {
+    const active = STICKER_LIST.filter(t => !t.seasonal);
+    it('registry features only use known keys (mirror of sticker-sync KNOWN_FEATURE_KEYS)', () => {
+        const known = new Set([
+            'distance', 'paceSpeed', 'duration', 'alwaysShowDuration', 'heartRate', 'heartRateType',
+            'date', 'startTime', 'map', 'title', 'location', 'elevation', 'calories', 'temperature',
+        ]);
+        for (const sticker of active) {
+            for (const key of Object.keys(sticker.features || {})) {
+                expect(known.has(key), `Unknown feature "${key}" on "${sticker.id}" — update sticker-sync + this test together`).toBe(true);
+            }
+        }
+    });
+
+    it('paintForm only uses numeric|spelled|segments|glyphs', () => {
+        const forms = new Set(['numeric', 'spelled', 'segments', 'glyphs']);
+        for (const sticker of active) {
+            for (const [metric, form] of Object.entries(sticker.paintForm || {})) {
+                expect(forms.has(form as string), `Bad paintForm on ${sticker.id}.${metric}`).toBe(true);
+            }
+        }
+    });
+});

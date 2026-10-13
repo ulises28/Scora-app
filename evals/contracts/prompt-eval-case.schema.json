@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "prompt-eval-case.schema.json",
+  "title": "PromptEvalCase",
+  "type": "object",
+  "required": ["id", "title", "expect"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "id": { "type": "string" },
+    "title": { "type": "string" },
+    "layer": { "type": "string" },
+    "risk": { "type": "string" },
+    "user_prompt": { "type": "string" },
+    "prior_turns": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["role", "content"],
+        "properties": {
+          "role": { "type": "string", "enum": ["user", "assistant"] },
+          "content": { "type": "string" }
+        }
+      }
+    },
+    "context": { "type": "object" },
+    "setup": { "type": "object" },
+    "criteria_doc": { "type": "object" },
+    "expect": {
+      "type": "object",
+      "required": ["must"],
+      "properties": {
+        "schema": { "type": "string" },
+        "must": { "type": "array", "items": { "type": "string" } },
+        "must_not": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "scoring": { "type": "object" },
+    "pass_bar": { "type": "number", "minimum": 0, "maximum": 1 },
+    "failure_modes_to_flag": { "type": "array" },
+    "eval_methods": { "type": "object" }
+  }
+}

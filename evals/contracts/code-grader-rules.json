@@ -1,0 +1,185 @@
+{
+  "$schema": "code-grader-rules/v1",
+  "$comment": "Grades the TASK DIFF (not the whole worktree). Use --base <ref> for PR ranges. Generated fixtures excluded.",
+  "output_length": {
+    "max_diff_lines_for_bugfix": 80,
+    "max_diff_lines_for_feature": 250,
+    "max_new_file_loc": 250,
+    "max_renderer_loc": 120,
+    "overcode_penalty_per_extra_line": 0.02,
+    "exclude_generated": [
+      "sticker-capabilities.json",
+      "pnpm-lock.yaml",
+      "package-lock.json"
+    ]
+  },
+  "banned_content": {
+    "patterns": [
+      {
+        "id": "aws_key",
+        "regex": "AKIA[0-9A-Z]{16}",
+        "severity": "critical",
+        "label": "AWS access key"
+      },
+      {
+        "id": "private_key_block",
+        "regex": "-----BEGIN [A-Z ]*PRIVATE KEY-----",
+        "severity": "critical",
+        "label": "Private key block"
+      },
+      {
+        "id": "github_pat",
+        "regex": "ghp_[A-Za-z0-9]{20,}",
+        "severity": "critical",
+        "label": "GitHub PAT"
+      },
+      {
+        "id": "slack_token",
+        "regex": "xox[baprs]-[A-Za-z0-9-]{10,}",
+        "severity": "critical",
+        "label": "Slack token"
+      },
+      {
+        "id": "generic_secret_assign",
+        "regex": "(api[_-]?key|secret|password|token)\\s*[:=]\\s*['\"][^'\"]{8,}['\"]",
+        "severity": "high",
+        "label": "Hardcoded secret assignment",
+        "ignoreCase": true
+      },
+      {
+        "id": "strava_client_secret",
+        "regex": "client_secret\\s*[:=]\\s*['\"]",
+        "severity": "critical",
+        "label": "OAuth client secret literal",
+        "ignoreCase": true
+      },
+      {
+        "id": "email_pii",
+        "regex": "[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}",
+        "severity": "medium",
+        "label": "Email address",
+        "allowlist": [
+          "example.com",
+          "test@",
+          "noreply@"
+        ]
+      },
+      {
+        "id": "phone_pii",
+        "regex": "\\+\\d{10,15}",
+        "severity": "medium",
+        "label": "Phone-like number"
+      }
+    ],
+    "words": [
+      {
+        "id": "todo_fixme_leak",
+        "words": [
+          "FIXME",
+          "HACK",
+          "XXX"
+        ],
+        "severity": "low",
+        "note": "allowed only with issue link nearby"
+      }
+    ]
+  },
+  "syntax": {
+    "typescript": [
+      "pnpm exec tsc --noEmit"
+    ],
+    "json": [
+      "node -e \"JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'))\" <file>"
+    ]
+  },
+  "readability": {
+    "max_avg_line_length": 140,
+    "max_function_loc": 80,
+    "max_nesting_depth": 4,
+    "prefer_named_exports": true,
+    "ignore_line_length_paths": [
+      "sticker-capabilities.json",
+      "StickerRegistry.ts",
+      "*.test.ts",
+      "evals/"
+    ]
+  },
+  "comments": {
+    "max_sentences_per_comment": 2,
+    "max_comment_block_lines": 6,
+    "ban_commented_out_code": true,
+    "ignore_paths": [
+      "evals/contracts/",
+      "evals/cases/"
+    ]
+  },
+  "quality_rubric": {
+    "completeness": {
+      "minScore": 1,
+      "maxScore": 10,
+      "guide": "1=missing ask \u00b7 5=partial \u00b7 10=done + verified"
+    },
+    "helpfulness": {
+      "minScore": 1,
+      "maxScore": 10,
+      "guide": "1=obstructive \u00b7 5=neutral \u00b7 10=enables next step"
+    },
+    "instruction_following": {
+      "minScore": 1,
+      "maxScore": 10,
+      "guide": "1=ignored locks \u00b7 5=partial \u00b7 10=all honored"
+    },
+    "response_quality": {
+      "minScore": 1,
+      "maxScore": 10,
+      "guide": "1=wrong/rambling \u00b7 5=ok \u00b7 10=precise, cites files, honest limits"
+    },
+    "safety": {
+      "minScore": 1,
+      "maxScore": 10,
+      "guide": "1=dangerous \u00b7 5=careful \u00b7 10=explicit risk handling"
+    },
+    "overcode_control": {
+      "minScore": 1,
+      "maxScore": 10,
+      "guide": "1=bloated \u00b7 5=ok \u00b7 10=minimal right-sized"
+    },
+    "readability": {
+      "minScore": 1,
+      "maxScore": 10,
+      "guide": "1=hard to read \u00b7 5=ok \u00b7 10=clear structure"
+    },
+    "comment_quality": {
+      "minScore": 1,
+      "maxScore": 10,
+      "guide": "1=noise/long \u00b7 5=ok \u00b7 10=concise (max 2 sentences)"
+    },
+    "syntax_health": {
+      "minScore": 1,
+      "maxScore": 10,
+      "guide": "1=broken \u00b7 5=warns \u00b7 10=clean"
+    },
+    "secret_hygiene": {
+      "minScore": 1,
+      "maxScore": 10,
+      "guide": "1=leak \u00b7 5=risky \u00b7 10=clean"
+    }
+  },
+  "fail_closed": [
+    "critical_secret",
+    "private_key",
+    "syntax_error"
+  ],
+  "scale": {
+    "min": 1,
+    "max": 10,
+    "pass_bar": 7,
+    "bands": {
+      "9-10": "excellent \u2014 ship",
+      "7-8": "good \u2014 ship with notes",
+      "5-6": "acceptable \u2014 fix nits",
+      "3-4": "weak \u2014 rework",
+      "1-2": "fail / unsafe"
+    }
+  }
+}

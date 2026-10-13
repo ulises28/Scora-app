@@ -1,0 +1,77 @@
+{
+  "caseId": "sticker-lifecycle/new-sticker-mode-variance",
+  "verdict": "pass",
+  "actions": [
+    {
+      "type": "edit_registry",
+      "path": "src/features/editor/StickerRegistry.ts",
+      "detail": "trail-summary entry features distance/pace/duration/heartRate/map"
+    },
+    {
+      "type": "edit_renderer",
+      "path": "src/features/editor/CanvasPainter.ts",
+      "detail": "drawTrailSummary hasDistance branch ~50 LOC"
+    },
+    {
+      "type": "edit_test",
+      "path": "scripts/sticker-sync.ts",
+      "detail": "workout mode strips MAP metadata"
+    },
+    {
+      "type": "run_sync_stickers"
+    },
+    {
+      "type": "run_unit"
+    }
+  ],
+  "evidence": [
+    {
+      "must": "registry_features_reflect_capabilities_not_wishes",
+      "ok": true,
+      "note": "features match painted metrics; sync-only contract | features match painted metrics; sync-only contract"
+    },
+    {
+      "must": "sync_emits_run_metrics_distance_pace",
+      "ok": true,
+      "note": "run: [distance, pace, heartRate] + MAP | run: [distance, pace, heartRate] + MAP"
+    },
+    {
+      "must": "sync_emits_workout_metrics_time_heartRate",
+      "ok": true,
+      "note": "workout: [heartRate, time] | workout: [heartRate, time]"
+    },
+    {
+      "must": "sync_workout_mode_excludes_distance_and_pace",
+      "ok": true,
+      "note": "workout metrics have neither | workout metrics have neither"
+    },
+    {
+      "must": "renderer_branches_on_hasDistance_or_sport",
+      "ok": true,
+      "note": "if (hasDistance) distance+pace+route else time+HR | if (hasDistance) distance+pace+route else time+HR"
+    },
+    {
+      "must": "catalog_mock_for_workout_is_MOCK_STATS_WORKOUT",
+      "ok": true,
+      "note": "renderer uses stats.hasDistance / timeStr not a run-only mock shape | renderer uses stats.hasDistance / timeStr not a run-only mock shape"
+    }
+  ],
+  "mustNotViolations": [],
+  "mismatches": [],
+  "strengths": "True (sticker x mode) variance: run paints distance/pace/map; workout paints duration+HR and sync drops MAP. Renderer stays small (~50 LOC) with one hasDistance branch.",
+  "weaknesses": "Product sticker added during eval work again (scope lesson). E2E data scan still only asserts distance/HR/time needles \u2014 MAP is contract-only.",
+  "reasoning": "All six mode-variance musts hold against the display contract and the branch in drawTrailSummary. Score 10/10 on the case checklist.",
+  "gradedBy": "verify-evidence.ts (independent) + agent notes (advisory)",
+  "rubric": {
+    "completeness": 9,
+    "helpfulness": 8,
+    "instruction_following": 9,
+    "response_quality": 8,
+    "safety": 9,
+    "overcode_control": 8,
+    "readability": 8,
+    "comment_quality": 8,
+    "syntax_health": 9,
+    "secret_hygiene": 10
+  }
+}

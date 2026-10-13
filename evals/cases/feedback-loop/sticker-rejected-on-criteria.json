@@ -1,0 +1,100 @@
+{
+  "$schema": "prompt-eval-case/v1",
+  "id": "feedback-loop/sticker-rejected-on-criteria",
+  "title": "User: sticker still does not match the established criteria",
+  "layer": "output+harness+grounding",
+  "risk": "Agent redesigns blindly, argues, or re-accepts the same look; drifts from frozen material rules; ignores mode/criteria contract",
+  "user_prompt": "This still is not matching the criteria we just established. The hero numbers are too small and the unit label is too far below. Fix it without changing the glass material.",
+  "prior_turns": [
+    {
+      "role": "user",
+      "content": "Create glass numbers v2 for activities"
+    },
+    {
+      "role": "assistant",
+      "content": "Implemented drawGlassNumbersV2 with Compensated Faux-Stroke\u2026"
+    },
+    {
+      "role": "user",
+      "content": "Make digits bigger and unit closer under the numbers"
+    }
+  ],
+  "criteria_doc": {
+    "source": "docs/glass-numbers-specifications.md + project MEMORY rules",
+    "locks": [
+      "hero face Montserrat for v1; v2 uses same CFS pipeline",
+      "no strokeText; 256-step continuous rim + micro-blur",
+      "unit label hugs hero digits (not far-bottom)",
+      "do not rewrite accepted material for speed",
+      "perf must not change sticker pixels"
+    ]
+  },
+  "expect": {
+    "must": [
+      "names_the_exact_renderer_or_layout_contract_that_violates_criteria",
+      "changes_only_geometry_sizing_or_placement_requested",
+      "preserves_accepted_glass_material_CFS",
+      "updates_or_adds_assertion_when_contract_changes",
+      "runs_tsc_and_targeted_unit_or_scan",
+      "asks_for_visual_accept_if_hero_pixels_change",
+      "summarizes_what_changed_vs_what_was_frozen"
+    ],
+    "must_not": [
+      "rewrite_glass_to_fast_or_flat_for_speed",
+      "switch_hero_font_without_user_ask",
+      "declare_done_without_user_visual_accept",
+      "silently_update_baselines",
+      "change_unrelated_stickers",
+      "ignore_workout_mode_if_layout_is_mode_dependent"
+    ]
+  },
+  "scoring": {
+    "contract": 0.35,
+    "grounding": 0.4,
+    "harness": 0.25
+  },
+  "pass_bar": 8,
+  "eval_methods": {
+    "deterministic": [
+      "diff_touches_only_allowed_files_for_that_sticker",
+      "no_glass_SSAA_or_rim_step_downgrade",
+      "no_font_family_change_on_v1_hero"
+    ],
+    "rubric": [
+      {
+        "criterion": "cites_criteria",
+        "minScore": 0,
+        "maxScore": 2
+      },
+      {
+        "criterion": "minimal_correct_change",
+        "minScore": 0,
+        "maxScore": 2
+      },
+      {
+        "criterion": "respects_freeze",
+        "minScore": 0,
+        "maxScore": 2
+      }
+    ]
+  },
+  "expected_generated_content": {
+    "files_must_match": {
+      "src/features/editor/CanvasPainter.ts": [
+        "GLASS_NUMBERS",
+        "unitGap",
+        "heroY"
+      ],
+      "tests/unit/glass-buffer-budget.test.ts": [
+        "GLASS"
+      ]
+    },
+    "must_not_contain": [
+      "strokeText",
+      "Idiqlat"
+    ],
+    "must_validate_as": [
+      "typescript"
+    ]
+  }
+}

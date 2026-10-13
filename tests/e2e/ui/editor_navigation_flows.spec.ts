@@ -129,6 +129,10 @@ test.describe('Scora App UI: Editor Navigation & Interaction Flows @smoke', () =
         await feedPage.openActivityEditor(ACTIVITY_WITH_DISTANCE.name, DISTANCE_STATS);
         await editorPage.verifyEditorScreenVisible(ACTIVITY_WITH_DISTANCE.name);
 
+        // Product history is 3 hops: feed → stickers → editor. Back leaves editor to stickers.
+        await page.goBack();
+        await expect(page.getByTestId('screen-stickers')).toHaveClass(/active/);
+
         await page.goBack();
 
         const stats = TestUtils.getExpectedStats(ACTIVITY_WITH_DISTANCE);
@@ -141,6 +145,10 @@ test.describe('Scora App UI: Editor Navigation & Interaction Flows @smoke', () =
 
         await feedPage.openActivityEditor(ACTIVITY_WITH_DISTANCE.name, DISTANCE_STATS);
         await editorPage.verifyEditorScreenVisible(ACTIVITY_WITH_DISTANCE.name);
+
+        // UI back mirrors history.back(): editor → stickers → feed.
+        await editorPage.goBack();
+        await expect(page.getByTestId('screen-stickers')).toHaveClass(/active/);
 
         await editorPage.goBack();
 

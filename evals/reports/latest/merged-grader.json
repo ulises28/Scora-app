@@ -1,0 +1,32 @@
+{
+  "scale": "1-10",
+  "codeGrader": {
+    "score": 6,
+    "failClosed": false,
+    "source": "test-results/code-grader.json"
+  },
+  "modelGrader": {
+    "score": 8.6,
+    "rubric": {
+      "completeness": 9,
+      "helpfulness": 8,
+      "instruction_following": 9,
+      "response_quality": 8,
+      "safety": 9,
+      "overcode_control": 8,
+      "readability": 8,
+      "comment_quality": 8,
+      "syntax_health": 9,
+      "secret_hygiene": 10
+    },
+    "rubricAverage": 8.6,
+    "source": "evals/reports/latest/evidence.json"
+  },
+  "mergedScore": 7.3,
+  "weights": {
+    "code": 0.5,
+    "model": 0.5
+  },
+  "average": 7.3,
+  "pass": true
+}

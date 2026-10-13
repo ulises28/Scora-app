@@ -1,0 +1,49 @@
+{
+  "$comment": "Cap-surge fixture: 12 NEW sticker ids to merge + expected reds before heal. Do not auto-accept baselines.",
+  "active_stickers_delta": 12,
+  "new_ids": [
+    "summit-ridge",
+    "lake-split",
+    "desert-bar",
+    "city-pulse",
+    "night-grid",
+    "alpine-card",
+    "coast-line",
+    "trail-badge",
+    "split-finish",
+    "zone-ring",
+    "mono-stack",
+    "pace-ribbon"
+  ],
+  "setup_failures": [
+    {
+      "kind": "data_contract",
+      "detail": "12 ids missing from sticker-capabilities.json",
+      "heal": "pnpm run sync:stickers"
+    },
+    {
+      "kind": "missing_baseline",
+      "detail": "hero visual: 0 new baselines (expected red)",
+      "heal": "human test:e2e:visual:accept after review"
+    },
+    {
+      "kind": "lifecycle",
+      "detail": "snapshot-audit candidates",
+      "heal": "review delete/re-home"
+    },
+    {
+      "kind": "unit",
+      "detail": "sticker-integrity missing discovery metadata",
+      "heal": "registry source + sync"
+    }
+  ],
+  "expected_after_heal": {
+    "capabilities_count_delta": 12,
+    "must_not": [
+      "mass --update-snapshots",
+      "test.fixme sink",
+      "hand-edit capabilities"
+    ],
+    "heroes_promoted": "critical families only (explicit review)"
+  }
+}

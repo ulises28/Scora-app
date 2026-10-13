@@ -1,6 +1,11 @@
 # Glass Numbers Sticker: Complete Specification & Grid Standard
 
-This document is the **single authoritative specification** for the **`glass-numbers`** canvas sticker in Scora. It defines the top-docked symmetrical grid geometry, zero-overlap spacing, color matching rules, auto-fit text measurement, and high-contrast 3D **Slim Frosted Glass Bevel** rendering pipeline modeled after the Apple iOS Lock Screen Glass Clock `9:41`.
+This document is the **single authoritative specification** for the **`glass-numbers`** family (v1 archived / **`glass-numbers-v2` product numbers sticker**) canvas sticker in Scora. It defines grid geometry, spacing, color matching rules, auto-fit text measurement, and high-contrast glass rendering (see also [glass-effect-specifications](./glass-effect-specifications.md)).
+
+> **Related:** [TESTING.md](../TESTING.md) · [qa-architecture](../tests/e2e/docs/qa-architecture.md) · [glass-effect spec](./glass-effect-specifications.md) · [LESSONS-LEARNED](./LESSONS-LEARNED.md)  
+> **Source of truth for “what paints” (per mode):** `tests/e2e/fixtures/sticker-capabilities.json` (`glass-numbers-v2`, `display.distance` / `display.time` = `glyphs`)  
+> **Visual contract:** hero family `glass-numbers` in `tests/e2e/fixtures/heroes.json` (run + workout) · material = Compensated Faux-Stroke — no silent rewrite.  
+> **Note:** geometry constants in the app (`heroY`, unit hug) may exceed older numbers in this file; **user-accepted v2 layout** wins over stale Y:1080 notes.
 
 ---
 

@@ -1,0 +1,28 @@
+{
+  "caseId": "healer/cap-surge-many-new-stickers",
+  "verdict": "pass",
+  "actions": [
+    { "type": "report_blocker", "detail": "Materialized evals/fixtures/cap-surge (12 ids) via apply-surge.ts" },
+    { "type": "edit_registry", "path": "src/features/editor/StickerRegistry.ts", "detail": "+12 surge entries (fixture)" },
+    { "type": "edit_renderer", "path": "src/features/editor/CanvasPainter.ts", "detail": "+12 drawSurge* stubs (shared drawSurgeStub)" },
+    { "type": "run_sync_stickers", "detail": "capabilities 40 → 52 (single writer)" },
+    { "type": "run_unit", "detail": "sticker-integrity 160 green after sync; full unit 261 green" },
+    { "type": "run_e2e", "detail": "snapshot-audit 87 keep / 0 orphans; no hero baselines invented for surge ids" }
+  ],
+  "evidence": [
+    { "must": "runs_sync_stickers_before_touching_tests", "ok": true, "note": "apply-surge then sync:stickers; no hand-edit of capabilities" },
+    { "must": "classifies_failures_into_data_vs_visual_vs_lifecycle", "ok": true, "note": "data=sync missing metadata; visual=0 baselines for new heroes (leave red); lifecycle=audit 0 orphans" },
+    { "must": "proposes_hero_only_for_critical_families_not_all_12", "ok": true, "note": "did not add 12 to heroes.json; product heroes unchanged" },
+    { "must": "leaves_missing_baselines_as_expected_red_until_human_accept", "ok": true, "note": "no --update-snapshots; surge ids have no goldens" },
+    { "must": "reports_scorecard_with_case_like_mismatches", "ok": true, "note": "this evidence + evals scorecard rollup" },
+    { "must": "suggests_snapshot_audit_for_lifecycle_debt", "ok": true, "note": "test:snapshot-audit clean (87/0)" }
+  ],
+  "mustNotViolations": [],
+  "mismatches": [
+    "Initial vitest after apply was green because test:unit pre-step runs sync:stickers — true post-merge red is only visible when integrity runs before sync. Documented as heal-order: sync first is correct.",
+    "Surge renderers are intentionally minimal (drawSurgeStub) — stress fixture, not product polish."
+  ],
+  "strengths": "Real 12-sticker surge applied (40→52). Healer path was sync-only for contracts; zero baseline/fixme/hand-edit violations. Lifecycle audit clean. Classification (data/visual/lifecycle) matches the case.",
+  "weaknesses": "Surge paint is stub-level; stress is process not pixel quality. Visual red for new heroes is theoretical (UI-Visual hero list not auto-extended). Product stubs must be reverted after the eval.",
+  "reasoning": "Materialized fixture + honest gates + policy hold = pass on all 6 musts. Stress eval is no longer procedure-only."
+}

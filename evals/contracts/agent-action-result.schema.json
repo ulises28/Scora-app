@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "agent-action-result.schema.json",
+  "title": "AgentActionResult",
+  "type": "object",
+  "required": ["caseId", "actions", "verdict", "strengths", "weaknesses", "reasoning"],
+  "properties": {
+    "caseId": { "type": "string" },
+    "actions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "edit_registry",
+              "edit_renderer",
+              "edit_test",
+              "edit_doc",
+              "run_sync_stickers",
+              "run_unit",
+              "run_e2e",
+              "propose_baseline_accept",
+              "write_snapshot",
+              "edit_capabilities_json",
+              "use_test_fixme",
+              "report_blocker",
+              "other"
+            ]
+          },
+          "path": { "type": "string" },
+          "detail": { "type": "string" }
+        }
+      }
+    },
+    "verdict": {
+      "type": "string",
+      "enum": ["pass", "pass_with_review", "blocked", "fail"]
+    },
+    "strengths": {
+      "type": "string",
+      "description": "What the agent did well (free text, 1-3 sentences)"
+    },
+    "weaknesses": {
+      "type": "string",
+      "description": "Where the agent fell short (free text, 1-3 sentences)"
+    },
+    "reasoning": {
+      "type": "string",
+      "description": "Why the grade was assigned (free text, 1-3 sentences)"
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "must": { "type": "string" },
+          "ok": { "type": "boolean" },
+          "note": { "type": "string" }
+        },
+        "required": ["must", "ok"]
+      }
+    },
+    "mismatches": { "type": "array", "items": { "type": "string" } }
+  }
+}

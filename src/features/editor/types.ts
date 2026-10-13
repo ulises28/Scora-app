@@ -24,6 +24,15 @@ export interface TemplateFeatures {
 
 export type StickerCategory = 'distance' | 'workout' | 'all' | 'map';
 
+/**
+ * How a metric value is put on the canvas (drives test assertions).
+ * - numeric: `fillText` of the formatted number (e.g. "5.00")
+ * - spelled: `fillText` of number words (e.g. "five")
+ * - segments: 7-segment / bar digits (not `fillText`) — unit label may still be text
+ * - glyphs: glass/liquid glyph pipeline (offscreen `fillText`) — unit/date may still be text
+ */
+export type PaintForm = 'numeric' | 'spelled' | 'segments' | 'glyphs';
+
 export interface StickerDefinition {
     id: string;
     features: TemplateFeatures;
@@ -36,6 +45,8 @@ export interface StickerDefinition {
     preferredCase?: 'uppercase' | 'lowercase' | 'title';
     expectedMetadata?: string[];
     expectedLabels?: string[];
+    /** Per-metric paint form; default is `numeric`. Part of the display contract. */
+    paintForm?: Partial<Record<'distance' | 'time' | 'heartRate' | 'pace', PaintForm>>;
     /** Skip from gallery display */
     hidden?: boolean;
     render: (ctx: CanvasRenderingContext2D, stats: any, textColor: string, showLogo?: boolean) => void;

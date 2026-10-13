@@ -1,6 +1,10 @@
 # Studio Liquid Glass Effect Specifications
 
-This document defines the authoritative 4-Layer Canvas 2D rendering formula and architectural rules for creating premium, high-visibility 3D Liquid Glass stickers in Scora.
+This document defines the authoritative 4-Layer Canvas 2D rendering formula and architectural rules for creating premium, high-quality 3D Liquid Glass stickers in Scora.
+
+> **Related:** [TESTING.md](../TESTING.md) (harness) · [qa-architecture](../tests/e2e/docs/qa-architecture.md) · [glass-numbers spec](./glass-numbers-specifications.md) · [LESSONS-LEARNED](./LESSONS-LEARNED.md)  
+> **Tests:** `tests/unit/glass-buffer-budget.test.ts` · hero visual `glass-numbers` family · display contract `paintForm: glyphs`  
+> **Locks:** zero `strokeText` · 1:1 offscreen anisotropic text · continuous rim (256+ steps + micro-blur) · do not strip CFS for speed.
 
 ---
 

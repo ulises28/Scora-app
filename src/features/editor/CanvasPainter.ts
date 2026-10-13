@@ -10,7 +10,7 @@
  */
 
 import { getThemeColors, drawStatWithUnit, setLetterSpacing, drawRoutePath, decodePolyline, getDynamicStats, drawMetricBlock, parseDurationParts, drawDurationSequence, normalizeSport, getContentBounds, fitBoundsTransform, boundsFillFrame, cropCanvasToContent, padCanvasToFrame, deriveContrastInk } from './CanvasUtils';
-import { formatTime } from '../../utils/formatters';
+import { formatTime, spellNumber } from '../../utils/formatters';
 import { getRaceEvent, daysUntil } from '../../utils/raceEvent';
 import { drawGlassPanel, drawGlassText, drawLiquidGlyphs, glassSsaa, glassBufScale, releaseCanvas, paintContinuousRim } from './GlassText';
 import { applyLiquidMetalEffect } from './LiquidMetalRenderer';
@@ -8729,22 +8729,19 @@ export function drawDigitalLed(ctx: CanvasRenderingContext2D, stats: any, textCo
     const paceVal = s2?.value || '';
     const paceUnit = (s2?.unit || s2?.label || '').toUpperCase();
 
+    // Date MM.DD.YY (LED dots, classic stamp)
     const dateStr = stats.rawDate
         ? new Intl.DateTimeFormat('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' })
             .format(new Date(stats.rawDate.replace('Z', '')))
+            .replace(/\//g, '.')
         : '01.01.25';
 
-    // LED ink follows the picker. White = pure white (no orange bleed).
-    const on = (textColor && textColor.startsWith('#'))
-        ? textColor
-        : (textColor === 'black' ? '#111111' : '#ffffff');
-    // Unlit segments: same hue, very low alpha — never orange when ink is white
-    const off = on.length === 7
-        ? `${on}14`
-        : 'rgba(255,255,255,0.08)';
+    const custom = textColor && textColor.startsWith('#');
+    const litColor = custom ? textColor! : (textColor === 'black' ? '#111111' : '#ffffff');
+    // Lit with soft bloom; unlit = visible ghost segments (off lights)
+    const LIT_A = 0.95;
+    const OFF_A = 0.18;
 
-    // ── 7-segment glyph (classic LED) ──
-    // segments: 0=top, 1=tl, 2=tr, 3=mid, 4=bl, 5=br, 6=bot
     const DIGITS: Record<string, number[]> = {
         '0': [1, 1, 1, 0, 1, 1, 1],
         '1': [0, 0, 1, 0, 0, 1, 0],
@@ -8768,72 +8765,77 @@ export function drawDigitalLed(ctx: CanvasRenderingContext2D, stats: any, textCo
         horizontal: boolean,
         lit: boolean
     ) => {
-        const t = Math.max(6, (horizontal ? h : w) * 0.22); // thickness
-        g.fillStyle = lit ? on : off;
-        // Soft glow only on lit segments, matching ink (no warm bleed on white)
-        g.shadowColor = lit ? on : 'transparent';
-        g.shadowBlur = lit ? 12 : 0;
+        const t = Math.max(6, (horizontal ? h : w) * 0.2);
+        g.globalAlpha = lit ? LIT_A : OFF_A;
+        g.fillStyle = litColor;
+        if (lit) {
+            g.shadowColor = litColor;
+            g.shadowBlur = t * 1.1;
+        }
         g.beginPath();
         if (horizontal) {
-            // hexagonal bar
             const cy = y + h / 2;
             g.moveTo(x + t * 0.5, cy);
-            g.lineTo(x + t, y + 2);
-            g.lineTo(x + w - t, y + 2);
+            g.lineTo(x + t, y + 1);
+            g.lineTo(x + w - t, y + 1);
             g.lineTo(x + w - t * 0.5, cy);
-            g.lineTo(x + w - t, y + h - 2);
-            g.lineTo(x + t, y + h - 2);
+            g.lineTo(x + w - t, y + h - 1);
+            g.lineTo(x + t, y + h - 1);
         } else {
             const cx = x + w / 2;
             g.moveTo(cx, y + t * 0.5);
-            g.lineTo(x + 2, y + t);
-            g.lineTo(x + 2, y + h - t);
+            g.lineTo(x + 1, y + t);
+            g.lineTo(x + 1, y + h - t);
             g.lineTo(cx, y + h - t * 0.5);
-            g.lineTo(x + w - 2, y + h - t);
-            g.lineTo(x + w - 2, y + t);
+            g.lineTo(x + w - 1, y + h - t);
+            g.lineTo(x + w - 1, y + t);
         }
         g.closePath();
         g.fill();
         g.shadowBlur = 0;
+        g.globalAlpha = 1;
     };
 
     const drawDigit = (g: CanvasRenderingContext2D, ch: string, x: number, y: number, dw: number, dh: number) => {
         if (ch === ':') {
-            g.fillStyle = on;
-            g.shadowColor = on;
-            g.shadowBlur = 14;
-            const r = dw * 0.12;
+            g.globalAlpha = LIT_A;
+            g.fillStyle = litColor;
+            g.shadowColor = litColor;
+            g.shadowBlur = 10;
+            const r = Math.min(dw, dh) * 0.11;
             g.beginPath();
-            g.arc(x + dw / 2, y + dh * 0.32, r, 0, Math.PI * 2);
+            g.arc(x + dw / 2, y + dh * 0.3, r, 0, Math.PI * 2);
             g.fill();
             g.beginPath();
-            g.arc(x + dw / 2, y + dh * 0.68, r, 0, Math.PI * 2);
+            g.arc(x + dw / 2, y + dh * 0.7, r, 0, Math.PI * 2);
             g.fill();
             g.shadowBlur = 0;
+            g.globalAlpha = 1;
             return;
         }
         if (ch === '.') {
-            g.fillStyle = on;
-            g.shadowColor = on;
-            g.shadowBlur = 14;
+            g.globalAlpha = LIT_A;
+            g.fillStyle = litColor;
+            g.shadowColor = litColor;
+            g.shadowBlur = 10;
             g.beginPath();
-            g.arc(x + dw / 2, y + dh * 0.9, dw * 0.1, 0, Math.PI * 2);
+            g.arc(x + dw / 2, y + dh * 0.88, Math.min(dw, dh) * 0.1, 0, Math.PI * 2);
             g.fill();
             g.shadowBlur = 0;
+            g.globalAlpha = 1;
             return;
         }
+
         const seg = DIGITS[ch] || DIGITS[' '];
         const t = Math.max(6, dw * 0.18);
         const half = dh / 2;
-        // top / mid / bot
-        drawSeg(g, x + t * 0.4, y, dw - t * 0.8, t, true, !!seg[0]);
-        drawSeg(g, x + t * 0.4, y + half - t / 2, dw - t * 0.8, t, true, !!seg[3]);
-        drawSeg(g, x + t * 0.4, y + dh - t, dw - t * 0.8, t, true, !!seg[6]);
-        // sides
-        drawSeg(g, x, y + t * 0.4, t, half - t * 0.6, false, !!seg[1]);
-        drawSeg(g, x + dw - t, y + t * 0.4, t, half - t * 0.6, false, !!seg[2]);
-        drawSeg(g, x, y + half + t * 0.2, t, half - t * 0.6, false, !!seg[4]);
-        drawSeg(g, x + dw - t, y + half + t * 0.2, t, half - t * 0.6, false, !!seg[5]);
+        drawSeg(g, x + t * 0.55, y, dw - t * 1.1, t, true, !!seg[0]);
+        drawSeg(g, x + t * 0.55, y + half - t / 2, dw - t * 1.1, t, true, !!seg[3]);
+        drawSeg(g, x + t * 0.55, y + dh - t, dw - t * 1.1, t, true, !!seg[6]);
+        drawSeg(g, x, y + t * 0.55, t, half - t * 0.9, false, !!seg[1]);
+        drawSeg(g, x + dw - t, y + t * 0.55, t, half - t * 0.9, false, !!seg[2]);
+        drawSeg(g, x, y + half + t * 0.15, t, half - t * 0.9, false, !!seg[4]);
+        drawSeg(g, x + dw - t, y + half + t * 0.15, t, half - t * 0.9, false, !!seg[5]);
     };
 
     const drawLedText = (text: string, cx: number, baselineY: number, digitH: number) => {
@@ -8842,46 +8844,48 @@ export function drawDigitalLed(ctx: CanvasRenderingContext2D, stats: any, textCo
         const chars = text.split('');
         let total = 0;
         for (const ch of chars) {
-            total += (ch === ':' || ch === '.') ? dw * 0.45 : dw;
+            total += (ch === ':' || ch === '.') ? dw * 0.42 : dw;
             total += gap;
         }
         total -= gap;
         let px = cx - total / 2;
         const py = baselineY - digitH;
         for (const ch of chars) {
-            const cw = (ch === ':' || ch === '.') ? dw * 0.45 : dw;
+            const cw = (ch === ':' || ch === '.') ? dw * 0.42 : dw;
             drawDigit(ctx, ch, px, py, cw, digitH);
             px += cw + gap;
         }
     };
 
     ctx.save();
-    // No dark vignette — sticker must sit cleanly over photos
-    // Date stamp (smaller, top)
-    drawLedText(dateStr.replace(/\//g, '.'), 540, 520, 110);
+    // Reference hierarchy: date stamp · hero distance · pace — tight stack
+    drawLedText(dateStr, 540, 480, 115);
 
-    // Distance (hero)
     if (distVal) {
-        drawLedText(distVal, 540, 980, 280);
-        ctx.font = "600 56px 'Outfit', sans-serif";
+        drawLedText(distVal, 540, 860, 290);
+        ctx.font = "700 58px 'Outfit', sans-serif";
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillStyle = on;
-        ctx.shadowColor = on;
+        ctx.globalAlpha = LIT_A;
+        ctx.fillStyle = litColor;
+        ctx.shadowColor = litColor;
         ctx.shadowBlur = 16;
-        ctx.fillText(distUnit, 540, 1080);
+        ctx.fillText(distUnit, 540, 965);
         ctx.shadowBlur = 0;
+        ctx.globalAlpha = 1;
     }
 
-    // Pace
     if (paceVal) {
-        drawLedText(paceVal.includes(':') ? paceVal : paceVal, 540, 1320, 140);
-        ctx.font = "500 40px 'Outfit', sans-serif";
+        drawLedText(paceVal, 540, 1180, 155);
+        ctx.font = "700 48px 'Outfit', sans-serif";
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillStyle = on;
-        ctx.globalAlpha = 0.85;
-        ctx.fillText(paceUnit, 540, 1410);
+        ctx.globalAlpha = LIT_A;
+        ctx.fillStyle = litColor;
+        ctx.shadowColor = litColor;
+        ctx.shadowBlur = 12;
+        ctx.fillText(paceUnit, 540, 1285);
+        ctx.shadowBlur = 0;
         ctx.globalAlpha = 1;
     }
 
@@ -9749,33 +9753,7 @@ export function drawCircleLetters(ctx: CanvasRenderingContext2D, stats: any, tex
 }
 
 // ─── Word Metric + Select Highlight (distance OR duration) ───────────────────
-
-const SPELL_ONES = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
-const SPELL_TENS = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
-
-function spellInt(n: number): string {
-    n = Math.max(0, Math.floor(n));
-    if (n < 20) return SPELL_ONES[n];
-    if (n < 100) {
-        const t = Math.floor(n / 10);
-        const o = n % 10;
-        return o ? `${SPELL_TENS[t]} ${SPELL_ONES[o]}` : SPELL_TENS[t];
-    }
-    if (n < 1000) {
-        const h = Math.floor(n / 100);
-        const rest = n % 100;
-        return rest ? `${SPELL_ONES[h]} hundred ${spellInt(rest)}` : `${SPELL_ONES[h]} hundred`;
-    }
-    const th = Math.floor(n / 1000);
-    const rest = n % 1000;
-    return rest ? `${spellInt(th)} thousand ${spellInt(rest)}` : `${spellInt(th)} thousand`;
-}
-
-function spellNumber(n: number): string {
-    if (!Number.isFinite(n)) return 'zero';
-    // Whole units only — 21.99 / 21.02 → "twenty one" (never "point…")
-    return spellInt(Math.floor(n));
-}
+// spellNumber lives in src/utils/formatters.ts (shared with display-contract tests).
 
 /** Distance (km) or duration (minutes) for hero stickers — never hardcode units. */
 function resolveDistanceOrDuration(stats: any): {
@@ -10040,6 +10018,46 @@ export function drawRaceCountdown(ctx: CanvasRenderingContext2D, stats: any, tex
     ctx.moveTo(leftX, countY + 36);
     ctx.lineTo(rightX, countY + 36);
     ctx.stroke();
+
+    ctx.restore();
+}
+
+/**
+ * trail-summary — run/bike: distance + pace + map; workout: duration + avg HR (no map).
+ * Mode contract lives in sticker-capabilities.json (sync:stickers).
+ */
+export function drawTrailSummary(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const hasDistance = Boolean(stats.hasDistance || (stats.distanceVal && parseFloat(stats.distanceVal) > 0));
+    const { s1, s2 } = getDynamicStats(stats);
+    const ink = textColor || '#ffffff';
+
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.fillStyle = ink;
+    ctx.font = "700 48px 'Outfit', sans-serif";
+    ctx.fillText('TRAIL', 540, 420);
+
+    if (hasDistance) {
+        // Distance mode: distance + pace + map
+        ctx.font = "800 160px 'Archivo Black', sans-serif";
+        ctx.fillText(s1?.value || stats.distanceVal || '0.00', 540, 720);
+        ctx.font = "600 64px 'Outfit', sans-serif";
+        ctx.fillText((s1?.unit || 'km').toUpperCase(), 540, 820);
+        ctx.font = "500 56px 'Outfit', sans-serif";
+        ctx.fillText(`${s2?.value || stats.subValue || ''} ${(s2?.unit || '/km')}`, 540, 960);
+        if (stats.polyline) {
+            drawRoutePath(ctx, stats.polyline, 220, 1080, 640, { color: ink, strokeWidth: 10 });
+        }
+    } else {
+        // Workout mode: duration + avg HR (no map)
+        ctx.font = "800 160px 'Archivo Black', sans-serif";
+        ctx.fillText(stats.timeStr || s1?.value || '0', 540, 720);
+        ctx.font = "600 64px 'Outfit', sans-serif";
+        ctx.fillText('MIN', 540, 820);
+        const hr = stats.avgHeartrate || stats.maxHeartrate || '';
+        ctx.font = "500 72px 'Outfit', sans-serif";
+        ctx.fillText(hr ? `${hr} BPM` : '—', 540, 1000);
+    }
 
     ctx.restore();
 }

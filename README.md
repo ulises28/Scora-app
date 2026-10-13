@@ -77,18 +77,29 @@ The project utilizes a dynamic `webServer` configuration in Playwright to balanc
 
 ## 🤖 Advanced Testing Infrastructure
 
-### 1. Token-Efficiency Strategy (Resource Optimization)
-To minimize CI resource consumption and LLM token usage:
-- **Day-to-day (CI/CD)**: Executes only `@smoke` and `@visual` tests against the lightweight Vite server.
-- **Midnight Regression**: A scheduled job runs the exhaustive `@regression` suite against the heavy Vercel environment.
+> **Full harness map:** [`TESTING.md`](./TESTING.md) — contracts, evals (1–10), agents, docs rules.
 
-### 2. The Integrity Engine (Sticker Registry Sync)
-To prevent drift between code and documentation:
-- **`sticker-sync.ts`**: Automatically audits the `StickerRegistry` and generates `sticker-capabilities.json`.
-- **Capability Pinning**: E2E tests use this JSON to dynamically generate a test matrix for all registered stickers.
+### 1. Display contract (source of truth)
+- **`sticker-capabilities.json`** is generated **only** by `pnpm run sync:stickers` from `StickerRegistry.ts` (`features` + `paintForm`).
+- Declares **which data each sticker paints per activity mode** (`run` / `bike` / `workout`) and **how** (`numeric` / `spelled` / `segments` / `glyphs`).
+- Unit + E2E data scan assert against this contract (same sticker ≠ same metrics on every sport).
 
-### 3. Intelligent Failure Diagnostics (`ci-diagnostics.cjs`)
-A custom post-test analyzer that groups failures by project, cleans ANSI codes, and injects **Quick Debug Stacks** directly into the GitHub Job Summary. It explicitly detects **Infrastructure Mismatches** (e.g., engine vs. container version) to prevent false-positive functional triage.
+### 2. Honest auto-healing (propose-only)
+- CI / `scripts/qa-agent.sh` **never** silently rewrite visual baselines.
+- Human accepts pixels via `pnpm run test:e2e:visual:accept` or `qa-agent.sh --accept-snapshots`.
+- Healer agent policy: no bare `test.fixme`, no hand-edited capabilities, no threshold loosening.
+
+### 3. Hero visuals (managed goldens)
+- Small named set in `tests/e2e/fixtures/heroes.json` (**sticker × mode**), linux/Docker canonical.
+- Lifecycle audit: `pnpm run test:snapshot-audit` (orphans fail until reviewed).
+
+### 4. Prompt & code evals (1–10)
+- Cases under `evals/cases/` with **expected generated content** + `strengths` / `weaknesses` / `reasoning`.
+- Code grader (syntax TS/JS/PY/JSON, secrets, overcode) + model rubric → **merged score**.
+- Fail → [prompt improvement loop](./evals/docs/prompt-improvement-loop.md).
+
+### 5. Intelligent Failure Diagnostics (`ci-diagnostics.cjs`)
+A custom post-test analyzer that groups failures by project, cleans ANSI codes, and injects **Quick Debug Stacks** directly into the GitHub Job Summary.
 
 ---
 
@@ -129,16 +140,39 @@ To test real Strava integration and serverless functions:
 
 ## ⚙️ Testing Command Reference
 
+See [`TESTING.md`](./TESTING.md) for the complete map. Everyday loop:
+
+```bash
+# Contracts & unit (also runs sync:stickers)
+pnpm run test:unit
+
+# E2E smoke (mock auth, no Docker)
+pnpm run test:e2e:smoke
+
+# Display-contract paint scan (sticker × mode)
+pnpm run test:e2e:scan
+
+# Hero visuals (accept baselines only with :accept)
+pnpm run test:e2e:visual
+pnpm run test:e2e:visual:accept
+
+# Lifecycle
+pnpm run test:snapshot-audit
+
+# Eval scorecard 1–10 + merged code/model grader
+pnpm run evals
+pnpm run evals:grade:all
+```
+
 ### 🧪 Tier 1: UI & Visual (Vite-Powered)
 ```bash
 # 🚀 Safe Smoke Suite (Daily Dev)
-# Automatically cleans up old results and runs the fast, backend-free UI-Core suite
 pnpm run test:e2e:smoke
 
 # Run specific UI test
-pnpm exec playwright test tests/e2e/ui/canvas_content_verification.spec.ts --project="UI-Core"
+pnpm exec playwright test tests/e2e/ui/editor_navigation_flows.spec.ts --project="UI-Core"
 
-# Run Visual tests in Docker (Absolute Truth)
+# Run Visual tests in Docker (linux goldens)
 pnpm run test:sync-linux
 ```
 
