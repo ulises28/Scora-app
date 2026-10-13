@@ -8729,21 +8729,19 @@ export function drawDigitalLed(ctx: CanvasRenderingContext2D, stats: any, textCo
     const paceVal = s2?.value || '';
     const paceUnit = (s2?.unit || s2?.label || '').toUpperCase();
 
-    // Date MM/DD/YY (slashes — digital watch)
+    // Date MM/DD/YY (slashes)
     const dateStr = stats.rawDate
         ? new Intl.DateTimeFormat('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' })
             .format(new Date(stats.rawDate.replace('Z', '')))
         : '01/01/25';
 
     const custom = textColor && textColor.startsWith('#');
-    const ink = custom ? textColor! : (textColor === 'black' ? '#111111' : '#ffffff');
-    // Digital watch: lit slightly soft, unlit ghost segments stay visible
-    const LIT_A = 0.92;
-    const OFF_A = 0.14;
+    const litColor = custom ? textColor! : (textColor === 'black' ? '#111111' : '#ffffff');
+    // Lit with soft bloom; unlit = visible ghost segments (off lights)
+    const LIT_A = 0.95;
+    const OFF_A = 0.18;
 
-    // Classic 7-segment map
-    // 0=top 1=tl 2=tr 3=mid 4=bl 5=br 6=bot
-    const SEG: Record<string, number[]> = {
+    const DIGITS: Record<string, number[]> = {
         '0': [1, 1, 1, 0, 1, 1, 1],
         '1': [0, 0, 1, 0, 0, 1, 0],
         '2': [1, 0, 1, 1, 1, 0, 1],
@@ -8754,44 +8752,62 @@ export function drawDigitalLed(ctx: CanvasRenderingContext2D, stats: any, textCo
         '7': [1, 0, 1, 0, 0, 1, 0],
         '8': [1, 1, 1, 1, 1, 1, 1],
         '9': [1, 1, 1, 1, 0, 1, 1],
+        ' ': [0, 0, 0, 0, 0, 0, 0],
+        ':': [0, 0, 0, 0, 0, 0, 0],
+        '.': [0, 0, 0, 0, 0, 0, 0],
+        '/': [0, 0, 0, 0, 0, 0, 0],
     };
 
-    /** Flat-ended segment bar with clear inset so neighbors never fuse. */
-    const bar = (
+    const drawSeg = (
         g: CanvasRenderingContext2D,
-        x: number, y: number, w: number, h: number,
+        x: number, y: number,
+        w: number, h: number,
         horizontal: boolean,
         lit: boolean
     ) => {
+        const t = Math.max(5, (horizontal ? h : w) * 0.17);
         g.globalAlpha = lit ? LIT_A : OFF_A;
-        g.fillStyle = ink;
+        g.fillStyle = litColor;
         if (lit) {
-            g.shadowColor = ink;
-            g.shadowBlur = Math.min(w, h) * 0.55;
+            g.shadowColor = litColor;
+            g.shadowBlur = t * 1.1;
         }
-        const inset = horizontal ? w * 0.08 : h * 0.08;
+        g.beginPath();
         if (horizontal) {
-            g.fillRect(x + inset, y, w - inset * 2, h);
+            const cy = y + h / 2;
+            g.moveTo(x + t * 0.5, cy);
+            g.lineTo(x + t, y + 1);
+            g.lineTo(x + w - t, y + 1);
+            g.lineTo(x + w - t * 0.5, cy);
+            g.lineTo(x + w - t, y + h - 1);
+            g.lineTo(x + t, y + h - 1);
         } else {
-            g.fillRect(x, y + inset, w, h - inset * 2);
+            const cx = x + w / 2;
+            g.moveTo(cx, y + t * 0.5);
+            g.lineTo(x + 1, y + t);
+            g.lineTo(x + 1, y + h - t);
+            g.lineTo(cx, y + h - t * 0.5);
+            g.lineTo(x + w - 1, y + h - t);
+            g.lineTo(x + w - 1, y + t);
         }
+        g.closePath();
+        g.fill();
         g.shadowBlur = 0;
         g.globalAlpha = 1;
     };
 
     const drawDigit = (g: CanvasRenderingContext2D, ch: string, x: number, y: number, dw: number, dh: number) => {
-        // Separators
         if (ch === ':') {
             g.globalAlpha = LIT_A;
-            g.fillStyle = ink;
-            g.shadowColor = ink;
-            g.shadowBlur = 8;
-            const r = Math.min(dw, dh) * 0.1;
+            g.fillStyle = litColor;
+            g.shadowColor = litColor;
+            g.shadowBlur = 10;
+            const r = Math.min(dw, dh) * 0.11;
             g.beginPath();
-            g.arc(x + dw / 2, y + dh * 0.28, r, 0, Math.PI * 2);
+            g.arc(x + dw / 2, y + dh * 0.3, r, 0, Math.PI * 2);
             g.fill();
             g.beginPath();
-            g.arc(x + dw / 2, y + dh * 0.72, r, 0, Math.PI * 2);
+            g.arc(x + dw / 2, y + dh * 0.7, r, 0, Math.PI * 2);
             g.fill();
             g.shadowBlur = 0;
             g.globalAlpha = 1;
@@ -8799,20 +8815,21 @@ export function drawDigitalLed(ctx: CanvasRenderingContext2D, stats: any, textCo
         }
         if (ch === '.') {
             g.globalAlpha = LIT_A;
-            g.fillStyle = ink;
-            g.shadowColor = ink;
-            g.shadowBlur = 8;
+            g.fillStyle = litColor;
+            g.shadowColor = litColor;
+            g.shadowBlur = 10;
             g.beginPath();
-            g.arc(x + dw / 2, y + dh * 0.9, Math.min(dw, dh) * 0.09, 0, Math.PI * 2);
+            g.arc(x + dw / 2, y + dh * 0.88, Math.min(dw, dh) * 0.1, 0, Math.PI * 2);
             g.fill();
             g.shadowBlur = 0;
             g.globalAlpha = 1;
             return;
         }
+
         if (ch === '/') {
             g.globalAlpha = LIT_A;
-            g.fillStyle = ink;
-            g.shadowColor = ink;
+            g.fillStyle = litColor;
+            g.shadowColor = litColor;
             g.shadowBlur = 8;
             const sw = Math.max(4, dw * 0.12);
             g.save();
@@ -8824,73 +8841,65 @@ export function drawDigitalLed(ctx: CanvasRenderingContext2D, stats: any, textCo
             g.globalAlpha = 1;
             return;
         }
-
-        const on = SEG[ch];
-        if (!on) return; // unknown → skip (space-like)
-
-        // Segment size: thinner than half so blocks stay open (watch readability)
-        const tw = Math.max(5, dw * 0.16);       // horizontal bar thickness
-        const th = Math.max(5, dh * 0.11);       // vertical bar thickness
-        const mid = dh / 2;
-
-        // Always draw all 7 — unlit = ghost "off" light
-        bar(g, x + tw * 0.5, y, dw - tw, tw, true, !!on[0]);
-        bar(g, x + tw * 0.5, mid - tw / 2, dw - tw, tw, true, !!on[3]);
-        bar(g, x + tw * 0.5, dh - tw, dw - tw, tw, true, !!on[6]);
-        bar(g, x, y + tw * 0.5, tw, mid - tw, false, !!on[1]);
-        bar(g, x + dw - tw, y + tw * 0.5, tw, mid - tw, false, !!on[2]);
-        bar(g, x, mid + tw * 0.5, tw, mid - tw, false, !!on[4]);
-        bar(g, x + dw - tw, mid + tw * 0.5, tw, mid - tw, false, !!on[5]);
+        const seg = DIGITS[ch] || DIGITS[' '];
+        const t = Math.max(6, dw * 0.18);
+        const half = dh / 2;
+        drawSeg(g, x + t * 0.55, y, dw - t * 1.1, t, true, !!seg[0]);
+        drawSeg(g, x + t * 0.55, y + half - t / 2, dw - t * 1.1, t, true, !!seg[3]);
+        drawSeg(g, x + t * 0.55, y + dh - t, dw - t * 1.1, t, true, !!seg[6]);
+        drawSeg(g, x, y + t * 0.55, t, half - t * 0.9, false, !!seg[1]);
+        drawSeg(g, x + dw - t, y + t * 0.55, t, half - t * 0.9, false, !!seg[2]);
+        drawSeg(g, x, y + half + t * 0.15, t, half - t * 0.9, false, !!seg[4]);
+        drawSeg(g, x + dw - t, y + half + t * 0.15, t, half - t * 0.9, false, !!seg[5]);
     };
 
     const drawLedText = (text: string, cx: number, baselineY: number, digitH: number) => {
-        const dw = digitH * 0.58;
-        const gap = digitH * 0.16;
-        const sepW = dw * 0.4;
+        const dw = digitH * 0.62;
+        const gap = digitH * 0.12;
         const chars = text.split('');
         let total = 0;
         for (const ch of chars) {
-            total += (ch === ':' || ch === '.' || ch === '/') ? sepW : dw;
+            total += (ch === ':' || ch === '.' || ch === '/') ? dw * 0.42 : dw;
             total += gap;
         }
         total -= gap;
         let px = cx - total / 2;
         const py = baselineY - digitH;
         for (const ch of chars) {
-            const cw = (ch === ':' || ch === '.' || ch === '/') ? sepW : dw;
+            const cw = (ch === ':' || ch === '.' || ch === '/') ? dw * 0.42 : dw;
             drawDigit(ctx, ch, px, py, cw, digitH);
             px += cw + gap;
         }
     };
 
     ctx.save();
-    // Date · distance · pace (watch hierarchy)
-    drawLedText(dateStr, 540, 520, 115);
+    // Digital watch stack: date · hero distance · pace (clear gaps, no overlap)
+    drawLedText(dateStr, 540, 560, 120);
 
     if (distVal) {
-        drawLedText(distVal, 540, 980, 290);
+        drawLedText(distVal, 540, 1080, 300);
         ctx.font = "700 64px 'Outfit', sans-serif";
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.globalAlpha = LIT_A;
-        ctx.fillStyle = ink;
-        ctx.shadowColor = ink;
+        ctx.fillStyle = litColor;
+        ctx.shadowColor = litColor;
         ctx.shadowBlur = 16;
-        ctx.fillText(distUnit, 540, 1100);
+        ctx.fillText(distUnit, 540, 1210);
         ctx.shadowBlur = 0;
         ctx.globalAlpha = 1;
     }
 
     if (paceVal) {
-        drawLedText(paceVal, 540, 1360, 155);
+        drawLedText(paceVal, 540, 1520, 160);
         ctx.font = "700 52px 'Outfit', sans-serif";
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.globalAlpha = LIT_A;
-        ctx.fillStyle = ink;
-        ctx.shadowColor = ink;
+        ctx.fillStyle = litColor;
+        ctx.shadowColor = litColor;
         ctx.shadowBlur = 12;
-        ctx.fillText(paceUnit, 540, 1480);
+        ctx.fillText(paceUnit, 540, 1630);
         ctx.shadowBlur = 0;
         ctx.globalAlpha = 1;
     }
