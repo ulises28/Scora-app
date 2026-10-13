@@ -52,6 +52,8 @@ export const ACTIVE_STICKER_LIST: StickerDefinition[] = [
     { id: 'word-metric', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, duration: true }, expectedLabels: ['KILOMETERS', 'MINUTES'], paintForm: { distance: 'spelled', time: 'spelled' }, render: Renderers.drawWordMetric },
     { id: 'select-highlight', supportsCustomColor: true, category: 'all', supportsBlackText: false, features: { distance: true, duration: true }, render: Renderers.drawSelectHighlight },
     { id: 'trail-summary', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, paceSpeed: true, duration: true, heartRate: true, map: true }, render: Renderers.drawTrailSummary },
+    { id: 'skyline-splits', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, paceSpeed: true, duration: true, alwaysShowDuration: true, heartRate: true }, render: Renderers.drawSkylineSplits },
+    { id: 'lab-datagrid', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, paceSpeed: true, duration: true, alwaysShowDuration: true, heartRate: true, elevation: true }, render: Renderers.drawLabDataGrid },
 ];
 
 // ─── 2. ARCHIVED / HIDDEN STICKERS ───────────────────────────────────────────
