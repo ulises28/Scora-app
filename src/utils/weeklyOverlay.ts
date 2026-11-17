@@ -5,13 +5,24 @@ import { months } from './formatters';
  * Calories policy (user 2026-11-17): Strava's activity LIST has no `calories` field
  * (detail-only). NEVER estimate — overlays show KM / MIN and only show CAL when a
  * real value exists.
+ *
+ * Selection model (user 2026-11-17): days and sports are CHECKBOX sets — the user
+ * ticks exactly the days (e.g. Mon + Wed + Fri) and sports (run / ride / swim /
+ * workout) that must count. Never a start→end range.
+ *
+ * Hero rules (user 2026-11-17):
+ * - Any selected session with distance → hero = total distance ("30km" = Mon 9 + Wed 7
+ *   + Sat 13). Day rows: km on days with distance, min on time-only days
+ *   ("monday km, tuesday min, wednesday km").
+ * - No distance sessions at all → hero = total time of ALL sessions ("Weekly Time"),
+ *   every day row in min.
  */
 
 export type Weekday = 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri' | 'Sat' | 'Sun';
 export const WEEKDAYS: Weekday[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-export type SportFilter = 'all' | 'run' | 'ride' | 'workout';
-export type SportClass = Exclude<SportFilter, 'all'>;
+export type SportClass = 'run' | 'ride' | 'swim' | 'workout';
+export const SPORTS: SportClass[] = ['run', 'ride', 'swim', 'workout'];
 
 export interface WeeklyActivity {
     id: string;
@@ -24,7 +35,12 @@ export interface WeeklyActivity {
     calories: number | null;
 }
 
-export interface DayRange { start: Weekday; end: Weekday }
+export interface WeeklySelection {
+    /** Checked days — any subset of Mon..Sun (checkboxes, not a range). */
+    days: Weekday[];
+    /** Checked sports — any subset (checkboxes). */
+    sports: SportClass[];
+}
 
 export interface DayBucket {
     weekday: Weekday;
@@ -40,7 +56,8 @@ export interface DayBucket {
 export function classifySport(type?: string): SportClass {
     const t = String(type || '').toLowerCase();
     if (t.includes('run') || t.includes('walk') || t.includes('hike')) return 'run';
-    if (t.includes('ride') || t.includes('bike') || t.includes('gravel')) return 'ride';
+    if (t.includes('ride') || t.includes('bike') || t.includes('gravel') || t.includes('cycle')) return 'ride';
+    if (t.includes('swim')) return 'swim';
     return 'workout';
 }
 
@@ -72,63 +89,39 @@ export function startOfWeek(d: Date): Date {
     return addDays(out, -shift);
 }
 
-/** Inclusive span going forward around the week: Mon→Sun = 7, Mon→Wed = 3. */
-export function rangeSpanDays(range: DayRange): number {
-    const s = WEEKDAYS.indexOf(range.start);
-    const e = WEEKDAYS.indexOf(range.end);
-    return ((e - s + 7) % 7) + 1;
-}
-
-/**
- * Rule (user 2026-11-17): max one week. Mon→Sun ok, Mon→Wed ok,
- * Mon→Mon NOT ok — same weekday means 8 days.
- */
-export function validateDayRange(range: DayRange): { ok: boolean; days: number; reason?: string } {
-    const s = WEEKDAYS.indexOf(range.start);
-    const e = WEEKDAYS.indexOf(range.end);
-    if (s < 0 || e < 0) return { ok: false, days: 0, reason: 'Unknown day' };
-    if (range.start === range.end) {
-        return { ok: false, days: 8, reason: `${range.start} to ${range.end} is more than a week` };
-    }
-    const days = rangeSpanDays(range);
-    if (days > 7) return { ok: false, days, reason: 'Range must be one week or less' };
-    return { ok: true, days };
-}
-
 function fmtKm(m: number, dp = 1): string {
     const km = m / 1000;
     return (km % 1 === 0 ? km.toFixed(0) : km.toFixed(dp));
 }
+/** Whole minutes, e.g. 48min / 150min. */
 function fmtMin(sec: number): string {
-    const total = Math.round(sec / 60);
-    if (total < 60) return `${total}m`;
-    return `${Math.floor(total / 60)}h ${total % 60}m`;
+    return `${Math.round(sec / 60)}min`;
 }
 
+/**
+ * Buckets the selected week days × selected sports. Only days that actually have a
+ * matching activity produce a bucket (rows show Mon 9km / Wed 7km / Sat 13km — not
+ * empty days). Order follows the week, Mon→Sun.
+ */
 export function aggregateWeek(
     activities: WeeklyActivity[],
-    range: DayRange,
-    filter: SportFilter,
+    sel: WeeklySelection,
     anchor?: Date
 ): DayBucket[] {
-    const v = validateDayRange(range);
-    if (!v.ok) return [];
-    const weekStart = startOfWeek(anchor ?? new Date());
-    const start = addDays(weekStart, WEEKDAYS.indexOf(range.start));
-    const end = addDays(start, v.days - 1);
-    const lo = ymd(start), hi = ymd(end);
+    const days = sel.days.filter(d => (WEEKDAYS as string[]).includes(d));
+    const sports = new Set(sel.sports);
+    if (!days.length || !sports.size) return [];
 
-    const picked = activities.filter(a => {
-        const d = new Date(a.date);
-        if (isNaN(+d)) return false;
-        const key = ymd(d);
-        return key >= lo && key <= hi && (filter === 'all' || a.sport === filter);
-    });
+    const weekStart = startOfWeek(anchor ?? new Date());
+    const wanted = new Set(days.map(d => ymd(addDays(weekStart, WEEKDAYS.indexOf(d)))));
 
     const buckets = new Map<number, DayBucket>();
-    for (const a of picked) {
+    for (const a of activities) {
+        if (!sports.has(a.sport)) continue;
         const d = new Date(a.date);
+        if (isNaN(+d)) continue;
         const key = ymd(d);
+        if (!wanted.has(key)) continue;
         if (!buckets.has(key)) {
             buckets.set(key, {
                 weekday: WEEKDAYS[(d.getDay() + 6) % 7],
@@ -154,21 +147,24 @@ export function aggregateWeek(
     return [...buckets.values()].sort((a, b) => a.date.getTime() - b.date.getTime());
 }
 
-/** Stats payload for `drawWeeklySummary` (30km hero + day rows). */
-export function buildWeekSummaryStats(buckets: DayBucket[], filter: SportFilter) {
+/**
+ * Stats payload for `drawWeeklySummary`. Hero switches on the data:
+ * distance total when the selection contains any distance, else total time.
+ * Day rows are mixed-unit: km on distance days, min on time-only days.
+ */
+export function buildWeekSummaryStats(buckets: DayBucket[]) {
     const active = buckets.filter(b => b.activities.length > 0);
-    const totalM = buckets.reduce((s, b) => s + b.distanceM, 0);
-    const totalSec = buckets.reduce((s, b) => s + b.movingSec, 0);
+    const totalM = active.reduce((s, b) => s + b.distanceM, 0);
+    const totalSec = active.reduce((s, b) => s + b.movingSec, 0);
     const useDistance = totalM > 0;
     return {
         weekly: active.map(b => ({
             day: b.weekday,
-            value: useDistance ? `${fmtKm(b.distanceM)}km` : fmtMin(b.movingSec),
+            value: b.distanceM > 0 ? `${fmtKm(b.distanceM)}km` : fmtMin(b.movingSec),
         })),
-        weeklyTotal: useDistance ? fmtKm(totalM, 1) : fmtMin(totalSec).replace('m', ''),
+        weeklyTotal: useDistance ? fmtKm(totalM, 1) : String(Math.round(totalSec / 60)),
         weeklyUnit: useDistance ? 'km' : 'min',
-        weeklyLabel: useDistance ? 'Weekly Distance' : 'Weekly Duration',
-        weeklyFilter: filter,
+        weeklyLabel: useDistance ? 'Weekly Distance' : 'Weekly Time',
     };
 }
 

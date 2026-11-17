@@ -258,48 +258,19 @@
                     <div class="controls-panel">
                         <div class="controls-panel-head">
                             <span class="controls-panel-title">Weekly Settings</span>
-                            <span class="controls-panel-sub">Filter, range & style</span>
+                            <span class="controls-panel-sub">Filter &amp; style</span>
                         </div>
                         <div class="controls-row">
                             <div class="control-slot">
                                 <div class="toggle-group control-variant">
-                                    <span class="controls-label">Sport</span>
-                                    <div class="toggle-pill wo-toggle" id="wo-sport-chips" data-testid="wo-sport-chips">
-                                        <span class="toggle-thumb wo-thumb"></span>
-                                        <button class="toggle-opt active" data-val="all">All</button>
-                                        <button class="toggle-opt" data-val="run">Run</button>
-                                        <button class="toggle-opt" data-val="ride">Ride</button>
-                                        <button class="toggle-opt" data-val="workout">Gym</button>
+                                    <span class="controls-label">Sports</span>
+                                    <div class="wo-check-row" id="wo-sport-chips" data-testid="wo-sport-chips">
+                                        <button class="wo-check active" data-val="all">All</button>
+                                        <button class="wo-check active" data-val="run">Run</button>
+                                        <button class="wo-check active" data-val="ride">Ride</button>
+                                        <button class="wo-check active" data-val="swim">Swim</button>
+                                        <button class="wo-check active" data-val="workout">Workout</button>
                                     </div>
-                                </div>
-                            </div>
-                            <div class="control-slot">
-                                <div class="toggle-group control-variant">
-                                    <span class="controls-label">Start</span>
-                                    <div class="wo-select-wrap">
-                                        <select id="wo-day-start" class="wo-select" aria-label="Start day">
-                                            <option value="Mon">Mon</option><option value="Tue">Tue</option>
-                                            <option value="Wed">Wed</option><option value="Thu">Thu</option>
-                                            <option value="Fri">Fri</option><option value="Sat">Sat</option>
-                                            <option value="Sun">Sun</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="controls-row">
-                            <div class="control-slot">
-                                <div class="toggle-group control-variant">
-                                    <span class="controls-label">End</span>
-                                    <div class="wo-select-wrap">
-                                        <select id="wo-day-end" class="wo-select" aria-label="End day">
-                                            <option value="Mon">Mon</option><option value="Tue">Tue</option>
-                                            <option value="Wed">Wed</option><option value="Thu">Thu</option>
-                                            <option value="Fri">Fri</option><option value="Sat">Sat</option>
-                                            <option value="Sun" selected>Sun</option>
-                                        </select>
-                                    </div>
-                                    <p class="wo-warning hidden" id="wo-range-warning" data-testid="wo-range-warning">Max 7 days</p>
                                 </div>
                             </div>
                             <div class="control-slot" id="weekly-color-slot">
@@ -309,6 +280,22 @@
                                         <input type="color" id="wo-color" class="wo-color-input" data-testid="wo-color" value="#ffffff" aria-label="Sticker color">
                                         <span class="wo-color-swatch" id="wo-color-swatch"></span>
                                         <span class="wo-color-hex" id="wo-color-hex">#FFFFFF</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="controls-row">
+                            <div class="control-slot control-slot--wide">
+                                <div class="toggle-group control-variant">
+                                    <span class="controls-label">Days</span>
+                                    <div class="wo-check-row" id="wo-day-chips" data-testid="wo-day-chips">
+                                        <button class="wo-check active" data-val="Mon">Mon</button>
+                                        <button class="wo-check active" data-val="Tue">Tue</button>
+                                        <button class="wo-check active" data-val="Wed">Wed</button>
+                                        <button class="wo-check active" data-val="Thu">Thu</button>
+                                        <button class="wo-check active" data-val="Fri">Fri</button>
+                                        <button class="wo-check active" data-val="Sat">Sat</button>
+                                        <button class="wo-check active" data-val="Sun">Sun</button>
                                     </div>
                                 </div>
                             </div>
