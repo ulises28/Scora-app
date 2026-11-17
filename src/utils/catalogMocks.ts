@@ -47,6 +47,14 @@ export const MOCK_STATS_RUN = {
     region: 'Spain',
     calories: '720',
     deviceName: 'Garmin Forerunner 970',
+    weekly: [
+        { day: 'Mon', value: '9 km' },
+        { day: 'Wed', value: '7 km' },
+        { day: 'Sat', value: '13 km' },
+    ],
+    weeklyTotal: '30',
+    weeklyUnit: 'km',
+    weeklyLabel: 'Weekly Distance',
     dataPoints: padSlots([
         { label: 'Distance', value: '10.05', unit: 'km' },
         { label: 'Pace', value: '4:09', unit: '/km' },
@@ -95,6 +103,14 @@ export const MOCK_STATS_WORKOUT = {
     region: 'Spain',
     calories: '480',
     deviceName: 'Garmin Forerunner 970',
+    weekly: [
+        { day: 'Mon', value: '52m' },
+        { day: 'Wed', value: '64m' },
+        { day: 'Sat', value: '98m' },
+    ],
+    weeklyTotal: '214',
+    weeklyUnit: 'min',
+    weeklyLabel: 'Weekly Duration',
     dataPoints: padSlots([
         { label: 'Duration', value: '52m', unit: '' },
         { label: 'Avg HR', value: '176', unit: 'bpm' },

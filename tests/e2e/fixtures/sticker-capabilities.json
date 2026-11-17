@@ -1904,130 +1904,6 @@
         }
       }
     },
-    "trail-summary": {
-      "version": "4.2",
-      "supportsCustomColor": true,
-      "supportsBlackText": true,
-      "compact": false,
-      "modes": {
-        "run": {
-          "metrics": [
-            "distance",
-            "pace",
-            "heartRate"
-          ],
-          "labels": [
-            "KM",
-            "/KM",
-            "BPM"
-          ],
-          "metadata": [
-            "MAP"
-          ],
-          "display": {
-            "distance": "numeric",
-            "pace": "numeric",
-            "heartRate": "numeric"
-          }
-        },
-        "bike": {
-          "metrics": [
-            "distance",
-            "pace",
-            "heartRate"
-          ],
-          "labels": [
-            "KM",
-            "KM/H",
-            "BPM"
-          ],
-          "metadata": [
-            "MAP"
-          ],
-          "display": {
-            "distance": "numeric",
-            "pace": "numeric",
-            "heartRate": "numeric"
-          }
-        },
-        "workout": {
-          "metrics": [
-            "heartRate",
-            "time"
-          ],
-          "labels": [
-            "BPM"
-          ],
-          "metadata": [],
-          "display": {
-            "heartRate": "numeric",
-            "time": "numeric"
-          }
-        }
-      }
-    },
-    "skyline-splits": {
-      "version": "4.2",
-      "supportsCustomColor": true,
-      "supportsBlackText": true,
-      "compact": false,
-      "modes": {
-        "run": {
-          "metrics": [
-            "distance",
-            "pace",
-            "heartRate",
-            "time"
-          ],
-          "labels": [
-            "KM",
-            "/KM",
-            "BPM"
-          ],
-          "metadata": [],
-          "display": {
-            "distance": "numeric",
-            "pace": "numeric",
-            "heartRate": "numeric",
-            "time": "numeric"
-          }
-        },
-        "bike": {
-          "metrics": [
-            "distance",
-            "pace",
-            "heartRate",
-            "time"
-          ],
-          "labels": [
-            "KM",
-            "KM/H",
-            "BPM"
-          ],
-          "metadata": [],
-          "display": {
-            "distance": "numeric",
-            "pace": "numeric",
-            "heartRate": "numeric",
-            "time": "numeric"
-          }
-        },
-        "workout": {
-          "metrics": [
-            "heartRate",
-            "time"
-          ],
-          "labels": [
-            "BPM"
-          ],
-          "metadata": [],
-          "display": {
-            "heartRate": "numeric",
-            "time": "numeric"
-          }
-        }
-      }
-    },
     "lab-datagrid": {
       "version": "4.2",
       "supportsCustomColor": true,
@@ -2091,6 +1967,220 @@
           "display": {
             "heartRate": "numeric",
             "elevation": "numeric",
+            "time": "numeric"
+          }
+        }
+      }
+    },
+    "photo-stack": {
+      "version": "4.2",
+      "supportsCustomColor": true,
+      "supportsBlackText": true,
+      "compact": false,
+      "modes": {
+        "run": {
+          "metrics": [
+            "distance",
+            "pace",
+            "heartRate",
+            "elevation",
+            "time"
+          ],
+          "labels": [
+            "KM",
+            "/KM",
+            "BPM"
+          ],
+          "metadata": [],
+          "display": {
+            "distance": "numeric",
+            "pace": "numeric",
+            "heartRate": "numeric",
+            "elevation": "numeric",
+            "time": "numeric"
+          }
+        },
+        "bike": {
+          "metrics": [
+            "distance",
+            "pace",
+            "heartRate",
+            "elevation",
+            "time"
+          ],
+          "labels": [
+            "KM",
+            "KM/H",
+            "BPM"
+          ],
+          "metadata": [],
+          "display": {
+            "distance": "numeric",
+            "pace": "numeric",
+            "heartRate": "numeric",
+            "elevation": "numeric",
+            "time": "numeric"
+          }
+        },
+        "workout": {
+          "metrics": [
+            "heartRate",
+            "elevation",
+            "time"
+          ],
+          "labels": [
+            "BPM"
+          ],
+          "metadata": [],
+          "display": {
+            "heartRate": "numeric",
+            "elevation": "numeric",
+            "time": "numeric"
+          }
+        }
+      }
+    },
+    "weekly-summary": {
+      "version": "4.2",
+      "supportsCustomColor": true,
+      "supportsBlackText": true,
+      "compact": false,
+      "modes": {
+        "run": {
+          "metrics": [
+            "distance"
+          ],
+          "labels": [
+            "KM",
+            "WEEKLY DISTANCE",
+            "WEEKLY DURATION"
+          ],
+          "metadata": [],
+          "display": {
+            "distance": "numeric"
+          }
+        },
+        "bike": {
+          "metrics": [
+            "distance"
+          ],
+          "labels": [
+            "KM",
+            "WEEKLY DISTANCE",
+            "WEEKLY DURATION"
+          ],
+          "metadata": [],
+          "display": {
+            "distance": "numeric"
+          }
+        },
+        "workout": {
+          "metrics": [
+            "time"
+          ],
+          "labels": [
+            "WEEKLY DISTANCE",
+            "WEEKLY DURATION"
+          ],
+          "metadata": [],
+          "display": {
+            "time": "numeric"
+          }
+        }
+      }
+    },
+    "day-recap": {
+      "version": "4.2",
+      "supportsCustomColor": true,
+      "supportsBlackText": true,
+      "compact": false,
+      "modes": {
+        "run": {
+          "metrics": [
+            "date"
+          ],
+          "labels": [],
+          "metadata": [],
+          "display": {}
+        },
+        "bike": {
+          "metrics": [
+            "date"
+          ],
+          "labels": [],
+          "metadata": [],
+          "display": {}
+        },
+        "workout": {
+          "metrics": [
+            "time",
+            "date"
+          ],
+          "labels": [],
+          "metadata": [],
+          "display": {
+            "time": "numeric"
+          }
+        }
+      }
+    },
+    "word-scatter": {
+      "version": "4.2",
+      "supportsCustomColor": true,
+      "supportsBlackText": true,
+      "compact": false,
+      "modes": {
+        "run": {
+          "metrics": [
+            "distance",
+            "pace",
+            "heartRate",
+            "time"
+          ],
+          "labels": [
+            "KM",
+            "/KM",
+            "BPM"
+          ],
+          "metadata": [],
+          "display": {
+            "distance": "numeric",
+            "pace": "numeric",
+            "heartRate": "numeric",
+            "time": "numeric"
+          }
+        },
+        "bike": {
+          "metrics": [
+            "distance",
+            "pace",
+            "heartRate",
+            "time"
+          ],
+          "labels": [
+            "KM",
+            "KM/H",
+            "BPM"
+          ],
+          "metadata": [],
+          "display": {
+            "distance": "numeric",
+            "pace": "numeric",
+            "heartRate": "numeric",
+            "time": "numeric"
+          }
+        },
+        "workout": {
+          "metrics": [
+            "heartRate",
+            "time"
+          ],
+          "labels": [
+            "BPM"
+          ],
+          "metadata": [],
+          "display": {
+            "heartRate": "numeric",
             "time": "numeric"
           }
         }

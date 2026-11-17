@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scora — Sticker Concepts (kept 2 + 8 new)</title>
+  <style>
+    :root {
+      --bg: #0c0d10;
+      --panel: #14161b;
+      --ink: #f4f5f7;
+      --muted: #8b929e;
+      --line: rgba(255,255,255,0.08);
+      --accent: #6ee7b7;
+      --keep: #93c5fd;
+      --warn: #fbbf24;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "SF Pro Display", "Plus Jakarta Sans", "Outfit", -apple-system, sans-serif;
+      background: radial-gradient(1200px 600px at 10% -10%, #1a2030 0%, var(--bg) 55%);
+      color: var(--ink);
+      min-height: 100vh;
+      padding: 48px 32px 80px;
+    }
+    header { max-width: 1180px; margin: 0 auto 36px; }
+    .eyebrow {
+      letter-spacing: 0.18em; font-size: 11px; color: var(--muted);
+      text-transform: uppercase; margin-bottom: 12px;
+    }
+    h1 { font-size: clamp(28px, 4vw, 42px); font-weight: 700; letter-spacing: -0.03em; margin-bottom: 10px; }
+    .lede { color: var(--muted); max-width: 68ch; line-height: 1.55; font-size: 15px; }
+    .note {
+      margin-top: 16px; display: inline-flex; gap: 8px; align-items: center;
+      padding: 8px 12px; border-radius: 999px;
+      background: rgba(147, 197, 253, 0.12);
+      border: 1px solid rgba(147, 197, 253, 0.28);
+      color: var(--keep); font-size: 12px;
+    }
+    .grid {
+      max-width: 1180px; margin: 0 auto;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 22px;
+    }
+    .card {
+      background: var(--panel); border: 1px solid var(--line); border-radius: 18px;
+      overflow: hidden; display: flex; flex-direction: column;
+    }
+    .card.kept { border-color: rgba(147, 197, 253, 0.35); box-shadow: 0 0 0 1px rgba(147, 197, 253, 0.12); }
+    .stage {
+      position: relative; aspect-ratio: 1 / 1.05;
+      background:
+        linear-gradient(180deg, rgba(12,14,18,0.15), rgba(12,14,18,0.55)),
+        radial-gradient(circle at 30% 20%, #3a4a5c 0%, #1c2430 45%, #12161c 100%);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .stage.alt-1 {
+      background:
+        linear-gradient(180deg, rgba(20,12,12,0.1), rgba(20,12,12,0.5)),
+        radial-gradient(circle at 70% 30%, #5c3a32 0%, #2a1c18 50%, #121010 100%);
+    }
+    .stage.alt-2 {
+      background:
+        linear-gradient(180deg, rgba(10,18,16,0.1), rgba(10,18,16,0.55)),
+        radial-gradient(circle at 40% 60%, #2a4a42 0%, #162824 50%, #0e1412 100%);
+    }
+    .stage.alt-3 {
+      background:
+        linear-gradient(180deg, rgba(14,14,22,0.1), rgba(14,14,22,0.55)),
+        radial-gradient(circle at 50% 20%, #3a3558 0%, #1e1a30 50%, #100e18 100%);
+    }
+    .stage.alt-4 {
+      background:
+        linear-gradient(180deg, rgba(16,16,12,0.12), rgba(16,16,12,0.55)),
+        radial-gradient(circle at 20% 70%, #4a4030 0%, #242018 50%, #12100c 100%);
+    }
+    canvas { width: 100%; height: 100%; display: block; }
+    .meta { padding: 16px 18px 18px; border-top: 1px solid var(--line); }
+    .meta h2 { font-size: 16px; font-weight: 650; letter-spacing: -0.02em; margin-bottom: 6px; }
+    .meta p { color: var(--muted); font-size: 13px; line-height: 1.5; }
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+    .tag {
+      font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--accent); background: rgba(110, 231, 183, 0.1);
+      border: 1px solid rgba(110, 231, 183, 0.22); padding: 4px 8px; border-radius: 999px;
+    }
+    .tag.keep {
+      color: var(--keep); background: rgba(147, 197, 253, 0.12);
+      border-color: rgba(147, 197, 253, 0.28);
+    }
+    footer {
+      max-width: 1180px; margin: 36px auto 0; color: var(--muted);
+      font-size: 12px; line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="eyebrow">Scora · design exploration · round 2</div>
+    <h1>2 kept concepts + 8 new candidates</h1>
+    <p class="lede">
+      Blue border = concepts you kept (<strong>Skyline Splits</strong>, <strong>Lab Datagrid</strong>).
+      The other eight are new directions only — nothing is implemented in product code.
+      Hierarchy stays product-correct: compact footprint, solid white type, Date/Title → primary → secondary.
+    </p>
+    <div class="note">Concept mocks only · product registry clean · image_gen still membership-blocked</div>
+  </header>
+
+  <div class="grid" id="grid"></div>
+
+  <footer>
+    Mock data only. Choosing an ID here still means a separate product implementation pass with sync:stickers + unit gates.
+  </footer>
+
+  <script>
+    const CONCEPTS = [
+      {
+        id: "skyline-splits",
+        name: "Skyline Splits",
+        kept: true,
+        blurb: "Kept from round 1. Vertical split bars as a compact skyline under locked hero metrics.",
+        tags: ["kept", "splits", "data"],
+        alt: "",
+        draw: drawSkylineSplits
+      },
+      {
+        id: "lab-datagrid",
+        name: "Lab Datagrid",
+        kept: true,
+        blurb: "Kept from round 1. Dense scientific metric table with 1px grid lines and column anchors.",
+        tags: ["kept", "data", "pro"],
+        alt: "alt-3",
+        draw: drawLabGrid
+      },
+      {
+        id: "flip-scoreboard",
+        name: "Flip Scoreboard",
+        blurb: "Sports scoreboard split-flap digits. Aggressive, race-day energy without neon clutter.",
+        tags: ["sport", "digits", "race"],
+        alt: "alt-1",
+        draw: drawFlipScoreboard
+      },
+      {
+        id: "elevation-ridge",
+        name: "Elevation Ridge",
+        blurb: "Mountain-profile silhouette under the hero distance. Makes climbing feel visible.",
+        tags: ["elevation", "outdoor", "profile"],
+        alt: "alt-2",
+        draw: drawElevationRidge
+      },
+      {
+        id: "polaroid-caption",
+        name: "Polaroid Caption",
+        blurb: "Bottom caption bar of a polaroid frame. Warm, memory-first for easy social share.",
+        tags: ["photo", "social", "warm"],
+        alt: "alt-4",
+        draw: drawPolaroidCaption
+      },
+      {
+        id: "waveform-pace",
+        name: "Waveform Pace",
+        blurb: "Audio-waveform strip of pace effort. Strong on tempo runs and interval days.",
+        tags: ["chart", "pace", "audio"],
+        alt: "",
+        draw: drawWaveformPace
+      },
+      {
+        id: "constellation-run",
+        name: "Constellation Run",
+        blurb: "Route points as a night-sky constellation. Distinctive for evening / city runs.",
+        tags: ["map", "night", "art"],
+        alt: "alt-3",
+        draw: drawConstellation
+      },
+      {
+        id: "boarding-strip",
+        name: "Boarding Strip",
+        blurb: "Horizontal airline strip with gate-style metadata. Compact and travel-poster clean.",
+        tags: ["travel", "strip", "compact"],
+        alt: "alt-1",
+        draw: drawBoardingStrip
+      },
+      {
+        id: "interval-gantt",
+        name: "Interval Gantt",
+        blurb: "Training phases as horizontal bars. Perfect for structured workouts and blocks.",
+        tags: ["workout", "intervals", "plan"],
+        alt: "alt-2",
+        draw: drawIntervalGantt
+      },
+      {
+        id: "vinyl-label",
+        name: "Vinyl Label",
+        blurb: "Record-label ring with center metrics. Calm circular form, editorial and collectible.",
+        tags: ["editorial", "ring", "collectible"],
+        alt: "alt-4",
+        draw: drawVinylLabel
+      }
+    ];
+
+    function setupCanvas(canvas) {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const rect = canvas.getBoundingClientRect();
+      const w = Math.round(rect.width);
+      const h = Math.round(rect.height);
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+      const ctx = canvas.getContext("2d");
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+      return { ctx, w, h };
+    }
+
+    function setLetterSpacing(ctx, value) {
+      if (ctx.letterSpacing !== undefined) ctx.letterSpacing = value;
+    }
+
+    function glassPill(ctx, x, y, w, h, radius = h / 2) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.roundRect(x, y, w, h, radius);
+      const g = ctx.createLinearGradient(x, y, x, y + h);
+      g.addColorStop(0, "rgba(255,255,255,0.22)");
+      g.addColorStop(1, "rgba(255,255,255,0.10)");
+      ctx.fillStyle = g;
+      ctx.fill();
+      ctx.strokeStyle = "rgba(255,255,255,0.28)";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // KEPT 1 — Skyline Splits
+    function drawSkylineSplits(ctx, w, h) {
+      const cx = w / 2;
+      const bars = [42, 58, 50, 66, 48, 62, 40, 55];
+      const bw = 18, gap = 10;
+      const totalW = bars.length * bw + (bars.length - 1) * gap;
+      const x0 = cx - totalW / 2;
+      const baseY = h * 0.62;
+
+      ctx.save();
+      ctx.strokeStyle = "rgba(255,255,255,0.25)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x0, baseY + 0.5);
+      ctx.lineTo(x0 + totalW, baseY + 0.5);
+      ctx.stroke();
+
+      bars.forEach((bh, i) => {
+        const x = x0 + i * (bw + gap);
+        const y = baseY - bh;
+        const g = ctx.createLinearGradient(x, y, x, baseY);
+        g.addColorStop(0, "rgba(255,255,255,0.95)");
+        g.addColorStop(1, "rgba(255,255,255,0.35)");
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.roundRect(x, y, bw, bh, 3);
+        ctx.fill();
+      });
+
+      ctx.textAlign = "center";
+      setLetterSpacing(ctx, "2px");
+      ctx.font = "500 11px 'Plus Jakarta Sans', sans-serif";
+      ctx.fillStyle = "rgba(255,255,255,0.7)";
+      ctx.fillText("SPLITS · 8 KM", cx, h * 0.28);
+      setLetterSpacing(ctx, "0px");
+      ctx.fillStyle = "#fff";
+      ctx.font = "800 48px 'Space Grotesk', sans-serif";
+      ctx.fillText("38:44", cx, h * 0.38);
+      ctx.font = "600 13px 'Plus Jakarta Sans', sans-serif";
+      ctx.fillStyle = "rgba(255,255,255,0.7)";
+      ctx.fillText("AVG. 4:50 /KM", cx, h * 0.38 + 28);
+      ctx.restore();
+    }
+
+    // KEPT 2 — Lab Datagrid
+    function drawLabGrid(ctx, w, h) {
+      const cx = w / 2;
+      const top = h * 0.32;
+
+      ctx.save();
+      const gw = 280, gh = 170;
+      const x = cx - gw / 2, y = top;
+      ctx.strokeStyle = "rgba(255,255,255,0.18)";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x + 0.5, y + 0.5, gw, gh);
+      for (let i = 1; i < 5; i++) {
+        const yy = y + (gh / 5) * i + 0.5;
+        ctx.beginPath();
+        ctx.moveTo(x, yy);
+        ctx.lineTo(x + gw, yy);
+        ctx.stroke();
+      }
+      ctx.beginPath();
+      ctx.moveTo(x + gw * 0.42 + 0.5, y);
+      ctx.lineTo(x + gw * 0.42 + 0.5, y + gh);
+      ctx.stroke();
+
+      const rows = [
+        ["DISTANCE", "10.05 KM"],
+        ["PACE", "4:09 /KM"],
+        ["TIME", "41:12"],
+        ["HR AVG", "148 BPM"],
+        ["ELEV", "126 M"]
+      ];
+      rows.forEach((r, i) => {
+        const yy = y + (gh / 5) * i + (gh / 5) * 0.62;
+        setLetterSpacing(ctx, "1.5px");
+        ctx.font = "500 10px 'Plus Jakarta Sans', sans-serif";
+        ctx.fillStyle = "rgba(255,255,255,0.55)";
+        ctx.textAlign = "left";
+        ctx.fillText(r[0], x + 14, yy);
+        setLetterSpacing(ctx, "0px");
+        ctx.font = "700 16px 'Space Grotesk', sans-serif";
+        ctx.fillStyle = "#fff";
+        ctx.textAlign = "right";
+        ctx.fillText(r[1], x + gw - 14, yy);
+      });
+
+      setLetterSpacing(ctx, "2px");
+      ctx.font = "500 11px 'Plus Jakarta Sans', sans-serif";
+      ctx.fillStyle = "rgba(255,255,255,0.65)";
+      ctx.textAlign = "center";
+      ctx.fillText("SESSION LOG", cx, top - 18);
+      setLetterSpacing(ctx, "0px");
+      ctx.restore();
+    }
+
+    // NEW 1 — Flip Scoreboard
+    function drawFlipScoreboard(ctx, w, h) {
+      const cx = w / 2;
+      const cy = h * 0.48;
+
+      ctx.save();
+      // panel
+      const pw = Math.min(w * 0.78, 300);
+      const ph = 150;
+      const px = cx - pw / 2;
+      const py = cy - ph / 2;
+      ctx.fillStyle = "rgba(18,18,22,0.88)";
+      ctx.beginPath();
+      ctx.roundRect(px, py, pw, ph, 10);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(255,255,255,0.12)";
+      ctx.stroke();
+
+      // flip cards for "38:44"
+      const digits = ["3", "8", ":", "4", "4"];
+      const cardW = 42, cardH = 64, cardGap = 6;
+      const total = digits.length * cardW + (digits.length - 1) * cardGap;
+      let x = cx - total / 2;
+      digits.forEach((d) => {
+        if (d === ":") {
+          ctx.fillStyle = "#f59e0b";
+          ctx.beginPath();
+          ctx.arc(x + cardW / 2, cy - 8, 3, 0, Math.PI * 2);
+          ctx.arc(x + cardW / 2, cy + 14, 3, 0, Math.PI * 2);
+          ctx.fill();
+          x += cardW;
+          return;
+        }
+        // card
+        const g = ctx.createLinearGradient(x, cy - 40, x, cy + 24);
+        g.addColorStop(0, "#2a2c33");
+        g.addColorStop(0.48, "#1a1c22");
+        g.addColorStop(0.52, "#12141a");
+        g.addColorStop(1, "#22242c");
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.roundRect(x, cy - 40, cardW, cardH, 4);
+        ctx.fill();
+        // seam
+        ctx.strokeStyle = "rgba(0,0,0,0.45)";
+        ctx.beginPath();
+        ctx.moveTo(x, cy - 8);
+        ctx.lineTo(x + cardW, cy - 8);
+        ctx.stroke();
+        // digit
+        ctx.fillStyle = "#fff";
+        ctx.font = "800 36px 'Space Grotesk', monospace";
+        ctx.textAlign = "center";
+        ctx.fillText(d, x + cardW / 2, cy + 12);
+        x += cardW + cardGap;
+      });
+
+      // labels
+      setLetterSpacing(ctx, "2.5px");
+      ctx.font = "500 11px 'Plus Jakarta Sans', sans-serif";
+      ctx.fillStyle = "rgba(255,255,255,0.55)";
+      ctx.textAlign = "center";
+      ctx.fillText("OFFICIAL TIME", cx, py - 18);
+      setLetterSpacing(ctx, "0px");
+      ctx.font = "600 13px 'Plus Jakarta Sans', sans-serif";
+      ctx.fillStyle = "rgba(255,255,255,0.8)";
+      ctx.fillText("10.05 KM  ·  4:09 /KM", cx, py + ph + 32);
+      ctx.restore();
+    }
+
+    // NEW 2 — Elevation Ridge
+    function drawElevationRidge(ctx, w, h) {
+      const cx = w / 2;
+      const left = cx - 150;
+      const right = cx + 150;
+      const baseY = h * 0.62;
+
+      ctx.save();
+      // ridge path
+      const pts = [
+        [0, 0.72], [0.12, 0.55], [0.22, 0.62], [0.35, 0.28],
+        [0.48, 0.42], [0.58, 0.18], [0.72, 0.38], [0.85, 0.48], [1, 0.58]
+      ];
+      ctx.beginPath();
+      pts.forEach(([t, v], i) => {
+        const x = left + t * (right - left);
+        const y = baseY - v * 120;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      const ridgeGrad = ctx.createLinearGradient(0, baseY - 120, 0, baseY);
+      ridgeGrad.addColorStop(0, "rgba(255,255,255,0.35)");
+      ridgeGrad.addColorStop(1, "rgba(255,255,255,0.02)");
+      ctx.lineTo(right, baseY);
+      ctx.lineTo(left, baseY);
+      ctx.closePath();
+      ctx.fillStyle = ridgeGrad;
+      ctx.fill();
+
+      ctx.beginPath();
+      pts.forEach(([t, v], i) => {
+        const x = left + t * (right - left);
+        const y = baseY - v * 120;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.strokeStyle = "rgba(255,255,255,0.92)";
+      ctx.lineWidth = 2.5;
+      ctx.lineJoin = "round";
+      ctx.stroke();
+
+      // metrics above
+      ctx.textAlign = "center";
+      setLetterSpacing(ctx, "2px");
+      ctx.font = "500 11px 'Plus Jakarta Sans', sans-serif";
+      ctx.fillStyle = "rgba(255,255,255,0.65)";
+      ctx.fillText("ELEVATION PROFILE", cx, h * 0.28);
+      setLetterSpacing(ctx, "0px");
+      ctx.fillStyle = "#fff";
+      ctx.font = "800 46px 'Space Grotesk', sans-serif";
+      ctx.fillText("+248 M", cx, h * 0.38);
+      ctx.font = "600 13px 'Plus Jakarta Sans', sans-serif";
+      ctx.fillStyle = "rgba(255,255,255,0.7)";
+      ctx.fillText("10.05 KM  ·  41:12", cx, baseY + 36);
+      ctx.restore();
+    }
+
+    // NEW 3 — Polaroid Caption
+    function drawPolaroidCaption(ctx, w, h) {
+      const cx = w / 2;
+      const cy = h * 0.5;
+      const fw = 220, fh = 250;
+
+      ctx.save();
+      // polaroid card
+      ctx.fillStyle = "#f4f0e8";
+      ctx.beginPath();
+      ctx.roundRect(cx - fw / 2, cy - fh / 2, fw, fh, 4);
+      ctx.fill();
+
+      // photo window
+      ctx.fillStyle = "#2a3140";
+      ctx.fillRect(cx - fw / 2 + 14, cy - fh / 2 + 14, fw - 28, fh - 90);
+
+      // caption
+      ctx.fillStyle = "#1c1a16";
+      ctx.textAlign = "center";
+      ctx.font = "600 18px 'Plus Jakarta Sans', sans-serif";
+      ctx.fillText("Sunday long run", cx, cy + fh / 2 - 42);
+      ctx.font = "500 13px 'Plus Jakarta Sans', sans-serif";
+      ctx.fillStyle = "#5c564c";
+      setLetterSpacing(ctx, "1.5px");
+      ctx.fillText("10.05 KM · 4:09 /KM", cx, cy + fh / 2 - 18);
+      setLetterSpacing(ctx, "0px");
+      ctx.restore();
+    }
+
+    // NEW 4 — Waveform Pace
+    function drawWaveformPace(ctx, w, h) {
+      const cx = w / 2;
+      const cy = h * 0.52;
+      const n = 36;
+      const barW = 3;
+      const gap = 5;
+      const totalW = n * barW + (n - 1) * gap;
+      const x0 = cx - totalW / 2;
+
+      ctx.save();
+      // waveform
+      for (let i = 0; i < n; i++) {
+        const t = i / (n - 1);
+        const amp = 18 + Math.abs(Math.sin(t * Math.PI * 3.2)) * 52 + Math.sin(t * 11) * 8;
+        const x = x0 + i * (barW + gap);
+        const g = ctx.createLinearGradient(x, cy - amp, x, cy + amp);
+        g.addColorStop(0, "rgba(255,255,255,0.95)");
+        g.addColorStop(0.5, "rgba(255,255,255,0.45)");
+        g.addColorStop(1, "rgba(255,255,255,0.95)");
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.roundRect(x, cy - amp, barW, amp * 2, 2);
+        ctx.fill();
+      }
+
+      ctx.textAlign = "center";
+      setLetterSpacing(ctx, "2px");
+      ctx.font = "500 11px 'Plus Jakarta Sans', sans-serif";
+      ctx.fillStyle = "rgba(255,255,255,0.65)";
+      ctx.fillText("PACE WAVEFORM", cx, h * 0.28);
+      setLetterSpacing(ctx, "0px");
+      ctx.fillStyle = "#fff";
+      ctx.font = "800 44px 'Space Grotesk', sans-serif";
+      ctx.fillText("4:09 /KM", cx, h * 0.36);
+      ctx.font = "600 13px 'Plus Jakarta Sans', sans-serif";
+      ctx.fillStyle = "rgba(255,255,255,0.7)";
+      ctx.fillText("10.05 KM  ·  41:12", cx, cy + 110);
+      ctx.restore();
+    }
+
+    // NEW 5 — Constellation Run
+    function drawConstellation(ctx, w, h) {
+      const cx = w / 2;
+      const cy = h * 0.48;
+
+      ctx.save();
+      // stars along a route-like polyline
+      const stars = [
+        [-70, 40], [-40, 10], [-10, -20], [20, -5], [45, -35], [75, -10], [95, 25]
+      ];
+      ctx.strokeStyle = "rgba(255,255,255,0.35)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      stars.forEach(([dx, dy], i) => {
+        const x = cx + dx, y = cy + dy;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+
+      stars.forEach(([dx, dy], i) => {
+        const x = cx + dx, y = cy + dy;
+        const r = i % 3 === 0 ? 3.2 : 2;
+        ctx.fillStyle = "#fff";
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+        // glow
+        ctx.fillStyle = "rgba(255,255,255,0.12)";
+        ctx.beginPath();
+        ctx.arc(x, y, r + 6, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      ctx.textAlign = "center";
+      setLetterSpacing(ctx, "2px");
+      ctx.font = "500 11px 'Plus Jakarta Sans', sans-serif";
+      ctx.fillStyle = "rgba(255,255,255,0.65)";
+      ctx.fillText("NIGHT ROUTE", cx, h * 0.28);
+      setLetterSpacing(ctx, "0px");
+      ctx.fillStyle = "#fff";
+      ctx.font = "800 42px 'Space Grotesk', sans-serif";
+      ctx.fillText("10.05 KM", cx, cy + 90);
+      ctx.font = "600 13px 'Plus Jakarta Sans', sans-serif";
+      ctx.fillStyle = "rgba(255,255,255,0.7)";
+      ctx.fillText("4:09 /KM  ·  41:12", cx, cy + 116);
+      ctx.restore();
+    }
+
+    // NEW 6 — Boarding Strip
+    function drawBoardingStrip(ctx, w, h) {
+      const cx = w / 2;
+      const cy = h * 0.5;
+      const sw = 300, sh = 110;
+
+      ctx.save();
+      // strip
+      ctx.fillStyle = "rgba(255,255,255,0.94)";
+      ctx.beginPath();
+      ctx.roundRect(cx - sw / 2, cy - sh / 2, sw, sh, 6);
+      ctx.fill();
+
+      // perforation
+      ctx.fillStyle = "rgba(0,0,0,0.08)";
+      for (let i = 0; i < 8; i++) {
+        const y = cy - sh / 2 + 12 + i * 12;
+        ctx.beginPath();
+        ctx.arc(cx + sw * 0.22, y, 2.4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // left block
+      ctx.fillStyle = "#16181d";
+      ctx.textAlign = "left";
+      setLetterSpacing(ctx, "1.5px");
+      ctx.font = "600 10px 'Plus Jakarta Sans', sans-serif";
+      ctx.fillText("GATE", cx - sw / 2 + 18, cy - 22);
+      setLetterSpacing(ctx, "0px");
+      ctx.font = "800 28px 'Space Grotesk', sans-serif";
+      ctx.fillText("A12", cx - sw / 2 + 18, cy + 8);
+      ctx.font = "500 11px 'Plus Jakarta Sans', sans-serif";
+      ctx.fillStyle = "#4a4e5c";
+      ctx.fillText("RUN · CDMX", cx - sw / 2 + 18, cy + 32);
+
+      // right block
+      ctx.fillStyle = "#16181d";
+      ctx.textAlign = "right";
+      ctx.font = "800 30px 'Space Grotesk', sans-serif";
+      ctx.fillText("10.05", cx + sw / 2 - 18, cy + 4);
+      ctx.font = "600 12px 'Plus Jakarta Sans', sans-serif";
+      ctx.fillStyle = "#4a4e5c";
+      ctx.fillText("KM  ·  4:09 /KM", cx + sw / 2 - 18, cy + 30);
+
+      // bottom strip label
+      ctx.textAlign = "center";
+      setLetterSpacing(ctx, "2px");
+      ctx.font = "500 11px 'Plus Jakarta Sans', sans-serif";
+      ctx.fillStyle = "rgba(255,255,255,0.65)";
+      ctx.fillText("BOARDING · 41:12", cx, cy + sh / 2 + 32);
+      setLetterSpacing(ctx, "0px");
+      ctx.restore();
+    }
+
+    // NEW 7 — Interval Gantt
+    function drawIntervalGantt(ctx, w, h) {
+      const cx = w / 2;
+      const left = cx - 140;
+      const right = cx + 140;
+      const top = h * 0.38;
+      const rowH = 22;
+      const gap = 10;
+
+      const blocks = [
+        { t0: 0.0, t1: 0.18, label: "WARM" },
+        { t0: 0.2, t1: 0.38, label: "TEMPO" },
+        { t0: 0.42, t1: 0.55, label: "EASY" },
+        { t0: 0.58, t1: 0.78, label: "TEMPO" },
+        { t0: 0.82, t1: 1.0, label: "COOL" }
+      ];
+
+      ctx.save();
+      ctx.textAlign = "center";
+      setLetterSpacing(ctx, "2px");
+      ctx.font = "500 11px 'Plus Jakarta Sans', sans-serif";
+      ctx.fillStyle = "rgba(255,255,255,0.65)";
+      ctx.fillText("INTERVAL BLOCKS", cx, h * 0.28);
+      setLetterSpacing(ctx, "0px");
+      ctx.fillStyle = "#fff";
+      ctx.font = "800 42px 'Space Grotesk', sans-serif";
+      ctx.fillText("52:18", cx, h * 0.34);
+
+      blocks.forEach((b, i) => {
+        const y = top + i * (rowH + gap);
+        const x = left + b.t0 * (right - left);
+        const bw = (b.t1 - b.t0) * (right - left);
+        const g = ctx.createLinearGradient(x, y, x + bw, y);
+        g.addColorStop(0, "rgba(255,255,255,0.9)");
+        g.addColorStop(1, "rgba(255,255,255,0.35)");
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.roundRect(x, y, bw, rowH, 4);
+        ctx.fill();
+        ctx.font = "600 9px 'Plus Jakarta Sans', sans-serif";
+        ctx.fillStyle = "rgba(20,22,28,0.75)";
+        ctx.textAlign = "left";
+        ctx.fillText(b.label, x + 8, y + 15);
+      });
+
+      // baseline
+      ctx.strokeStyle = "rgba(255,255,255,0.2)";
+      ctx.beginPath();
+      ctx.moveTo(left, top + blocks.length * (rowH + gap) + 4);
+      ctx.lineTo(right, top + blocks.length * (rowH + gap) + 4);
+      ctx.stroke();
+
+      ctx.textAlign = "center";
+      ctx.font = "600 12px 'Plus Jakarta Sans', sans-serif";
+      ctx.fillStyle = "rgba(255,255,255,0.7)";
+      ctx.fillText("176 BPM AVG", cx, top + blocks.length * (rowH + gap) + 36);
+      ctx.restore();
+    }
+
+    // NEW 8 — Vinyl Label
+    function drawVinylLabel(ctx, w, h) {
+      const cx = w / 2;
+      const cy = h * 0.48;
+      const r = Math.min(w, h) * 0.18;
+
+      ctx.save();
+      // outer ring
+      ctx.fillStyle = "rgba(255,255,255,0.08)";
+      ctx.beginPath();
+      ctx.arc(cx, cy, r + 18, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(255,255,255,0.22)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r + 18, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // label disc
+      const disc = ctx.createRadialGradient(cx - 10, cy - 10, 8, cx, cy, r);
+      disc.addColorStop(0, "rgba(255,255,255,0.28)");
+      disc.addColorStop(1, "rgba(255,255,255,0.12)");
+      ctx.fillStyle = disc;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fill();
+
+      // spindle hole
+      ctx.fillStyle = "#12141a";
+      ctx.beginPath();
+      ctx.arc(cx, cy, 7, 0, Math.PI * 2);
+      ctx.fill();
+
+      // type
+      ctx.fillStyle = "#fff";
+      ctx.textAlign = "center";
+      setLetterSpacing(ctx, "2px");
+      ctx.font = "500 10px 'Plus Jakarta Sans', sans-serif";
+      ctx.fillText("SIDE A", cx, cy - 36);
+      setLetterSpacing(ctx, "0px");
+      ctx.font = "800 34px 'Space Grotesk', sans-serif";
+      ctx.fillText("10.05", cx, cy + 4);
+      ctx.font = "600 12px 'Plus Jakarta Sans', sans-serif";
+      ctx.fillStyle = "rgba(255,255,255,0.75)";
+      ctx.fillText("KM", cx, cy + 26);
+      ctx.font = "500 11px 'Plus Jakarta Sans', sans-serif";
+      ctx.fillStyle = "rgba(255,255,255,0.6)";
+      setLetterSpacing(ctx, "1.5px");
+      ctx.fillText("4:09 /KM · 41:12", cx, cy + r + 36);
+      setLetterSpacing(ctx, "0px");
+      ctx.restore();
+    }
+
+    function mount() {
+      const grid = document.getElementById("grid");
+      CONCEPTS.forEach((c) => {
+        const card = document.createElement("article");
+        card.className = "card" + (c.kept ? " kept" : "");
+        const tags = c.tags.map(t =>
+          `<span class="tag${t === "kept" ? " keep" : ""}">${t}</span>`
+        ).join("");
+        card.innerHTML = `
+          <div class="stage ${c.alt}">
+            <canvas id="c-${c.id}"></canvas>
+          </div>
+          <div class="meta">
+            <h2>${c.kept ? "★ " : ""}${c.name}</h2>
+            <p>${c.blurb}</p>
+            <div class="tags">${tags}</div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+
+      requestAnimationFrame(() => {
+        CONCEPTS.forEach((c) => {
+          const canvas = document.getElementById(`c-${c.id}`);
+          const { ctx, w, h } = setupCanvas(canvas);
+          c.draw(ctx, w, h);
+        });
+      });
+    }
+
+    mount();
+    window.addEventListener("resize", () => {
+      CONCEPTS.forEach((c) => {
+        const canvas = document.getElementById(`c-${c.id}`);
+        if (!canvas) return;
+        const { ctx, w, h } = setupCanvas(canvas);
+        c.draw(ctx, w, h);
+      });
+    });
+  </script>
+</body>
+</html>

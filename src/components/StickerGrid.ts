@@ -23,7 +23,7 @@ export function initStickerGrid(onOpenEditor: OnOpenEditor) {
     }
 
     let stats: any = null;
-    let templates: string[] = STICKER_LIST.filter(t => !t.seasonal).map(t => t.id);
+    let templates: string[] = STICKER_LIST.filter(t => !t.seasonal && !t.hidden).map(t => t.id);
 
     function colorFor(id: string): { color: string; showLogo: boolean } {
         const config = STICKER_REGISTRY[id];
@@ -64,7 +64,7 @@ export function initStickerGrid(onOpenEditor: OnOpenEditor) {
         const hasMap = !!stats?.polyline;
         const hasDistance = !!stats?.hasDistance;
         templates = STICKER_LIST
-            .filter((t) => !t.seasonal)
+            .filter((t) => !t.seasonal && !t.hidden)
             .map((t) => t.id)
             .filter((id) => {
                 const config = STICKER_REGISTRY[id];

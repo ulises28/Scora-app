@@ -11,7 +11,7 @@ import { TemplateFeatures } from './types';
 // ─── Template Registry — single source of truth ──────────────────────────────
 export const TEMPLATE_REGISTRY = STICKER_LIST;
 
-export const TEMPLATES = TEMPLATE_REGISTRY.filter(t => !t.seasonal).map(t => t.id);
+export const TEMPLATES = TEMPLATE_REGISTRY.filter(t => !t.seasonal && !t.hidden).map(t => t.id);
 
 // Variety for gallery previews (used when no activity is selected yet)
 const GALLERY_MOCKS = MOCK_ACTIVITIES.map(m => formatActivityStats(m));

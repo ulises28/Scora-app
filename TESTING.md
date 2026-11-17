@@ -28,6 +28,7 @@ _One entry point for product QA, agent evals, harness, and how we improve prompt
 | [`docs/glass-numbers-specifications.md`](docs/glass-numbers-specifications.md) | Numbers layout, unit hug, v2 product sticker | heroes `glass-numbers` run/workout · display contract `glyphs` |
 | [`docs/LESSONS-LEARNED.md`](docs/LESSONS-LEARNED.md) | Speed, no overcode, no empty cards, no silent glass rewrite | Eval cases + code grader `overcode_control` |
 | [`docs/garmin-integration-plan.md`](docs/garmin-integration-plan.md) | Multi-source `NormalizedActivity` seam · official OAuth only | Garmin mapper evals + mock e2e (planned) |
+| [`docs/refactor-plan-code-quality-performance-tests.md`](docs/refactor-plan-code-quality-performance-tests.md) | No pixel regressions · perf first · extract don’t invent | Heroes + `glass-buffer-budget` + perf bench |
 
 ---
 

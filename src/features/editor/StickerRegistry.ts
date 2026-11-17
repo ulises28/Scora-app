@@ -51,9 +51,13 @@ export const ACTIVE_STICKER_LIST: StickerDefinition[] = [
     { id: 'journal-grid', supportsCustomColor: true, category: 'distance', supportsBlackText: true, features: { distance: true, duration: true, map: true, heartRate: true, location: true }, render: Renderers.drawJournalGrid },
     { id: 'word-metric', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, duration: true }, expectedLabels: ['KILOMETERS', 'MINUTES'], paintForm: { distance: 'spelled', time: 'spelled' }, render: Renderers.drawWordMetric },
     { id: 'select-highlight', supportsCustomColor: true, category: 'all', supportsBlackText: false, features: { distance: true, duration: true }, render: Renderers.drawSelectHighlight },
-    { id: 'trail-summary', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, paceSpeed: true, duration: true, heartRate: true, map: true }, render: Renderers.drawTrailSummary },
-    { id: 'skyline-splits', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, paceSpeed: true, duration: true, alwaysShowDuration: true, heartRate: true }, render: Renderers.drawSkylineSplits },
     { id: 'lab-datagrid', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, paceSpeed: true, duration: true, alwaysShowDuration: true, heartRate: true, elevation: true }, render: Renderers.drawLabDataGrid },
+    { id: 'photo-stack', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, paceSpeed: true, duration: true, alwaysShowDuration: true, heartRate: true, elevation: true, temperature: true }, render: Renderers.drawPhotoStack },
+    // Weekly Overlays — multi-activity, configured in the home "Weekly Overlays" section
+    // (colour, day range, sport grouping). Hidden from the per-activity grid.
+    { id: 'weekly-summary', supportsCustomColor: true, category: 'all', supportsBlackText: true, hidden: true, features: { distance: true, duration: true }, expectedLabels: ['WEEKLY DISTANCE', 'WEEKLY DURATION'], render: Renderers.drawWeeklySummary },
+    { id: 'day-recap', supportsCustomColor: true, category: 'all', supportsBlackText: true, hidden: true, features: { duration: true, date: true }, render: Renderers.drawDayRecap },
+    { id: 'word-scatter', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, paceSpeed: true, duration: true, alwaysShowDuration: true, heartRate: true }, render: Renderers.drawWordScatter },
 ];
 
 // ─── 2. ARCHIVED / HIDDEN STICKERS ───────────────────────────────────────────

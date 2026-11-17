@@ -4,6 +4,7 @@ import { removeLoader } from './components/Loader.js';
 import { showScreen } from './components/Navigation.js';
 import { createActivityCard } from './components/ActivityCard.js';
 import { initStickerGrid } from './components/StickerGrid.js';
+import { initWeeklySection } from './components/WeeklySection.js';
 import { drawTemplate, exportCanvas } from './features/editor/CanvasPainter.js';
 import { initTemplateManager, TEMPLATES } from './features/editor/TemplateManager.js';
 import { copyCanvasToClipboard, saveCanvasAsPng } from './features/editor/StickerActions.js';
@@ -287,6 +288,9 @@ function renderActivityFeed(activities: any[]) {
         activityListEl.appendChild(card);
     });
     lastActivities = list; // Cache raw data for enrichment
+
+    // Weekly summary section — separate flow, own button + screens
+    initWeeklySection(list);
 }
 
 // ============================================================

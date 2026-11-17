@@ -4338,6 +4338,23 @@ function truncateCanvasText(ctx: CanvasRenderingContext2D, text: string, maxW: n
     return t + '…';
 }
 
+/**
+ * Shrink font size until `text` fits `maxW` pixels. Returns the largest size
+ * in [minSize, maxSize] that fits. Never truncates with '...' — the user
+ * explicitly asked for auto-shrink instead of ellipsis (2026-11-17).
+ */
+function fitFontSize(ctx: CanvasRenderingContext2D, text: string, maxW: number, maxSize: number, minSize = 18): number {
+    let size = maxSize;
+    while (size > minSize) {
+        // Extract weight/family from current font string, swap size
+        const font = ctx.font.replace(/\d+px/, `${size}px`);
+        ctx.font = font;
+        if (ctx.measureText(text).width <= maxW) return size;
+        size -= 2;
+    }
+    return minSize;
+}
+
 
 
 export function drawProVertical(ctx: CanvasRenderingContext2D, stats: any, textColor = 'white') {
@@ -10040,177 +10057,14 @@ export function drawRaceCountdown(ctx: CanvasRenderingContext2D, stats: any, tex
 }
 
 /**
- * trail-summary — run/bike: distance + pace + map; workout: duration + avg HR (no map).
- * Mode contract lives in sticker-capabilities.json (sync:stickers).
- */
-export function drawTrailSummary(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
-    const hasDistance = Boolean(stats.hasDistance || (stats.distanceVal && parseFloat(stats.distanceVal) > 0));
-    const { s1, s2 } = getDynamicStats(stats);
-    const ink = textColor || '#ffffff';
-
-    ctx.save();
-    ctx.textAlign = 'center';
-    ctx.fillStyle = ink;
-    ctx.font = "700 48px 'Outfit', sans-serif";
-    ctx.fillText('TRAIL', 540, 420);
-
-    if (hasDistance) {
-        // Distance mode: distance + pace + map
-        ctx.font = "800 160px 'Archivo Black', sans-serif";
-        ctx.fillText(s1?.value || stats.distanceVal || '0.00', 540, 720);
-        ctx.font = "600 64px 'Outfit', sans-serif";
-        ctx.fillText((s1?.unit || 'km').toUpperCase(), 540, 820);
-        ctx.font = "500 56px 'Outfit', sans-serif";
-        ctx.fillText(`${s2?.value || stats.subValue || ''} ${(s2?.unit || '/km')}`, 540, 960);
-        if (stats.polyline) {
-            drawRoutePath(ctx, stats.polyline, 220, 1080, 640, { color: ink, strokeWidth: 10 });
-        }
-    } else {
-        // Workout mode: duration + avg HR (no map)
-        ctx.font = "800 160px 'Archivo Black', sans-serif";
-        ctx.fillText(stats.timeStr || s1?.value || '0', 540, 720);
-        ctx.font = "600 64px 'Outfit', sans-serif";
-        ctx.fillText('MIN', 540, 820);
-        const hr = stats.avgHeartrate || stats.maxHeartrate || '';
-        ctx.font = "500 72px 'Outfit', sans-serif";
-        ctx.fillText(hr ? `${hr} BPM` : '—', 540, 1000);
-    }
-
-    ctx.restore();
-}
-
-/**
- * SKYLINE SPLITS — vertical split bars as a compact skyline under locked hero metrics.
- * Distance mode: time hero + avg pace + split bars. Workout: duration + HR (no distance/pace).
- */
-export function drawSkylineSplits(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
-    const { solid, label: labelColor } = buildColors(textColor);
-    const { s1, s2, s3 } = getDynamicStats(stats);
-    const hasDistance = Boolean(stats.hasDistance || (stats.distanceVal && parseFloat(stats.distanceVal) > 0));
-    const face = "'Space Grotesk', 'Outfit', sans-serif";
-    const labelFace = "'Plus Jakarta Sans', 'Outfit', sans-serif";
-
-    ctx.save();
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'alphabetic';
-
-    // ── Header (top-anchored under Scora logo zone) ──
-    const headerY = 320;
-    setLetterSpacing(ctx, '2px');
-    ctx.font = `500 36px ${labelFace}`;
-    ctx.fillStyle = labelColor;
-    if (hasDistance) {
-        const dist = stats.distanceVal || s1.value || '0.00';
-        const unit = (stats.distanceUnit || s1.unit || 'km').toUpperCase();
-        const splitCount = stats.splits?.length || 0;
-        ctx.fillText(splitCount ? `SPLITS · ${dist} ${unit}` : `${dist} ${unit}`, 540, headerY);
-    } else {
-        ctx.fillText('SESSION SPLITS', 540, headerY);
-    }
-    setLetterSpacing(ctx, '0px');
-
-    // ── Hero + secondary (metric sync: shared size for paired rows) ──
-    const heroY = 460;
-    if (hasDistance) {
-        const timeVal = stats.timeStr || (s2.label === 'DURATION' ? s2.value : '') || '0:00';
-        ctx.fillStyle = solid;
-        ctx.font = `800 120px ${face}`;
-        ctx.fillText(timeVal, 540, heroY);
-
-        const paceVal = stats.subValue?.split(' ')[0] || s2.value || '0:00';
-        const paceUnit = s2.unit ? s2.unit : (stats.subLabel || '/km');
-        ctx.font = `500 40px ${labelFace}`;
-        ctx.fillStyle = labelColor;
-        setLetterSpacing(ctx, '1.5px');
-        ctx.fillText(`AVG. ${paceVal} ${paceUnit}`.toUpperCase(), 540, heroY + 52);
-        setLetterSpacing(ctx, '0px');
-    } else {
-        const durVal = stats.timeStr || s1.value || '0';
-        const durUnit = s1.unit ? s1.unit.toUpperCase() : '';
-        ctx.fillStyle = solid;
-        ctx.font = `800 120px ${face}`;
-        ctx.fillText(durVal, 540, heroY);
-        if (durUnit) {
-            ctx.font = `500 40px ${labelFace}`;
-            ctx.fillStyle = labelColor;
-            ctx.fillText(durUnit, 540, heroY + 52);
-        }
-        const hr = stats.avgHeartrate || stats.maxHeartrate || (s2.label.includes('HEART') ? s2.value : '');
-        if (hr) {
-            ctx.font = `500 40px ${labelFace}`;
-            ctx.fillStyle = labelColor;
-            setLetterSpacing(ctx, '1.5px');
-            ctx.fillText(`${hr} BPM`, 540, heroY + 96);
-            setLetterSpacing(ctx, '0px');
-        }
-    }
-
-    // ── Skyline bars (top-anchored block, compact) ──
-    const barTop = 620;
-    const barBase = 980;
-    const maxBarH = barBase - barTop;
-    const splits = Array.isArray(stats.splits) ? stats.splits : [];
-    const centerX = 540;
-    const usableW = 880;
-
-    ctx.strokeStyle = textColor === 'black' ? 'rgba(0,0,0,0.22)' : 'rgba(255,255,255,0.28)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(centerX - usableW / 2, barBase + 0.5);
-    ctx.lineTo(centerX + usableW / 2, barBase + 0.5);
-    ctx.stroke();
-
-    if (splits.length > 0) {
-        // Taller = faster (inverted split seconds), skyline aesthetic
-        let maxSec = 0;
-        let minSec = Infinity;
-        splits.forEach((s: any) => {
-            const sec = Number(s.seconds) || 0;
-            if (sec > maxSec) maxSec = sec;
-            if (sec > 0 && sec < minSec) minSec = sec;
-        });
-        const span = Math.max(maxSec - minSec, 1);
-
-        const n = splits.length;
-        const gap = n > 16 ? 6 : 12;
-        const barW = Math.max(10, (usableW - gap * (n - 1)) / n);
-        const totalW = n * barW + (n - 1) * gap;
-        const x0 = centerX - totalW / 2;
-
-        splits.forEach((s: any, i: number) => {
-            const sec = Number(s.seconds) || maxSec;
-            const t = 1 - (sec - minSec) / span; // 1 = fastest
-            const h = Math.max(12, 28 + t * (maxBarH - 28));
-            const x = x0 + i * (barW + gap);
-            const y = barBase - h;
-            const g = ctx.createLinearGradient(x, y, x, barBase);
-            if (textColor === 'black') {
-                g.addColorStop(0, 'rgba(0,0,0,0.92)');
-                g.addColorStop(1, 'rgba(0,0,0,0.35)');
-            } else {
-                g.addColorStop(0, 'rgba(255,255,255,0.95)');
-                g.addColorStop(1, 'rgba(255,255,255,0.35)');
-            }
-            ctx.fillStyle = g;
-            ctx.beginPath();
-            ctx.roundRect(x, y, barW, h, 3);
-            ctx.fill();
-        });
-    } else {
-        // Quiet baseline when splits are not loaded — never fake per-km values
-        ctx.fillStyle = textColor === 'black' ? 'rgba(0,0,0,0.18)' : 'rgba(255,255,255,0.18)';
-        ctx.fillRect(centerX - usableW / 2, barBase - 4, usableW, 4);
-    }
-
-    ctx.restore();
-}
-
-/**
  * LAB DATAGRID — dense scientific metric table with 1px grid lines.
  * Distance: DISTANCE / PACE / TIME / HR / ELEV. Workout: DURATION / HR / MAX HR (no distance/pace).
  */
 export function drawLabDataGrid(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
-    const { solid, label: labelColor } = buildColors(textColor);
+    // Custom hex recolours the WHOLE sticker (values, labels, grid lines) — user 2026-11-16.
+    const inkRgb = textColor.startsWith('#') ? hexToRgb(textColor) : (textColor === 'black' ? '0, 0, 0' : '255, 255, 255');
+    const solid = `rgb(${inkRgb})`;
+    const labelColor = `rgba(${inkRgb}, 0.75)`;
     const { s1, s2, s3 } = getDynamicStats(stats);
     const hasDistance = Boolean(stats.hasDistance || (stats.distanceVal && parseFloat(stats.distanceVal) > 0));
     const face = "'Space Grotesk', 'Outfit', sans-serif";
@@ -10251,21 +10105,12 @@ export function drawLabDataGrid(ctx: CanvasRenderingContext2D, stats: any, textC
 
     const gw = 880;
     const x0 = 540 - gw / 2;
-    const headerY = 300;
     const rowH = 110;
     const gridTop = 360;
     const gridH = Math.max(rowH, rows.length * rowH);
 
-    // Header
-    ctx.textAlign = 'center';
-    setLetterSpacing(ctx, '2.5px');
-    ctx.font = `500 32px ${labelFace}`;
-    ctx.fillStyle = labelColor;
-    ctx.fillText('SESSION LOG', 540, headerY);
-    setLetterSpacing(ctx, '0px');
-
     // Grid frame — sharp 1px lines (0.5 snap)
-    ctx.strokeStyle = textColor === 'black' ? 'rgba(0,0,0,0.22)' : 'rgba(255,255,255,0.22)';
+    ctx.strokeStyle = `rgba(${inkRgb}, 0.22)`;
     ctx.lineWidth = 1;
     ctx.strokeRect(x0 + 0.5, gridTop + 0.5, gw, gridH);
 
@@ -10299,6 +10144,291 @@ export function drawLabDataGrid(ctx: CanvasRenderingContext2D, stats: any, textC
         ctx.textAlign = 'right';
         ctx.fillText(row.value, x0 + gw - 24, yMid);
     });
+
+    ctx.restore();
+}
+
+/**
+ * WEEKLY SUMMARY — hero weekly total + per-day rows (30km reference: hero left,
+ * label beneath, day rows right of hero). Reads stats.weekly ({day,value}[]) +
+ * weeklyTotal/weeklyUnit/weeklyLabel. CAL only via rows when a real value exists.
+ */
+export function drawWeeklySummary(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const { s1 } = getDynamicStats(stats);
+    const rgb = textColor.startsWith('#') ? hexToRgb(textColor) : (textColor === 'black' ? '0, 0, 0' : '255, 255, 255');
+    const ink = `rgb(${rgb})`;
+    const soft = `rgba(${rgb}, 0.5)`;
+    const face = "'Plus Jakarta Sans', 'Outfit', sans-serif";
+
+    const weekly: { day: string; value: string }[] = Array.isArray(stats.weekly) && stats.weekly.length
+        ? stats.weekly
+        : [{ day: String(stats.dayName || 'Mon').slice(0, 3), value: `${stats.distanceVal || s1.value || '0'}${stats.distanceUnit || s1.unit || 'km'}` }];
+    const total = stats.weeklyTotal || stats.distanceVal || s1.value || '0';
+    const unit = stats.weeklyUnit || stats.distanceUnit || s1.unit || 'km';
+    const label = stats.weeklyLabel || 'Weekly Distance';
+
+    ctx.save();
+    ctx.textBaseline = 'alphabetic';
+
+    // ── Layout: hero block on left, day rows on right, vertically centered ──
+    // Reference: "30km" huge bold, "Weekly Distance" beneath it,
+    // "Mon 9km / Wed 7km / Sat 13km" right-aligned as a block.
+    const rows = weekly.slice(0, 7);
+    const CENTER_Y = 960; // vertical center of canvas
+
+    // ── Hero: "30km" — massive bold ─────────────────────────────────
+    ctx.textAlign = 'left';
+    ctx.font = `800 180px ${face}`;
+    ctx.fillStyle = ink;
+    const heroText = `${total}${unit}`;
+    const heroBaseline = CENTER_Y + 40; // optically center the block
+    ctx.fillText(heroText, 110, heroBaseline);
+
+    // ── Label: "Weekly Distance" — lighter weight, tight beneath ────
+    setLetterSpacing(ctx, '1.5px');
+    ctx.font = `500 44px ${face}`;
+    ctx.fillStyle = soft;
+    ctx.fillText(label, 115, heroBaseline + 68);
+    setLetterSpacing(ctx, '0px');
+
+    // ── Day rows: right side block, vertically centered with hero ───
+    const rowH = 72;
+    const blockH = rows.length * rowH;
+    const startY = CENTER_Y - blockH / 2 + 30;
+
+    rows.forEach((row, i) => {
+        const y = startY + i * rowH;
+        ctx.textAlign = 'left';
+        // Day name — muted
+        setLetterSpacing(ctx, '1px');
+        ctx.font = `500 40px ${face}`;
+        ctx.fillStyle = soft;
+        ctx.fillText(row.day, 580, y);
+        setLetterSpacing(ctx, '0px');
+        // Value — bold white
+        ctx.font = `700 40px ${face}`;
+        ctx.fillStyle = ink;
+        ctx.fillText(row.value, 760, y);
+    });
+
+    ctx.restore();
+}
+
+/**
+ * DAY RECAP — one day, multiple activities (Share Aura reference: date header +
+ * icon rows with label above bold value). CAL only when a real value exists.
+ * Reads stats.dayRecapDate + stats.dayRecapRows ({icon,label,value}[]).
+ */
+export function drawDayRecap(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const rgb = textColor.startsWith('#') ? hexToRgb(textColor) : (textColor === 'black' ? '0, 0, 0' : '255, 255, 255');
+    const ink = `rgb(${rgb})`;
+    const soft = `rgba(${rgb}, 0.6)`;
+    const face = "'Plus Jakarta Sans', 'Outfit', sans-serif";
+
+    const rows: { icon: string; label: string; value: string }[] = Array.isArray(stats.dayRecapRows)
+        ? stats.dayRecapRows : [];
+    const dateLabel = stats.dayRecapDate || '';
+    if (!rows.length && !dateLabel) return;
+
+    ctx.save();
+    ctx.textBaseline = 'alphabetic';
+    ctx.textAlign = 'left';
+
+    let y = 700;
+    if (dateLabel) {
+        setLetterSpacing(ctx, '3px');
+        ctx.font = `700 34px ${face}`;
+        ctx.fillStyle = ink;
+        ctx.fillText(dateLabel.toUpperCase(), 130, y);
+        setLetterSpacing(ctx, '0px');
+        y += 96;
+    }
+
+    rows.slice(0, 5).forEach((row) => {
+        drawScoraActivityIcon(ctx, row.icon, 44, ink, 130, y - 30);
+        setLetterSpacing(ctx, '2px');
+        ctx.font = `500 24px ${face}`;
+        ctx.fillStyle = soft;
+        ctx.fillText(row.label, 208, y - 12);
+        setLetterSpacing(ctx, '0px');
+        ctx.font = `700 56px ${face}`;
+        ctx.fillStyle = ink;
+        ctx.fillText(row.value, 208, y + 48);
+        y += 128;
+    });
+
+    ctx.restore();
+}
+
+/**
+ * WORD SCATTER — activity data as scattered words over the photo (minimal editorial).
+ * Run scatters more words than a workout.
+ */
+export function drawWordScatter(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const { s1, s2 } = getDynamicStats(stats);
+    const hasDistance = Boolean(stats.hasDistance || (stats.distanceVal && parseFloat(stats.distanceVal) > 0));
+    const rgb = textColor.startsWith('#') ? hexToRgb(textColor) : (textColor === 'black' ? '0, 0, 0' : '255, 255, 255');
+    const ink = `rgb(${rgb})`;
+    const face = "'Plus Jakarta Sans', 'Outfit', sans-serif";
+
+    const elevPoint = stats.dataPoints?.find((p: any) => String(p.label || '').toUpperCase().includes('ELEV'));
+    const elevVal = stats.elevation || elevPoint?.value || '';
+    const hr = stats.avgHeartrate || stats.hr || '';
+
+    // Group related tokens: value + unit stay together so the scatter is readable
+    const titleWords = String(stats.shortTitle || stats.title || '').split(/\s+/).filter(Boolean);
+    const pace = (stats.subValue || s2.value || '').split(' ')[0];
+    const paceUnit = s2.unit || stats.subLabel || '/km';
+    const dist = String(stats.distanceVal || s1.value || '0.00');
+    const distUnit = String(stats.distanceUnit || s1.unit || 'km');
+    const tokens: string[] = [];
+
+    // Title words first (single words scattered)
+    titleWords.forEach(w => tokens.push(w));
+
+    if (hasDistance) {
+        tokens.push(`${dist} ${distUnit}`);     // "10.05 km" together
+        if (pace) tokens.push(`${pace} ${paceUnit}`);  // "4:09 /km" together
+        if (stats.timeStr) tokens.push(stats.timeStr);
+        if (hr) tokens.push(`${hr} bpm`);       // "167 bpm" together
+        if (elevVal) tokens.push(`+${elevVal} m`); // "+36 m" together
+    } else {
+        if (stats.timeStr || s1.value) tokens.push(String(stats.timeStr || s1.value));
+        if (hr) tokens.push(`${hr} bpm`);
+        tokens.push(String(stats.type || 'Workout'));
+    }
+    if (stats.location) tokens.push(String(stats.location));
+    if (stats.startTime) tokens.push(String(stats.startTime));
+
+    const words = tokens.map(w => String(w).trim()).filter(Boolean);
+    if (!words.length) return;
+
+    // Deterministic scatter grid — irregular offsets, varied size, slight rotation
+    // Inspired by the Instagram quote-overlay reference (WhatsApp 21.39.18-1)
+    const slots = [
+        { x: 140,  y: 320,  s: 48 },
+        { x: 520,  y: 280,  s: 36 },
+        { x: 860,  y: 380,  s: 42 },
+        { x: 280,  y: 520,  s: 56 },
+        { x: 700,  y: 560,  s: 34 },
+        { x: 160,  y: 720,  s: 40 },
+        { x: 540,  y: 780,  s: 52 },
+        { x: 900,  y: 700,  s: 38 },
+        { x: 340,  y: 940,  s: 44 },
+        { x: 760,  y: 960,  s: 36 },
+        { x: 180,  y: 1100, s: 50 },
+        { x: 580,  y: 1140, s: 42 },
+        { x: 880,  y: 1080, s: 34 },
+        { x: 320,  y: 1280, s: 46 },
+        { x: 720,  y: 1320, s: 38 },
+    ];
+
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Subtle shadow for photo readability
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+    ctx.shadowBlur = 10;
+    ctx.shadowOffsetY = 2;
+
+    words.slice(0, slots.length).forEach((w, i) => {
+        const sl = slots[i];
+        ctx.save();
+        ctx.translate(sl.x, sl.y);
+        ctx.font = `500 ${sl.s}px ${face}`;
+        ctx.fillStyle = ink;
+        ctx.fillText(w, 0, 0);
+        ctx.restore();
+    });
+
+    // Reset shadow
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+
+    ctx.restore();
+}
+
+/**
+ * PHOTO STACK — FITSHOT reference: title + "time in place" subtitle + stacked
+ * label/value rows over the photo. Run shows more rows than a workout — that's OK.
+ * CAL only when Strava actually returned it (list payloads never do).
+ */
+export function drawPhotoStack(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const { s1, s2, s3 } = getDynamicStats(stats);
+    const hasDistance = Boolean(stats.hasDistance || (stats.distanceVal && parseFloat(stats.distanceVal) > 0));
+    const rgb = textColor.startsWith('#') ? hexToRgb(textColor) : (textColor === 'black' ? '0, 0, 0' : '255, 255, 255');
+    const ink = `rgb(${rgb})`;
+    const soft = `rgba(${rgb}, 0.55)`;
+    const face = "'Plus Jakarta Sans', 'Outfit', sans-serif";
+
+    const elevPoint = stats.dataPoints?.find((p: any) => String(p.label || '').toUpperCase().includes('ELEV'));
+    const elevVal = stats.elevation || elevPoint?.value || '';
+    const hr = stats.avgHeartrate || stats.hr || '';
+    const cal = stats.calories || '';
+    const temp = stats.avgTemp || '';
+
+    type Row = { label: string; value: string };
+    let rows: Row[];
+    if (hasDistance) {
+        const dist = `${stats.distanceVal || s1.value || '0.00'} ${stats.distanceUnit || s1.unit || 'km'}`;
+        const paceUnit = s2.unit || stats.subLabel || '/km';
+        const pace = stats.subValue
+            ? `${stats.subValue.split(' ')[0]} ${paceUnit}`.trim()
+            : (s2.value ? `${s2.value} ${paceUnit}` : '');
+        rows = [
+            { label: 'Distance', value: dist },
+            { label: 'Moving Time', value: stats.movingTime || stats.timeStr || '' },
+            { label: 'Pace', value: pace },
+            { label: 'Total Elevation Gain', value: elevVal ? `+${elevVal} m` : '' },
+            // CAL only when real — never invented (user 2026-11-17)
+            { label: 'Calories Burned', value: cal ? `${cal} kcal` : '' },
+            { label: 'Temperature', value: temp ? `${temp}\u00B0C` : '' },
+        ];
+    } else {
+        rows = [
+            { label: 'Duration', value: stats.movingTime || stats.timeStr || s1.value || '' },
+            { label: 'Avg Heart Rate', value: hr ? `${hr} bpm` : '' },
+            { label: 'Max Heart Rate', value: stats.maxHeartrate ? `${stats.maxHeartrate} bpm` : '' },
+            { label: 'Calories Burned', value: cal ? `${cal} kcal` : '' },
+            { label: 'Temperature', value: temp ? `${temp}\u00B0C` : '' },
+        ];
+    }
+    rows = rows.filter(r => r.value);
+    if (!rows.length) return;
+
+    ctx.save();
+    ctx.textBaseline = 'alphabetic';
+    ctx.textAlign = 'left';
+
+    // Title + time/place subtitle (FITSHOT reference)
+    setLetterSpacing(ctx, '0.5px');
+    ctx.font = `700 56px ${face}`;
+    ctx.fillStyle = ink;
+    const title = stats.shortTitle || stats.title || 'Activity';
+    ctx.fillText(title, 120, 360);
+    setLetterSpacing(ctx, '1px');
+    ctx.font = `500 30px ${face}`;
+    ctx.fillStyle = soft;
+    const place = stats.region || stats.location || '';
+    const sub = [stats.startTime, place ? `in ${place}` : ''].filter(Boolean).join(' ');
+    if (sub) ctx.fillText(sub, 120, 412);
+    setLetterSpacing(ctx, '0px');
+
+    // Stacked label/value rows
+    let y = 560;
+    for (const row of rows) {
+        setLetterSpacing(ctx, '1.5px');
+        ctx.font = `500 26px ${face}`;
+        ctx.fillStyle = soft;
+        ctx.fillText(row.label, 120, y);
+        setLetterSpacing(ctx, '0px');
+        ctx.font = `700 54px ${face}`;
+        ctx.fillStyle = ink;
+        ctx.fillText(row.value, 120, y + 56);
+        y += 118;
+    }
 
     ctx.restore();
 }

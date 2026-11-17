@@ -83,3 +83,9 @@ trace.zip
 .dev-logs/
 /coverage/
 /coverage-v8/
+
+# Inspiration / competitor reference images — NEVER commit to GitHub
+docs/inspiration/
+
+# QA backdrop photos — local validation only, NEVER commit
+qa-backdrops/

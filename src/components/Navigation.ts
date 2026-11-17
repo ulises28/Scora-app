@@ -1,6 +1,6 @@
 /**
  * Screen router with directional micro-transitions.
- * Screens: screen-feed | screen-stickers | screen-editor | screen-queue | auth-section
+ * Screens: screen-feed | screen-stickers | screen-editor | screen-queue | screen-weekly | screen-weekly-editor | auth-section
  * Feed → stickers → editor plays forward; going back plays reverse.
  */
 const SCREEN_IDS = [
@@ -8,6 +8,8 @@ const SCREEN_IDS = [
     'screen-stickers',
     'screen-editor',
     'screen-queue',
+    'screen-weekly',
+    'screen-weekly-editor',
     'auth-section',
 ] as const;
 type ScreenId = (typeof SCREEN_IDS)[number];
@@ -15,18 +17,14 @@ type ScreenId = (typeof SCREEN_IDS)[number];
 let currentScreen: ScreenId | null = null;
 
 export function showScreen(screenId: string) {
-    const deeper =
-        screenId === 'screen-editor'
-            ? 2
-            : screenId === 'screen-stickers'
-                ? 1
-                : 0;
-    const currentDepth =
-        currentScreen === 'screen-editor'
-            ? 2
-            : currentScreen === 'screen-stickers'
-                ? 1
-                : 0;
+    const depthMap: Record<string, number> = {
+        'screen-weekly': 1,
+        'screen-weekly-editor': 2,
+        'screen-stickers': 1,
+        'screen-editor': 2,
+    };
+    const deeper = depthMap[screenId] ?? 0;
+    const currentDepth = currentScreen ? (depthMap[currentScreen] ?? 0) : 0;
 
     const direction: 'forward' | 'back' = deeper >= currentDepth ? 'forward' : 'back';
 
@@ -53,7 +51,7 @@ export function showScreen(screenId: string) {
     // Back affordance (LEFT side): stickers + editor
     const backBtn = document.getElementById('btn-back');
     const navContext = document.getElementById('editor-nav-context');
-    const showChrome = screenId === 'screen-editor' || screenId === 'screen-stickers';
+    const showChrome = screenId === 'screen-editor' || screenId === 'screen-stickers' || screenId === 'screen-weekly-editor';
 
     if (backBtn) {
         if (showChrome) backBtn.classList.remove('hidden');

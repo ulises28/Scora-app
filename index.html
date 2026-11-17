@@ -117,6 +117,16 @@
                         </button>
                     </div>
                     <p>Selecciona una actividad para crear tu sticker.</p>
+                    <button id="btn-weekly" class="btn-weekly" data-testid="btn-weekly">
+                        <div class="btn-weekly-icon">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
+                        </div>
+                        <div class="btn-weekly-text">
+                            <span class="btn-weekly-title">Weekly Summary</span>
+                            <span class="btn-weekly-sub">Aggregate your week into a story sticker</span>
+                        </div>
+                        <svg class="btn-weekly-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    </button>
                 </div>
                 <div id="activity-list" class="activity-feed" data-testid="activity-list">
                 </div>
@@ -153,7 +163,7 @@
                         <div class="canvas-wrapper transparency-grid" id="canvas-wrapper" data-testid="canvas-main-preview">
                             <canvas id="storyCanvas"></canvas>
                         </div>
-                        <p class="canvas-hint">Toca para copiar · Mantén para guardar</p>
+                        <p class="canvas-hint">Tap to copy · Hold to save</p>
                     </div>
 
                     <button class="template-arrow template-arrow-next" id="btn-template-next" data-testid="btn-template-next"
@@ -218,6 +228,102 @@
                     </div>
 
                     <button id="btn-download" class="btn-download" data-testid="download-btn">Download sticker</button>
+                </aside>
+            </div>
+        </main>
+
+        <main id="screen-weekly" class="screen" data-testid="screen-weekly">
+            <section class="sticker-grid-section">
+                <header class="sticker-grid-bar">
+                    <div class="sticker-grid-bar-text">
+                        <h1>Weekly Summary</h1>
+                        <p class="grid-hint">Pick a weekly sticker to customize</p>
+                    </div>
+                </header>
+                <div id="weekly-sticker-grid" class="sticker-grid" data-testid="weekly-sticker-grid"></div>
+            </section>
+        </main>
+
+        <main id="screen-weekly-editor" class="screen" data-testid="screen-weekly-editor">
+            <div class="editor-layout">
+                <div class="preview-container">
+                    <div class="canvas-stage">
+                        <div class="canvas-wrapper transparency-grid" id="weekly-canvas-wrapper" data-testid="weekly-canvas-preview">
+                            <canvas id="weeklyStoryCanvas"></canvas>
+                        </div>
+                        <p class="canvas-hint">Tap to copy · Hold to save</p>
+                    </div>
+                </div>
+                <aside class="editor-controls">
+                    <div class="controls-panel">
+                        <div class="controls-panel-head">
+                            <span class="controls-panel-title">Weekly Settings</span>
+                            <span class="controls-panel-sub">Filter, range & style</span>
+                        </div>
+                        <div class="controls-row">
+                            <div class="control-slot">
+                                <div class="toggle-group control-variant">
+                                    <span class="controls-label">Sport</span>
+                                    <div class="toggle-pill wo-toggle" id="wo-sport-chips" data-testid="wo-sport-chips">
+                                        <span class="toggle-thumb wo-thumb"></span>
+                                        <button class="toggle-opt active" data-val="all">All</button>
+                                        <button class="toggle-opt" data-val="run">Run</button>
+                                        <button class="toggle-opt" data-val="ride">Ride</button>
+                                        <button class="toggle-opt" data-val="workout">Gym</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="control-slot">
+                                <div class="toggle-group control-variant">
+                                    <span class="controls-label">Start</span>
+                                    <div class="wo-select-wrap">
+                                        <select id="wo-day-start" class="wo-select" aria-label="Start day">
+                                            <option value="Mon">Mon</option><option value="Tue">Tue</option>
+                                            <option value="Wed">Wed</option><option value="Thu">Thu</option>
+                                            <option value="Fri">Fri</option><option value="Sat">Sat</option>
+                                            <option value="Sun">Sun</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="controls-row">
+                            <div class="control-slot">
+                                <div class="toggle-group control-variant">
+                                    <span class="controls-label">End</span>
+                                    <div class="wo-select-wrap">
+                                        <select id="wo-day-end" class="wo-select" aria-label="End day">
+                                            <option value="Mon">Mon</option><option value="Tue">Tue</option>
+                                            <option value="Wed">Wed</option><option value="Thu">Thu</option>
+                                            <option value="Fri">Fri</option><option value="Sat">Sat</option>
+                                            <option value="Sun" selected>Sun</option>
+                                        </select>
+                                    </div>
+                                    <p class="wo-warning hidden" id="wo-range-warning" data-testid="wo-range-warning">Max 7 days</p>
+                                </div>
+                            </div>
+                            <div class="control-slot" id="weekly-color-slot">
+                                <div class="toggle-group control-variant">
+                                    <span class="controls-label">Color</span>
+                                    <div class="wo-color-wrap">
+                                        <input type="color" id="wo-color" class="wo-color-input" data-testid="wo-color" value="#ffffff" aria-label="Sticker color">
+                                        <span class="wo-color-swatch" id="wo-color-swatch"></span>
+                                        <span class="wo-color-hex" id="wo-color-hex">#FFFFFF</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="controls-row wo-actions-row">
+                            <button id="wo-copy" class="wo-action-btn" data-testid="wo-copy">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                                Copy
+                            </button>
+                            <button id="wo-save" class="wo-action-btn wo-action-primary" data-testid="wo-save">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                Save
+                            </button>
+                        </div>
+                    </div>
                 </aside>
             </div>
         </main>

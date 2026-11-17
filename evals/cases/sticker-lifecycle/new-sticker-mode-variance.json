@@ -4,7 +4,7 @@
   "title": "New sticker must show different data by activity (run vs workout)",
   "layer": "output+grounding",
   "risk": "Agent writes one metric set for all modes; display contract lies; scan fails later or false-greens",
-  "user_prompt": "Add 'trail-summary' sticker: on runs show distance + pace + map; on gym workouts show duration + avg HR, no map.",
+  "user_prompt": "Add 'mode-variance-demo' sticker: on runs show distance + pace + map; on gym workouts show duration + avg HR, no map.",
   "context": {
     "docs": [
       "tests/e2e/docs/qa-architecture.md",
@@ -38,11 +38,11 @@
       "src/features/editor/CanvasPainter.ts"
     ],
     "registry_must_match": [
-      "trail-summary",
+      "mode-variance-demo",
       "hasDistance"
     ],
     "renderer_must_match": [
-      "export function drawTrailSummary",
+      "export function drawModeVarianceDemo",
       "hasDistance"
     ],
     "contract_modes": {
