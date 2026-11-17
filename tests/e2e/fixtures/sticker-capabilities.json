@@ -2040,6 +2040,204 @@
         }
       }
     },
+    "stat-strip": {
+      "version": "4.2",
+      "supportsCustomColor": true,
+      "supportsBlackText": true,
+      "compact": true,
+      "modes": {
+        "run": {
+          "metrics": [
+            "distance",
+            "pace",
+            "heartRate",
+            "elevation",
+            "time"
+          ],
+          "labels": [
+            "KM",
+            "/KM",
+            "BPM"
+          ],
+          "metadata": [],
+          "display": {
+            "distance": "numeric",
+            "pace": "numeric",
+            "heartRate": "numeric",
+            "elevation": "numeric",
+            "time": "numeric"
+          }
+        },
+        "bike": {
+          "metrics": [
+            "distance",
+            "pace",
+            "heartRate",
+            "elevation",
+            "time"
+          ],
+          "labels": [
+            "KM",
+            "KM/H",
+            "BPM"
+          ],
+          "metadata": [],
+          "display": {
+            "distance": "numeric",
+            "pace": "numeric",
+            "heartRate": "numeric",
+            "elevation": "numeric",
+            "time": "numeric"
+          }
+        },
+        "workout": {
+          "metrics": [
+            "heartRate",
+            "elevation",
+            "time"
+          ],
+          "labels": [
+            "BPM"
+          ],
+          "metadata": [],
+          "display": {
+            "heartRate": "numeric",
+            "elevation": "numeric",
+            "time": "numeric"
+          }
+        }
+      }
+    },
+    "stat-compact": {
+      "version": "4.2",
+      "supportsCustomColor": true,
+      "supportsBlackText": true,
+      "compact": true,
+      "modes": {
+        "run": {
+          "metrics": [
+            "distance",
+            "pace",
+            "heartRate",
+            "time"
+          ],
+          "labels": [
+            "KM",
+            "/KM",
+            "BPM"
+          ],
+          "metadata": [],
+          "display": {
+            "distance": "numeric",
+            "pace": "numeric",
+            "heartRate": "numeric",
+            "time": "numeric"
+          }
+        },
+        "bike": {
+          "metrics": [
+            "distance",
+            "pace",
+            "heartRate",
+            "time"
+          ],
+          "labels": [
+            "KM",
+            "KM/H",
+            "BPM"
+          ],
+          "metadata": [],
+          "display": {
+            "distance": "numeric",
+            "pace": "numeric",
+            "heartRate": "numeric",
+            "time": "numeric"
+          }
+        },
+        "workout": {
+          "metrics": [
+            "heartRate",
+            "time"
+          ],
+          "labels": [
+            "BPM"
+          ],
+          "metadata": [],
+          "display": {
+            "heartRate": "numeric",
+            "time": "numeric"
+          }
+        }
+      }
+    },
+    "stat-strip-vertical": {
+      "version": "4.2",
+      "supportsCustomColor": true,
+      "supportsBlackText": true,
+      "compact": true,
+      "modes": {
+        "run": {
+          "metrics": [
+            "distance",
+            "pace",
+            "heartRate",
+            "elevation",
+            "time"
+          ],
+          "labels": [
+            "KM",
+            "/KM",
+            "BPM"
+          ],
+          "metadata": [],
+          "display": {
+            "distance": "numeric",
+            "pace": "numeric",
+            "heartRate": "numeric",
+            "elevation": "numeric",
+            "time": "numeric"
+          }
+        },
+        "bike": {
+          "metrics": [
+            "distance",
+            "pace",
+            "heartRate",
+            "elevation",
+            "time"
+          ],
+          "labels": [
+            "KM",
+            "KM/H",
+            "BPM"
+          ],
+          "metadata": [],
+          "display": {
+            "distance": "numeric",
+            "pace": "numeric",
+            "heartRate": "numeric",
+            "elevation": "numeric",
+            "time": "numeric"
+          }
+        },
+        "workout": {
+          "metrics": [
+            "heartRate",
+            "elevation",
+            "time"
+          ],
+          "labels": [
+            "BPM"
+          ],
+          "metadata": [],
+          "display": {
+            "heartRate": "numeric",
+            "elevation": "numeric",
+            "time": "numeric"
+          }
+        }
+      }
+    },
     "weekly-summary": {
       "version": "4.2",
       "supportsCustomColor": true,

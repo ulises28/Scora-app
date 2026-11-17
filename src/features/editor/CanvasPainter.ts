@@ -457,18 +457,24 @@ export async function drawTemplate(
         ctx.restore();
 
         if (wantLogo && !isChrome) {
-            const artTop = art.y * scale + ty;
-            const artLeft = art.x * scale + tx;
+            // Dock from the FINAL artwork — pre-transform bounds drift after the
+            // refit and left the mark floating or on top of content (user 2026-11-17).
+            const finalPx = getContentBounds(canvas);
+            const artTop = finalPx ? finalPx.y / scaleY : art.y * scale + ty;
+            const artLeft = finalPx ? finalPx.x / scaleX : art.x * scale + tx;
             // Keep the mark inside the frame (never fly off / sit under the art)
             const logoY = Math.min(Math.max(artTop - LOGO_GAP, 36), TARGET_H - 24);
             const logoX = Math.min(Math.max(artLeft, 24), TARGET_W - 120);
             paintLogo(logoX, logoY, textColor);
         }
     } else if (wantLogo && !isChrome) {
-        // Full-bleed (or unmeasured art): still stamp the watermark
-        const y = art ? art.y - LOGO_GAP : 80;
-        const x = art ? art.x : 60;
-        paintLogo(x, y, textColor);
+        // Full-bleed (or unmeasured art): dock from the final artwork too
+        const finalPx = getContentBounds(canvas);
+        const top = finalPx ? finalPx.y / scaleY : 80;
+        const left = finalPx ? finalPx.x / scaleX : 60;
+        const logoY = Math.min(Math.max(top - LOGO_GAP, 36), TARGET_H - 24);
+        const logoX = Math.min(Math.max(left, 24), TARGET_W - 120);
+        paintLogo(logoX, logoY, textColor);
     }
 
     // Keep the full 9:16 story frame (1080×1920) — WYSIWYG for Instagram Stories.
@@ -10176,39 +10182,48 @@ export function drawWeeklySummary(ctx: CanvasRenderingContext2D, stats: any, tex
     const rows = weekly.slice(0, 7);
     const CENTER_Y = 960; // vertical center of canvas
 
-    // ── Hero: "30km" — massive bold ─────────────────────────────────
+    // ── Hero: "30km" — massive bold, fitted to the left column ─────
+    // Left column x=110..540, rows column x=560..985. The hero may never
+    // run into the rows block (user 2026-11-17: overlapping text is a P0).
+    const HERO_X = 110;
+    const HERO_MAX_W = 450;
+    const heroText = `${total}${unit}`;
     ctx.textAlign = 'left';
     ctx.font = `800 180px ${face}`;
+    const heroW = ctx.measureText(heroText).width;
+    const heroPx = heroW > HERO_MAX_W ? Math.max(88, Math.floor(180 * HERO_MAX_W / heroW)) : 180;
+    ctx.font = `800 ${heroPx}px ${face}`;
     ctx.fillStyle = ink;
-    const heroText = `${total}${unit}`;
     const heroBaseline = CENTER_Y + 40; // optically center the block
-    ctx.fillText(heroText, 110, heroBaseline);
+    ctx.fillText(heroText, HERO_X, heroBaseline);
 
     // ── Label: "Weekly Distance" — lighter weight, tight beneath ────
     setLetterSpacing(ctx, '1.5px');
     ctx.font = `500 44px ${face}`;
     ctx.fillStyle = soft;
-    ctx.fillText(label, 115, heroBaseline + 68);
+    ctx.fillText(label, HERO_X + 5, heroBaseline + 68);
     setLetterSpacing(ctx, '0px');
 
-    // ── Day rows: right side block, vertically centered with hero ───
+    // ── Day rows: right block, day left / value right-aligned edge ──
     const rowH = 72;
     const blockH = rows.length * rowH;
     const startY = CENTER_Y - blockH / 2 + 30;
 
     rows.forEach((row, i) => {
         const y = startY + i * rowH;
-        ctx.textAlign = 'left';
         // Day name — muted
+        ctx.textAlign = 'left';
         setLetterSpacing(ctx, '1px');
         ctx.font = `500 40px ${face}`;
         ctx.fillStyle = soft;
-        ctx.fillText(row.day, 580, y);
+        ctx.fillText(row.day, 620, y);
         setLetterSpacing(ctx, '0px');
-        // Value — bold white
+        // Value — bold, right-aligned to the block edge
+        ctx.textAlign = 'right';
         ctx.font = `700 40px ${face}`;
         ctx.fillStyle = ink;
-        ctx.fillText(row.value, 760, y);
+        ctx.fillText(row.value, 985, y);
+        ctx.textAlign = 'left';
     });
 
     ctx.restore();
@@ -10429,6 +10444,169 @@ export function drawPhotoStack(ctx: CanvasRenderingContext2D, stats: any, textCo
         ctx.fillText(row.value, 120, y + 56);
         y += 118;
     }
+
+    ctx.restore();
+}
+
+// ─── Minimal stat strips (user 2026-11-17: "super simple… cool font… minimal style") ──
+// Reference set: (1) horizontal label/value grid — Distance/Pace · Time/Elev Gain ·
+// Cal/Avg HR; (2) condensed 3-up TIME / KM / PACE with the unit on a second line;
+// (3) the same label/value grid rotated 90° up the right edge of a portrait story.
+
+function statStripPairs(stats: any): { label: string; value: string }[] {
+    const { s1, s2 } = getDynamicStats(stats);
+    const hasDistance = Boolean(stats.hasDistance || (stats.distanceVal && parseFloat(stats.distanceVal) > 0));
+    const elevPoint = stats.dataPoints?.find((p: any) => String(p.label || '').toUpperCase().includes('ELEV'));
+    const elevVal = stats.elevation || elevPoint?.value || '';
+    const hr = stats.avgHeartrate || stats.hr || '';
+    const cal = stats.calories || '';
+    const paceUnit = s2.unit || stats.subLabel || '/km';
+    const pace = stats.subValue
+        ? `${String(stats.subValue).split(' ')[0]} ${paceUnit}`.trim()
+        : (s2.value ? `${s2.value} ${paceUnit}` : '');
+    const dist = `${stats.distanceVal || s1.value || '0.00'} ${stats.distanceUnit || s1.unit || 'km'}`;
+    const time = stats.timeStr || stats.movingTime || s1.value || '';
+    return [
+        { label: 'Distance', value: hasDistance ? dist : '' },
+        { label: 'Pace', value: hasDistance ? pace : '' },
+        { label: 'Time', value: time },
+        { label: 'Elev Gain', value: elevVal ? `${elevVal} m` : '' },
+        // CAL only when real — never invented (user 2026-11-17)
+        { label: 'Cal', value: cal ? `${cal} Cal` : '' },
+        { label: 'Avg HR', value: hr ? `${hr} bpm` : '' },
+    ].filter(r => r.value);
+}
+
+/** Minimal strip (ref 1): 3 column groups × 2 label/value rows, centered band. */
+export function drawStatStrip(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const rows = statStripPairs(stats);
+    if (!rows.length) return;
+    const rgb = textColor.startsWith('#') ? hexToRgb(textColor) : (textColor === 'black' ? '0, 0, 0' : '255, 255, 255');
+    const ink = `rgb(${rgb})`;
+    const soft = `rgba(${rgb}, 0.85)`;
+    const face = "'Inter', 'Plus Jakarta Sans', sans-serif";
+
+    ctx.save();
+    ctx.textBaseline = 'alphabetic';
+    ctx.textAlign = 'left';
+
+    const cols = [rows.slice(0, 2), rows.slice(2, 4), rows.slice(4, 6)];
+    const colX = [110, 470, 810];
+    const LABEL_TRACK = 170;
+    const startY = 936;
+    const rowGap = 62;
+
+    cols.forEach((col, ci) => {
+        col.forEach((row, ri) => {
+            const y = startY + ri * rowGap;
+            setLetterSpacing(ctx, '1.2px');
+            ctx.font = `500 26px ${face}`;
+            ctx.fillStyle = soft;
+            ctx.fillText(row.label, colX[ci], y);
+            setLetterSpacing(ctx, '0px');
+            ctx.font = `700 32px ${face}`;
+            ctx.fillStyle = ink;
+            ctx.fillText(row.value, colX[ci] + LABEL_TRACK, y);
+        });
+    });
+
+    ctx.restore();
+}
+
+/** Compact trio (ref 2): values on line 1, units on line 2 — 41 / 10.05 / 4:09 · min / km / /km. */
+export function drawStatCompact(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const rows = statStripPairs(stats);
+    if (!rows.length) return;
+    const rgb = textColor.startsWith('#') ? hexToRgb(textColor) : (textColor === 'black' ? '0, 0, 0' : '255, 255, 255');
+    const ink = `rgb(${rgb})`;
+    const face = "'Oswald', 'Inter', sans-serif";
+
+    const time = rows.find(r => r.label === 'Time')?.value || '0';
+    // Accepts "1h 20m", "41m", "41:46" (m:ss) and "1:20:30" (h:mm:ss).
+    const hm = time.match(/(\d+)\s*h/i);
+    const mm = time.match(/(\d+)\s*m/i);
+    let totalMin: number;
+    if (hm || mm) {
+        totalMin = (hm ? parseInt(hm[1], 10) * 60 : 0) + (mm ? parseInt(mm[1], 10) : 0);
+    } else {
+        const parts = time.split(':').map(n => parseInt(n, 10) || 0);
+        totalMin = parts.length === 3 ? parts[0] * 60 + parts[1] : parts[0] || 0;
+    }
+
+    const distRow = rows.find(r => r.label === 'Distance');
+    const paceRow = rows.find(r => r.label === 'Pace');
+    const cols: [string, string][] = distRow && paceRow
+        ? [
+            [String(totalMin), 'min'],
+            [String(stats.distanceVal || '0'), String(stats.distanceUnit || 'km')],
+            [String(paceRow.value).split(' ')[0], String(paceRow.value).split(' ')[1] || '/km'],
+        ]
+        : [
+            [String(totalMin), 'min'],
+            [String(stats.avgHeartrate || ''), 'bpm'],
+            [String(stats.calories || ''), 'cal'],
+        ];
+
+    ctx.save();
+    ctx.textBaseline = 'alphabetic';
+    ctx.textAlign = 'center';
+
+    const colX = [300, 560, 820];
+    cols.forEach((lines, i) => {
+        if (!lines[0]) return;
+        setLetterSpacing(ctx, '1px');
+        ctx.font = `700 68px ${face}`;
+        ctx.fillStyle = ink;
+        ctx.fillText(lines[0].toUpperCase(), colX[i], 916);
+        if (lines[1]) {
+            ctx.font = `700 42px ${face}`;
+            ctx.fillText(lines[1].toUpperCase(), colX[i], 978);
+        }
+    });
+    setLetterSpacing(ctx, '0px');
+
+    ctx.restore();
+}
+
+/** Vertical strip (ref 3): label/value rows rotated 90° up the right edge, never overlapping. */
+export function drawStatStripVertical(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
+    const rows = statStripPairs(stats);
+    if (!rows.length) return;
+    const rgb = textColor.startsWith('#') ? hexToRgb(textColor) : (textColor === 'black' ? '0, 0, 0' : '255, 255, 255');
+    const ink = `rgb(${rgb})`;
+    const soft = `rgba(${rgb}, 0.85)`;
+    const face = "'Inter', 'Plus Jakarta Sans', sans-serif";
+
+    const LABEL_PX = 26, VALUE_PX = 32, LANE_VALUE = 92, ROW_GAP = 44;
+
+    // Measure in rotated space: text runs along +x, so a row occupies its longest string.
+    const m = (txt: string, font: string) => { ctx.font = font; return ctx.measureText(txt).width; };
+    const lens = rows.map(r => Math.max(
+        m(r.label, `500 ${LABEL_PX}px ${face}`),
+        m(r.value, `700 ${VALUE_PX}px ${face}`)
+    ));
+    const total = lens.reduce((a, b) => a + b, 0) + ROW_GAP * (rows.length - 1);
+    const AVAIL = 1460;
+    const scale = total > AVAIL ? AVAIL / total : 1;
+
+    ctx.save();
+    ctx.translate(930, 1700);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textBaseline = 'alphabetic';
+    ctx.textAlign = 'left';
+
+    let x = 0;
+    rows.forEach((row, i) => {
+        setLetterSpacing(ctx, '1.2px');
+        ctx.font = `500 ${Math.round(LABEL_PX * scale)}px ${face}`;
+        ctx.fillStyle = soft;
+        ctx.fillText(row.label, x, 0);
+        setLetterSpacing(ctx, '0px');
+        ctx.font = `700 ${Math.round(VALUE_PX * scale)}px ${face}`;
+        ctx.fillStyle = ink;
+        ctx.fillText(row.value, x, LANE_VALUE * scale);
+        x += lens[i] * scale + ROW_GAP * scale;
+    });
 
     ctx.restore();
 }

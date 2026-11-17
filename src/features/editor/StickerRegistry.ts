@@ -53,6 +53,10 @@ export const ACTIVE_STICKER_LIST: StickerDefinition[] = [
     { id: 'select-highlight', supportsCustomColor: true, category: 'all', supportsBlackText: false, features: { distance: true, duration: true }, render: Renderers.drawSelectHighlight },
     { id: 'lab-datagrid', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, paceSpeed: true, duration: true, alwaysShowDuration: true, heartRate: true, elevation: true }, render: Renderers.drawLabDataGrid },
     { id: 'photo-stack', supportsCustomColor: true, category: 'all', supportsBlackText: true, features: { distance: true, paceSpeed: true, duration: true, alwaysShowDuration: true, heartRate: true, elevation: true, temperature: true }, render: Renderers.drawPhotoStack },
+    // Minimal stat strips (user 2026-11-17: "super simple… cool font… minimal style")
+    { id: 'stat-strip', supportsCustomColor: true, category: 'all', supportsBlackText: true, compact: true, features: { distance: true, paceSpeed: true, duration: true, alwaysShowDuration: true, heartRate: true, elevation: true, calories: true }, render: Renderers.drawStatStrip },
+    { id: 'stat-compact', supportsCustomColor: true, category: 'all', supportsBlackText: true, compact: true, features: { distance: true, paceSpeed: true, duration: true, alwaysShowDuration: true, heartRate: true, calories: true }, render: Renderers.drawStatCompact },
+    { id: 'stat-strip-vertical', supportsCustomColor: true, category: 'all', supportsBlackText: true, compact: true, features: { distance: true, paceSpeed: true, duration: true, alwaysShowDuration: true, heartRate: true, elevation: true, calories: true }, render: Renderers.drawStatStripVertical },
     // Weekly Overlays — multi-activity, configured in the home "Weekly Overlays" section
     // (colour, day range, sport grouping). Hidden from the per-activity grid.
     { id: 'weekly-summary', supportsCustomColor: true, category: 'all', supportsBlackText: true, hidden: true, features: { distance: true, duration: true }, expectedLabels: ['WEEKLY DISTANCE', 'WEEKLY DURATION'], render: Renderers.drawWeeklySummary },

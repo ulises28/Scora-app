@@ -15,6 +15,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Andika:ital,wght@0,400;0,700;1,400;1,700&family=Sekuya&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Bubblegum+Sans&family=Matemasie&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
     <link
         href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;500;700;800&family=Outfit:wght@300;400;500;700;800&family=Idiqlat:wght@200;300;400&family=Playfair+Display:ital,wght@0,500;1,500;1,900&family=Merriweather:ital,wght@0,400;0,700;0,900;1,700&family=Press+Start+2P&family=EB+Garamond:ital,wght@0,400;0,500;1,500&family=Inter:wght@400;700;800;900&family=Space+Grotesk:wght@400;700&family=Space+Mono:wght@400;700&family=Orbitron:wght@400;700;900&family=DotGothic16&family=Doto:wght@100..900&family=Rubik+Spray+Paint&family=BBH+Bartle&family=Permanent+Marker&family=Archivo+Black&family=Bungee&family=Syncopate:wght@400;700&family=Belleza&family=Libertinus+Math&family=Cinzel:wght@400..900&family=Bitcount+Single:wght@100..900&family=Michroma&family=Russo+One&family=Audiowide&family=Boldonse&family=IBM+Plex+Serif:ital,wght@0,100;0,400;0,700;1,400&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,700&family=Shadows+Into+Light+Two&family=Roboto+Mono:wght@400;700&family=Unbounded:wght@200..900&family=Syne:wght@400..800&family=Asset&display=swap"
         rel="stylesheet">
@@ -260,44 +261,34 @@
                             <span class="controls-panel-title">Weekly Settings</span>
                             <span class="controls-panel-sub">Filter &amp; style</span>
                         </div>
-                        <div class="controls-row">
-                            <div class="control-slot">
-                                <div class="toggle-group control-variant">
-                                    <span class="controls-label">Sports</span>
-                                    <div class="wo-check-row" id="wo-sport-chips" data-testid="wo-sport-chips">
-                                        <button class="wo-check active" data-val="all">All</button>
-                                        <button class="wo-check active" data-val="run">Run</button>
-                                        <button class="wo-check active" data-val="ride">Ride</button>
-                                        <button class="wo-check active" data-val="swim">Swim</button>
-                                        <button class="wo-check active" data-val="workout">Workout</button>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="control-slot" id="weekly-color-slot">
-                                <div class="toggle-group control-variant">
-                                    <span class="controls-label">Color</span>
-                                    <div class="wo-color-wrap">
-                                        <input type="color" id="wo-color" class="wo-color-input" data-testid="wo-color" value="#ffffff" aria-label="Sticker color">
-                                        <span class="wo-color-swatch" id="wo-color-swatch"></span>
-                                        <span class="wo-color-hex" id="wo-color-hex">#FFFFFF</span>
-                                    </div>
-                                </div>
+                        <div class="wo-field">
+                            <span class="controls-label">Sports</span>
+                            <div class="wo-check-row" id="wo-sport-chips" data-testid="wo-sport-chips">
+                                <button class="wo-check active" data-val="all">All</button>
+                                <button class="wo-check active" data-val="run">Run</button>
+                                <button class="wo-check active" data-val="ride">Ride</button>
+                                <button class="wo-check active" data-val="swim">Swim</button>
+                                <button class="wo-check active" data-val="workout">Workout</button>
                             </div>
                         </div>
-                        <div class="controls-row">
-                            <div class="control-slot control-slot--wide">
-                                <div class="toggle-group control-variant">
-                                    <span class="controls-label">Days</span>
-                                    <div class="wo-check-row" id="wo-day-chips" data-testid="wo-day-chips">
-                                        <button class="wo-check active" data-val="Mon">Mon</button>
-                                        <button class="wo-check active" data-val="Tue">Tue</button>
-                                        <button class="wo-check active" data-val="Wed">Wed</button>
-                                        <button class="wo-check active" data-val="Thu">Thu</button>
-                                        <button class="wo-check active" data-val="Fri">Fri</button>
-                                        <button class="wo-check active" data-val="Sat">Sat</button>
-                                        <button class="wo-check active" data-val="Sun">Sun</button>
-                                    </div>
-                                </div>
+                        <div class="wo-field">
+                            <span class="controls-label">Days</span>
+                            <div class="wo-check-row" id="wo-day-chips" data-testid="wo-day-chips">
+                                <button class="wo-check active" data-val="Mon">Mon</button>
+                                <button class="wo-check active" data-val="Tue">Tue</button>
+                                <button class="wo-check active" data-val="Wed">Wed</button>
+                                <button class="wo-check active" data-val="Thu">Thu</button>
+                                <button class="wo-check active" data-val="Fri">Fri</button>
+                                <button class="wo-check active" data-val="Sat">Sat</button>
+                                <button class="wo-check active" data-val="Sun">Sun</button>
+                            </div>
+                        </div>
+                        <div class="wo-field">
+                            <span class="controls-label">Color</span>
+                            <div class="wo-color-wrap" id="weekly-color-slot">
+                                <input type="color" id="wo-color" class="wo-color-input" data-testid="wo-color" value="#ffffff" aria-label="Sticker color">
+                                <span class="wo-color-swatch" id="wo-color-swatch"></span>
+                                <span class="wo-color-hex" id="wo-color-hex">#FFFFFF</span>
                             </div>
                         </div>
                         <div class="controls-row wo-actions-row">
