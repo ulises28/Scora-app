@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseDurationParts, deriveContrastInk } from '../../src/features/editor/CanvasUtils';
+import { parseDurationParts, deriveContrastInk, splitValueUnit, joinValueUnit } from '../../src/features/editor/CanvasUtils';
 
 describe('CanvasUtils -> deriveContrastInk', () => {
     it('maps signature yellow to a deep red drop (ref pair)', () => {
@@ -63,4 +63,38 @@ describe('CanvasUtils -> parseDurationParts', () => {
         ]);
     });
 
+});
+
+describe('CanvasUtils -> splitValueUnit / joinValueUnit (no doubled units)', () => {
+    it('keeps clean value + unit pairs untouched', () => {
+        expect(splitValueUnit('10.05', 'km')).toEqual({ value: '10.05', unit: 'km' });
+        expect(splitValueUnit('45', 'min')).toEqual({ value: '45', unit: 'min' });
+        expect(splitValueUnit('167', 'bpm')).toEqual({ value: '167', unit: 'bpm' });
+    });
+
+    it('strips the unit when the value already ends with it ("4:09 /km" + "/km")', () => {
+        expect(splitValueUnit('4:09 /km', '/km')).toEqual({ value: '4:09', unit: '/km' });
+        expect(splitValueUnit('4:09/km', '/km')).toEqual({ value: '4:09', unit: '/km' });
+        expect(splitValueUnit('167 bpm', 'bpm')).toEqual({ value: '167', unit: 'bpm' });
+        expect(splitValueUnit('10.05 KM', 'KM')).toEqual({ value: '10.05', unit: 'KM' });
+    });
+
+    it('drops time unit when value is self-describing ("1h 12m" + "min")', () => {
+        expect(splitValueUnit('1h 12m', 'min')).toEqual({ value: '1h 12m', unit: '' });
+        expect(splitValueUnit('1h 12min', 'min')).toEqual({ value: '1h 12min', unit: '' });
+        expect(splitValueUnit('41m', 'min')).toEqual({ value: '41m', unit: '' });
+        expect(splitValueUnit('1h 12m', 'm')).toEqual({ value: '1h 12m', unit: '' });
+    });
+
+    it('drops km-family unit already carried by the value', () => {
+        expect(splitValueUnit('4:09 /km', 'km')).toEqual({ value: '4:09 /km', unit: '' });
+        expect(splitValueUnit('25.5 km/h', 'km/h')).toEqual({ value: '25.5', unit: 'km/h' });
+    });
+
+    it('joinValueUnit never repeats the unit', () => {
+        expect(joinValueUnit('4:09 /km', '/km')).toBe('4:09 /km');
+        expect(joinValueUnit('1h 12m', 'min')).toBe('1h 12m');
+        expect(joinValueUnit('45', 'min')).toBe('45 min');
+        expect(joinValueUnit('10.05', 'km')).toBe('10.05 km');
+    });
 });

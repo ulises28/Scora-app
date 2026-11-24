@@ -9,7 +9,7 @@
  *  - showLogo:  controls whether the SCORA. branding is drawn
  */
 
-import { getThemeColors, drawStatWithUnit, setLetterSpacing, drawRoutePath, decodePolyline, getDynamicStats, drawMetricBlock, parseDurationParts, drawDurationSequence, normalizeSport, getContentBounds, fitBoundsTransform, boundsFillFrame, cropCanvasToContent, padCanvasToFrame, deriveContrastInk } from './CanvasUtils';
+import { getThemeColors, drawStatWithUnit, setLetterSpacing, drawRoutePath, decodePolyline, getDynamicStats, drawMetricBlock, parseDurationParts, drawDurationSequence, normalizeSport, getContentBounds, fitBoundsTransform, boundsFillFrame, cropCanvasToContent, padCanvasToFrame, deriveContrastInk, joinValueUnit, splitValueUnit, splitPace } from './CanvasUtils';
 import { formatTime, spellNumber } from '../../utils/formatters';
 import { getRaceEvent, daysUntil } from '../../utils/raceEvent';
 import { drawGlassPanel, drawGlassText, drawLiquidGlyphs, glassSsaa, glassBufScale, releaseCanvas, paintContinuousRim } from './GlassText';
@@ -320,6 +320,10 @@ export async function drawTemplate(
         canvas.height = bufH;
     }
 
+    // Render generation: async painters (chrome WebGL) must abort their late
+    // composite if a newer drawTemplate has taken over this canvas.
+    (canvas as any).__scoraRenderGen = ((canvas as any).__scoraRenderGen || 0) + 1;
+
     // Chrome WebGL is too heavy for thumbs — chrome letterforms on dark
     if (isThumb && templateType.startsWith('chrome')) {
         const { s1, s2, type } = getDynamicStats(stats);
@@ -402,7 +406,9 @@ export async function drawTemplate(
     const wantLogo = !!showLogo;
     const isChrome = templateType.startsWith('chrome');
     const isHeavyGlass = templateType.startsWith('glass-numbers') || templateType === 'glass-type' || templateType === 'digital-led';
-    const LOGO_GAP = 6;
+    // Baseline sits 24px above the art's ink top: the 22px mark's descenders then
+    // clear the art by ~19px (a 6px gap put the baseline ON the ink — collision).
+    const LOGO_GAP = 24;
 
     if (isThumb || isHeavyGlass) {
         paintArtOnly();
@@ -1014,6 +1020,9 @@ export function drawChromeHighContrastSticker(ctx: CanvasRenderingContext2D, sta
 
     // Run the WebGL Pipeline asynchronously
     const runWebGL = async () => {
+        // Snapshot the owning render: if the user arrows to another sticker while
+        // WebGL is in flight, this late composite must not overwrite it.
+        const gen = (ctx.canvas as any).__scoraRenderGen;
         try {
             // SYNC DRAW: Instantly draw the flat white mask to prevent a blank flash/jump!
             ctx.save();
@@ -1027,6 +1036,9 @@ export function drawChromeHighContrastSticker(ctx: CanvasRenderingContext2D, sta
             const dataUrl = maskCanvas.toDataURL('image/png');
             const theme = textColor;
             const glCanvas = await applyLiquidMetalEffect(dataUrl, w, h, theme as any);
+
+            // A newer drawTemplate owns the canvas now — drop this composite.
+            if ((ctx.canvas as any).__scoraRenderGen !== gen) return;
 
             // Clear the canvas and draw the WebGL output
             ctx.clearRect(0, 0, w, h);
@@ -1452,7 +1464,7 @@ export function drawStatsTemplate(ctx, stats, textColor = 'white') {
 
     // ── Max Pace / Max Speed (sport-aware) ───────────────────────────────────
     const paceY = 1050;
-    const paceParts = (stats.subValue || '').trim().split(' ');
+    const _ps = splitPace(stats.subValue || '', ''); const paceParts = [_ps.value, _ps.unit];
     const paceText = paceParts[0] || (stats.maxPace || '0:00');
     const paceUnit = paceParts[1] || stats.maxPaceUnit || (stats.type === 'Ride' ? 'km/h' : '/km');
     const paceLabel = (stats.subLabel || stats.maxPaceLabel || 'Pace').toUpperCase();
@@ -1609,7 +1621,7 @@ export function drawScoraStealth(ctx, stats, textColor) {
     const distUnit = stats.hasMap ? 'km' : '';
 
     // Fallback to average heartrate or duration for right column
-    const paceParts = (stats.subValue || '').trim().split(' ');
+    const _ps = splitPace(stats.subValue || '', ''); const paceParts = [_ps.value, _ps.unit];
     let paceText = paceParts[0] || (stats.avgHeartrate ? String(stats.avgHeartrate) : '0');
     let paceUnit = paceParts[1] || (stats.hasDistance ? (stats.type === 'Ride' ? 'km/h' : '/km') : 'bpm');
     if (paceUnit === 'min/km') paceUnit = '/km';
@@ -1669,7 +1681,7 @@ export function drawInfoGlass(ctx: CanvasRenderingContext2D, stats: any, textCol
     const distText = stats.hasDistance ? (stats.distanceVal || '0.00') : (stats.timeStr || '0:00');
 
     const paceLabel = (stats.subLabel || (stats.hasDistance ? (stats.type === 'Ride' ? "Avg" : "Pace") : "Avg HR")).toUpperCase();
-    const paceParts = (stats.subValue || '').trim().split(' ');
+    const _ps = splitPace(stats.subValue || '', ''); const paceParts = [_ps.value, _ps.unit];
     const paceText = paceParts[0] || (stats.avgHeartrate ? String(stats.avgHeartrate) : '0');
 
     // For InfoGlass: slot 3 is Duration for runs/rides, or Max HR for workouts
@@ -2054,7 +2066,7 @@ export function drawVHSRetro(ctx: CanvasRenderingContext2D, stats: any, textColo
     const day = rawDate.getDate().toString().padStart(2, '0');
     const year = rawDate.getFullYear();
     const dateStr = `${month}. ${day} ${year}`;
-    const paceVal = (stats.subValue || '').split(' ')[0] || '0:00';
+    const paceVal = splitPace(stats.subValue || '', '').value;
 
     // Helper for absolute scoped rendering
     const drawVCR = (text: string, x: number, y: number, align: CanvasTextAlign = 'left', baseline: CanvasTextBaseline = 'top', size = 32) => {
@@ -2143,7 +2155,7 @@ export function drawGlassSlice(ctx, stats, textColor) {
     // Ensure short units for the hero section
     const distUnit = stats.hasDistance ? 'KM' : 'TIME';
 
-    const paceParts = (stats.subValue || '').trim().split(' ');
+    const _ps = splitPace(stats.subValue || '', ''); const paceParts = [_ps.value, _ps.unit];
     const paceText = paceParts[0] || (stats.avgHeartrate ? String(stats.avgHeartrate) : '0');
     let paceUnit = paceParts[1] || (stats.hasDistance ? '/KM' : 'BPM');
     if (paceUnit.toLowerCase() === 'min/km') paceUnit = '/KM';
@@ -2762,8 +2774,8 @@ export function drawModernPill(ctx: CanvasRenderingContext2D, stats: any, textCo
     const p1Unit = isWorkout ? '' : 'KM';
 
     const p2Label = isWorkout ? "HEART RATE" : (isRide ? "AVG" : "PACE");
-    const p2Value = isWorkout ? (stats.avgHeartrate ? `${stats.avgHeartrate}` : 'N/A') : (stats.subValue || 'N/A').split(' ')[0];
-    const p2Unit = isWorkout ? 'BPM' : (stats.subValue || '').split(' ')[1] || (isRide ? 'KM/H' : '/KM');
+    const p2Value = isWorkout ? (stats.avgHeartrate ? `${stats.avgHeartrate}` : 'N/A') : splitPace(stats.subValue || 'N/A', '').value;
+    const p2Unit = isWorkout ? 'BPM' : splitPace(stats.subValue || '', '').unit || (isRide ? 'KM/H' : '/KM');
 
     ctx.save();
     applyAntiGhostingShadow(ctx, textColor);
@@ -2869,9 +2881,9 @@ export function drawMonoSplit(ctx: CanvasRenderingContext2D, stats: any, textCol
     const p1Label = isWorkout ? 'DURATION' : 'DISTANCE';
     const p1Unit = isWorkout ? '' : 'KM';
 
-    const p2Value = (isWorkout ? (stats.avgHeartrate ? `${stats.avgHeartrate}` : (stats.calories ? `${stats.calories}` : 'WORKOUT')) : (stats.subValue || '0:00').split(' ')[0]).toUpperCase();
+    const p2Value = (isWorkout ? (stats.avgHeartrate ? `${stats.avgHeartrate}` : (stats.calories ? `${stats.calories}` : 'WORKOUT')) : splitPace(stats.subValue || '0:00', '').value).toUpperCase();
     const p2Label = isWorkout ? (stats.avgHeartrate ? 'HEART RATE' : 'CALORIES') : (isRide ? 'AVG' : 'PACE');
-    const p2Unit = isWorkout ? (stats.avgHeartrate ? 'BPM' : 'KCAL') : (stats.subValue || '').split(' ')[1] || '/KM';
+    const p2Unit = isWorkout ? (stats.avgHeartrate ? 'BPM' : 'KCAL') : splitPace(stats.subValue || '', '').unit || '/KM';
 
     ctx.save();
     applyAntiGhostingShadow(ctx, textColor);
@@ -2937,7 +2949,7 @@ export function drawEditorialArchive(ctx: CanvasRenderingContext2D, stats: any, 
     const sysFont = "'Plus Jakarta Sans', sans-serif";
     const p = stats.dataPoints || [];
     const p1 = p[0] || { value: stats.distanceVal || '0.00', label: stats.mainLabel || 'Dist', unit: 'km' };
-    const p2 = p[1] || { value: (stats.subValue || '').split(' ')[0] || '0:00', label: stats.subLabel || 'Pace', unit: (stats.subValue || '').split(' ')[1] || '/km' };
+    const p2 = p[1] || { value: splitPace(stats.subValue || '', '').value, label: stats.subLabel || 'Pace', unit: splitPace(stats.subValue || '', '').unit || '/km' };
     const p3 = p[2] || { value: stats.timeStr || '0:00', label: 'Time', unit: '' };
     const datePoint = p.find(x => x.label === 'Date') || { value: stats.date || 'MAR 08' };
 
@@ -3332,8 +3344,8 @@ export function drawNarrativeHighlight(ctx: CanvasRenderingContext2D, stats: any
     const location = stats.location && stats.location !== 'Unknown' ? stats.location : '';
     const region = stats.region && stats.region !== 'World' ? stats.region : '';
     const duration = stats.timeStr || '0m';
-    const pace = (stats.subValue || '').split(' ')[0] || '0:00';
-    const paceUnit = (stats.subValue || '').split(' ')[1] || '/km';
+    const pace = splitPace(stats.subValue || '', '').value;
+    const paceUnit = splitPace(stats.subValue || '', '').unit || '/km';
     const dateStr = stats.date || '';
 
     // 2. Build Narrative Lines
@@ -3944,7 +3956,7 @@ export function drawPerformanceBars(ctx: CanvasRenderingContext2D, stats: Sticke
 
     ctx.fillStyle = solid;
     ctx.font = `normal 900 120px ${interFont}`;
-    const paceVal = stats.subValue.split(' ')[0];
+    const paceVal = splitPace(stats.subValue, '').value;
     ctx.fillText(paceVal, canvasW - padding, footerY + 60);
 
     // Pace Unit (/km)
@@ -5332,9 +5344,9 @@ export function drawMonoMinimal(ctx: CanvasRenderingContext2D, stats: any, textC
     // 3. Right Column: Metric
     ctx.textAlign = 'right';
     const rawVal = stats.mainValue || stats.distanceVal || '0.00';
-    const valStr = String(rawVal).trim().toUpperCase();
     const unit = isWorkout ? '' : 'KM';
-    const displayVal = unit ? `${valStr} ${unit}` : valStr;
+    // mainValue is compound ("10.05 km") — never append a unit it already carries
+    const displayVal = joinValueUnit(String(rawVal).trim().toUpperCase(), unit);
 
     ctx.font = "normal 800 48px 'JetBrains Mono'";
     ctx.fillText(displayVal, cx + w / 2 - 30, cy);
@@ -5891,7 +5903,7 @@ export function drawNeonSlanted(ctx: CanvasRenderingContext2D, stats: any, textC
  */
 export function drawAestheticMedal(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
     const sysFont = "'Playfair Display', serif";
-    const paceVal = (stats.subValue || '').split(' ')[0] || '0:00';
+    const paceVal = splitPace(stats.subValue || '', '').value;
 
     // Date Logic: Month + Day
     const rawDate = stats.rawDate ? new Date(stats.rawDate) : new Date();
@@ -5946,7 +5958,7 @@ export function drawAestheticMedal(ctx: CanvasRenderingContext2D, stats: any, te
     // Activity-Specific Metric Logic
     // Fix: Using subLabel and subValue instead of speedVal
     const label = (stats.hasDistance ? (stats.subLabel || 'PACE') : 'TIME').toUpperCase();
-    const val = (stats.hasDistance ? (stats.subValue || '0.00').split(' ')[0] : (stats.timeStr || '0:00'));
+    const val = (stats.hasDistance ? splitPace(stats.subValue || '0.00', '').value : (stats.timeStr || '0:00'));
     let suffix = '';
 
     if (stats.type === 'Ride') {
@@ -6236,7 +6248,7 @@ export function drawJournalGrid(ctx: CanvasRenderingContext2D, stats: any, textC
 
     // Row 1: Distance | Pace
     drawGridItem(gridX, gridY, "DISTANCE", stats.distanceVal || "0.00", "km");
-    drawGridItem(col2X, gridY, paceLabel, (stats.subValue || "").split(' ')[0] || "0:00", paceUnit);
+    drawGridItem(col2X, gridY, paceLabel, splitPace(stats.subValue || "", "").value, paceUnit);
 
     // Row 2: Moving Time | Elevation
     drawGridItem(gridX, gridY + rowHeight, "TIME", stats.timeStr || "0:00", "");
@@ -6268,6 +6280,9 @@ export function drawJournalGrid(ctx: CanvasRenderingContext2D, stats: any, textC
         });
     }
 
+    // Two ctx.save() above — both must unwind or the fit transform leaks into
+    // every later sticker (stale content stacks; refresh "fixes" it).
+    ctx.restore();
     ctx.restore();
 }
 
@@ -6440,7 +6455,7 @@ export function drawUltraDetail(ctx: CanvasRenderingContext2D, stats: any, textC
         m1Unit = stats.avgHeartrate ? 'BPM' : 'KCAL';
         m1Label = stats.avgHeartrate ? 'AVG HEART RATE' : 'CALORIES';
     } else {
-        m1Value = (stats.subValue || '').split(' ')[0] || '0:00';
+        m1Value = splitPace(stats.subValue || '', '').value;
         m1Unit = isRide ? 'KM/H' : '/KM';
         m1Label = isRide ? 'AVG. SPEED' : 'PACE';
     }
@@ -6565,7 +6580,7 @@ export function drawNoteSticker(ctx: CanvasRenderingContext2D, stats: any, textC
 
     const distVal = stats.distanceVal || '0.00';
     const time = stats.timeStr || '0m';
-    const pace = (stats.subValue || '').split(' ')[0] || '0:00';
+    const pace = splitPace(stats.subValue || '', '').value;
     const hasDistance = parseFloat(distVal) > 0;
 
     if (hasDistance) {
@@ -6649,7 +6664,7 @@ export function drawNoteAccentSticker(ctx: CanvasRenderingContext2D, stats: any,
 
     const distVal = stats.distanceVal || '0.00';
     const time = stats.timeStr || '0m';
-    const pace = (stats.subValue || '').split(' ')[0] || '0:00';
+    const pace = splitPace(stats.subValue || '', '').value;
     const hasDistance = parseFloat(distVal) > 0;
 
     if (hasDistance) {
@@ -6808,7 +6823,7 @@ export function drawChatSticker(ctx: CanvasRenderingContext2D, stats: any, textC
     const timestampCol = 'rgba(255,255,255,0.4)';
 
     const dist = stats.distanceVal || '0.00';
-    const pace = (stats.subValue || '').split(' ')[0] || '0:00';
+    const pace = splitPace(stats.subValue || '', '').value;
     const time = stats.timeStr || '0h 00m';
     const startTime = stats.startTime || '12:00';
     const hr = stats.heartRate || stats.avgHR || null;
@@ -7389,7 +7404,7 @@ export function drawCoffeeClub(ctx: CanvasRenderingContext2D, stats: any, textCo
     ctx.fillText(startTime, 80, midY + 60);
 
     // 3. Pace & Duration
-    const paceVal = (stats.subValue || '').split(' ')[0] || '0:00';
+    const paceVal = splitPace(stats.subValue || '', '').value;
     const hasDist = stats.hasDistance !== false;
     let sec1 = hasDist ? `PACE ${paceVal}` : `AVG HR ${stats.avgHeartrate || '0'}`;
     let sec2 = `DUR ${(stats.timeStr || '0:00')}`.toUpperCase();
@@ -7588,7 +7603,10 @@ export function drawWavyQuote(ctx: CanvasRenderingContext2D, stats: any, textCol
         || (stats.average_heartrate ? Math.round(stats.average_heartrate) : null);
     const startStr = stats.startTime
         || (stats.rawDate ? formatTime(stats.rawDate.replace('Z', '')) : '');
-    const paceVal = stats.subValue ? `${stats.subValue}${stats.subLabel ? stats.subLabel : ''}` : (s2?.value && s2?.unit ? `${s2.value}${s2.unit}` : '');
+    // Value+unit must never double: subValue already embeds the unit ("4:09 /km")
+    const paceVal = (s2?.value && s2?.unit)
+        ? joinValueUnit(s2.value, s2.unit)
+        : joinValueUnit(stats.subValue || '', stats.subLabel || '');
     const distStr = stats.hasDistance && stats.distanceVal
         ? `${stats.distanceVal}${(stats.distanceUnit || 'km').toUpperCase()}`
         : `${s1.value}${s1.unit ? s1.unit.toUpperCase() : ''}`;
@@ -7736,7 +7754,7 @@ export function drawRetroDistance(ctx: CanvasRenderingContext2D, stats: any, tex
     let r1Val = hasDist ? (stats.timeStr || '0:00') : normalizeSport(stats.activityType || 'WORKOUT').toUpperCase();
     let r2Label = hasDist ? 'PACE_' : 'BURN_';
     let r2Val = hasDist
-        ? ((stats.subValue || '').split(' ')[0] || '0:00')
+        ? (splitPace(stats.subValue || '', '').value)
         : `${stats.calories || '0'} KCAL`;
 
     let dateStr = (stats.dayAndNumber || 'APR 2').toUpperCase();
@@ -7748,42 +7766,66 @@ export function drawRetroDistance(ctx: CanvasRenderingContext2D, stats: any, tex
     const midY = cY + cardH / 2;
     const padL = 44;
     const padR = 40;
+    const col2X = cX + 500;
+    const col2Right = cX + 720;
+    const cellW = col2Right - col2X;
 
-    // ── Cell 1: hero metric ──
+    // ── Cell 1: hero metric (shrink to fit before the divider) ──
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = mainColor;
-    ctx.font = `800 96px ${mono}`;
+    let heroSize = 96;
+    const heroMaxW = (col2X - 28) - (cX + padL) - (heroUnit ? 68 : 0);
+    ctx.font = `800 ${heroSize}px ${mono}`;
+    let heroW = ctx.measureText(hero).width;
+    if (heroW > heroMaxW) {
+        heroSize = Math.max(56, Math.floor(heroSize * heroMaxW / heroW));
+        ctx.font = `800 ${heroSize}px ${mono}`;
+        heroW = ctx.measureText(hero).width;
+    }
     ctx.fillText(hero, cX + padL, midY);
-    const heroW = ctx.measureText(hero).width;
     if (heroUnit) {
-        ctx.font = `800 52px ${mono}`;
+        ctx.font = `800 ${Math.round(heroSize * 0.54)}px ${mono}`;
         ctx.fillText(heroUnit, cX + padL + heroW + 16, midY + 4);
     }
 
     // ── Cell 2: two readable rows (label left, value right-aligned in cell) ──
-    const col2X = cX + 500;
-    const col2Right = cX + 720;
     const row1Y = midY - 36;
     const row2Y = midY + 36;
 
-    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
     ctx.font = `500 34px ${mono}`;
     ctx.textAlign = 'left';
     ctx.fillText(r1Label, col2X, row1Y);
     ctx.fillText(r2Label, col2X, row2Y);
 
+    // Value must never run into its label: shrink to fit the cell ("255 KCAL" vs "BURN_")
+    const fitValue = (label: string, val: string) => {
+        ctx.font = `500 34px ${mono}`;
+        const labelW = ctx.measureText(label).width;
+        let size = 40;
+        ctx.font = `500 ${size}px ${mono}`;
+        let valW = ctx.measureText(val).width;
+        const avail = cellW - labelW - 24;
+        if (valW > avail && avail > 40) {
+            size = Math.max(24, Math.floor(size * avail / valW));
+            ctx.font = `500 ${size}px ${mono}`;
+        }
+        return size;
+    };
+
     ctx.fillStyle = 'rgba(255,255,255,0.95)';
-    ctx.font = `500 40px ${mono}`;
     ctx.textAlign = 'right';
+    fitValue(r1Label, r1Val);
     ctx.fillText(r1Val, col2Right, row1Y);
+    fitValue(r2Label, r2Val);
     ctx.fillText(r2Val, col2Right, row2Y);
 
     // ── Cell 3: date stamp ──
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = 'rgba(255,255,255,0.55)';
-    ctx.font = `400 28px ${mono}`;
+    ctx.fillStyle = 'rgba(255,255,255,0.8)';
+    ctx.font = `400 30px ${mono}`;
     ctx.fillText(`[${dateStr}]`, cX + cardW - padR, midY);
 
     // Subtle cell dividers
@@ -10087,7 +10129,7 @@ export function drawLabDataGrid(ctx: CanvasRenderingContext2D, stats: any, textC
         const dist = `${stats.distanceVal || s1.value || '0.00'} ${(stats.distanceUnit || s1.unit || 'km').toUpperCase()}`;
         const paceUnit = (s2.unit || stats.subLabel || '/km').toUpperCase();
         const pace = stats.subValue
-            ? `${stats.subValue.split(' ')[0]} ${paceUnit}`.trim()
+            ? `${splitPace(stats.subValue, '').value} ${paceUnit}`.trim()
             : (s2.value ? `${s2.value} ${paceUnit}` : '');
         rows = [
             { label: 'DISTANCE', value: dist },
@@ -10276,8 +10318,10 @@ export function drawDayRecap(ctx: CanvasRenderingContext2D, stats: any, textColo
 }
 
 /**
- * WORD SCATTER — activity data as scattered words over the photo (minimal editorial).
- * Run scatters more words than a workout.
+ * WORD SCATTER v2 — editorial quote-overlay: activity data scattered as word-groups
+ * over the photo. One hero number, whispering companions, organic zigzag reading
+ * flow across the full story frame (IG effect style — replicate the vibe, not the
+ * copy). Run scatters more tokens than a workout.
  */
 export function drawWordScatter(ctx: CanvasRenderingContext2D, stats: any, textColor: string) {
     const { s1, s2 } = getDynamicStats(stats);
@@ -10285,82 +10329,91 @@ export function drawWordScatter(ctx: CanvasRenderingContext2D, stats: any, textC
     const rgb = textColor.startsWith('#') ? hexToRgb(textColor) : (textColor === 'black' ? '0, 0, 0' : '255, 255, 255');
     const ink = `rgb(${rgb})`;
     const face = "'Plus Jakarta Sans', 'Outfit', sans-serif";
+    const lo = (v: any) => String(v ?? '').toLowerCase();
 
     const elevPoint = stats.dataPoints?.find((p: any) => String(p.label || '').toUpperCase().includes('ELEV'));
     const elevVal = stats.elevation || elevPoint?.value || '';
     const hr = stats.avgHeartrate || stats.hr || '';
 
-    // Group related tokens: value + unit stay together so the scatter is readable
-    const titleWords = String(stats.shortTitle || stats.title || '').split(/\s+/).filter(Boolean);
-    const pace = (stats.subValue || s2.value || '').split(' ')[0];
-    const paceUnit = s2.unit || stats.subLabel || '/km';
-    const dist = String(stats.distanceVal || s1.value || '0.00');
-    const distUnit = String(stats.distanceUnit || s1.unit || 'km');
-    const tokens: string[] = [];
+    // value + unit = one phrase group — keeps stats parseable with ref-style word rhythm
+    type Word = { t: string; s: number };
+    const groups: Word[][] = [];
+    String(stats.shortTitle || stats.title || '').split(/\s+/).filter(Boolean)
+        .forEach((w, i) => groups.push([{ t: lo(w), s: Math.max(30, 48 - i * 6) }]));
 
-    // Title words first (single words scattered)
-    titleWords.forEach(w => tokens.push(w));
+    // Duration → minutes ("41m" / "1h 11m" → 41 / 71) so it reads as words, not codes
+    const durRaw = String(stats.movingTime || stats.timeStr || s1.value || '');
+    const hM = durRaw.match(/(\d+)h/);
+    const mM = durRaw.match(/(\d+)m/);
+    const durVal = (hM || mM) ? String((hM ? +hM[1] * 60 : 0) + (mM ? +mM[1] : 0)) : durRaw;
+    const durUnit = (hM || mM) ? 'min' : '';
 
     if (hasDistance) {
-        tokens.push(`${dist} ${distUnit}`);     // "10.05 km" together
-        if (pace) tokens.push(`${pace} ${paceUnit}`);  // "4:09 /km" together
-        if (stats.timeStr) tokens.push(stats.timeStr);
-        if (hr) tokens.push(`${hr} bpm`);       // "167 bpm" together
-        if (elevVal) tokens.push(`+${elevVal} m`); // "+36 m" together
+        groups.push([
+            { t: String(stats.distanceVal || s1.value || '0.00'), s: 132 },
+            { t: lo(stats.distanceUnit || s1.unit || 'km'), s: 40 },
+        ]);
+        const pace = splitPace(String(stats.subValue || s2.value || ''), '').value;
+        if (pace) groups.push([{ t: pace, s: 52 }, { t: lo(s2.unit || stats.subLabel || '/km'), s: 34 }]);
+        if (durVal) groups.push([{ t: durVal, s: 46 }, ...(durUnit ? [{ t: durUnit, s: 32 }] : [])]);
+        if (hr) groups.push([{ t: String(hr), s: 42 }, { t: 'bpm', s: 32 }]);
+        if (elevVal) groups.push([{ t: `+${elevVal}`, s: 38 }, { t: 'm', s: 30 }]);
     } else {
-        if (stats.timeStr || s1.value) tokens.push(String(stats.timeStr || s1.value));
-        if (hr) tokens.push(`${hr} bpm`);
-        tokens.push(String(stats.type || 'Workout'));
+        if (durVal) groups.push([{ t: durVal, s: 132 }, ...(durUnit ? [{ t: durUnit, s: 40 }] : [])]);
+        if (hr) groups.push([{ t: String(hr), s: 42 }, { t: 'bpm', s: 32 }]);
+        groups.push([{ t: lo(stats.type || 'workout'), s: 36 }]);
     }
-    if (stats.location) tokens.push(String(stats.location));
-    if (stats.startTime) tokens.push(String(stats.startTime));
+    if (stats.location && stats.location !== 'Unknown') {
+        String(stats.location).split(/\s+/).filter(Boolean)
+            .forEach((w, i) => groups.push([{ t: lo(w), s: Math.max(28, 42 - i * 6) }]));
+    }
+    if (stats.startTime) {
+        const parts = String(stats.startTime).trim().split(/\s+/);
+        groups.push([{ t: parts[0], s: 42 }, ...(parts[1] ? [{ t: lo(parts[1]), s: 30 }] : [])]);
+    }
+    if (!groups.length) return;
 
-    const words = tokens.map(w => String(w).trim()).filter(Boolean);
-    if (!words.length) return;
-
-    // Deterministic scatter grid — irregular offsets, varied size, slight rotation
-    // Inspired by the Instagram quote-overlay reference (WhatsApp 21.39.18-1)
+    // Organic zigzag constellation — reading flow L→R, top→bottom, full frame.
     const slots = [
-        { x: 140,  y: 320,  s: 48 },
-        { x: 520,  y: 280,  s: 36 },
-        { x: 860,  y: 380,  s: 42 },
-        { x: 280,  y: 520,  s: 56 },
-        { x: 700,  y: 560,  s: 34 },
-        { x: 160,  y: 720,  s: 40 },
-        { x: 540,  y: 780,  s: 52 },
-        { x: 900,  y: 700,  s: 38 },
-        { x: 340,  y: 940,  s: 44 },
-        { x: 760,  y: 960,  s: 36 },
-        { x: 180,  y: 1100, s: 50 },
-        { x: 580,  y: 1140, s: 42 },
-        { x: 880,  y: 1080, s: 34 },
-        { x: 320,  y: 1280, s: 46 },
-        { x: 720,  y: 1320, s: 38 },
+        { x: 250, y: 215 }, { x: 690, y: 325 }, { x: 360, y: 565 },
+        { x: 815, y: 690 }, { x: 235, y: 865 }, { x: 615, y: 1035 },
+        { x: 865, y: 1205 }, { x: 255, y: 1360 }, { x: 645, y: 1535 },
+        { x: 335, y: 1730 },
     ];
+    const n = groups.length;
+    const picks = groups.map((_, i) => slots[Math.round((i * (slots.length - 1)) / Math.max(1, n - 1))]);
+    // Park the hero number on the left-centre slot (index 2) where a 132px word breathes
+    const heroIdx = groups.findIndex(g => g[0].s >= 100);
+    if (heroIdx >= 0 && n > 2 && picks[heroIdx] !== picks[2]) {
+        const tmp = picks[heroIdx];
+        picks[heroIdx] = picks[2];
+        picks[2] = tmp;
+    }
 
     ctx.save();
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
+    // Soft shadow for photo readability
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.42)';
+    ctx.shadowBlur = 12;
+    ctx.shadowOffsetY = 3;
 
-    // Subtle shadow for photo readability
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
-    ctx.shadowBlur = 10;
-    ctx.shadowOffsetY = 2;
-
-    words.slice(0, slots.length).forEach((w, i) => {
-        const sl = slots[i];
-        ctx.save();
-        ctx.translate(sl.x, sl.y);
-        ctx.font = `500 ${sl.s}px ${face}`;
-        ctx.fillStyle = ink;
-        ctx.fillText(w, 0, 0);
-        ctx.restore();
+    groups.forEach((g, i) => {
+        const sl = picks[i];
+        let total = 0;
+        g.forEach((w, j) => {
+            ctx.font = `${w.s >= 100 ? 600 : 500} ${w.s}px ${face}`;
+            total += ctx.measureText(w.t).width + (j ? 16 : 0);
+        });
+        let x = sl.x - total / 2;
+        g.forEach((w, j) => {
+            ctx.font = `${w.s >= 100 ? 600 : 500} ${w.s}px ${face}`;
+            ctx.fillStyle = ink;
+            const wpx = ctx.measureText(w.t).width;
+            ctx.fillText(w.t, x + wpx / 2, sl.y);
+            x += wpx + 16;
+        });
     });
-
-    // Reset shadow
-    ctx.shadowColor = 'transparent';
-    ctx.shadowBlur = 0;
-    ctx.shadowOffsetY = 0;
 
     ctx.restore();
 }
@@ -10390,7 +10443,7 @@ export function drawPhotoStack(ctx: CanvasRenderingContext2D, stats: any, textCo
         const dist = `${stats.distanceVal || s1.value || '0.00'} ${stats.distanceUnit || s1.unit || 'km'}`;
         const paceUnit = s2.unit || stats.subLabel || '/km';
         const pace = stats.subValue
-            ? `${stats.subValue.split(' ')[0]} ${paceUnit}`.trim()
+            ? `${splitPace(stats.subValue, '').value} ${paceUnit}`.trim()
             : (s2.value ? `${s2.value} ${paceUnit}` : '');
         rows = [
             { label: 'Distance', value: dist },
@@ -10461,19 +10514,21 @@ function statStripPairs(stats: any): { label: string; value: string }[] {
     const hr = stats.avgHeartrate || stats.hr || '';
     const cal = stats.calories || '';
     const paceUnit = s2.unit || stats.subLabel || '/km';
+    // subValue embeds its unit ("4:09 /km") — safe join must not repeat it
     const pace = stats.subValue
-        ? `${String(stats.subValue).split(' ')[0]} ${paceUnit}`.trim()
-        : (s2.value ? `${s2.value} ${paceUnit}` : '');
-    const dist = `${stats.distanceVal || s1.value || '0.00'} ${stats.distanceUnit || s1.unit || 'km'}`;
+        ? joinValueUnit(String(stats.subValue), paceUnit)
+        : (s2.value ? joinValueUnit(s2.value, paceUnit) : '');
+    const dist = joinValueUnit(String(stats.distanceVal || s1.value || '0.00'), String(stats.distanceUnit || s1.unit || 'km'));
     const time = stats.timeStr || stats.movingTime || s1.value || '';
     return [
         { label: 'Distance', value: hasDistance ? dist : '' },
         { label: 'Pace', value: hasDistance ? pace : '' },
         { label: 'Time', value: time },
-        { label: 'Elev Gain', value: elevVal ? `${elevVal} m` : '' },
-        // CAL only when real — never invented (user 2026-11-17)
-        { label: 'Cal', value: cal ? `${cal} Cal` : '' },
-        { label: 'Avg HR', value: hr ? `${hr} bpm` : '' },
+        { label: 'Elev Gain', value: elevVal ? joinValueUnit(String(elevVal), 'm') : '' },
+        // CAL only when real — never invented (user 2026-11-17).
+        // Label already says "Cal" — value stays bare ("255", never "255 Cal").
+        { label: 'Cal', value: cal ? String(cal) : '' },
+        { label: 'Avg HR', value: hr ? joinValueUnit(String(hr), 'bpm') : '' },
     ].filter(r => r.value);
 }
 

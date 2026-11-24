@@ -89,3 +89,4 @@ docs/inspiration/
 
 # QA backdrop photos — local validation only, NEVER commit
 qa-backdrops/
+.playwright-mcp/

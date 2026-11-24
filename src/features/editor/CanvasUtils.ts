@@ -269,6 +269,58 @@ export function getThemeColors(textColor: string): ThemeColors {
 }
 
 /**
+ * Strava formatters embed units in values ("4:09 /km", "1h 12m", "167 bpm"),
+ * so blindly appending a unit produces impossible doubles ("4:09 /km /km",
+ * "1h 12m min"). Split a value/unit pair so the unit is never repeated.
+ */
+export function splitValueUnit(value: string, unit: string): { value: string; unit: string } {
+    const v = String(value ?? '').trim();
+    const u = String(unit ?? '').trim();
+    if (!v || !u) return { value: v, unit: u };
+    const vl = v.toLowerCase();
+    const ul = u.toLowerCase();
+
+    // 1) Value already ends with that exact unit token ("4:09 /km" + "/km", "167 bpm" + "bpm")
+    if (vl.endsWith(ul) && vl.length > ul.length) {
+        const head = v.slice(0, v.length - u.length);
+        if (!head.trim() || /[\s·,:;]$/.test(head) || !/^[a-z0-9]/i.test(u)) {
+            return { value: head.replace(/[\s·,:;]+$/, ''), unit: u };
+        }
+    }
+    // 2) Time synonyms ("1h 12m" / "41m" / "1h 12min" + "min"|"m"|"h") — value is self-describing
+    if (/^(min|mins|m|h|hr|hrs)$/i.test(u) && /\d\s*(h|m|min)\b/i.test(v)) {
+        return { value: v, unit: '' };
+    }
+    // 3) km-family already in the value ("4:09 /km" + "km") — drop the duplicate
+    const bare = (t: string) => t.replace(/^[\d:.+]+/, '').toLowerCase();
+    const kmFam = (t: string) => /^(km|\/km|km\/h|\/100m|mi)$/.test(bare(t));
+    if (kmFam(u) && v.split(/[\s·]+/).some(kmFam)) {
+        return { value: v, unit: '' };
+    }
+    return { value: v, unit: u };
+}
+
+/** Safe "value unit" string join — never repeats a unit the value already carries. */
+export function joinValueUnit(value: string, unit: string): string {
+    const s = splitValueUnit(value, unit);
+    return s.unit ? `${s.value} ${s.unit}` : s.value;
+}
+
+/**
+ * Split a pace/speed compound into bare value + unit. Compounds arrive both
+ * spaced ("4:09 /km") and tight ("4:09/km") — `split(' ')[0]` only handles the
+ * first and lets the embedded unit leak into the value ("4:09/km" + "/km").
+ */
+export function splitPace(compound: string, fallbackUnit = '/km'): { value: string; unit: string } {
+    const v = String(compound ?? '').trim();
+    const spaced = v.match(/^(.+?\d)\s+([\/a-z][\/a-z0-9]*)$/i);
+    const tight = v.match(/^(.+?\d)([\/][a-z0-9]+)$/i);
+    const m = spaced || tight;
+    if (m) return { value: m[1].trim(), unit: m[2].trim() };
+    return { value: v || '0:00', unit: fallbackUnit };
+}
+
+/**
  * Draws a primary stat with its unit efficiently.
  * Handles spacing and font shifts automatically.
  */
@@ -289,6 +341,8 @@ export function drawStatWithUnit(
 ) {
     const gap = options.gap ?? 15;
     const align = options.align ?? 'left';
+    // Never append a unit the value already carries ("4:09 /km" + "/km", "1h 12m" + "min")
+    ({ value, unit } = splitValueUnit(value, unit));
 
     ctx.save();
 
@@ -556,7 +610,8 @@ export function getDynamicStats(stats: any) {
 
         // Pace / Speed
         const subValFull = stats.subValue || '';
-        const paceVal = subValFull.split(' ')[0] || '0:00';
+        // Bare value only — compounds carry their unit ("4:09 /km", "4:09/km")
+        const paceVal = splitPace(subValFull, '').value || '0:00';
         
         const uType = type.toUpperCase();
         if (uType === 'RIDE' || uType === 'BIKE' || uType === 'SKI') {

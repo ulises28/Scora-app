@@ -2,6 +2,7 @@
  * StickerActions — clipboard + save primitives for the sticker sheet.
  * Tap = copy · long-press = save · pack = batch export.
  */
+import { cropCanvasToContent } from './CanvasUtils';
 
 export type FeedbackHost = HTMLElement | null;
 
@@ -14,7 +15,11 @@ function canvasToPngBlob(canvas: HTMLCanvasElement): Promise<Blob> {
     });
 }
 
-/** Copy a canvas image to the system clipboard (Safari-compatible ClipboardItem). */
+/** Copy the sticker to the system clipboard (Safari-compatible ClipboardItem).
+ *  Ink-cropped: Instagram scales the whole PNG box (transparent margins included)
+ *  to its default sticker size, so a full 1080×1920 frame pastes as tiny ink in a
+ *  big empty box. Cropping to the art bounds makes paste scale match the preview.
+ *  Save/share stays full-frame — see saveCanvasAsPng/exportCanvas. */
 export async function copyCanvasToClipboard(canvas: HTMLCanvasElement | null): Promise<boolean> {
     if (!canvas) return false;
     if (typeof window.ClipboardItem === 'undefined' || !navigator.clipboard?.write) {
@@ -22,7 +27,14 @@ export async function copyCanvasToClipboard(canvas: HTMLCanvasElement | null): P
         return false;
     }
     try {
-        const imagePromise = canvasToPngBlob(canvas);
+        // Snapshot first — never mutate the live preview canvas.
+        const snap = document.createElement('canvas');
+        snap.width = canvas.width;
+        snap.height = canvas.height;
+        const sctx = snap.getContext('2d');
+        if (sctx) sctx.drawImage(canvas, 0, 0);
+        cropCanvasToContent(snap, 0.03);
+        const imagePromise = canvasToPngBlob(snap);
         const item = new window.ClipboardItem({ 'image/png': imagePromise });
         await navigator.clipboard.write([item]);
         console.log('[Sticker] Copied to clipboard.');
